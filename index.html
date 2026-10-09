@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f8ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Світло Черкаси">
+  <meta name="description" content="Графіки погодинних відключень у Черкасах та населених пунктах Черкаського району">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="./assets/icon.svg">
+  <link rel="stylesheet" href="./style.css">
+  <title>Світло Черкаси</title>
+</head>
+<body>
+  <div class="shell">
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+
+    <header class="appbar">
+      <div class="brand">
+        <span class="logo-badge" aria-hidden="true">
+          <svg viewBox="0 0 48 48" role="img" aria-hidden="true">
+            <defs>
+              <linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#67b6ff"></stop>
+                <stop offset="100%" stop-color="#2e73ff"></stop>
+              </linearGradient>
+            </defs>
+            <rect x="1.5" y="1.5" width="45" height="45" rx="15" fill="url(#logoGrad)"></rect>
+            <path d="M26.9 7.5 14.6 25.7h8.1l-1 14.8 12.8-20h-8.2z" fill="#fff"></path>
+          </svg>
+        </span>
+        <span>світло<span class="brand-dot">.</span><small>Черкаси</small></span>
+      </div>
+    </header>
+
+    <main>
+      <section id="home" class="screen">
+        <div class="page-heading">
+          <p class="upper"><span class="pulse-dot"></span> ГРАФІКИ ПІД РУКОЮ</p>
+          <h1>Світло поруч</h1>
+          <p>Додайте адресу — і відкривайте свій графік без таблиць та зайвого пошуку.</p>
+        </div>
+
+        <section class="energy-card reveal">
+          <div class="card-glow" aria-hidden="true"></div>
+          <div class="energy-top">
+            <span class="energy-pill"><span class="red-dot"></span>Офіційні дані</span>
+            <a href="https://www.cherkasyoblenergo.com/news" target="_blank" rel="noopener" aria-label="Новини обленерго">↗</a>
+          </div>
+          <div class="energy-copy">
+            <strong>Графіки від Черкасиобленерго</strong>
+            <span>Публікації перевіряються автоматично. Застосунок показує плановий графік, а не фактичну напругу в мережі.</span>
+          </div>
+          <div class="updated" id="globalUpdated">Перевіряємо останні публікації…</div>
+        </section>
+
+        <div class="section-title">
+          <h2>Мої місця</h2>
+          <span id="addressCount">0</span>
+        </div>
+
+        <div id="addressList" class="address-list" aria-live="polite"></div>
+
+        <div class="empty-state" id="emptyState" hidden>
+          <div class="empty-illustration" aria-hidden="true">
+            <svg viewBox="0 0 48 48">
+              <path d="M8 20.5 24 8l16 12.5V38a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2Z" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linejoin="round"></path>
+              <path d="M22 27h5l-2 5h4l-6 8 1.5-6H20z" fill="currentColor"></path>
+            </svg>
+          </div>
+          <strong>Додайте першу адресу</strong>
+          <p>Вкажіть населений пункт, вулицю та номер будинку. Якщо точний збіг знайдеться — підчерга підтягнеться автоматично.</p>
+        </div>
+
+        <button class="add-address" id="addAddress">
+          <span class="add-circle">+</span>
+          Додати адресу
+          <span class="add-arrow">›</span>
+        </button>
+
+        <p class="micro-note">Якщо автоматичний збіг не спрацює, застосунок запропонує швидкий перехід на офіційний пошук Черкасиобленерго.</p>
+
+        <section class="faq">
+          <p>Звідки беруться дані?</p>
+          <span>Офіційні публікації графіків і переліки адрес АТ «Черкасиобленерго».</span>
+          <a href="https://www.cherkasyoblenergo.com/off" target="_blank" rel="noopener">Перевірити на офіційному сайті ↗</a>
+        </section>
+      </section>
+
+      <section id="detail" class="screen" hidden>
+        <div class="subhead">
+          <button class="backbutton" id="back" aria-label="Назад">‹</button>
+          <div>
+            <h1>Графік відключень</h1>
+            <p id="detailSubtitle">Черкаси · прогноз за графіком</p>
+          </div>
+          <button class="iconbutton subtle" id="detailInfo" aria-label="Пояснення">i</button>
+        </div>
+
+        <div class="selection-card reveal">
+          <p>Індивідуальний графік</p>
+          <h2 id="detailAddress">Адреса</h2>
+          <div class="selected-queue">
+            <span id="detailQueue">Підчерга —</span>
+            <span id="detailStatus" class="tag unknown">Немає даних</span>
+          </div>
+        </div>
+
+        <div class="schedule-card reveal">
+          <div class="week" id="week" aria-label="Вибір дня тижня"></div>
+          <div class="day-heading">
+            <strong id="dateLabel">Сьогодні</strong>
+            <span id="daySource">Дані відсутні</span>
+          </div>
+          <div class="time-grid" id="timeGrid" aria-label="Погодинний графік"></div>
+          <div class="legend">
+            <span><i class="legend-circle present"></i>світло є*</span>
+            <span><i class="legend-circle absent"></i>світла немає*</span>
+            <span><i class="legend-circle mixed"></i>перехід у межах години</span>
+            <span><i class="legend-circle unknown"></i>немає даних</span>
+          </div>
+          <p class="caution">*За опублікованим графіком. Це не вимірювання фактичної наявності електроенергії.</p>
+        </div>
+
+        <div class="next-card reveal">
+          <span class="next-label">НАЙБЛИЖЧА ЗМІНА СЬОГОДНІ</span>
+          <strong id="nextChange">Дані не опубліковані</strong>
+          <span id="nextInfo">Очікуємо офіційний графік</span>
+        </div>
+
+        <div class="data-bar">
+          <span id="dataSourceInfo">Джерело: Черкасиобленерго</span>
+          <a id="sourceLink" href="https://www.cherkasyoblenergo.com/news" target="_blank" rel="noopener">Публікація ↗</a>
+        </div>
+
+        <button class="action-row" id="editCurrent">Змінити адресу або підчергу <span>›</span></button>
+        <button class="action-row" id="refresh">Оновити графіки <span>›</span></button>
+        <button class="action-row danger" id="removeCurrent">Видалити адресу <span>›</span></button>
+      </section>
+    </main>
+
+    <footer>© Світло Черкаси · Неофіційний застосунок</footer>
+  </div>
+
+  <dialog id="editDialog">
+    <form id="editForm" method="dialog" novalidate>
+      <div class="dialog-heading">
+        <button type="button" class="backbutton" id="closeDialog" aria-label="Закрити">‹</button>
+        <h2 id="dialogTitle">Додати адресу</h2>
+      </div>
+
+      <p class="form-intro">Оберіть населений пункт, вулицю та будинок. Якщо точного збігу з офіційним переліком немає, ми запропонуємо ручний вибір підчерги та швидкий перехід на сайт Черкасиобленерго.</p>
+
+      <label class="field-label" for="settlement">Населений пункт</label>
+      <select id="settlement">
+        <option value="Черкаси">м. Черкаси</option>
+        <option value="Білозір’я">с. Білозір’я</option>
+        <option value="Хацьки">с. Хацьки</option>
+        <option value="Червона Слобода">с. Червона Слобода</option>
+        <option value="Геронимівка">с. Геронимівка</option>
+        <option value="Руська Поляна">с. Руська Поляна</option>
+        <option value="Дубіївка">с. Дубіївка</option>
+        <option value="Свидівок">с. Свидівок</option>
+        <option value="Сокирна">с. Сокирна</option>
+        <option value="Леськи">с. Леськи</option>
+        <option value="Худяки">с. Худяки</option>
+        <option value="Степанки">с. Степанки</option>
+        <option value="Мошни">с. Мошни</option>
+        <option value="Будище">с. Будище</option>
+        <option value="Інше">Інший населений пункт</option>
+      </select>
+      <input id="settlementCustom" type="text" placeholder="Назва села або селища" maxlength="85" hidden>
+
+      <label class="field-label" for="street">Назва вулиці</label>
+      <div class="input-wrap">
+        <input id="street" type="text" autocomplete="street-address" placeholder="Наприклад, Благовісна" maxlength="95" required>
+        <div id="streetSuggest" class="suggestions" hidden></div>
+      </div>
+
+      <label class="field-label" for="house">Номер будинку</label>
+      <input id="house" type="text" autocomplete="off" placeholder="Наприклад, 244 або 12-А" maxlength="18" required>
+
+      <div class="lookup-result" id="lookupResult" aria-live="polite">Вкажіть адресу, щоб знайти підчергу.</div>
+
+      <div class="manual-group" id="manualGroup" hidden>
+        <label class="field-label" for="manualQueue">Виберіть підчергу вручну</label>
+        <select id="manualQueue">
+          <option value="">Оберіть підчергу</option>
+        </select>
+
+        <button type="button" class="secondary-btn" id="openOfficialLookup">Відкрити пошук на сайті Черкасиобленерго</button>
+        <p class="manual-tip" id="officialHint">Спробуємо передати адресу далі. Якщо сайт її не підхопить, ми автоматично скопіюємо дані в буфер обміну.</p>
+        <a class="manual-link" href="https://www.cherkasyoblenergo.com/off" target="_blank" rel="noopener">Відкрити офіційний сайт без автопередачі ↗</a>
+      </div>
+
+      <button type="submit" class="submit" id="saveAddress" disabled>Додати адресу</button>
+      <p class="privacy">Адреси зберігаються лише на вашому пристрої. Реєстрація не потрібна.</p>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <script src="./app.js" defer></script>
+</body>
+</html>
