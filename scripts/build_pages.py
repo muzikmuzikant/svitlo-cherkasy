@@ -33,6 +33,11 @@ for icon in ROOT.glob('favicon*'):
 # a fallback initial instead of the application icon.
 for icon in ROOT.glob('apple-touch-icon*.png'):
     shutil.copy2(icon, DEST/icon.name)
+# Always ship the canonical icon; iOS otherwise falls back to the first letter.
+if not (DEST/'apple-touch-icon.png').is_file():
+    raise FileNotFoundError('Missing apple-touch-icon.png in published site')
+if not (DEST/'apple-touch-icon-v692.png').is_file():
+    raise FileNotFoundError('Missing apple-touch-icon-v692.png in published site')
 for folder in ('assets','data'):
     shutil.copytree(ROOT/folder,DEST/folder)
 # User-owned public configuration and custom domain must survive the release build.
