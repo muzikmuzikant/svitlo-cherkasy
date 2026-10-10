@@ -28,9 +28,18 @@ INTERVAL = re.compile(r'(?<!\d)([01]?\d|2[0-4]):([0-5]\d)\s*[–—−-]\s*([01]
 PUB_TS = re.compile(r'(?<!\d)(\d{2}\.\d{2}\.20\d\d)\s+(\d\d:\d\d)')
 PDF_LINK = re.compile(r'\.pdf(?:\?.*)?$',re.I)
 BRANCH_CITY = re.compile(r'(?:ВСП\s*)?Черкаськ(?:і|их)\s+міськ(?:і|их)\s+(?:ЕМ|енергетичн(?:і|их)\s+мереж(?:і|ах))',re.I)
-BRANCH_DISTRICT = re.compile(r'(?:ВСП\s*)?Черкаськ(?:і|их)\s+районн(?:і|их)\s+(?:ЕМ|енергетичн(?:і|их)\s+мереж(?:і|ах))',re.I)
+BRANCH_DISTRICT = re.compile(r'(?:ВСП\s*)?Черкаськ(?:і|их)\s+(?:(?:районн(?:і|их)\s+)?ЕМ|районн(?:і|их)\s+енергетичн(?:і|их)\s+мереж(?:і|ах))',re.I)
 OTHER_BRANCH = re.compile(r'(?:ВСП\s*)?[А-ЯІЇЄҐ][А-ЯІЇЄҐа-яіїєґ\-’\'\s]{3,75}(?:\sЕМ|\sфілія|енергетичні\s+мережі)\s*$',re.I)
 LOCALITY = re.compile(r'^(?:с\.|село|смт\.?|селище|м\.|місто)\s+([А-ЯІЇЄҐ][\w’\'\- ]{2,58})\s*$', re.I)
+# Names confirmed by Verkhovna Rada Resolution 3984-IX (19 September 2024).
+# Only apply these aliases inside the Cherkasy-area district EM branch.
+LOCALITY_ALIASES = {'червонаслобода':'слобода', 'первомайське':'соснове', 'іванівка':'яничі'}
+# A locality often appears *inside* a PDF table row, not on its own line.
+LOCALITY_IN_ROW = re.compile(
+    r'(?<![\w])(?:с\.|село|смт\.?|с-ще|селище|м\.|місто)\s*'
+    r'(?P<name>[А-ЯІЇЄҐ][А-ЯІЇЄҐа-яіїєґ\s\-’\']{2,53}?)'
+    r'(?=\s*[:;]|\s*,\s*(?:вул\.|пров\.|просп\.)|\s+(?:вул\.|пров\.|просп\.))',re.I)
+
 STREET = re.compile(r'(?<!\w)(?P<type>вул(?:иця)?\.?|пров(?:улок|\.)?|просп(?:ект)?\.?|пр-т\.?|прв\.?|б-р\.?|бульвар|узвіз)\s*',re.I)
 STREET_NAME = re.compile(r'^\s*(?P<name>[^\d,;:]{3,85}?)\s*[,;:]?\s*(?=\d{1,4}(?:[/\-]?\d{1,4})?\s*[а-яіїєґa-z]?\b)',re.I)
 HOUSE_LIST = re.compile(r'^\s*(?P<houses>\d{1,4}(?:\s*[-/]\s*\d{1,4})?(?:\s*[- ]?\s*[а-яіїєґa-z])?(?:\s*,\s*\d{1,4}(?:\s*[-/]\s*\d{1,4})?(?:\s*[- ]?\s*[а-яіїєґa-z])?)*)',re.I)
@@ -51,8 +60,10 @@ def normalize(s):
 
 
 def clean_locality(s):
-    s=re.sub(r'^(?:с\.|село|смт\.?|селище|м\.|місто)\s+','',str(s).strip(),flags=re.I)
-    return normalize(s)
+    s=re.sub(r'^(?:с\.|село|смт\.?|с-ще|селище|м\.|місто)\s*','',str(s).strip(),flags=re.I)
+    key=normalize(s)
+    return LOCALITY_ALIASES.get(key,key)
+
 
 
 def utc_stamp(date):return date.isoformat(timespec='seconds')
@@ -276,7 +287,7 @@ def street_only_entries(text):
     t=re.sub(r'\s+',' ',text)
     for m in STREET.finditer(t):
         part=t[m.end():m.end()+100]
-        name=re.match(r'\s*([^,;:.\d]{3,55})(?=[,;.])',part)
+        name=re.match(r'\s*([^,;:\d]{3,55}?)(?=[,;]|$)',part)
         if not name:continue
         label=name.group(1).strip()
         if len(label)>50 or not normalize(label):continue
@@ -289,29 +300,49 @@ def extract_city_streets(text):return street_entries(text)
 
 
 def extract_sections(pdf):
-    """Never treat district addresses as city addresses. For uncertain locality
-    context, skip entries rather than guessing the place.
+    """Read rows in PDF table order, separated by utility branch and village.
+
+    Official tables use both standalone and inline locality headings. A street
+    without house numbers is indexed separately as a *hint*, never an exact
+    verified house match. This prevents accidentally mapping a whole village
+    to a single queue or mixing the city and district branches.
     """
     import fitz
     doc=fitz.open(stream=pdf,filetype='pdf')
-    sections={'Черкаси':[]}
-    branch=None;locality=None
+    sections=defaultdict(list)
+    branch=None
+    locality=None
     for page in doc:
         for raw in page.get_text('text',sort=True).splitlines():
             line=raw.strip()
             if not line:continue
-            if BRANCH_CITY.search(line):branch='city';locality='Черкаси';continue
-            if BRANCH_DISTRICT.search(line):branch='district';locality=None;continue
-            if OTHER_BRANCH.fullmatch(line) and not BRANCH_CITY.search(line) and not BRANCH_DISTRICT.search(line):
+            # A branch marker is a table-cell heading, not a company in a row.
+            if BRANCH_CITY.fullmatch(line):
+                branch='city';locality='Черкаси';continue
+            if BRANCH_DISTRICT.fullmatch(line):
+                branch='district';locality=None;continue
+            if OTHER_BRANCH.fullmatch(line):
                 branch=None;locality=None;continue
-            if branch=='district':
-                m=LOCALITY.fullmatch(line)
-                if m:
-                    locality=m.group(1).strip()
-                    sections.setdefault(locality,[])
-                    continue
-            if branch=='city':sections['Черкаси'].append(line)
-            elif branch=='district' and locality:sections[locality].append(line)
+            if branch=='city':
+                sections['Черкаси'].append(line)
+                continue
+            if branch!='district':continue
+            lone=LOCALITY.fullmatch(line)
+            if lone:
+                locality=lone.group(1).strip()
+                continue
+            # Split a long PDF row containing several villages; only text
+            # after the explicit village marker is allocated to that village.
+            markers=list(LOCALITY_IN_ROW.finditer(line))
+            if markers:
+                if locality and line[:markers[0].start()].strip():
+                    sections[locality].append(line[:markers[0].start()])
+                for i,m in enumerate(markers):
+                    locality=m.group('name').strip()
+                    part=line[m.end():markers[i+1].start() if i+1<len(markers) else len(line)].lstrip(' :;,')
+                    if part:sections[locality].append(part)
+            elif locality:
+                sections[locality].append(line)
     return {k:'\n'.join(v) for k,v in sections.items() if v}
 
 
@@ -333,23 +364,29 @@ def update_addresses(session,now=None):
             sections=extract_sections(raw)
             for town,content in sections.items():
                 key=clean_locality(town)
+                # Numbered addresses and street-wide listings are distinct:
+                # street-wide listings are NOT proof for a specific house.
                 for kind,street,house,label in street_entries(content)+street_house_lists(content):
                     if not street or not house:continue
                     collected[key][f'{kind}|{street}|{house}'].add(queue)
                     street_labels[key][f'{kind}|{street}']=f'{kind.capitalize()} {label}'
-            for kind,street,label in street_only_entries(content):
+                for kind,street,label in street_only_entries(content):
                     street_q[key][f'{kind}|{street}'].add(queue)
                     street_labels[key].setdefault(f'{kind}|{street}',f'{kind.capitalize()} {label}')
-            LOG.info('%s: sections=%s',queue,list(sections))
-        except Exception as e:errors.append(f'{queue}: {e}')
+            LOG.info('%s: %s localities parsed',queue,len(sections))
+        except Exception as e:
+            errors.append(f'{queue}: {e}')
+
     if errors:raise RuntimeError('Incomplete official PDF import: '+'; '.join(errors))
     if not collected and not street_q:raise RuntimeError('No address or street records in PDFs')
     keycity=clean_locality('Черкаси')
-    towns={k:{'keys':{a:sorted(v) for a,v in sorted(collected.get(k,{}).items())},'streets':street_labels[k], 'streetQueues':{x:sorted(v) for x,v in street_q.get(k,{}).items()}} for k in set(street_labels)|set(collected) if k!=keycity}
+    towns={k:{'keys':{a:sorted(v) for a,v in sorted(collected.get(k,{}).items())},'streets':street_labels[k], 'streetQueues':{x:sorted(v) for x,v in street_q.get(k,{}).items()}} for k in set(street_labels)|set(collected)|set(street_q) if k!=keycity}
+    if not towns:
+        raise RuntimeError('Village index is empty after parsing all 12 PDFs; refusing to publish broken search')
     city=collected.get(keycity,{})
     result={'schemaVersion':3,'updatedAt':utc_stamp(now),'source':BASE+'/perelik-gpv?lang=uk',
             'keys':{a:sorted(v) for a,v in sorted(city.items())},'streets':street_labels.get(keycity,{}),'streetQueues':{x:sorted(v) for x,v in street_q.get(keycity,{}).items()},
-            'localities':towns,'stats':{'city':len(city),'villages':len(towns),'total':sum(len(v) for v in collected.values())}}
+            'localities':towns,'stats':{'city':len(city),'villages':len(towns),'total':sum(len(v) for v in collected.values()),'streetOnly':sum(len(v) for v in street_q.values())}}
     atomic_write(DATA/'addresses.json',result)
     return result
 
