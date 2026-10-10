@@ -1,0 +1,47 @@
+СВІТЛО ЧЕРКАСИ — v6.9.1: ВИПРАВЛЕННЯ RAILWAY + ФОРМИ + ІКОНОК
+
+ЩО ВИПРАВЛЕНО
+• Railway зупинявся з ERR_MODULE_NOT_FOUND: schedule-engine.js не входив у попереднє оновлення.
+• Тепер архів містить повний комплект файлів push-server, включно із schedule-engine.js.
+• Форма звернень має світле оформлення й зрозумілу помилку, якщо сервер недоступний.
+• Відновлено favicon і логотип на сторінках; збірка GitHub Pages копіює файли іконок.
+• Для переходу між github.io та .pp.ua є окремий безпечний список дозволених адрес.
+
+УВАГА: ZIP НЕ ПОТРІБНО ЗАВАНТАЖУВАТИ НА GITHUB ЯК ОДИН ФАЙЛ. ЙОГО ТРЕБА СПОЧАТКУ РОЗПАКУВАТИ.
+
+КРОК 1. GITHUB
+1. Розпакуйте svitlo-cherkasy-v6.9.1-update.zip.
+2. Відкрийте https://github.com/muzikmuzikant/svitlo-cherkasy.
+3. Замініть файли архіву у відповідних папках репозиторію та натисніть Commit changes.
+   ОБОВ'ЯЗКОВО: у GitHub → push-server має бути schedule-engine.js поруч із server.js.
+   Також перевірте там manual-push.js, feedback-store.js, origins.js, admin.js, package.json.
+4. Не замінюйте дані /data/, push-config.json, CNAME та секрети Railway.
+
+КРОК 2. GITHUB PAGES
+1. У репозиторії Settings → Pages → Build and deployment → Source оберіть GitHub Actions.
+2. Actions → Publish Svitlo Cherkasy PWA → Run workflow (якщо ще не запустився після Commit).
+3. Дочекайтеся успішного зеленого запуску.
+
+КРОК 3. RAILWAY
+1. Відкрийте свій Railway-сервіс, до якого прив'язаний GitHub-репозиторій.
+2. Root Directory має бути push-server (якщо раніше сервер працював, не змінюйте без потреби).
+3. Settings/Networking: Target Port має відповідати значенню PORT у Variables; типово 8080.
+4. Variables: APP_ORIGIN має бути тільки адресою сайту БЕЗ шляху, наприклад:
+   https://muzikmuzikant.github.io
+   (НЕ https://muzikmuzikant.github.io/svitlo-cherkasy/).
+5. Якщо паралельно обслуговуються обидва сайти, додайте необов'язкову APP_ORIGINS зі значенням:
+   https://svitlo-cherkasy.pp.ua
+   Якщо новий домен ще не працює, APP_ORIGINS можна не додавати.
+6. Існуючі ADMIN_PASSWORD, VAPID_PUBLIC_KEY, PUSH_PRIVATE_KEY, PUSH_CONTACT, DATA_FILE, SCHEDULE_URL не змінюйте без причини.
+7. Дочекайтеся нового Deploy; у логах має бути Push companion listening on port 8080 (або ваш PORT).
+8. Відкрийте https://ВАШ-СЕРВЕР.up.railway.app/health: очікується JSON з ok: true.
+
+КРОК 4. ПЕРЕВІРКА
+1. Відкрийте встановлений PWA «Світло Черкаси» → Опції → Зв'язок із нами.
+2. Надішліть тестове повідомлення (не менше 12 символів).
+3. Відкрийте admin.html і увійдіть паролем із ADMIN_PASSWORD в Railway.
+4. У розділі «Звернення користувачів» має з'явитися звернення.
+
+Якщо /health не відкривається, спочатку дивіться логи Railway — це не помилка пароля.
+Якщо /health працює, але звернення не надсилаються, перевірте APP_ORIGIN та push-config.json (apiBase має бути вашою HTTPS-адресою Railway).
+Після налаштування на реальному iPhone перевірте окремо іконку та Push.

@@ -20,5 +20,5 @@ def test_sessions_are_server_side():
     assert 'crypto.randomBytes(32)' in server
     assert '/api/admin/logout' in server
     assert 'SESSIONS.delete(tokenHash)' in server
-    assert 'req.headers.origin!==origin' in server
+    assert 'originPolicy.isAllowed(req.headers.origin)' in server
     assert 'ADMIN_PASSWORD' not in (ROOT/'install.js').read_text()

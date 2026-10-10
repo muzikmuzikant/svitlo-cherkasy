@@ -1,1 +1,16 @@
-{"name":"svitlo-cherkasy-push","version":"6.5.0","private":true,"type":"module","scripts":{"start":"node server.js","keys":"node -e \"const w=require('web-push');console.log(w.generateVAPIDKeys())\""},"dependencies":{"web-push":"^3.6.7"},"engines":{"node":">=20"}}
+{
+  "name": "svitlo-cherkasy-push",
+  "version": "6.9.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "keys": "node -e \"const w=require('web-push');console.log(w.generateVAPIDKeys())\""
+  },
+  "dependencies": {
+    "web-push": "^3.6.7"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

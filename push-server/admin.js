@@ -2,6 +2,7 @@
  * HTTPS reverse proxy is mandatory in production. Login creates a short-lived session.
  */
 import crypto from 'node:crypto';
+import {originPolicy} from './origins.js';
 const PATHS={
  overrides:'data/manual_overrides.json',
  schedules:'data/schedules.json',
@@ -20,7 +21,7 @@ const GH_TOKEN=process.env.GITHUB_TOKEN||'';
 const REPO=process.env.GITHUB_REPOSITORY||'';
 const BRANCH=process.env.GITHUB_BRANCH||'main';
 const origin=process.env.APP_ORIGIN||'';
-function send(res,status,body){res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','access-control-allow-origin':origin,'vary':'Origin'});res.end(JSON.stringify(body))}
+function send(res,status,body){const headers={'content-type':'application/json; charset=utf-8','cache-control':'no-store','vary':'Origin'};if(res._allowedAppOrigin)headers['access-control-allow-origin']=res._allowedAppOrigin;res.writeHead(status,headers);res.end(JSON.stringify(body))}
 function authCompare(received){
  if(!ADMIN_PASSWORD||ADMIN_PASSWORD.length<7)return false;
  const a=crypto.createHash('sha256').update(received).digest();
@@ -55,7 +56,7 @@ async function github(path,method='GET',payload){
 async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
 export async function adminRouter(req,res,manualPush,feedback){
  if(!req.url?.startsWith('/api/admin/'))return false;
- if(req.headers.origin!==origin){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
+ if(!originPolicy.isAllowed(req.headers.origin)){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const url=new URL(req.url,'http://localhost');
  if(url.pathname==='/api/admin/login'&&req.method==='POST'){
    // A login uses the password ONCE. Other admin API requests use the session token.

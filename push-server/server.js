@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import {createFeedbackStore,readFeedbackBody} from './feedback-store.js';
+import {originPolicy} from './origins.js';
 import webpush from 'web-push';
 import {adminRouter} from './admin.js';
 import {createManualPush} from './manual-push.js';
@@ -34,7 +35,9 @@ const fmtKyiv=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',year:'nume
 function dayInKyiv(d=new Date()){const p=Object.fromEntries(fmtKyiv.formatToParts(d).map(x=>[x.type,x.value]));return {date:`${p.year}-${p.month}-${p.day}`,m:Number(p.hour)*60+Number(p.minute)}}
 function shiftDay(s,n){const d=new Date(s+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
 function response(res,status,json,origin=''){
- res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','access-control-allow-origin':APP_ORIGIN,'vary':'Origin','x-content-type-options':'nosniff'});res.end(JSON.stringify(json));
+ const headers={'content-type':'application/json; charset=utf-8','cache-control':'no-store','vary':'Origin','x-content-type-options':'nosniff'};
+ if(res._allowedAppOrigin)headers['access-control-allow-origin']=res._allowedAppOrigin;
+ res.writeHead(status,headers);res.end(JSON.stringify(json));
 }
 async function loadJson(url){
  const r=await fetch(url,{signal:AbortSignal.timeout(16000),cache:'no-store',headers:{'cache-control':'no-cache'}});
@@ -120,14 +123,15 @@ async function readPayload(req,limit=12000){
 }
 const server=http.createServer(async(req,res)=>{
  const origin=req.headers.origin||'';
+ res._allowedAppOrigin=originPolicy.isAllowed(origin)?origin:'';
  if(req.method==='OPTIONS'){
-  if(origin!==APP_ORIGIN){response(res,403,{error:'Origin not allowed'});return}
-  res.writeHead(204,{'access-control-allow-origin':APP_ORIGIN,'access-control-allow-methods':'POST, OPTIONS, GET, PUT, PATCH, DELETE','access-control-allow-headers':'content-type, authorization','vary':'Origin'});res.end();return;
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  res.writeHead(204,{'access-control-allow-origin':origin,'access-control-allow-methods':'POST, OPTIONS, GET, PUT, PATCH, DELETE','access-control-allow-headers':'content-type, authorization','vary':'Origin'});res.end();return;
  }
  if(req.url?.startsWith('/api/admin/')){await adminRouter(req,res,manualPush,feedback);return}
  if(req.url==='/api/feedback'){
   if(req.method!=='POST'){response(res,405,{error:'Method not allowed'});return}
-  if(origin!==APP_ORIGIN){response(res,403,{error:'Origin not allowed'});return}
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   try{
    const data=await readFeedbackBody(req);
    const ip=(String(req.headers['x-forwarded-for']||'').split(',')[0].trim()||req.socket.remoteAddress||'unknown').slice(0,80);
@@ -140,7 +144,7 @@ const server=http.createServer(async(req,res)=>{
   response(res,200,{ok:true,subscriberCount:Object.keys(subscribers).length,lastPushCheck:lastSuccess,pushCheckError:lastError});return;
  }
  if(!['/api/subscribe','/api/unsubscribe'].includes(req.url)||req.method!=='POST'){response(res,404,{error:'Not found'});return}
- if(origin!==APP_ORIGIN){response(res,403,{error:'Origin not allowed'});return}
+ if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
  try{
   const data=await readPayload(req),endpoint=data?.subscription?.endpoint;
   if(!validEndpoint(endpoint))throw Error('Invalid endpoint');

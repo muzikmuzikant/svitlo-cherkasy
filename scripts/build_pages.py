@@ -27,6 +27,8 @@ sw_path=DEST/'sw.js'
 sw=sw_path.read_text(encoding='utf-8')
 sw=re.sub(r"const VERSION='[^']+';","const VERSION='svitlo-cherkasy-shell-v"+version+"';",sw,count=1)
 sw_path.write_text(sw,encoding='utf-8')
+for icon in ROOT.glob('favicon*'):
+    if icon.is_file():shutil.copy2(icon, DEST/icon.name)
 # iOS home-screen icons live at the site root; without these, iOS displays
 # a fallback initial instead of the application icon.
 for icon in ROOT.glob('apple-touch-icon*.png'):

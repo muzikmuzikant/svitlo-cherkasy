@@ -10,14 +10,14 @@ $('feedbackForm').addEventListener('submit',async event=>{
  if(message.length<12){error('Напишіть трохи більше подробиць (мінімум 12 символів).');return}
  const button=$('send');button.disabled=true;button.textContent='Надсилаємо…';$('formMessage').hidden=true;
  try{
-  const configResponse=await fetch('./push-config.json',{cache:'no-store'});
+  const configResponse=await fetch('./push-config.json',{cache:'no-store',signal:AbortSignal.timeout(12000)});
   if(!configResponse.ok)throw Error('Форма зв’язку поки недоступна. Спробуйте пізніше.');
   const config=await configResponse.json();
   if(!/^https:\/\/[^\s/]+/.test(config.apiBase||''))throw Error('Форма зв’язку поки недоступна.');
-  const r=await fetch(String(config.apiBase).replace(/\/$/,'')+'/api/feedback',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({topic:$('topic').value,message,email:$('email').value.trim(),website:$('website').value})});
+  const r=await fetch(String(config.apiBase).replace(/\/$/,'')+'/api/feedback',{method:'POST',headers:{'content-type':'application/json'},signal:AbortSignal.timeout(16000),body:JSON.stringify({topic:$('topic').value,message,email:$('email').value.trim(),website:$('website').value})});
   const body=await r.json().catch(()=>({}));
   if(!r.ok)throw Error(body.error||'Не вдалося надіслати звернення. Спробуйте пізніше.');
   $('ticketId').textContent=body.id||'—';$('feedbackForm').hidden=true;$('success').hidden=false;
- }catch(e){error(e.message||'Перевірте інтернет і спробуйте ще раз.')}
+ }catch(e){const connectionError=e instanceof TypeError||e?.name==='TimeoutError'||e?.name==='AbortError';error(connectionError?'Не вдалося з’єднатися із сервісом звернень. Перевірте інтернет і спробуйте пізніше. Якщо помилка повторюється, повідомте адміністратора.':(e.message||'Перевірте інтернет і спробуйте ще раз.'))}
  finally{button.disabled=false;button.textContent='Надіслати звернення'}
 });
