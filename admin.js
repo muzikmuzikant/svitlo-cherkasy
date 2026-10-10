@@ -50,7 +50,7 @@ function signOut(revoke=true){
  $('adminDashboard').hidden=true;$('adminLoginScreen').hidden=false;
  $('connection').textContent='Авторизовано';$('publish').disabled=true;
  $('password').value='';setPushReady(false);
- $('loginError').textContent='';$('password').focus();
+ $('loginError').textContent='';$('password').focus();document.dispatchEvent(new Event('svitlo:admin-logout'));
 }
 $('loginForm').onsubmit=async event=>{
  event.preventDefault();
@@ -70,6 +70,7 @@ $('loginForm').onsubmit=async event=>{
    $('connection').textContent='Увійшли · '+(canPublish?'Push + GitHub':'Push');$('connection').className='pill ok';
    $('password').value='';setPushReady(true);
    await Promise.all([load(),diagnostics(),refreshPushStatus(),refreshTickets()]);
+   document.dispatchEvent(new Event('svitlo:admin-ready'));
  }catch(e){sessionToken='';remote=false;canPublish=false;$('loginError').textContent=e.message;setPushReady(false)}
  finally{$('password').value='';$('connect').disabled=false;$('connect').textContent='Увійти до панелі →'}
 };
@@ -225,6 +226,7 @@ async function refreshTickets(){
    if(ticket.email){const email=document.createElement('p');email.className='ticket-mail';email.append('Для відповіді: ');const link=document.createElement('a');link.href='mailto:'+encodeURIComponent(ticket.email).replace(/%40/g,'@');link.textContent=ticket.email;email.append(link);card.append(email)}
    card.append(controls);list.append(card);
   }
+  document.dispatchEvent(new Event('svitlo:tickets-loaded'));
  }catch(e){$('ticketsSummary').textContent='Не вдалося завантажити звернення: '+e.message}
 }
 $('refreshTickets').addEventListener('click',refreshTickets);

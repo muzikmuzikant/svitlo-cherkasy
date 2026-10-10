@@ -21,3 +21,5 @@ $('feedbackForm').addEventListener('submit',async event=>{
  }catch(e){const connectionError=e instanceof TypeError||e?.name==='TimeoutError'||e?.name==='AbortError';error(connectionError?'Не вдалося з’єднатися із сервісом звернень. Перевірте інтернет і спробуйте пізніше. Якщо помилка повторюється, повідомте адміністратора.':(e.message||'Перевірте інтернет і спробуйте ще раз.'))}
  finally{button.disabled=false;button.textContent='Надіслати звернення'}
 });
+
+const requestedTopic=new URLSearchParams(location.search).get('topic');if(['bug','address','idea','other'].includes(requestedTopic))$('topic').value=requestedTopic;

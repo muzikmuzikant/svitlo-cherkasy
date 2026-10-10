@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#f6f8fc"><meta name="description" content="Відповіді на запитання про графіки світла, підчерги, сповіщення та звернення у Світло Черкаси."><title>Центр допомоги — Світло Черкаси</title>
+<link rel="icon" href="./favicon.ico"><link rel="apple-touch-icon" href="./apple-touch-icon-v692.png"><link rel="stylesheet" href="./help.css"></head>
+<body><main class="layout">
+<nav class="back" aria-label="Навігація"><a href="./index.html">← Повернутися</a><span class="wordmark">Світло<span class="point">.</span> Черкаси</span></nav>
+<header class="hero"><div class="hero-label">ПІДТРИМКА · ДОПОМОГА</div><h1>Як можемо допомогти?</h1><p>Відповіді про графіки, підчерги, сповіщення та роботу застосунку. Без складних технічних інструкцій.</p>
+<label class="search"><span aria-hidden="true">⌕</span><input id="helpSearch" type="search" placeholder="Наприклад, неправильна підчерга" autocomplete="off" aria-label="Пошук відповідей"><kbd>/</kbd></label></header>
+<section class="notice" id="publicAnnouncement" hidden aria-live="polite"><strong id="announcementTitle"></strong><p id="announcementText"></p></section>
+<section class="quick-grid" aria-label="Швидка допомога">
+<a href="./feedback.html?topic=bug" class="quick"><span class="quick-icon">◈</span><b>Повідомити про помилку</b><small>Щось не працює або відображається неправильно</small><span class="arrow">↗</span></a>
+<a href="./feedback.html?topic=address" class="quick"><span class="quick-icon">⌖</span><b>Виправити адресу</b><small>Немає вулиці або підчерга не збігається</small><span class="arrow">↗</span></a>
+<a href="https://www.cherkasyoblenergo.com/news" class="quick" rel="noopener" target="_blank"><span class="quick-icon">↗</span><b>Офіційна інформація</b><small>Новини та графіки Черкасиобленерго</small><span class="arrow">↗</span></a>
+</section>
+<section class="faq"><div class="section-head"><div><h2>Поширені запитання</h2><p>Оберіть тему або знайдіть відповідь через пошук.</p></div><span id="articleCount" class="count"></span></div><div id="helpFilters" class="filters" aria-label="Категорії"></div><div id="helpArticles" class="articles" aria-live="polite"></div><p id="helpEmpty" class="empty" hidden>За цим запитом нічого не знайдено. Напишіть нам — допоможемо розібратися.</p></section>
+<section class="ticket-status" aria-labelledby="ticketStatusTitle"><div><span class="hero-label">ВАШЕ ЗВЕРНЕННЯ</span><h2 id="ticketStatusTitle">Перевірити статус звернення</h2><p>Маєте номер SC-…? Дізнайтеся, чи звернення вже розглядається. Текст звернення та пошта не відображаються.</p></div>
+<form id="ticketCheck"><label for="ticketNumber">Номер звернення</label><div class="ticket-form"><input id="ticketNumber" required maxlength="13" placeholder="SC-0123456789" pattern="[Ss][Cc]-[0-9A-Fa-f]{10}"><button type="submit">Перевірити</button></div><p role="status" id="ticketCheckResult"></p></form></section>
+<section class="contact"><div><span class="hero-label">НЕ ЗНАЙШЛИ ВІДПОВІДІ?</span><h2>Напишіть нам</h2><p>Приймаємо повідомлення про баги, неправильні адреси та пропозиції. Надсилати особисті документи не потрібно.</p></div><a href="./feedback.html" class="action">Зв’язок із нами ↗</a></section>
+<footer>Незалежний інформаційний сервіс, не є офіційним представником оператора. <a href="./privacy.html">Конфіденційність</a> · <a href="./about.html">Джерела</a></footer>
+</main><script defer src="./help.js"></script></body></html>

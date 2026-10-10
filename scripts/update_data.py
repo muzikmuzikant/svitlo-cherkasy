@@ -69,6 +69,24 @@ def clean_locality(s):
 def utc_stamp(date):return date.isoformat(timespec='seconds')
 def to_time(m):return f'{m//60:02d}:{m%60:02d}'
 
+class ScheduleDateConflict(ValueError):
+    """An official headline can have a typo: never silently publish it as a date."""
+    def __init__(self, headline_date, published_at, url):
+        self.headline_date=str(headline_date)
+        self.published_at=published_at.isoformat(timespec='minutes')
+        self.url=url
+        super().__init__(f'Підозріла дата заголовка {self.headline_date} (публікація {self.published_at}); потрібна перевірка')
+
+
+def check_schedule_date(day, pub, url):
+    target=datetime.fromisoformat(day).date()
+    # Operator normally publishes schedules on the same day or 1-2 days before;
+    # allow three days either way for late corrections. A month typo is blocked.
+    if abs((target-pub.date()).days)>3:
+        raise ScheduleDateConflict(target,pub,url)
+    return True
+
+
 def parse_article(html,url,reference=None):
     soup=BeautifulSoup(html,'html.parser')
     header=soup.find('h1')
@@ -87,6 +105,7 @@ def parse_article(html,url,reference=None):
     if pub.month==1 and month==12:year-=1
     try:day=datetime(year,month,int(date_hit.group(1)),tzinfo=TZ).date().isoformat()
     except ValueError:return None
+    check_schedule_date(day,pub,url)
     marker=re.search(r'Години\s+відсутності\s+електропостачання\s*:',full,re.I)
     if not marker:return None
     body=re.split(r'Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|Відключення\s+електроенергії\s+можуть',full[marker.end():],maxsplit=1,flags=re.I)[0]
@@ -166,11 +185,18 @@ def update_schedules(session,now=None):
     existing={d['date']:d for d in old.get('days',[]) if d.get('date') in wanted}
     urls=parse_news_links(fetch(session,BASE+'/news?lang=uk'))
     grouped=defaultdict(list)
+    review=[]
     for u in urls:
         try:
             rev=parse_article(fetch(session,u),u)
             if rev and rev['date'] in wanted:grouped[rev['date']].append(rev)
+        except ScheduleDateConflict as e:
+            review.append({'code':'HEADLINE_DATE_CONFLICT','source':e.url,'headlineDate':e.headline_date,
+                           'publishedAt':e.published_at,'reason':'Дата графіка суттєво відрізняється від дати публікації. Потрібна ручна перевірка.'})
+            LOG.warning('QUARANTINED source date mismatch %s (%s / %s)',e.url,e.headline_date,e.published_at)
         except (requests.RequestException,ValueError) as e:LOG.warning('Article error %s: %s',u,e)
+    atomic_write(DATA/'source_review.json',{'schemaVersion':1,'lastChecked':utc_stamp(now),
+                                            'rejectedCount':len(review),'items':review[:50]})
     changed=[]
     for day,revs in grouped.items():
         prev=existing.get(day)

@@ -54,10 +54,11 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
  }
  function list(){if(cleanup())save();return {items:items.slice().reverse(),count:items.length}}
  function change(id,status){if(!STATUSES.includes(status))throw bad('Невідомий статус.');const found=items.find(x=>x.id===id);if(!found)throw bad('Звернення не знайдено.',404);const prev=found.status,updatedAt=found.updatedAt;found.status=status;found.updatedAt=new Date(clock()).toISOString();try{save()}catch{found.status=prev;found.updatedAt=updatedAt;throw bad('Помилка збереження.',503)}return {ok:true}}
+ function getStatus(id){const found=items.find(x=>x.id===id);if(!found)throw bad('Звернення не знайдено.',404);return {id:found.id,status:found.status,createdAt:found.createdAt,updatedAt:found.updatedAt}}
  function remove(id){const index=items.findIndex(x=>x.id===id);if(index===-1)throw bad('Звернення не знайдено.',404);const item=items.splice(index,1)[0];try{save()}catch{items.splice(index,0,item);throw bad('Помилка збереження.',503)}return {ok:true}}
  // Rotate expired records even when no one sends new messages.
  if(cleanup())save();
  const cleanupTimer=setInterval(()=>{try{if(cleanup())save()}catch(e){console.warn('Feedback cleanup failed:',e.message)}},24*60*60*1000);
  cleanupTimer.unref?.();
- return {submit,list,change,remove};
+ return {submit,list,change,remove,getStatus};
 }

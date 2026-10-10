@@ -54,7 +54,7 @@ async function github(path,method='GET',payload){
  return data;
 }
 async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
-export async function adminRouter(req,res,manualPush,feedback){
+export async function adminRouter(req,res,manualPush,feedback,extras,monitor){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(!originPolicy.isAllowed(req.headers.origin)){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const url=new URL(req.url,'http://localhost');
@@ -72,7 +72,7 @@ export async function adminRouter(req,res,manualPush,feedback){
        track.count++;ATTEMPTS.set(ip,track);
        send(res,401,{error:'Неправильний пароль'});return true;
      }
-     ATTEMPTS.delete(ip);expireSessions();
+     ATTEMPTS.delete(ip);expireSessions();extras?.record('auth.login');
      if(SESSIONS.size>=MAX_SESSIONS){
        const oldest=SESSIONS.keys().next().value;
        if(oldest)SESSIONS.delete(oldest);
@@ -90,19 +90,23 @@ export async function adminRouter(req,res,manualPush,feedback){
    send(res,401,{error:'Сеанс завершився. Увійдіть знову.'});return true;
  }
  if(url.pathname==='/api/admin/logout'&&req.method==='POST'){
-   SESSIONS.delete(tokenHash);send(res,200,{ok:true});return true;
+   SESSIONS.delete(tokenHash);extras?.record('auth.logout');send(res,200,{ok:true});return true;
  }
  try{
    if(url.pathname==='/api/admin/push/status'&&req.method==='GET'){send(res,200,manualPush.stats());return true}
-   if(url.pathname==='/api/admin/push/test'&&req.method==='POST'){send(res,200,await manualPush.test(await readJson(req)));return true}
-   if(url.pathname==='/api/admin/push/send'&&req.method==='POST'){send(res,200,await manualPush.broadcast(await readJson(req)));return true}
+   if(url.pathname==='/api/admin/push/test'&&req.method==='POST'){const output=await manualPush.test(await readJson(req));extras?.record('push.test','test notification');send(res,200,output);return true}
+   if(url.pathname==='/api/admin/push/send'&&req.method==='POST'){const body=await readJson(req);const output=await manualPush.broadcast(body);extras?.record('push.broadcast',String(body.queue||'all'));send(res,200,output);return true}
    if(url.pathname==='/api/admin/feedback'&&req.method==='GET'){send(res,200,feedback.list());return true}
    if(url.pathname.startsWith('/api/admin/feedback/')&&['PATCH','DELETE'].includes(req.method)){
      const id=decodeURIComponent(url.pathname.slice('/api/admin/feedback/'.length));
      if(!/^SC-[0-9A-F]{10}$/.test(id)){send(res,400,{error:'Неправильний номер звернення'});return true}
      const result=req.method==='DELETE'?feedback.remove(id):feedback.change(id,(await readJson(req,1000)).status);
-     send(res,200,result);return true;
+     extras?.record('feedback.'+(req.method==='DELETE'?'delete':'update'),id);send(res,200,result);return true;
    }
+   if(url.pathname==='/api/admin/monitor'&&req.method==='GET'){send(res,200,await monitor());return true}
+   if(url.pathname==='/api/admin/audit'&&req.method==='GET'){send(res,200,{events:extras.getAudit()});return true}
+   if(url.pathname==='/api/admin/help'&&req.method==='GET'){send(res,200,extras.getHelp());return true}
+   if(url.pathname==='/api/admin/help'&&req.method==='PUT'){const result=extras.updateHelp(await readJson(req,70000));send(res,200,result);return true}
    const ghReady=!!GH_TOKEN&&repoValid();
    if(url.pathname==='/api/admin/status'&&req.method==='GET'){
      if(!ghReady){send(res,200,{ok:true,repository:null,branch:BRANCH,editingEnabled:false,publicOrigin:origin});return true}
@@ -125,7 +129,7 @@ export async function adminRouter(req,res,manualPush,feedback){
      if(body.sha!==current.sha){send(res,409,{error:'Файл змінився на GitHub. Оновіть дані перед публікацією.'});return true}
      const payload={message:`Admin: update ${kind} via Svitlo Cherkasy`,content:Buffer.from(JSON.stringify(value,null,2)+'\n').toString('base64'),sha:current.sha,branch:BRANCH};
      const r=await github(path,'PUT',payload);
-     send(res,200,{ok:true,commit:r.commit?.sha,url:r.content?.html_url});return true;
+     extras?.record('github.publish',kind);send(res,200,{ok:true,commit:r.commit?.sha,url:r.content?.html_url});return true;
    }
    send(res,404,{error:'Неіснуючий метод'});return true;
  }catch(e){send(res,e.statusCode||400,{error:String(e.message).slice(0,240)});return true}

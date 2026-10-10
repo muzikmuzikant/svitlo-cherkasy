@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import {createFeedbackStore,readFeedbackBody} from './feedback-store.js';
+import {createAdminExtras} from './admin-extras.js';
 import {originPolicy} from './origins.js';
 import webpush from 'web-push';
 import {adminRouter} from './admin.js';
@@ -29,6 +30,7 @@ function save(){
  catch(e){console.error('Persistent subscriber save failed:',e.message);throw e}
 }
 const feedback=createFeedbackStore({filePath:process.env.FEEDBACK_FILE||path.join(path.dirname(DATA_FILE),'feedback.json')});
+const extras=createAdminExtras({directory:path.dirname(DATA_FILE)});
 const appUrl=new URL('../',SCHEDULE_URL).href;
 const manualPush=createManualPush({subscribers,webpush,appUrl,hash,save});
 const fmtKyiv=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
@@ -121,6 +123,7 @@ async function readPayload(req,limit=12000){
  for await(const c of req){bytes+=c.length;if(bytes>limit)throw Error('Request too large');chunks.push(c)}
  return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
+const statusAttempts=new Map();
 const server=http.createServer(async(req,res)=>{
  const origin=req.headers.origin||'';
  res._allowedAppOrigin=originPolicy.isAllowed(origin)?origin:'';
@@ -128,7 +131,38 @@ const server=http.createServer(async(req,res)=>{
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   res.writeHead(204,{'access-control-allow-origin':origin,'access-control-allow-methods':'POST, OPTIONS, GET, PUT, PATCH, DELETE','access-control-allow-headers':'content-type, authorization','vary':'Origin'});res.end();return;
  }
- if(req.url?.startsWith('/api/admin/')){await adminRouter(req,res,manualPush,feedback);return}
+ if(req.url?.startsWith('/api/admin/')){
+  await adminRouter(req,res,manualPush,feedback,extras,async()=>{
+    const result={server:{lastPushCheck:lastSuccess,pushCheckError:lastError,pushSubscribers:Object.keys(subscribers).length},sources:{}};
+    await Promise.all([['schedules',SCHEDULE_URL],['emergency',new URL('emergency.json',SCHEDULE_URL).href],['review',new URL('source_review.json',SCHEDULE_URL).href]].map(async([name,url])=>{
+      try{
+        const data=await loadJson(url);
+        result.sources[name]=name==='schedules'?{lastChecked:data.lastChecked,days:(data.days||[]).map(d=>({date:d.date,verified:d.verified,source:d.source,publishedAt:d.publishedAt})),changes:(data.changes||[]).length}:
+          name==='emergency'?{lastChecked:data.lastChecked,count:(data.events||[]).length,latest:data.events?.[0]?.status||null}:
+          {lastChecked:data.lastChecked,rejectedCount:data.rejectedCount||0,items:(data.items||[]).slice(0,30)};
+      }catch(e){result.sources[name]={error:e.message}}
+    }));
+    const tickets=feedback.list().items;
+    result.feedback={total:tickets.length,new:tickets.filter(t=>t.status==='new').length,inProgress:tickets.filter(t=>t.status==='in_progress').length};
+    return result;
+  });return}
+ if(req.url==='/api/help'&&req.method==='GET'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  response(res,200,extras.getHelp());return;
+ }
+ if(req.url==='/api/ticket/status'&&req.method==='POST'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  const ip=String(req.socket.remoteAddress||'unknown').slice(0,100),t=Date.now();
+  for(const [key,item] of statusAttempts)if(item.until<t)statusAttempts.delete(key);
+  const item=statusAttempts.get(ip)||{count:0,until:t+60000};
+  if(item.count>=30){response(res,429,{error:'Забагато перевірок. Спробуйте за хвилину.'});return}
+  item.count++;statusAttempts.set(ip,item);
+  try{const data=await readPayload(req,800);const id=String(data.id||'').trim().toUpperCase();
+    if(!/^SC-[0-9A-F]{10}$/.test(id)){response(res,400,{error:'Перевірте номер звернення.'});return}
+    response(res,200,feedback.getStatus(id));
+  }catch(e){response(res,e.statusCode||400,{error:e.statusCode?e.message:'Не вдалося перевірити номер.'})}
+  return;
+ }
  if(req.url==='/api/feedback'){
   if(req.method!=='POST'){response(res,405,{error:'Method not allowed'});return}
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
