@@ -282,19 +282,29 @@ def street_house_lists(text):
 
 
 def street_only_entries(text):
-    """Street-only village listings are *hints*, never exact address matches."""
-    matches=[]
-    t=re.sub(r'\s+',' ',text)
-    for m in STREET.finditer(t):
-        part=t[m.end():m.end()+100]
-        name=re.match(r'\s*([^,;:\d]{3,55}?)(?=[,;]|$)',part)
-        if not name:continue
-        label=name.group(1).strip()
-        if len(label)>50 or not normalize(label):continue
-        prefix=m.group('type').lower()
-        kind='провулок' if prefix.startswith(('пров','прв')) else 'проспект' if prefix.startswith(('просп','пр-т')) else 'бульвар' if prefix.startswith(('б-р','буль')) else 'узвіз' if prefix.startswith('узв') else 'вулиця'
-        matches.append((kind,normalize(label),label))
-    return matches
+    """Extract street-level hints (with or without enumerated house numbers).
+
+    PDF rows are inconsistent: ``вул.Соборна, вул.50 років Перемоги,``
+    and ``вул.Лісова вул.Польова`` both occur. Records are suggestions,
+    never evidence that an arbitrary house is in the listed subqueue.
+    """
+    found=[]
+    clean=re.sub(r'\s+',' ',text.replace('\u00ad','').replace('\xa0',' '))
+    markers=list(STREET.finditer(clean))
+    for i,marker in enumerate(markers):
+        end=min(len(clean),marker.end()+110,markers[i+1].start() if i+1<len(markers) else len(clean))
+        chunk=clean[marker.end():end]
+        candidate=re.split(r'[,;:\n]',chunk,maxsplit=1)[0].strip(' .–-')
+        # Avoid treating a street + its house number as a new street name.
+        # Leading numbers in names (e.g. "50 років Перемоги") are valid.
+        candidate=re.sub(r'(?<!^)\s+\d{1,4}(?:/\d+)?[а-яіїєґa-z]?$', '', candidate,flags=re.I).strip()
+        if not 3<=len(candidate)<=58:continue
+        if re.search(r'\b(?:ТОВ|ФОП|АТ|КП|ПП|ПРАТ)\b',candidate,re.I):continue
+        kindraw=marker.group('type').lower()
+        kind='провулок' if kindraw.startswith(('пров','прв')) else 'проспект' if kindraw.startswith(('просп','пр-т')) else 'бульвар' if kindraw.startswith(('б-р','буль')) else 'узвіз' if kindraw.startswith('узв') else 'вулиця'
+        if normalize(candidate):found.append((kind,normalize(candidate),candidate))
+    return found
+
 
 def extract_city_streets(text):return street_entries(text)
 
@@ -391,19 +401,81 @@ def update_addresses(session,now=None):
     return result
 
 
+
+
+# Conservative extraction of official emergency bulletins. A bulletin is NOT
+# evidence that a particular house lost power, only that the operator published
+# an emergency restriction notice. Inactive/ambiguous bulletins never trigger
+# "active emergency" push messages.
+EMERGENCY_TITLE = re.compile(r'(?:екстрен[іихо]+|аварійн[іихо]+)\s+(?:відключенн|вимкненн)|(?:відключенн|вимкненн)\s+за\s+аварійними',re.I)
+CANCEL_TITLE = re.compile(r'скасован|припинен|завершен|відмін[еє]|відновлен|знято\s+обмеження',re.I)
+ACTIVE_TITLE = re.compile(r'запроваджен|введен|діють|діятимуть|застосовують|почал[ио]|розпочат',re.I)
+
+def emergency_link_candidates(html):
+    soup=BeautifulSoup(html,'html.parser');links=[]
+    for a in soup.select('a[href]'):
+        url=urljoin(BASE,a['href'])
+        label=a.get_text(' ',strip=True)
+        if (EMERGENCY_TITLE.search(label) and '/media/' in url
+                and urlparse(url).netloc in ('cherkasyoblenergo.com','www.cherkasyoblenergo.com')
+                and url not in links):links.append(url)
+    return links
+
+def parse_emergency_article(html,url,now=None):
+    soup=BeautifulSoup(html,'html.parser');h=soup.find('h1')
+    if not h:return None
+    title=h.get_text(' ',strip=True)
+    if not EMERGENCY_TITLE.search(title):return None
+    m=PUB_TS.search(soup.get_text(' ',strip=True))
+    if not m:return None
+    published=datetime.strptime(' '.join(m.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
+    now=now or datetime.now(TZ)
+    if published>now+timedelta(minutes=10) or published<now-timedelta(days=2):return None
+    state='ended' if CANCEL_TITLE.search(title) else 'active' if ACTIVE_TITLE.search(title) else 'notice'
+    return {'id':url,'title':title[:170],'publishedAt':published.isoformat(timespec='minutes'),
+            'source':url,'status':state,'scope':'region','queues':[]}
+
+def update_emergency(session,now=None):
+    now=now or datetime.now(TZ)
+    out=DATA/'emergency.json'
+    try:old=json.loads(out.read_text('utf8'))
+    except (ValueError,FileNotFoundError):old={'events':[]}
+    listing=fetch(session,BASE+'/news?lang=uk')
+    entries=[]
+    for url in emergency_link_candidates(listing)[:30]:
+        try:
+            event=parse_emergency_article(fetch(session,url),url,now)
+            if event:entries.append(event)
+        except (requests.RequestException,ValueError) as e:LOG.warning('Emergency article failed %s: %s',url,e)
+    # Keep recent bulletins only, never treat source unavailability as 'all clear'.
+    events={item['id']:item for item in old.get('events',[]) if item.get('id') and
+            item.get('publishedAt','') >= (now-timedelta(hours=48)).isoformat(timespec='minutes')}
+    events.update({e['id']:e for e in entries})
+    result={'schemaVersion':1,'lastChecked':now.isoformat(timespec='seconds'),
+            'source':BASE+'/news','events':sorted(events.values(),key=lambda x:x['publishedAt'],reverse=True)[:30]}
+    atomic_write(out,result)
+    return result
+
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--schedules-only',action='store_true')
     parser.add_argument('--addresses-only',action='store_true')
+    parser.add_argument('--emergency-only',action='store_true')
     args=parser.parse_args()
+    if sum((args.schedules_only,args.addresses_only,args.emergency_only))>1:
+        parser.error('Вкажіть тільки один режим імпорту')
     logging.basicConfig(level=logging.INFO,format='%(levelname)s %(message)s')
     session=requests.Session();failed=[]
-    if not args.addresses_only:
+    if not (args.addresses_only or args.emergency_only):
         try:update_schedules(session)
         except Exception as e:LOG.exception('schedule update failed');failed.append('schedules '+str(e))
-    if not args.schedules_only:
+    if not (args.schedules_only or args.emergency_only):
         try:update_addresses(session)
         except Exception as e:LOG.exception('addresses update failed');failed.append('addresses '+str(e))
+    if args.emergency_only or not (args.schedules_only or args.addresses_only):
+        try:update_emergency(session)
+        except Exception as e:LOG.exception('emergency import failed');failed.append('emergency '+str(e))
     if failed:raise SystemExit(' | '.join(failed))
 
 if __name__=='__main__':main()

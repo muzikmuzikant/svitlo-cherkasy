@@ -1,6 +1,6 @@
-const VERSION='svitlo-cherkasy-v6-hotfix-20261010-2';
-const SHELL=['./','./index.html','./app.js','./hour-paint.js','./style.css','./manifest.webmanifest','./assets/icon.svg','./assets/icon-192.png','./assets/icon-512.png'];
-const CACHE_DATA='svitlo-cherkasy-data-v6-hotfix';
+const VERSION='svitlo-cherkasy-v6.3-20261010';
+const SHELL=['./','./index.html','./app.js','./hour-paint.js','./admin.html','./admin.js','./style.css','./manifest.webmanifest','./assets/icon.svg','./assets/icon-192.png','./assets/icon-512.png'];
+const CACHE_DATA='svitlo-cherkasy-data-v6.3';
 self.addEventListener('install',event=>event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>![VERSION,CACHE_DATA].includes(k)).map(k=>caches.delete(k)))),self.clients.claim()])));
 self.addEventListener('fetch',event=>{

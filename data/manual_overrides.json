@@ -1,0 +1,7 @@
+{
+  "schemaVersion":1,
+  "updatedAt":null,
+  "schedules":{"days":[]},
+  "addresses":{"keys":{},"streets":{},"streetQueues":{},"localities":{}},
+  "emergency":{"events":[]}
+}

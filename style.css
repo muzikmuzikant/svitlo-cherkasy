@@ -15,3 +15,29 @@ html{scrollbar-width:none;overflow-x:clip;overscroll-behavior-x:none;scroll-beha
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
 
 .place-option{display:flex;align-items:center;gap:4px;padding:4px 6px}.place-choose{flex:1;display:flex;align-items:center;justify-content:space-between;text-align:left;background:transparent;border:0;color:var(--ink);min-width:0;padding:12px}.place-choose span:first-child{min-width:0}.place-choose strong,.place-choose small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.place-moves{display:flex;gap:3px}.move-btn{border:0;background:#eef4ff;color:#3277e9;border-radius:9px;height:34px;width:27px;font-size:17px}.move-btn:disabled{opacity:.22}
+
+/* v6.2: transparent street-only candidate selection (never silently confirms a house). */
+.possible-queues{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px;align-items:center}
+.possible-title{flex-basis:100%;font-size:12px;font-weight:650;color:var(--sub, #61738a)}
+.possible-queue{min-height:44px;padding:9px 13px;border-radius:13px;background:#eef5ff;border:1px solid #c8dafa;color:#2458a8;font-weight:750;font-size:13px}
+.possible-queue.selected{background:#286fe9;color:white;border-color:#286fe9}
+.field-label span{font-weight:450;font-size:11px;color:var(--sub,#61738a)}
+
+/* v6.3 iOS-style half-hour cells: split background AND glyph ink, no arbitrary blue ink. */
+.hour-grid{gap:8px;align-items:stretch}
+.hour-cell{height:54px;min-width:0;padding:0;border-radius:15px!important;isolation:isolate;overflow:hidden;border-color:#e1e8f0!important;box-shadow:0 2px 5px #1b385107;color:inherit!important;text-shadow:none!important;position:relative;transition:transform .18s cubic-bezier(.2,.75,.25,1),box-shadow .18s ease}
+.hour-cell.off{border-color:#29384f!important}
+.hour-cell.mixed{border-color:#c4cedb!important}
+.hour-cell .hour-ink{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
+.hour-ink-content{display:flex;align-items:center;justify-content:center;gap:7px;font-size:12px;font-weight:790;letter-spacing:-.25px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.hour-ink-content svg{height:16px;width:15px;flex:none}
+.hour-ink-on{color:#18293c}.hour-ink-off{color:#fff}.hour-ink-unknown{color:#91a0b0}
+.hour-cell.current{outline:2px solid #347cfa;outline-offset:2px}
+@media(max-width:370px){.hour-ink-content{font-size:11px;gap:4px}.hour-ink-content svg{width:13px;height:14px}}
+@media(prefers-reduced-motion:no-preference){.hour-cell:hover{box-shadow:0 6px 17px #152b4c16;transform:translateY(-1px)}}
+
+.emergency-banner{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;margin:2px 0 18px;border-radius:20px;background:#fff3df;border:1px solid #f4dbaf;color:#754d18;box-shadow:0 6px 18px #8365200c}
+.emergency-banner.is-note{background:#edf4ff;color:#2a5a91;border-color:#d3e4fc}
+.emergency-banner .emergency-icon{display:grid;place-items:center;border-radius:12px;background:#ffdc9e;color:#89550c;font-weight:900;min-width:28px;height:28px}
+.emergency-banner.is-note .emergency-icon{background:#d8e9ff;color:#2864ad}
+.emergency-banner>div{min-width:0}.emergency-banner strong{font-size:12px;line-height:1.3;display:block}.emergency-banner p{font-size:11px;line-height:1.55;margin:5px 0 7px}.emergency-banner a{font-size:11px;text-decoration:underline;font-weight:700}
