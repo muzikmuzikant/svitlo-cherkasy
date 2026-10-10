@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-"""Collect published blackout schedules and high-confidence address->queue matches.
-Sources: АТ «Черкасиобленерго» newsroom and current GPV PDF lists.
-Designed for scheduled GitHub Actions and optional local Python server.
+"""Conservative public-data importer for Svitlo Cherkasy v6.
+Never invents a queue or silently turns missing queue schedules into 'power on'.
 """
 from __future__ import annotations
 import argparse
@@ -10,7 +9,6 @@ import logging
 import re
 from collections import defaultdict
 from datetime import datetime, timedelta
-from io import BytesIO
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
 from zoneinfo import ZoneInfo
@@ -23,274 +21,352 @@ DATA = ROOT / 'data'
 BASE = 'https://www.cherkasyoblenergo.com'
 TZ = ZoneInfo('Europe/Kyiv')
 QUEUE = [f'{i}.{j}' for i in range(1, 7) for j in (1, 2)]
-UA_MONTHS = {'січня':1, 'лютого':2, 'березня':3, 'квітня':4, 'травня':5,
-             'червня':6, 'липня':7, 'серпня':8, 'вересня':9, 'жовтня':10,
-             'листопада':11, 'грудня':12}
-HEADLINE_DATE = re.compile(r'на\s+(\d{1,2})\s+(' + '|'.join(UA_MONTHS) + r')', re.I)
-QUEUE_START = re.compile(r'(?<!\S)([1-6]\.[12])\s*(?=\d{1,2}:\d{2}|—|–|-)',re.U)
+UA_MONTHS = dict(zip('січня лютого березня квітня травня червня липня серпня вересня жовтня листопада грудня'.split(),range(1,13)))
+HEADLINE_DATE = re.compile(r'на\s+(\d{1,2})\s+('+'|'.join(UA_MONTHS)+r')',re.I)
+QUEUE_START = re.compile(r'(?<!\d)([1-6]\.[12])\s*[-–—:]?\s*(?=(?:\d{1,2}:\d{2}|відсут|не\s+відключ|без\s+відключ))',re.I)
 INTERVAL = re.compile(r'(?<!\d)([01]?\d|2[0-4]):([0-5]\d)\s*[–—−-]\s*([01]?\d|2[0-4]):([0-5]\d)')
 PUB_TS = re.compile(r'(?<!\d)(\d{2}\.\d{2}\.20\d\d)\s+(\d\d:\d\d)')
-PDF_LINK = re.compile(r'\.pdf(?:\?.*)?$', re.I)
+PDF_LINK = re.compile(r'\.pdf(?:\?.*)?$',re.I)
+BRANCH_CITY = re.compile(r'(?:ВСП\s*)?Черкаськ(?:і|их)\s+міськ(?:і|их)\s+(?:ЕМ|енергетичн(?:і|их)\s+мереж(?:і|ах))',re.I)
+BRANCH_DISTRICT = re.compile(r'(?:ВСП\s*)?Черкаськ(?:і|их)\s+районн(?:і|их)\s+(?:ЕМ|енергетичн(?:і|их)\s+мереж(?:і|ах))',re.I)
+OTHER_BRANCH = re.compile(r'(?:ВСП\s*)?[А-ЯІЇЄҐ][А-ЯІЇЄҐа-яіїєґ\-’\'\s]{3,75}(?:\sЕМ|\sфілія|енергетичні\s+мережі)\s*$',re.I)
+LOCALITY = re.compile(r'^(?:с\.|село|смт\.?|селище|м\.|місто)\s+([А-ЯІЇЄҐ][\w’\'\- ]{2,58})\s*$', re.I)
+STREET = re.compile(r'(?<!\w)(?P<type>вул(?:иця)?\.?|пров(?:улок|\.)?|просп(?:ект)?\.?|пр-т\.?|прв\.?|б-р\.?|бульвар|узвіз)\s*',re.I)
+STREET_NAME = re.compile(r'^\s*(?P<name>[^\d,;:]{3,85}?)\s*[,;:]?\s*(?=\d{1,4}(?:[/\-]?\d{1,4})?\s*[а-яіїєґa-z]?\b)',re.I)
+HOUSE_LIST = re.compile(r'^\s*(?P<houses>\d{1,4}(?:\s*[-/]\s*\d{1,4})?(?:\s*[- ]?\s*[а-яіїєґa-z])?(?:\s*,\s*\d{1,4}(?:\s*[-/]\s*\d{1,4})?(?:\s*[- ]?\s*[а-яіїєґa-z])?)*)',re.I)
+HOUSE = re.compile(r'\d{1,4}(?:\s*[-/]\s*\d{1,4})?(?:\s*[- ]?\s*[а-яіїєґa-z])?',re.I)
 LOG = logging.getLogger('svitlo')
 
 
-def fetch(session, url, binary=False):
-    r = session.get(url, timeout=25, headers={'User-Agent':'SvitloCherkasy/1.1 (+independent public-data reader)'})
+def fetch(session,url,binary=False):
+    r=session.get(url,timeout=35,headers={'User-Agent':'SvitloCherkasy/6.0 public schedule aggregator'})
     r.raise_for_status()
     return r.content if binary else r.text
 
 
-def parse_article(html, url, reference):
-    """Only accept articles with full 12-queue timestamped OFF schedule."""
-    soup = BeautifulSoup(html, 'html.parser')
-    h1 = soup.find('h1')
-    if not h1: return None
-    headline = h1.get_text(' ', strip=True).lower()
-    if 'погодинн' not in headline or 'відключен' not in headline: return None
-    m = HEADLINE_DATE.search(headline)
-    if not m: return None
-    # Some posts for 1 January are published on 31 December.
-    published_match = PUB_TS.search(soup.get_text(' ', strip=True))
-    if not published_match: return None
-    published = datetime.strptime(' '.join(published_match.groups()), '%d.%m.%Y %H:%M').replace(tzinfo=TZ)
-    year = published.year
-    month = UA_MONTHS[m.group(2)]
-    if month == 1 and published.month == 12: year += 1
-    if month == 12 and published.month == 1: year -= 1
-    try: schedule_date = datetime(year, month, int(m.group(1)), tzinfo=TZ).date().isoformat()
-    except ValueError: return None
-    # Extract text after the phrase that actually introduces the time intervals.
-    whole = soup.get_text(' ', strip=True).replace('\xa0',' ').replace('−','-')
-    marker = re.search(r'Години\s+відсутності\s+електропостачання\s*:', whole, re.I)
-    if not marker: return None
-    body = whole[marker.end():]
-    # Ensure we do not accidentally parse later unrelated links/text.
-    body = re.split(r'Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram', body, maxsplit=1,flags=re.I)[0]
-    found = list(QUEUE_START.finditer(body))
-    if len(found) != 12 or {x.group(1) for x in found} != set(QUEUE): return None
-    queues = {}
-    for i, match in enumerate(found):
-        part = body[match.end(): found[i+1].start() if i+1 < len(found) else len(body)]
-        results = []
-        for a, am, b, bm in INTERVAL.findall(part):
-            start, end = int(a)*60+int(am), int(b)*60+int(bm)
-            if not (0 <= start < end <= 1440): return None
-            if results and results[-1][1] > start: return None
-            results.append((start,end))
-        if not results: return None
-        queues[match.group(1)] = results
-    return {'date': schedule_date, 'publishedAt':published.isoformat(timespec='minutes'),
-            'source':url, 'queues':queues}
+def normalize(s):
+    s=str(s).lower().replace('’',"'").replace('ʼ',"'")
+    s=re.sub(r'^(?:вул(?:иця)?\.?|пров(?:улок|\.)?|просп(?:ект)?\.?|пр-т\.?|прв\.?|б-р\.?|бульвар|узвіз)\s+','',s)
+    return re.sub(r'[^\w/а-яіїєґ]+','',s,flags=re.I)
+
+
+def clean_locality(s):
+    s=re.sub(r'^(?:с\.|село|смт\.?|селище|м\.|місто)\s+','',str(s).strip(),flags=re.I)
+    return normalize(s)
+
+
+def utc_stamp(date):return date.isoformat(timespec='seconds')
+def to_time(m):return f'{m//60:02d}:{m%60:02d}'
+
+def parse_article(html,url,reference=None):
+    soup=BeautifulSoup(html,'html.parser')
+    header=soup.find('h1')
+    if not header:return None
+    heading=header.get_text(' ',strip=True).lower()
+    if 'погодинн' not in heading or 'відключен' not in heading:return None
+    date_hit=HEADLINE_DATE.search(heading)
+    if not date_hit:return None
+    full=soup.get_text(' ',strip=True).replace('\xa0',' ').replace('−','-')
+    time_hit=PUB_TS.search(full)
+    if not time_hit:return None
+    pub=datetime.strptime(' '.join(time_hit.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
+    year=pub.year
+    month=UA_MONTHS[date_hit.group(2).lower()]
+    if pub.month==12 and month==1:year+=1
+    if pub.month==1 and month==12:year-=1
+    try:day=datetime(year,month,int(date_hit.group(1)),tzinfo=TZ).date().isoformat()
+    except ValueError:return None
+    marker=re.search(r'Години\s+відсутності\s+електропостачання\s*:',full,re.I)
+    if not marker:return None
+    body=re.split(r'Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|Відключення\s+електроенергії\s+можуть',full[marker.end():],maxsplit=1,flags=re.I)[0]
+    found=list(QUEUE_START.finditer(body))
+    if not found:return None
+    if len({x.group(1) for x in found})!=len(found):return None
+    queues={}
+    for i,m in enumerate(found):
+        part=body[m.end():found[i+1].start() if i+1<len(found) else len(body)]
+        periods=[]
+        for a,am,b,bm in INTERVAL.findall(part):
+            start,end=int(a)*60+int(am),int(b)*60+int(bm)
+            if not 0<=start<end<=1440 or periods and periods[-1][1]>start:return None
+            periods.append((start,end))
+        # Explicit 'not disconnected' text means known schedule with no outages.
+        explicitly_none=bool(re.search(r'не\s+відключ|без\s+відключ|відключення\s+не\s+передбач',part,re.I))
+        if periods or explicitly_none:queues[m.group(1)]=periods
+        else:return None
+    return {'date':day,'publishedAt':pub.isoformat(timespec='minutes'),'source':url,'queues':queues}
 
 
 def compose(revisions):
-    """Take latest future revisions; keep previously published earlier day fragments.
-    Unknown minutes before first publication stay unknown (not automatically 'on').
+    """Merge revisions without claiming absent queues are 'on'.
+    Prior history is retained until later publication cutover, and omitted queues
+    keep previous known plan instead of turning green.
     """
-    revs = sorted(revisions, key=lambda a:a['publishedAt'])
-    if not revs: return None
-    day = revs[-1]['date']
-    values = {q:[None]*1440 for q in QUEUE}
+    revs=sorted(revisions,key=lambda x:x['publishedAt'])
+    if not revs:return None
+    day=revs[-1]['date']
+    values={q:[-1]*1440 for q in QUEUE}
     for rev in revs:
-        dt = datetime.fromisoformat(rev['publishedAt'])
-        if dt.date().isoformat() < day: cutoff = 0
-        elif dt.date().isoformat() == day: cutoff = dt.hour*60+dt.minute
-        else: continue
-        for q in QUEUE:
-            new = [0]*1440  # on except published off windows, but only after publication time
-            for start,end in rev['queues'][q]: new[start:end] = [1]*(end-start)
-            values[q][cutoff:] = new[cutoff:]
-    # Preserve only known outage and unknown spans; do not fill before first revision.
-    result = {}
+        pub=datetime.fromisoformat(rev['publishedAt'])
+        cutoff=0 if pub.date().isoformat()<day else pub.hour*60+pub.minute
+        if cutoff>=1440:continue
+        for q,spans in rev['queues'].items():
+            if q not in values:continue
+            arr=[0]*1440
+            for s,e in spans:arr[s:e]=[1]*(e-s)
+            values[q][cutoff:]=arr[cutoff:]
+    result={}
     for q in QUEUE:
-        spans=[]; start=None
-        for i, bit in enumerate(values[q]+[0]):
-            if bit == 1 and start is None: start=i
-            if bit != 1 and start is not None:
-                spans.append([to_time(start),to_time(i)]);start=None
-        known_from = next((i for i,b in enumerate(values[q]) if b is not None),1440)
-        result[q] = {'knownFrom':to_time(known_from), 'off':spans}
-    return {'date':day, 'publishedAt':revs[-1]['publishedAt'],
-            'source':revs[-1]['source'], 'verified':True,'queues':result,
-            'revisions':len(revs)}
-
-
-def to_time(minute): return f'{minute//60:02d}:{minute%60:02d}'
+        arr=values[q]
+        known=next((i for i,v in enumerate(arr) if v>=0),1440)
+        intervals=[];start=None
+        for i,v in enumerate(arr+[0]):
+            if v==1 and start is None:start=i
+            if v!=1 and start is not None:intervals.append([to_time(start),to_time(i)]);start=None
+        # even if knownFrom=24:00, JS treats this as unknown for whole day.
+        result[q]={'knownFrom':to_time(known),'off':intervals}
+    return {'date':day,'publishedAt':revs[-1]['publishedAt'],'source':revs[-1]['source'],
+            'verified':True,'queues':result,'revisions':len(revs),
+            'publications':[{'publishedAt':r['publishedAt'],'source':r['source'],'queues':sorted(r['queues'])} for r in revs]}
 
 
 def parse_news_links(html):
-    soup = BeautifulSoup(html, 'html.parser')
-    urls=[]
+    soup=BeautifulSoup(html,'html.parser');urls=[]
     for a in soup.select('a[href]'):
-        title = a.get_text(' ',strip=True).lower()
-        u = urljoin(BASE,a['href'])
-        if ('графік погодинних відключень' in title or 'оновлено графік погодинних відключень' in title) and '/media/' in u:
-            if urlparse(u).netloc in ('www.cherkasyoblenergo.com','cherkasyoblenergo.com') and u not in urls:
-                urls.append(u)
+        txt=a.get_text(' ',strip=True).lower()
+        u=urljoin(BASE,a['href'])
+        if 'графік погодинних відключень' in txt and '/media/' in u and urlparse(u).netloc.endswith('cherkasyoblenergo.com') and u not in urls:urls.append(u)
     return urls
 
 
-def update_schedules(session, now=None):
-    now = now or datetime.now(TZ)
-    # retain only nearby dates, no historical schedule falsely offered as fresh.
-    wanted = {(now.date() + timedelta(days=n)).isoformat() for n in (-2,-1,0,1,2)}
-    old_file = DATA/'schedules.json'
-    try: old = json.loads(old_file.read_text(encoding='utf-8'))
-    except (FileNotFoundError,ValueError): old = {'days':[]}
-    existing = [x for x in old.get('days',[]) if x.get('date') in wanted]
-    linklist = parse_news_links(fetch(session,BASE+'/news'))
-    # News page can contain many updates for one day; existing composite is used only
-    # if that day has no new articles in first page (never merge composite as revision).
-    revisions_by_date = defaultdict(list)
-    for u in linklist:
+def atomic_write(path,obj):
+    path.parent.mkdir(parents=True,exist_ok=True)
+    tmp=path.with_suffix('.tmp')
+    tmp.write_text(json.dumps(obj,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    tmp.replace(path)
+
+
+def update_schedules(session,now=None):
+    now=now or datetime.now(TZ)
+    wanted={(now.date()+timedelta(days=i)).isoformat() for i in (-2,-1,0,1,2,3)}
+    dest=DATA/'schedules.json'
+    try:old=json.loads(dest.read_text('utf-8'))
+    except (FileNotFoundError,ValueError):old={'days':[]}
+    existing={d['date']:d for d in old.get('days',[]) if d.get('date') in wanted}
+    urls=parse_news_links(fetch(session,BASE+'/news?lang=uk'))
+    grouped=defaultdict(list)
+    for u in urls:
         try:
-            item = parse_article(fetch(session,u),u,now)
-            if item and item['date'] in wanted: revisions_by_date[item['date']].append(item)
-        except (requests.RequestException, ValueError) as exc:
-            LOG.warning('Article error %s: %s',u,exc)
-    new_days={x['date']:x for x in existing}
-    for day,revs in revisions_by_date.items():
-        composite=compose(revs)
-        if composite:
-            if day in new_days and new_days[day].get('publishedAt','')>composite['publishedAt']:
-                continue
-            new_days[day]=composite
-    if not revisions_by_date and not existing:
-        raise RuntimeError('Офіційних придатних графіків не знайдено; файл не перезаписано')
-    result={'schemaVersion':2,'lastChecked':now.isoformat(timespec='seconds'),
-            'source':BASE+'/news','days':[new_days[d] for d in sorted(new_days)]}
-    atomic_write(old_file,result)
-    LOG.info('schedule days updated: %s',list(new_days))
+            rev=parse_article(fetch(session,u),u)
+            if rev and rev['date'] in wanted:grouped[rev['date']].append(rev)
+        except (requests.RequestException,ValueError) as e:LOG.warning('Article error %s: %s',u,e)
+    changed=[]
+    for day,revs in grouped.items():
+        prev=existing.get(day)
+        # News discovery is not guaranteed exhaustive. Never rewrite a day if
+        # only older revisions are visible today; do not overwrite composite
+        # with a less complete partial article.
+        latest=compose(revs)
+        if prev and prev.get('publishedAt','')>latest['publishedAt']:continue
+        if prev and prev.get('publishedAt')==latest['publishedAt']:
+            # Existing composite may have retained partial revisions elsewhere.
+            continue
+        if prev:
+            diffs=[]
+            for q in QUEUE:
+                oldq=prev.get('queues',{}).get(q,{})
+                newq=latest['queues'].get(q,{})
+                if oldq!=newq:diffs.append(q)
+            changed.append({'date':day,'publishedAt':latest['publishedAt'],'source':latest['source'],'queues':diffs})
+        existing[day]=latest
+    if not existing:raise RuntimeError('No verified schedule articles; retaining previous file')
+    old_changes=old.get('changes',[])
+    keys={(x.get('date'),x.get('publishedAt')) for x in old_changes}
+    for c in changed:
+        if (c['date'],c['publishedAt']) not in keys:old_changes.append(c)
+    result={'schemaVersion':3,'lastChecked':utc_stamp(now),'source':BASE+'/news',
+            'days':[existing[k] for k in sorted(existing)],'changes':old_changes[-100:]}
+    atomic_write(dest,result)
     return result
-
-
-# Only exact house numbers. Building ranges, missing numbers and city ambiguity
-# must never be guessed. PDF is issued for the entire *oblast*, so only a
-# clearly-delimited Черкаські міські ЕМ section is permitted.
-STREET_START = re.compile(r'(?<![\w])(?P<type>вул(?:иця)?\.?|пров(?:\.|улок)?|просп(?:ект)?\.?|пр-т\.?|прв\.?|б-р\.?|бульвар|узвіз)\s*',re.I)
-HOUSE_LIST = re.compile(r'^\s*,?\s*(?P<houses>\d{1,4}(?:\s*[а-яіїєґa-z]|/\d+[а-яіїєґa-z]?)?(?:\s*,\s*\d{1,4}(?:\s*[а-яіїєґa-z]|/\d+[а-яіїєґa-z]?)?)*)',re.I)
-NAME_HOUSE = re.compile(r'^\s*(?P<name>[\w\-’\'\.\s]{3,75}?)\s*,?\s*(?=\d{1,4}(?:\s*[а-яіїєґa-z]|/\d+)?(?:\s*,|\s|$))',re.I)
-HOUSE = re.compile(r'\d{1,4}(?:\s*[а-яіїєґa-z]|/\d+[а-яіїєґa-z]?)?',re.I)
-CITY_SECTION=re.compile(r'Черкаські\s+міські\s+(?:ЕМ|енергетичні\s+мережі)',re.I)
-BRANCH=re.compile(r'^(?:ВСП\s+)?(?:[А-ЯІЇЄҐ][\w’\'-]+\s+){1,4}(?:ЕМ|філія)\s*$',re.I)
-
-
-def normalize(s):
-    s=s.lower().replace('’',"'").replace('ʼ',"'").replace('ї','ї').replace('є̈','є')
-    s=re.sub(r'^(?:вул(?:иця)?\.?|пров(?:улок|\.)?|просп(?:ект)?\.?|пр-т\.?|прв\.?|б-р\.?|бульвар|узвіз)\s+', '',s)
-    s=re.sub(r'[^\w/а-яіїєґ]+','',s,flags=re.I)
-    return s
-
-
-def extract_city_streets(text):
-    """Parse explicit street HOUSE LIST snippets from city-labeled PDF segment.
-
-    Don't infer house parity, whole streets, house ranges, or future renamed streets.
-    """
-    text = text.replace('\u00ad','').replace('\xa0',' ')
-    text = re.sub(r'\s+',' ',text)
-    # caller has already provided city section only
-    tokens=list(STREET_START.finditer(text))
-    matches=[]
-    for i,t in enumerate(tokens):
-        chunk=text[t.end():min(len(text),t.end()+750, tokens[i+1].start() if i+1<len(tokens) else len(text))]
-        m=NAME_HOUSE.match(chunk)
-        if not m: continue
-        name=m.group('name').strip(' ,.:-')
-        # Street name must not contain number / markup and can't be brand name.
-        if any(ch.isdigit() for ch in name) or len(name)>55 or len(name)<3: continue
-        rem=chunk[m.end():]
-        hm=HOUSE_LIST.match(rem)
-        if not hm: continue
-        houses=[normalize(x) for x in HOUSE.findall(hm.group('houses'))]
-        # 'Вулиці: Благовісна' too loose; avoid unless explicit label.
-        clean=normalize(name)
-        if len(clean)<3: continue
-        stype=t.group('type').lower()
-        kind='провулок' if stype.startswith(('пров','прв')) else 'бульвар' if stype.startswith(('б-р','буль')) else 'проспект' if stype.startswith(('просп','пр-т')) else 'узвіз' if stype.startswith('узв') else 'вулиця'
-        for house in houses:
-            if house:matches.append((kind,clean,house,name))
-    return matches
-
-
-def extract_city_section(pdf_bytes):
-    import fitz
-    doc=fitz.open(stream=pdf_bytes,filetype='pdf')
-    city=False;lines=[]
-    for page in doc:
-        for l in page.get_text('text',sort=True).splitlines():
-            if CITY_SECTION.search(l):city=True;continue
-            if city and BRANCH.fullmatch(l.strip()) and not CITY_SECTION.search(l):city=False
-            if city:lines.append(l)
-    return '\n'.join(lines)
 
 
 def parse_pdf_links(html):
     soup=BeautifulSoup(html,'html.parser')
-    links=[]
+    result=[]
     for a in soup.select('a[href]'):
         u=urljoin(BASE,a['href'])
-        if PDF_LINK.search(u) and urlparse(u).netloc in ('www.cherkasyoblenergo.com','cherkasyoblenergo.com'):
-            links.append(u)
-    # There should be twelve documents in the same order as the website lists them.
-    return list(dict.fromkeys(links))[:12]
+        if PDF_LINK.search(u) and urlparse(u).netloc.endswith('cherkasyoblenergo.com') and u not in result:result.append(u)
+    return result
 
 
-def update_addresses(session, now=None):
+def labeled_pdf_links(html):
+    """Read labels such as '1 черга, І підчерга' and '1.1' around PDF anchors."""
+    soup=BeautifulSoup(html,'html.parser')
+    mapping={}
+    for a in soup.select('a[href]'):
+        url=urljoin(BASE,a['href'])
+        if not PDF_LINK.search(url) or not urlparse(url).netloc.endswith('cherkasyoblenergo.com'):continue
+        for node in (a,a.parent,a.parent.parent if a.parent else None,a.parent.parent.parent if a.parent and a.parent.parent else None):
+            if node is None:continue
+            value=node.get_text(' ',strip=True)
+            hits=re.findall(r'(?<!\d)([1-6]\.[12])(?!\d)',value)
+            if len(set(hits))==1:q=hits[0]
+            else:
+                m=re.search(r'([1-6])\s*черга\s*,?\s*(I{1,2}|І{1,2}|перш[а-я]+|друг[а-я]+)\s*підчерга',value,re.I)
+                if not m:continue
+                roman=m.group(2).upper().replace('І','I')
+                q=f"{m.group(1)}.{2 if roman.startswith('II') or roman.lower().startswith('друг') else 1}"
+            if q in mapping and mapping[q]!=url:continue
+            mapping[q]=url
+            break
+    return {q:mapping[q] for q in QUEUE if q in mapping}
+
+
+def street_entries(text):
+    text=text.replace('\u00ad','').replace('\xa0',' ')
+    text=re.sub(r'\s+',' ',text)
+    tokens=list(STREET.finditer(text))
+    found=[]
+    for i,t in enumerate(tokens):
+        chunk=text[t.end():min(t.end()+500,tokens[i+1].start() if i+1<len(tokens) else len(text))]
+        match=STREET_NAME.match(chunk)
+        if not match:continue
+        display=match.group('name').strip(' ,.:-')
+        if len(display)<3 or len(display)>55 or any(c.isdigit() for c in display):continue
+        hm=HOUSE_LIST.match(chunk[match.end():])
+        if not hm:continue
+        kindraw=t.group('type').lower()
+        kind='провулок' if kindraw.startswith(('пров','прв')) else 'проспект' if kindraw.startswith(('просп','пр-т')) else 'бульвар' if kindraw.startswith(('б-р','буль')) else 'узвіз' if kindraw.startswith('узв') else 'вулиця'
+        for h in HOUSE.findall(hm.group('houses')):
+            house=normalize(h.replace('-',''))
+            if house:found.append((kind,normalize(display),house,display))
+    return found
+
+
+
+def street_house_lists(text):
+    """Parse operator's 'Вулиці: Благовісна,244,270, В.Чорновола,7' format.
+    This representation has no 'вул.' prefix on each street.
+    """
+    found=[]
+    for marker in re.finditer(r'Вулиці\s*:',text,re.I):
+        # Each marker is followed by a named-street-and-number series.
+        part=text[marker.end(): marker.end()+2500]
+        # Bound at the next enterprise/branch descriptor if possible.
+        part=re.split(r'\b(?:ТОВ|ПП|ФОП|КП)\s+[«"А-Я]',part,maxsplit=1)[0]
+        streets=list(re.finditer(r'(?:(?<=,)|(?<=:)|^)\s*([А-ЯІЇЄҐ][^\d,;:]{2,55}?)\s*,\s*(?=\d{1,4})',part,re.I))
+        for i,m in enumerate(streets):
+            name=m.group(1).strip(' ,.:-')
+            if not name or len(name)>55:continue
+            end=streets[i+1].start() if i+1<len(streets) else min(len(part),m.end()+1200)
+            houses=HOUSE_LIST.match(part[m.end():end])
+            if not houses:continue
+            kind='вулиця'
+            clean=normalize(name)
+            if not clean or any(x.isdigit() for x in name):continue
+            for number in HOUSE.findall(houses.group('houses')):
+                h=normalize(number.replace('-',''))
+                if h:found.append((kind,clean,h,name))
+    return found
+
+
+def street_only_entries(text):
+    """Street-only village listings are *hints*, never exact address matches."""
+    matches=[]
+    t=re.sub(r'\s+',' ',text)
+    for m in STREET.finditer(t):
+        part=t[m.end():m.end()+100]
+        name=re.match(r'\s*([^,;:.\d]{3,55})(?=[,;.])',part)
+        if not name:continue
+        label=name.group(1).strip()
+        if len(label)>50 or not normalize(label):continue
+        prefix=m.group('type').lower()
+        kind='провулок' if prefix.startswith(('пров','прв')) else 'проспект' if prefix.startswith(('просп','пр-т')) else 'бульвар' if prefix.startswith(('б-р','буль')) else 'узвіз' if prefix.startswith('узв') else 'вулиця'
+        matches.append((kind,normalize(label),label))
+    return matches
+
+def extract_city_streets(text):return street_entries(text)
+
+
+def extract_sections(pdf):
+    """Never treat district addresses as city addresses. For uncertain locality
+    context, skip entries rather than guessing the place.
+    """
+    import fitz
+    doc=fitz.open(stream=pdf,filetype='pdf')
+    sections={'Черкаси':[]}
+    branch=None;locality=None
+    for page in doc:
+        for raw in page.get_text('text',sort=True).splitlines():
+            line=raw.strip()
+            if not line:continue
+            if BRANCH_CITY.search(line):branch='city';locality='Черкаси';continue
+            if BRANCH_DISTRICT.search(line):branch='district';locality=None;continue
+            if OTHER_BRANCH.fullmatch(line) and not BRANCH_CITY.search(line) and not BRANCH_DISTRICT.search(line):
+                branch=None;locality=None;continue
+            if branch=='district':
+                m=LOCALITY.fullmatch(line)
+                if m:
+                    locality=m.group(1).strip()
+                    sections.setdefault(locality,[])
+                    continue
+            if branch=='city':sections['Черкаси'].append(line)
+            elif branch=='district' and locality:sections[locality].append(line)
+    return {k:'\n'.join(v) for k,v in sections.items() if v}
+
+
+def extract_city_section(pdf):return extract_sections(pdf).get('Черкаси','')
+
+
+def update_addresses(session,now=None):
     now=now or datetime.now(TZ)
-    links=parse_pdf_links(fetch(session,BASE+'/perelik-gpv?lang=uk'))
-    if len(links)!=12: raise RuntimeError('Очікували 12 PDF у переліку; нічого не перезаписано')
-    index=defaultdict(set);labels={};bad=[]
-    for q,u in zip(QUEUE,links):
+    html=fetch(session,BASE+'/perelik-gpv?lang=uk')
+    urls=labeled_pdf_links(html)
+    if len(urls)!=12:
+        raise RuntimeError(f'Only {len(urls)} unambiguously labeled queue PDF links; refusing to guess queue order')
+    collected=defaultdict(lambda:defaultdict(set));street_labels=defaultdict(dict);street_q=defaultdict(lambda:defaultdict(set))
+    errors=[]
+    for queue,url in urls.items():
         try:
-            raw=fetch(session,u,True)
-            if not raw.startswith(b'%PDF'): raise ValueError('Not PDF')
-            sec=extract_city_section(raw)
-            triples=extract_city_streets(sec)
-            # Some subqueues have no consumers in Cherkasy city at all.
-            # Zero city records in such a PDF is valid; still fetch all twelve.
-            for kind,street,number,display in triples:
-                key=f'{kind}|{street}|{number}'
-                index[key].add(q)
-                labels.setdefault(f'{kind}|{street}',f'{kind.title()} {display}')
-            LOG.info('%s: %s city addresses',q,len(triples))
-        except Exception as exc:
-            bad.append(f'{q}: {exc}')
-            LOG.warning('PDF %s failed: %s',q,exc)
-    # Incomplete source means a seemingly unique queue might really be ambiguous.
-    # All 12 must parse successfully before exporting a single match.
-    if bad: raise RuntimeError('Неповний імпорт PDF: '+'; '.join(bad))
-    if not index: raise RuntimeError('Не знайдено точних адрес, файл не перезаписано')
-    export={'schemaVersion':2,'updatedAt':now.isoformat(timespec='seconds'),
-            'source':BASE+'/perelik-gpv?lang=uk',
-            'keys':{k:sorted(v) for k,v in sorted(index.items())},
-            'streets':labels}
-    atomic_write(DATA/'addresses.json',export)
-    LOG.info('Saved %s distinct addresses',len(index))
-    return export
-
-
-def atomic_write(path,obj):
-    path.parent.mkdir(exist_ok=True,parents=True)
-    tmp=path.with_suffix('.tmp')
-    tmp.write_text(json.dumps(obj,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
-    tmp.replace(path)
+            raw=fetch(session,url,True)
+            if not raw.startswith(b'%PDF'):raise ValueError('Not a PDF')
+            sections=extract_sections(raw)
+            for town,content in sections.items():
+                key=clean_locality(town)
+                for kind,street,house,label in street_entries(content)+street_house_lists(content):
+                    if not street or not house:continue
+                    collected[key][f'{kind}|{street}|{house}'].add(queue)
+                    street_labels[key][f'{kind}|{street}']=f'{kind.capitalize()} {label}'
+            for kind,street,label in street_only_entries(content):
+                    street_q[key][f'{kind}|{street}'].add(queue)
+                    street_labels[key].setdefault(f'{kind}|{street}',f'{kind.capitalize()} {label}')
+            LOG.info('%s: sections=%s',queue,list(sections))
+        except Exception as e:errors.append(f'{queue}: {e}')
+    if errors:raise RuntimeError('Incomplete official PDF import: '+'; '.join(errors))
+    if not collected and not street_q:raise RuntimeError('No address or street records in PDFs')
+    keycity=clean_locality('Черкаси')
+    towns={k:{'keys':{a:sorted(v) for a,v in sorted(collected.get(k,{}).items())},'streets':street_labels[k], 'streetQueues':{x:sorted(v) for x,v in street_q.get(k,{}).items()}} for k in set(street_labels)|set(collected) if k!=keycity}
+    city=collected.get(keycity,{})
+    result={'schemaVersion':3,'updatedAt':utc_stamp(now),'source':BASE+'/perelik-gpv?lang=uk',
+            'keys':{a:sorted(v) for a,v in sorted(city.items())},'streets':street_labels.get(keycity,{}),'streetQueues':{x:sorted(v) for x,v in street_q.get(keycity,{}).items()},
+            'localities':towns,'stats':{'city':len(city),'villages':len(towns),'total':sum(len(v) for v in collected.values())}}
+    atomic_write(DATA/'addresses.json',result)
+    return result
 
 
 def main():
-    p=argparse.ArgumentParser()
-    p.add_argument('--schedules-only',action='store_true')
-    p.add_argument('--addresses-only',action='store_true')
-    args=p.parse_args()
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--schedules-only',action='store_true')
+    parser.add_argument('--addresses-only',action='store_true')
+    args=parser.parse_args()
     logging.basicConfig(level=logging.INFO,format='%(levelname)s %(message)s')
-    ses=requests.Session();failed=[]
+    session=requests.Session();failed=[]
     if not args.addresses_only:
-        try:update_schedules(ses)
-        except Exception as exc:LOG.exception('Schedules failed');failed.append(str(exc))
+        try:update_schedules(session)
+        except Exception as e:LOG.exception('schedule update failed');failed.append('schedules '+str(e))
     if not args.schedules_only:
-        try:update_addresses(ses)
-        except Exception as exc:LOG.exception('Addresses failed');failed.append(str(exc))
-    if failed: raise SystemExit(' | '.join(failed))
-
+        try:update_addresses(session)
+        except Exception as e:LOG.exception('addresses update failed');failed.append('addresses '+str(e))
+    if failed:raise SystemExit(' | '.join(failed))
 
 if __name__=='__main__':main()

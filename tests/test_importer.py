@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from scripts.update_data import (parse_article,parse_news_links,compose,extract_city_streets,parse_pdf_links,normalize)
+from scripts.update_data import (parse_article,parse_news_links,compose,extract_city_streets,parse_pdf_links,normalize,labeled_pdf_links)
 
 Q=[f'{i}.{j}' for i in range(1,7) for j in (1,2)]
 
@@ -16,9 +16,12 @@ def test_article_full_and_date():
     assert len(r['queues'])==12
     assert r['queues']['1.1']==[(480,600),(1200,1320)]
 
-def test_partial_article_rejected():
+def test_partial_article_supported_without_inventing_other_queues():
     r=parse_article(html(ranges={q:'08:00 - 10:00' for q in Q[:-1]}),'https://www.cherkasyoblenergo.com/media/ok',None)
-    assert r is None
+    assert len(r["queues"])==11
+    c=compose([r])
+    assert c["queues"]["6.2"]["knownFrom"]=="24:00"
+    assert c["queues"]["6.1"]["knownFrom"]=="00:00"
 
 def test_invalid_intervals_rejected():
     ranges={q:'08:00 - 10:00' for q in Q};ranges['3.1']='18:30 - 18:00'
@@ -49,3 +52,37 @@ def test_news_discovery():
 def test_pdf_discovery():
     raw=''.join('<a href="/files/'+str(i)+'.pdf">PDF</a>' for i in range(12))
     assert len(parse_pdf_links(raw))==12
+
+
+def test_labeled_queue_pdf_roman_numbers():
+    sample=''.join(f'<div>{i} черга, {roman} підчерга <a href="https://gita.cherkasyoblenergo.com/{i}{roman}.pdf">Відкрити</a></div>' for i in range(1,7) for roman in ('І','ІІ'))
+    result=labeled_pdf_links(sample)
+    assert len(result)==12
+    assert result['1.1'].endswith('1І.pdf')
+    assert result['1.2'].endswith('1ІІ.pdf')
+
+def test_latest_partial_revision_leaves_omitted_queue_untouched():
+    a=parse_article(html(date='10 жовтня'),'https://www.cherkasyoblenergo.com/media/a',None)
+    b=parse_article(html(date='10 жовтня',ts='10.10.2026 12:00',ranges={'1.1':'16:00 - 18:00'}),'https://www.cherkasyoblenergo.com/media/b',None)
+    c=compose([a,b]);assert c['queues']['1.2']['off']==[['08:00','10:00'],['20:00','22:00']]
+    assert c['queues']['1.1']['off']==[['08:00','10:00'],['16:00','18:00']]
+
+
+def test_city_number_list_variant():
+    from scripts.update_data import street_house_lists
+    rows=street_house_lists('Вулиці: Благовісна,244 , 270, 341, В.Чорновола,7,9,51, Верхня Горова,139,141/1')
+    assert ('вулиця','благовісна','244','Благовісна') in rows
+    assert ('вулиця','вчорновола','7','В.Чорновола') in rows
+    assert ('вулиця','верхнягорова','141/1','Верхня Горова') in rows
+
+
+def test_exact_city_and_district_sections_are_separated(monkeypatch):
+    import fitz
+    from scripts.update_data import extract_sections
+    class FakePage:
+        def get_text(self,*args,**kwargs):
+            return 'Черкаські міські ЕМ\nвул. Садова 12, 15\nЧеркаські районні ЕМ\nс. Хацьки\nвул. Перемоги 10, 12'
+    monkeypatch.setattr(fitz,'open',lambda **kwargs:[FakePage()])
+    content=extract_sections(b'%PDF-fake')
+    assert 'Черкаси' in content and '12' in content['Черкаси']
+    assert 'Хацьки' in content and 'Перемоги' in content['Хацьки']
