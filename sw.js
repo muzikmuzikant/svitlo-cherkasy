@@ -1,5 +1,5 @@
-const VERSION='svitlo-cherkasy-shell-v6.7.0';
-const SHELL=['./','./index.html','./app.js','./hour-paint.js','./admin.html','./admin.js','./style.css','./install.css','./install.js','./version-check.js','./release.json','./manifest.webmanifest','./privacy.html','./about.html','./assets/icon.svg','./assets/icon-192.png','./assets/icon-512.png'];
+const VERSION='svitlo-cherkasy-shell-v6.7.1';
+const SHELL=['./','./index.html','./app.js','./hour-paint.js','./admin.html','./admin.js','./style.css','./install.css','./install.js','./version-check.js','./release.json','./manifest.webmanifest','./privacy.html','./about.html','./assets/icon.svg','./assets/icon-192.png','./assets/icon-512.png','./assets/apple-touch-icon-180.png','./assets/icon-512-maskable.png'];
 const CACHE_DATA='svitlo-cherkasy-data-v6.7';
 self.addEventListener('install',event=>event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>![VERSION,CACHE_DATA].includes(k)).map(k=>caches.delete(k)))),self.clients.claim()])));
