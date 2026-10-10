@@ -10,7 +10,7 @@ const PIN='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="c
 const safeJSON=(k,fallback)=>{try{return JSON.parse(localStorage.getItem(k)??'null')??fallback}catch{return fallback}};
 const legacy=safeJSON('svitlo-addresses-v3',safeJSON('svitlo-addresses-v2',[]));
 let addresses=safeJSON(STORE,Array.isArray(legacy)?legacy:[]), prefs=Object.assign({primaryId:null,off:true,on:true,changes:true,tomorrow:true,emergency:true},safeJSON(PREF,{}));
-let pushActive=false, emergency={events:[],lastChecked:null},overrides={schedules:{days:[]},addresses:{},emergency:{events:[]}},data={days:[],changes:[]},index={keys:{},streets:{},localities:{}},active='home',daySelected=null,editId=null,suggestion=null,toastTimeout=null,lastPub=null,pushConfig=null,swRegistration=null,notified=new Set(safeJSON(SEEN,[])),lastRefresh=0;
+let pushActive=false, emergency={events:[],lastChecked:null},overrides={schedules:{days:[]},addresses:{},emergency:{events:[]}},data={days:[],changes:[]},index={keys:{},streets:{},localities:{}},active='home',daySelected=null,editId=null,suggestion=null,toastTimeout=null,lastPub=null,pushConfig=null,swRegistration=null,notified=new Set(safeJSON(SEEN,[])),lastRefresh=0,hasCheckedOnce=false;
 if(!Array.isArray(addresses))addresses=[];
 const byId=id=>addresses.find(x=>x.id===id);
 const primary=()=>byId(prefs.primaryId)||addresses[0]||null;
@@ -47,16 +47,29 @@ function setText(id,text){if($(id).textContent!==String(text))$(id).textContent=
 function render(){renderHome();if(active==='detail')renderDetail();if(active==='updates')renderUpdates();if(active==='settings')renderSettings()}
 function renderFreshness(){
  const node=$('dataFreshness');if(!node)return;
+ // The timestamp describes the source-import check, NOT the publication time and
+ // not a live power meter. A manual refresh only re-downloads published data.
  const checked=Date.parse(data.lastChecked||'');
  const age=Date.now()-checked;
- const stale=!Number.isFinite(checked)||age>2*3600_000||age<0;
+ const hasTime=Number.isFinite(checked)&&age>=0;
+ const stale=!hasTime||age>2*3600_000;
  const offline=navigator.onLine===false;
- node.hidden=!stale&&!offline;
- if(offline)node.textContent='Немає з’єднання з інтернетом. Показано останні доступні дані — вони могли змінитися.';
- else if(stale)node.textContent=Number.isFinite(checked)&&age>=0?'Остання перевірка джерела понад 2 години тому. Дані можуть бути застарілими — звіряйте з оператором.':'Не вдалося підтвердити час оновлення графіка. Звіряйте з оператором.';
+ // Avoid alarming users while the initial network request is still in flight.
+ node.hidden=!hasCheckedOnce||(!stale&&!offline);
+ if(node.hidden)return;
+ node.replaceChildren();
+ const title=el('strong','',offline?'Немає інтернету':hasTime?'Можливо, графік застарів':'Актуальність графіка не підтверджена');
+ const message=el('span','',offline
+   ?' Показуємо останні доступні дані. Вони могли змінитися.'
+   :hasTime
+     ?` Публікації оператора востаннє перевіряли ${fmtStamp(data.lastChecked)}. Новіші зміни можуть бути відсутні.`
+     :' Не вдалося визначити час останньої перевірки публікацій.');
+ const link=el('a','', 'Перевірити в оператора ↗');
+ link.href=OFFICIAL;link.target='_blank';link.rel='noopener noreferrer';
+ node.append(title,message,link);
 }
-function renderHome(){renderEmergency();renderFreshness();const a=primary();setText('primaryName',label(a));setText('primarySub',a?`${a.settlement||'Черкаси'} · ${a.queue?'підчерга '+a.queue+(a.method==='street'?' · непідтверджена за будинком':''):'підчергу не визначено'}`:'Черкаси або села району');const schedule=a?.queue?currentDay(today()):null;const timelineToday=a?.queue?timeline(today(),a.queue):null,st=stateAt(timelineToday,nowMinutes()),nxt=transition(timelineToday,nowMinutes());const panel=$('heroStatus');panel.className='status-panel status-'+st;
- $('stateIcon').innerHTML=ICON;setText('stateCaption',a?.method==='street'?'ПІДЧЕРГА ЗА ВУЛИЦЕЮ — ПЕРЕВІРТЕ БУДИНОК':a?'ЗА ОФІЦІЙНИМ ГРАФІКОМ':'ВАШ ГРАФІК');
+function renderHome(){renderEmergency();renderFreshness();const a=primary();setText('primaryName',label(a));setText('primarySub',a?`${a.settlement||'Черкаси'} · ${a.queue?'підчерга '+a.queue:'підчергу не визначено'}`:'Черкаси або села району');const schedule=a?.queue?currentDay(today()):null;const timelineToday=a?.queue?timeline(today(),a.queue):null,st=stateAt(timelineToday,nowMinutes()),nxt=transition(timelineToday,nowMinutes());const panel=$('heroStatus');panel.className='status-panel status-'+st;
+ $('stateIcon').innerHTML=ICON;setText('stateCaption',a?.method==='street-auto'?'ПІДЧЕРГА ЗА ПЕРЕЛІКОМ ВУЛИЦЬ':a?'ЗА ОПУБЛІКОВАНИМ ГРАФІКОМ':'ВАШ ГРАФІК');
  if(st==='unknown'){setText('heroTitle','Немає даних');setText('heroCountdown',a?.queue?'Графік для цієї години не підтверджений':'Додайте адресу або виберіть підчергу')}else{setText('heroTitle',`${st==='on'?'Є світло':'Немає світла'} до: ${nxt&&nxt.to>=0?clock(nxt.time):'—:—'}`);setText('heroCountdown',nxt&&nxt.to>=0?`До ${nxt.to===1?'відключення':'планового відновлення'} ${Math.floor((nxt.time-nowMinutes())/60)} год ${String((nxt.time-nowMinutes())%60).padStart(2,'0')} хв`:'До кінця відомого графіка змін не заплановано')}
  setText('sourceStamp',schedule?`Опубліковано ${fmtStamp(schedule.publishedAt)}`:'Графік не підтверджено');setText('queueChip',a?.queue?`Черга ${a.queue}`:'—');setText('overviewDate',formatDate(today(),{weekday:'long',day:'numeric',month:'long'}));setText('overviewLabel',timelineToday?'24 години':'Графік не опублікований');renderBar(timelineToday);const t=stats(timelineToday);setText('hoursOn',t&&t.unknown===0?minutesLabel(t.on):t&&t.on?`${minutesLabel(t.on)}+`:'—');setText('hoursOff',t&&t.unknown===0?minutesLabel(t.off):t&&t.off?`${minutesLabel(t.off)}+`:'—');
  const list=$('placeList');list.replaceChildren();for(const item of addresses){const b=el('button','place-card');b.type='button';const avatar=el('span','place-avatar');avatar.innerHTML=PIN;b.append(avatar);const copy=el('span','place-text');copy.append(el('strong','',label(item)),el('small','',`${item.settlement||'Черкаси'} · ${item.queue?'черга '+item.queue:'черга невідома'}`));b.append(copy);const state=stateAt(timeline(today(),item.queue),nowMinutes());b.append(el('span','place-status '+state,state==='on'?'Є світло':state==='off'?'Без світла':'—'));b.onclick=()=>{prefs.primaryId=item.id;savePrefs();navigate('detail')};list.append(b)}if(!addresses.length){const e=el('div','empty-places');e.append(el('strong','','Ще немає збережених місць'),el('span','','Додайте адресу, щоб отримати персональний графік.'));list.append(e)}const add=el('button','add-place-card','+  Додати адресу');add.onclick=()=>openAddressSheet();list.append(add)
@@ -85,77 +98,54 @@ function renderDetail(){const a=primary();if(!a)return;setText('detailAddress',f
    c.title=c.getAttribute('aria-label');grid.append(c);
  }
  const next=transition(tToday,nowMinutes());setText('nextTime',next?clock(next.time):'—:—');setText('nextDescription',next?`Планове ${next.to===1?'відключення':'відновлення електропостачання'}`:'До завершення відомого графіка змін не виявлено');$('articleLink').href=pub?.queueSources?.[a.queue]||pub?.source||'https://www.cherkasyoblenergo.com/news'}
-function renderUpdates(){setText('lastCheck',data.lastChecked?fmtStamp(data.lastChecked):'Перевірку не підтверджено');setText('updateNote',data.lastChecked?'Дата перевірки джерела; фактичний графік міг змінитися пізніше.':'Дані з офіційних публікацій наразі недоступні.');const root=$('updateList');root.replaceChildren();const all=[...(data.changes||[]).map(x=>({kind:'change',...x})),...(data.days||[]).map(x=>({kind:'publication',...x}))].sort((a,b)=>String(b.publishedAt).localeCompare(String(a.publishedAt))).slice(0,24);if(!all.length)root.append(el('div','empty-places','Поки немає підтверджених публікацій.'));for(const d of all){const c=el('div','update-card');c.append(el('time','',fmtStamp(d.publishedAt)),el('strong','',d.kind==='change'?`Графік скориговано · ${formatDate(d.date)}`:`Опубліковано графік · ${formatDate(d.date)}`));const meta=el('div','small-source',d.kind==='change'?`Змінені підчерги: ${(d.queues||[]).join(', ')||'не уточнено'}`:`Редакцій: ${d.revisions||1}`);c.append(meta);const link=el('a','', 'Офіційна публікація ↗');link.href=d.source||'https://www.cherkasyoblenergo.com/news';link.target='_blank';link.rel='noopener';c.append(link);root.append(c)}}
-function renderSettings(){for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).checked=!!prefs[key];const connected=!!pushConfig?.apiBase&&!!pushConfig?.publicKey;setText('pushHeadline',connected?'Фонові push-сповіщення':'Сповіщення у застосунку');setText('pushDescription',connected?'Підключений окремий push-сервер. Дозвольте сповіщення, щоб отримувати їх навіть із закритим PWA.':'Нагадування працюють, поки застосунок відкритий. Щоб отримувати сповіщення на заблокований iPhone, адміністратор повинен підключити окремий Web Push сервер.');setText('enableNotifications',connected?'Дозволити та підписатися на Push':'Дозволити сповіщення у застосунку');$('disableNotifications').hidden=!connected}
+function renderUpdates(){setText('lastCheck',data.lastChecked?fmtStamp(data.lastChecked):'Час перевірки невідомий');setText('updateNote',data.lastChecked?'Це час звіряння з публікаціями оператора, а не час появи нового графіка.':'Перевірте графік безпосередньо на сайті оператора.');const root=$('updateList');root.replaceChildren();const all=[...(data.changes||[]).map(x=>({kind:'change',...x})),...(data.days||[]).map(x=>({kind:'publication',...x}))].sort((a,b)=>String(b.publishedAt).localeCompare(String(a.publishedAt))).slice(0,24);if(!all.length)root.append(el('div','empty-places','Поки немає підтверджених публікацій.'));for(const d of all){const c=el('div','update-card');c.append(el('time','',fmtStamp(d.publishedAt)),el('strong','',d.kind==='change'?`Графік скориговано · ${formatDate(d.date)}`:`Опубліковано графік · ${formatDate(d.date)}`));const meta=el('div','small-source',d.kind==='change'?`Змінені підчерги: ${(d.queues||[]).join(', ')||'не уточнено'}`:`Редакцій: ${d.revisions||1}`);c.append(meta);const link=el('a','', 'Офіційна публікація ↗');link.href=d.source||'https://www.cherkasyoblenergo.com/news';link.target='_blank';link.rel='noopener';c.append(link);root.append(c)}}
+function renderSettings(){for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).checked=!!prefs[key];const connected=!!pushConfig?.apiBase&&!!pushConfig?.publicKey;setText('pushHeadline','Сповіщення');setText('pushDescription',connected?'Отримуйте нагадування про відключення та зміни графіків, навіть коли застосунок закритий.':'Наразі нагадування доступні тільки під час використання застосунку.');setText('enableNotifications',connected?'Увімкнути сповіщення':'Дозволити нагадування');$('disableNotifications').hidden=!connected}
 function fillQueueSelect(){const root=$('manualQueue');root.replaceChildren(new Option('Оберіть підчергу',''),...QUEUES.map(q=>new Option(q,q)))}
 function town(){return $('settlement').value==='Інше'?$('customSettlement').value.trim():$('settlement').value}
 function localIndex(){const k=normTown(town());return k===normTown('Черкаси')?{keys:index.keys||{},streets:index.streets||{},streetQueues:index.streetQueues||{}}:index.localities?.[k]||{keys:{},streets:{},streetQueues:{}}}
 function findQueue(){
- const street=$('street').value.trim(),house=$('house').value.trim();
- if(!town()||!street)return {status:'incomplete'};
  const idx=localIndex();
- if(!Object.keys(idx.streets||{}).length)return {status:'unavailable'};
- const typedKind=/^(пров(?:улок|\.)?|вул(?:иця)?\.?|просп(?:ект)?\.?|бульвар)\s+/i.exec(street);
- const kind=typedKind?(typedKind[1].toLowerCase().startsWith('пров')?'провулок':typedKind[1].toLowerCase().startsWith('просп')?'проспект':typedKind[1].toLowerCase().startsWith('буль')?'бульвар':'вулиця'):null;
- const matches=Object.entries(idx.streets).filter(([key,label])=>(norm(key.split('|')[1])===norm(street)||norm(label)===norm(street))&&(!kind||key.startsWith(kind+'|')));
- const found=suggestion&&norm(suggestion.label)===norm(street)?[[suggestion.key,suggestion.label]]:matches;
- if(!found.length)return {status:'nostreet'};
- if(found.length>1)return {status:'ambiguous',queues:[]};
- const [key,display]=found[0];
- const streetOnly=idx.streetQueues?.[key]||[];
- // Listed exact houses can belong to other queues on the same street.
- const knownHouses=new Set();
- for(const [address,qs] of Object.entries(idx.keys||{})){
-   if(address.startsWith(key+'|'))for(const q of qs)knownHouses.add(q);
- }
- const candidates=[...new Set([...streetOnly,...knownHouses])].sort((a,b)=>Number(a)-Number(b));
- const exact=house?idx.keys?.[`${key}|${houseKey(house)}`]||[]:[];
- // A named street can span several subqueues. An exact-house match is safe
- // only if no competing unnumbered street listing covers that same street.
- const incompatible=streetOnly.some(q=>!exact.includes(q));
- if(exact.length===1&&!incompatible)return {status:'exact',queue:exact[0],street:display};
- if(exact.length>1)return {status:'possible',queues:exact,street:display,houseUncertain:true};
- if(streetOnly.length)return {status:'possible',queues:candidates,street:display,houseUncertain:!!house};
- if(!house&&knownHouses.size)return {status:'needhouse',street:display,queues:candidates};
- return {status:'nohouse',street:display,queues:candidates};
+ const selectedKey=suggestion&&SvitloAddressLookup.normalize(suggestion.label)===SvitloAddressLookup.normalize($('street').value)?suggestion.key:null;
+ return SvitloAddressLookup.resolve({idx,settlement:town(),street:$('street').value,house:$('house').value,selectedKey});
 }
 function checkLookup(){
  const r=findQueue(),hint=$('lookupFeedback'),manual=$('manualLookup'),possible=$('possibleQueues');
- hint.className='lookup-feedback'+(r.status==='exact'?' found':r.status==='incomplete'?'':' warn');
+ hint.className='lookup-feedback'+(['exact','street'].includes(r.status)?' found':r.status==='incomplete'?'':' warn');
  const list=(r.queues||[]).join(', ');
  const messages={
-  incomplete:'Оберіть населений пункт і вулицю. Номер будинку потрібен лише там, де його вказано в офіційному переліку.',
-  unavailable:'Адресна база цього населеного пункту ще недоступна. Спробуйте офіційний пошук.',
-  ambiguous:'Є кілька вулиць із такою назвою (наприклад, вулиця і провулок). Уточніть тип у підказках.',
-  nostreet:'Ця вулиця відсутня у завантаженій базі. Перевірте написання або скористайтеся офіційним пошуком.',
-  needhouse:'Вулицю знайдено! Для точної перевірки оберіть номер будинку — оператор перелічує будинки окремо.',
-  nohouse:'Вулицю знайдено, але точного збігу за будинком немає. Ви можете перевірити свою підчергу на сайті оператора.',
-  exact:`Підчергу ${r.queue} підтверджено офіційним переліком для цього номера будинку.`,
-  possible:`Вулицю знайдено! Можливі підчерги: ${list}. ${r.houseUncertain?'Введений номер не підтверджений у переліку. ':''}У PDF не вказані будинки для цих записів: оберіть підчергу лише після перевірки на сайті оператора.`
+  incomplete:'Оберіть населений пункт і вулицю. Номер будинку вводити необов’язково.',
+  unavailable:'Для цього населеного пункту наразі немає адресного переліку. Якщо ви знаєте підчергу, можете вказати її вручну.',
+  ambiguous:'Знайдено декілька вулиць із такою назвою. Виберіть точну вулицю зі списку підказок.',
+  nostreet:'Поки не знайшли цю вулицю в переліку. Спробуйте підказки або вкажіть відому вам підчергу.',
+  needhouse:'Оператор указав окремі будинки цієї вулиці. Номер допоможе знайти точну підчергу, але ви можете вказати відому вам підчергу вручну.',
+  nohouse:'Для введеної адреси немає однозначного запису. За потреби вкажіть підчергу вручну.',
+  exact:`За офіційним переліком для цієї адреси: підчерга ${r.queue}.`,
+  street:`За переліком вулиць: підчерга ${r.queue}. Номер будинку вводити не потрібно.`,
+  possible:`Для цієї вулиці вказано декілька підчерг: ${list}. ${r.reason==='house-conflict'?'Цей номер будинку є у різних записах. ':'За можливості уточніть номер будинку.'}Оберіть свою підчергу.`
  };
  hint.textContent=messages[r.status]||'Не вдалося визначити підчергу.';
- manual.hidden=r.status==='incomplete'||r.status==='exact'||r.status==='needhouse';
+ manual.hidden=['incomplete','exact','street'].includes(r.status);
  possible.replaceChildren();
- if(r.status==='possible'&&r.queues.length){
+ if(r.status==='possible'&&r.queues?.length){
    possible.hidden=false;
-   possible.append(el('div','possible-title','За офіційним переліком вулиця зустрічається в:'));
+   possible.append(el('div','possible-title','Підчерги з опублікованого переліку:'));
    for(const q of r.queues){
      const b=el('button','possible-queue'+($('manualQueue').value===q?' selected':''),`Підчерга ${q}`);
      b.type='button';b.setAttribute('aria-pressed',String($('manualQueue').value===q));
      b.onclick=()=>{$('manualQueue').value=q;checkLookup()};possible.append(b);
    }
  }else possible.hidden=true;
- $('saveAddress').disabled=!(r.status==='exact'||(r.status!=='incomplete'&&r.status!=='needhouse'&&town().trim()&&$('street').value.trim()&&QUEUES.includes($('manualQueue').value)));
+ const chosen=$('manualQueue').value;
+ $('saveAddress').disabled=!(r.status==='exact'||r.status==='street'||
+   (r.status!=='incomplete'&&town().trim()&&$('street').value.trim()&&QUEUES.includes(chosen)));
  return r;
 }
 function suggestions(){
- const value=norm($('street').value),root=$('streetSuggestions');root.replaceChildren();
- if(value.length<2){root.hidden=true;return}
- const matches=Object.entries(localIndex().streets||{}).filter(([key,name])=>norm(name).includes(value)||key.split('|')[1]?.includes(value)).slice(0,12);
+ const root=$('streetSuggestions');root.replaceChildren();
+ const matches=SvitloAddressLookup.suggest(localIndex(),$('street').value);
  root.hidden=!matches.length;
  for(const [key,name] of matches){const b=el('button','',name);b.type='button';b.onclick=()=>{
-   $('street').value=name;suggestion={key,label:name};root.hidden=true;
-   const r=checkLookup();if(r.status==='needhouse')$('house').focus();
+   $('street').value=name;suggestion={key,label:name};root.hidden=true;checkLookup();
  };root.append(b)}
 }
 function openAddressSheet(item=null){editId=item?.id||null;suggestion=null;setText('sheetTitle',item?'Редагувати адресу':'Нова адреса');$('nickname').value=item?.nickname||'';$('street').value=item?.street||'';$('house').value=item?.house||'';const opt=Array.from($('settlement').options).find(x=>normTown(x.value)===normTown(item?.settlement));$('settlement').value=opt?opt.value:item?.settlement?'Інше':'Черкаси';$('customSettlement').hidden=$('settlement').value!=='Інше';$('customSettlement').value=opt?'':item?.settlement||'';$('manualQueue').value=item?.queue||'';$('deleteAddress').hidden=!item;$('streetSuggestions').hidden=true;checkLookup();showSheet($('addressSheet'))}
@@ -163,7 +153,7 @@ let sheetScroll=0;
 function showSheet(dialog){if(!document.body.classList.contains('sheet-open'))sheetScroll=window.scrollY;dialog.showModal();document.body.classList.add('sheet-open');document.body.style.position='fixed';document.body.style.top=`-${sheetScroll}px`;document.body.style.width='100%'}
 function unlockSheet(){if($('addressSheet').open||$('placesSheet').open)return;document.body.classList.remove('sheet-open');document.body.style.position='';document.body.style.top='';document.body.style.width='';window.scrollTo({top:sheetScroll,behavior:'instant'})}
 function closeSheet(dialog){if(dialog.open)dialog.close();unlockSheet()}
-function saveAddress(event){event.preventDefault();const r=checkLookup(),queue=r.status==='exact'?r.queue:$('manualQueue').value;if(!QUEUES.includes(queue)){flash('Укажіть підчергу для адреси');return}const a={id:editId||id(),nickname:$('nickname').value.trim(),street:$('street').value.trim(),house:$('house').value.trim(),settlement:normTown(town())==='слобода'?'Слобода':town(),queue,method:r.status==='exact'?'automatic':r.status==='possible'&&r.queues?.includes(queue)?'street':'manual'};if(editId){const idx=addresses.findIndex(x=>x.id===editId);if(idx>=0)addresses[idx]=a}else addresses.push(a);if(!primary()||!editId)prefs.primaryId=a.id;saveAddresses();savePrefs();closeSheet($('addressSheet'));render();flash(r.status==='exact'?'Підчергу підтверджено за номером будинку':r.status==='possible'?'Підчергу збережено як непідтверджену за будинком':'Адресу збережено');if(!editId)navigate('detail');updatePushSubscription().catch(()=>{});}
+function saveAddress(event){event.preventDefault();const r=checkLookup(),queue=['exact','street'].includes(r.status)?r.queue:$('manualQueue').value;if(!QUEUES.includes(queue)){flash('Укажіть підчергу для адреси');return}const a={id:editId||id(),nickname:$('nickname').value.trim(),street:$('street').value.trim(),house:$('house').value.trim(),settlement:normTown(town())==='слобода'?'Слобода':town(),queue,method:r.status==='exact'?'automatic':r.status==='street'?'street-auto':r.status==='possible'&&r.queues?.includes(queue)?'street-choice':'manual'};if(editId){const idx=addresses.findIndex(x=>x.id===editId);if(idx>=0)addresses[idx]=a}else addresses.push(a);if(!primary()||!editId)prefs.primaryId=a.id;saveAddresses();savePrefs();closeSheet($('addressSheet'));render();flash(['exact','street'].includes(r.status)?`Підчергу ${queue} знайдено`:'Адресу збережено');if(!editId)navigate('detail');updatePushSubscription().catch(()=>{});}
 function deleteAddress(){if(!editId||!confirm('Видалити цю адресу?'))return;addresses=addresses.filter(x=>x.id!==editId);if(prefs.primaryId===editId)prefs.primaryId=addresses[0]?.id||null;saveAddresses();savePrefs();closeSheet($('addressSheet'));navigate('home');flash('Адресу видалено');if(!primary())disableNotifications().catch(console.warn);else updatePushSubscription().catch(console.warn)}
 function movePlace(id,direction){const i=addresses.findIndex(x=>x.id===id);const j=i+direction;if(i<0||j<0||j>=addresses.length)return;[addresses[i],addresses[j]]=[addresses[j],addresses[i]];saveAddresses();openPickerContent();renderHome()}
 function openPickerContent(){const root=$('placesOptions');root.replaceChildren();for(const [i,a] of addresses.entries()){
@@ -235,8 +225,8 @@ async function refreshData(manual=false){if(Date.now()-lastRefresh<7000&&!manual
   const backup=seed.status==='fulfilled'?seed.value:{};
   index=mergeIndexes(live,backup);
   if($('addressSheet').open){suggestions();checkLookup()}
- }catch(e){console.warn('Address fetch:',e)}try{const [alertRes,overrideRes]=await Promise.all([fetch('./data/emergency.json?v='+Date.now(),{cache:'no-store'}),fetch('./data/manual_overrides.json?v='+Date.now(),{cache:'no-store'})]);if(alertRes.ok){const parsed=await alertRes.json();if(Array.isArray(parsed.events))emergency=parsed}if(overrideRes.ok){const parsed=await overrideRes.json();if(parsed.schemaVersion===1)overrides=parsed}applyOverrides()}catch(e){console.warn('Bulletin or admin overrides:',e)}render();if(manual)flash(schedulesOk?'Графіки перевірено':'Не вдалося оновити — показано останні дані');if(schedulesOk)announceChanges(previous,data)}
-function notify(title,body,key){if(pushActive||notified.has(key)||!('Notification' in window)||Notification.permission!=='granted')return;notified.add(key);localStorage.setItem(SEEN,JSON.stringify([...notified].slice(-400)));navigator.serviceWorker?.ready.then(r=>r.showNotification(title,{body,icon:'./assets/icon-192.png',tag:key})).catch(()=>{try{new Notification(title,{body})}catch{}})}
+ }catch(e){console.warn('Address fetch:',e)}try{const [alertRes,overrideRes]=await Promise.all([fetch('./data/emergency.json?v='+Date.now(),{cache:'no-store'}),fetch('./data/manual_overrides.json?v='+Date.now(),{cache:'no-store'})]);if(alertRes.ok){const parsed=await alertRes.json();if(Array.isArray(parsed.events))emergency=parsed}if(overrideRes.ok){const parsed=await overrideRes.json();if(parsed.schemaVersion===1)overrides=parsed}applyOverrides()}catch(e){console.warn('Bulletin or admin overrides:',e)}hasCheckedOnce=true;render();if(manual)flash(schedulesOk?'Дані завантажено. Час перевірки джерела показано в оновленнях.':'Не вдалося завантажити нові дані — показано останні доступні');if(schedulesOk)announceChanges(previous,data)}
+function notify(title,body,key){if(pushActive||notified.has(key)||!('Notification' in window)||Notification.permission!=='granted')return;notified.add(key);localStorage.setItem(SEEN,JSON.stringify([...notified].slice(-400)));navigator.serviceWorker?.ready.then(r=>r.showNotification(title,{body,icon:'./assets/icon-192-v673.png',tag:key})).catch(()=>{try{new Notification(title,{body})}catch{}})}
 function announceChanges(previous,current){if(!prefs.changes||!previous?.lastChecked)return;const a=primary();if(!a?.queue)return;for(const c of current.changes||[])if(c.queues?.includes(a.queue)&&!previous.changes?.some(x=>x.date===c.date&&x.publishedAt===c.publishedAt)){notify('Світло: графік змінено',`Оновлена підчерга ${a.queue} на ${formatDate(c.date)}.`, `change:${c.date}:${c.publishedAt}:${a.queue}`)}}
 function checkNotifications(){
  if(!('Notification' in window)||Notification.permission!=='granted')return;
@@ -296,13 +286,13 @@ async function disableNotifications(){
    if(pushConfig?.apiBase){
     const result=await fetch(pushConfig.apiBase.replace(/\/$/,'')+'/api/unsubscribe',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({subscription:{endpoint:sub.endpoint}})});
     if(!result.ok)throw Error('Сервер не підтвердив відписку');
-   }else throw Error('Не налаштовано Push-сервер');
+   }else throw Error('Підписка тимчасово недоступна');
    await sub.unsubscribe();
   }
-  pushActive=false;localStorage.setItem(PUSH_CONSENT,'no');flash('Push вимкнено, підписку видалено із сервера');renderSettings();
+  pushActive=false;localStorage.setItem(PUSH_CONSENT,'no');flash('Сповіщення вимкнено. Підписку скасовано');renderSettings();
  }catch(e){console.warn(e);flash('Не вдалося відписатися — повторіть, коли є інтернет')}
 }
-async function enableNotifications(){if(!('Notification' in window)){flash('Цей браузер не підтримує сповіщення');return}if(Notification.permission==='denied'){flash('Дозвольте сповіщення у налаштуваннях iPhone');return}const granted=await Notification.requestPermission();if(granted!=='granted'){flash('Дозвіл на сповіщення не надано');return}if(pushConfig){try{await updatePushSubscription();flash('Фонові Push-сповіщення увімкнено')}catch(e){console.warn(e);flash('Не вдалося підключитися до Push-сервера')}}else flash('Сповіщення працюють, поки застосунок відкритий');renderSettings()}
+async function enableNotifications(){if(!('Notification' in window)){flash('Цей браузер не підтримує сповіщення');return}if(Notification.permission==='denied'){flash('Дозвольте сповіщення у налаштуваннях iPhone');return}const granted=await Notification.requestPermission();if(granted!=='granted'){flash('Дозвіл на сповіщення не надано');return}if(pushConfig){try{await updatePushSubscription();flash('Сповіщення увімкнено')}catch(e){console.warn(e);flash('Не вдалося ввімкнути сповіщення. Спробуйте пізніше')}}else flash('Нагадування увімкнено для відкритого застосунку');renderSettings()}
 // Event wiring
 for(const b of document.querySelectorAll('[data-go]'))b.addEventListener('click',()=>navigate(b.dataset.go));
 $('refreshTop').onclick=()=>refreshData(true);$('refreshDetail').onclick=()=>refreshData(true);$('manualRefresh').onclick=()=>refreshData(true);$('primaryPicker').onclick=()=>addresses.length?openPicker():openAddressSheet();$('addFromHome').onclick=()=>openAddressSheet();$('addFromSettings').onclick=()=>openAddressSheet();$('editActive').onclick=()=>openAddressSheet(primary());$('openDetail').onclick=()=>navigate('detail');

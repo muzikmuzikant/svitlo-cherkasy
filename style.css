@@ -56,3 +56,6 @@ html{scrollbar-width:none;overflow-x:clip;overscroll-behavior-x:none;scroll-beha
 .app-update-action:disabled{opacity:.6;cursor:wait}
 .app-update-close{align-self:flex-start;border:0;background:transparent;color:#647992;font-size:23px;line-height:1;padding:0 2px;cursor:pointer}
 @media(max-width:370px){.app-update-banner{gap:7px;padding:10px}.app-update-action{padding:9px 8px}}
+
+/* Freshness message: informative, not a raw diagnostic banner. */
+.freshness-warning strong{display:block;margin-bottom:3px;font-weight:750}.freshness-warning span{display:block}.freshness-warning a{display:inline-block;margin-top:5px;font-weight:700;color:inherit;text-decoration:underline;text-underline-offset:2px}

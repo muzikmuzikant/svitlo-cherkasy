@@ -6,7 +6,7 @@
     // Keep module load order: hour paint must be ready before the main app starts.
     const hour = document.createElement('script');
     hour.src = './hour-paint.js';
-    hour.onload = () => { const app = document.createElement('script'); app.src = './app.js'; app.onload = () => { const updater = document.createElement('script'); updater.src = './version-check.js'; document.body.append(updater); }; document.body.append(app); };
+    hour.onload = () => { const lookup = document.createElement('script'); lookup.src = './address-lookup.js'; lookup.onload = () => { const app = document.createElement('script'); app.src = './app.js'; app.onload = () => { const updater = document.createElement('script'); updater.src = './version-check.js'; document.body.append(updater); }; document.body.append(app); }; document.body.append(lookup); };
     document.body.append(hour);
     return;
   }

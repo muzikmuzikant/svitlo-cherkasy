@@ -1,0 +1,5 @@
+Виправлення відсутніх файлів для GitHub Pages v6.9.1.
+Завантажте файли з цього ZIP у корінь репозиторію (assets/ залишити папкою).
+Не завантажуйте сам ZIP. Не змінюйте data/, push-config.json, CNAME або Railway Variables.
+GitHub → Actions → Publish Svitlo Cherkasy PWA → Run workflow.
+Якщо GitHub запропонує overwrite, виберіть заміну файлів у цих шляхах.
