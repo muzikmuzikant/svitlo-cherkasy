@@ -53,7 +53,7 @@ async function github(path,method='GET',payload){
  return data;
 }
 async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
-export async function adminRouter(req,res,manualPush){
+export async function adminRouter(req,res,manualPush,feedback){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(req.headers.origin!==origin){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const url=new URL(req.url,'http://localhost');
@@ -95,6 +95,13 @@ export async function adminRouter(req,res,manualPush){
    if(url.pathname==='/api/admin/push/status'&&req.method==='GET'){send(res,200,manualPush.stats());return true}
    if(url.pathname==='/api/admin/push/test'&&req.method==='POST'){send(res,200,await manualPush.test(await readJson(req)));return true}
    if(url.pathname==='/api/admin/push/send'&&req.method==='POST'){send(res,200,await manualPush.broadcast(await readJson(req)));return true}
+   if(url.pathname==='/api/admin/feedback'&&req.method==='GET'){send(res,200,feedback.list());return true}
+   if(url.pathname.startsWith('/api/admin/feedback/')&&['PATCH','DELETE'].includes(req.method)){
+     const id=decodeURIComponent(url.pathname.slice('/api/admin/feedback/'.length));
+     if(!/^SC-[0-9A-F]{10}$/.test(id)){send(res,400,{error:'Неправильний номер звернення'});return true}
+     const result=req.method==='DELETE'?feedback.remove(id):feedback.change(id,(await readJson(req,1000)).status);
+     send(res,200,result);return true;
+   }
    const ghReady=!!GH_TOKEN&&repoValid();
    if(url.pathname==='/api/admin/status'&&req.method==='GET'){
      if(!ghReady){send(res,200,{ok:true,repository:null,branch:BRANCH,editingEnabled:false,publicOrigin:origin});return true}

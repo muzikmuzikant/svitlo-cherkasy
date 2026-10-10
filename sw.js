@@ -1,5 +1,5 @@
-const VERSION='svitlo-cherkasy-shell-v6.7.1';
-const SHELL=['./','./index.html','./app.js','./hour-paint.js','./admin.html','./admin.js','./style.css','./install.css','./install.js','./version-check.js','./release.json','./manifest.webmanifest','./privacy.html','./about.html','./assets/icon.svg','./assets/icon-192.png','./assets/icon-512.png','./assets/apple-touch-icon-180.png','./assets/icon-512-maskable.png'];
+const VERSION='svitlo-cherkasy-shell-v6.8.0';
+const SHELL=['./','./index.html','./app.js','./address-lookup.js','./hour-paint.js','./admin.html','./admin.js','./style.css','./install.css','./install.js','./version-check.js','./release.json','./manifest.webmanifest','./privacy.html','./about.html','./feedback.html','./feedback.js','./assets/icon.svg','./assets/icon-192.png','./assets/icon-512.png','./apple-touch-icon-v673.png','./apple-touch-icon.png','./apple-touch-icon-167-v673.png','./apple-touch-icon-152-v673.png','./assets/icon-192-v673.png','./assets/icon-512-v673.png','./assets/icon-512-maskable-v673.png'];
 const CACHE_DATA='svitlo-cherkasy-data-v6.7';
 self.addEventListener('install',event=>event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>![VERSION,CACHE_DATA].includes(k)).map(k=>caches.delete(k)))),self.clients.claim()])));
@@ -22,7 +22,7 @@ self.addEventListener('push',event=>{
  let msg={title:'Світло Черкаси',body:'Є оновлення графіка.'};
  try{if(event.data)msg=Object.assign(msg,event.data.json())}catch{}
  // iOS requires a visible notification for every push.
- event.waitUntil(self.registration.showNotification(String(msg.title).slice(0,100),{body:String(msg.body).slice(0,250),icon:'./assets/icon-192.png',badge:'./assets/icon-192.png',tag:String(msg.tag||msg.title).slice(0,70),data:{url:msg.url||self.registration.scope}}));
+ event.waitUntil(self.registration.showNotification(String(msg.title).slice(0,100),{body:String(msg.body).slice(0,250),icon:'./assets/icon-192-v673.png',badge:'./assets/icon-192-v673.png',tag:String(msg.tag||msg.title).slice(0,70),data:{url:msg.url||self.registration.scope}}));
 });
 self.addEventListener('notificationclick',event=>{event.notification.close();event.waitUntil((async()=>{const url=new URL(event.notification.data?.url||self.registration.scope);if(url.origin!==self.location.origin)url.href=self.registration.scope;const tabs=await self.clients.matchAll({type:'window',includeUncontrolled:true});for(const tab of tabs){if(tab.url.startsWith(self.registration.scope)){await tab.focus();return}}await self.clients.openWindow(url.href)})())});
 

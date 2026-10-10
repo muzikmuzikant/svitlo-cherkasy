@@ -1,59 +1,159 @@
-import {adminRouter} from './admin.js';
-import {createManualPush} from './manual-push.js';
-/* Companion server for GitHub Pages. Persist DATA_FILE on non-ephemeral storage.
-   No real home addresses are transmitted or stored: only queue and subscription. */
+/* Svitlo Cherkasy Web Push companion. No address/name is stored, only queue and Web Push endpoint.
+ * Keep DATA_FILE on Railway's persistent volume; keep VAPID private key in Railway Variables.
+ */
 import http from 'node:http';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
+import path from 'node:path';
+import {createFeedbackStore,readFeedbackBody} from './feedback-store.js';
 import webpush from 'web-push';
-const {VAPID_PUBLIC_KEY,PUSH_PRIVATE_KEY,PUSH_CONTACT,APP_ORIGIN,SCHEDULE_URL,DATA_FILE='./subscribers.json',PORT='8787'}=process.env;
-if(!VAPID_PUBLIC_KEY||!PUSH_PRIVATE_KEY||!PUSH_CONTACT||!APP_ORIGIN||!SCHEDULE_URL){console.error('Missing: VAPID_PUBLIC_KEY PUSH_PRIVATE_KEY PUSH_CONTACT APP_ORIGIN SCHEDULE_URL');process.exit(1)}
+import {adminRouter} from './admin.js';
+import {createManualPush} from './manual-push.js';
+import {QUEUES,timeline,dueTransition,latestOfficialEvent,freshEvent} from './schedule-engine.js';
+
+const {VAPID_PUBLIC_KEY,PUSH_PRIVATE_KEY,PUSH_CONTACT,APP_ORIGIN,SCHEDULE_URL,DATA_FILE='./subscribers.json',PORT='8080'}=process.env;
+if(!VAPID_PUBLIC_KEY||!PUSH_PRIVATE_KEY||!PUSH_CONTACT||!APP_ORIGIN||!SCHEDULE_URL){
+ console.error('Missing: VAPID_PUBLIC_KEY PUSH_PRIVATE_KEY PUSH_CONTACT APP_ORIGIN SCHEDULE_URL');process.exit(1);
+}
+for(const [key,value] of [['APP_ORIGIN',APP_ORIGIN],['SCHEDULE_URL',SCHEDULE_URL]]){
+ try{if(new URL(value).protocol!=='https:')throw Error('HTTPS required')}catch{console.error(key+' must be a valid HTTPS URL');process.exit(1)}
+}
 webpush.setVapidDetails(PUSH_CONTACT,VAPID_PUBLIC_KEY,PUSH_PRIVATE_KEY);
-const ALL=new Set(Array.from({length:6},(_,i)=>[`${i+1}.1`,`${i+1}.2`]).flat());
-const config={};try{Object.assign(config,JSON.parse(fs.readFileSync(DATA_FILE,'utf8')))}catch{}
-const subscribers=config.subscribers||{};const sent=config.sent||{};
-const save=()=>{fs.writeFileSync(DATA_FILE+'.tmp',JSON.stringify({subscribers,sent},null,2));fs.renameSync(DATA_FILE+'.tmp',DATA_FILE)};
-const utcTime=()=>new Date();
-const dayInKyiv=(d=new Date())=>{const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(d).map(p=>[p.type,p.value]));return {date:`${parts.year}-${parts.month}-${parts.day}`,m:+parts.hour*60 + +parts.minute}};
-const shiftDay=(s,n)=>{const d=new Date(s+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)};
-const minute=s=>s==='24:00'?1440:/^([01]\d|2[0-3]):[0-5]\d$/.test(s||'')?+s.slice(0,2)*60 + +s.slice(3):-1;
-function timeline(schedule,q){const item=schedule?.queues?.[q];if(!item)return null;const start=minute(item.knownFrom||'00:00');if(start<0)return null;const a=new Int8Array(1440);a.fill(-1);a.fill(0,start);let last=0;for(const [s,e]of item.off||[]){const st=minute(s),en=minute(e);if(st<last||st>=en||en>1440)return null;a.fill(1,Math.max(st,start),en);last=en}return a}
 const hash=endpoint=>crypto.createHash('sha256').update(endpoint).digest('hex');
+let config={};try{config=JSON.parse(fs.readFileSync(DATA_FILE,'utf8'))}catch(e){if(e.code!=='ENOENT')console.warn('Unable to load subscriber store:',e.message)}
+const subscribers=config.subscribers&&typeof config.subscribers==='object'?config.subscribers:{};
+const sent=config.sent&&typeof config.sent==='object'?config.sent:{};
+function save(){
+ try{fs.writeFileSync(DATA_FILE+'.tmp',JSON.stringify({subscribers,sent}));fs.renameSync(DATA_FILE+'.tmp',DATA_FILE)}
+ catch(e){console.error('Persistent subscriber save failed:',e.message);throw e}
+}
+const feedback=createFeedbackStore({filePath:process.env.FEEDBACK_FILE||path.join(path.dirname(DATA_FILE),'feedback.json')});
 const appUrl=new URL('../',SCHEDULE_URL).href;
 const manualPush=createManualPush({subscribers,webpush,appUrl,hash,save});
-const send=async(record,title,body,key)=>{if(sent[key])return;const payload=JSON.stringify({title,body,url:APP_ORIGIN});try{await webpush.sendNotification(record.subscription,payload,{TTL:1200,urgency:'normal'});sent[key]=new Date().toISOString()}catch(e){if([404,410].includes(e.statusCode)){delete subscribers[hash(record.subscription.endpoint)]}else console.warn('Push failed',e.statusCode||e.message)}};
-async function job(){let source;try{const r=await fetch(SCHEDULE_URL,{signal:AbortSignal.timeout(20000),headers:{'cache-control':'no-cache'}});if(!r.ok)throw Error(String(r.status));source=await r.json()}catch(e){console.warn('Schedule fetch failed',e.message);return}if(!Array.isArray(source.days))return;const now=dayInKyiv(),current=source.days.find(x=>x.date===now.date&&x.verified===true),nextDate=shiftDay(now.date,1),tomorrow=source.days.find(x=>x.date===nextDate&&x.verified===true);let emergencyEvents=[];
+const fmtKyiv=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+function dayInKyiv(d=new Date()){const p=Object.fromEntries(fmtKyiv.formatToParts(d).map(x=>[x.type,x.value]));return {date:`${p.year}-${p.month}-${p.day}`,m:Number(p.hour)*60+Number(p.minute)}}
+function shiftDay(s,n){const d=new Date(s+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
+function response(res,status,json,origin=''){
+ res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','access-control-allow-origin':APP_ORIGIN,'vary':'Origin','x-content-type-options':'nosniff'});res.end(JSON.stringify(json));
+}
+async function loadJson(url){
+ const r=await fetch(url,{signal:AbortSignal.timeout(16000),cache:'no-store',headers:{'cache-control':'no-cache'}});
+ if(!r.ok)throw Error(`HTTP ${r.status}`);
+ return r.json();
+}
+async function send(rec,title,body,key,options={}){
+ if(sent[key])return;
+ const payload=JSON.stringify({title,body,url:appUrl,tag:key.slice(-90)});
+ try{await webpush.sendNotification(rec.subscription,payload,{TTL:options.ttl||1200,urgency:options.urgency||'normal'});sent[key]=new Date().toISOString()}
+ catch(e){if([404,410].includes(e?.statusCode))delete subscribers[hash(rec.subscription.endpoint)];else console.warn('Auto Push failed:',e?.statusCode||e?.message)}
+}
+async function forEachLimited(items,limit,fn){
+ let next=0;
+ await Promise.all(Array.from({length:Math.min(limit,items.length)},async()=>{
+  while(next<items.length){const i=next++;try{await fn(items[i])}catch(e){console.warn('Delivery worker:',e.message)}}
+ }));
+}
+let lastSuccess=null,lastError=null,running=false;
+async function job(){
+ if(running)return;
+ running=true;
  try{
-   const emergencyUrl=new URL(SCHEDULE_URL);emergencyUrl.pathname=emergencyUrl.pathname.replace(/schedules\.json$/,'emergency.json');
-   const r=await fetch(emergencyUrl,{signal:AbortSignal.timeout(15000),cache:'no-store'});
-   if(r.ok){const j=await r.json();if(Array.isArray(j.events))emergencyEvents=j.events}
- }catch(e){console.warn('Emergency bulletin fetch:',e.message)}
- try{
-   const manualUrl=new URL(SCHEDULE_URL);manualUrl.pathname=manualUrl.pathname.replace(/schedules\.json$/,'manual_overrides.json');
-   const r=await fetch(manualUrl,{signal:AbortSignal.timeout(15000),cache:'no-store'});
-   if(r.ok){const j=await r.json();if(Array.isArray(j.emergency?.events))emergencyEvents.push(...j.emergency.events)}
- }catch(e){console.warn('Emergency overrides fetch:',e.message)}
- const subscriptions=Object.values(subscribers);for(const record of subscriptions){const q=record.queue;if(!ALL.has(q))continue;const a=timeline(current,q),m=now.m;
- if(a){for(const [type,offset,target,description] of [['off',30,1,'відключення'],['on',15,0,'повернення світла']]){if(!record.preferences?.[type])continue;const change=m+offset;if(change>=1440)continue;if(a[change]===target&&a[change-1]!==target){await send(record,`Світло: скоро ${description}`,`За ${offset} хвилин очікується ${description} за графіком для підчерги ${q}.`,`${hash(record.subscription.endpoint)}:${type}:${now.date}:${change}`)}}}
- if(tomorrow&&m>=19*60&&record.preferences?.tomorrow)await send(record,'Світло: графік на завтра',`Опубліковано графік для підчерги ${q} на ${nextDate}.`,`${hash(record.subscription.endpoint)}:tomorrow:${nextDate}:${tomorrow.publishedAt}`);
- if(record.preferences?.emergency){
-   for(const event of emergencyEvents){
-     if(event.status!=='active'||!event.publishedAt||!event.source?.startsWith('https://www.cherkasyoblenergo.com/'))continue;
-     const delta=Date.now()-new Date(event.publishedAt).getTime();
-     if(delta<0||delta>=65*60_000)continue;
-     if(event.queues?.length&&!event.queues.includes(q))continue;
-     await send(record,'Світло: аварійне повідомлення оператора',`Офіційне повідомлення: ${String(event.title).slice(0,135)}. Перевірте інформацію для своєї адреси.`,`${hash(record.subscription.endpoint)}:emergency:${hash(event.source)}`);
+  let source,scheduleIssue=null;
+  try{source=await loadJson(SCHEDULE_URL);if(!Array.isArray(source.days))throw Error('Invalid schedule structure')}
+  catch(e){scheduleIssue='Schedule fetch: '+e.message;console.warn(scheduleIssue);source={days:[],changes:[]}}
+  const now=dayInKyiv(),timestamp=Date.now();
+  const current=source.days.find(d=>d.date===now.date&&d.verified===true);
+  const nextDate=shiftDay(now.date,1);
+  const tomorrow=source.days.find(d=>d.date===nextDate&&d.verified===true);
+  let bulletin=[];
+  for(const [filename,path] of [['emergency.json','events'],['manual_overrides.json','override']]){
+   try{const u=new URL(SCHEDULE_URL);u.pathname=u.pathname.replace(/schedules\.json$/,filename);
+       const value=await loadJson(u);const events=path==='events'?value.events:value.emergency?.events;
+       if(Array.isArray(events))bulletin.push(...events)}
+   catch(e){console.warn('Bulletin refresh:',e.message)}
+  }
+  // The freshest verified bulletin determines whether an emergency is active or ended.
+  const event=latestOfficialEvent(bulletin,timestamp);
+  const all=Object.values(subscribers);
+  await forEachLimited(all,12,async record=>{
+   const q=record?.queue,endpoint=record?.subscription?.endpoint;
+   if(!QUEUES.has(q)||!endpoint)return;
+   const pref=record.preferences||{},prefix=hash(endpoint),minutes=now.m;
+   const values=timeline(current,q);
+   for(const [type,offset,target,description] of [['off',30,1,'відключення'],['on',15,0,'відновлення']]){
+    if(!pref[type])continue;
+    const boundary=dueTransition(values,minutes,offset,target,4);
+    if(boundary!==null){const eta=boundary-minutes;
+     await send(record,`Світло: скоро ${description}`,`Орієнтовно через ${eta} хв за графіком: ${description} для підчерги ${q}.`,`${prefix}:${type}:${now.date}:${boundary}`)}
    }
+   if(pref.tomorrow&&tomorrow?.queues?.[q]&&minutes>=19*60){
+    const revision=tomorrow.publishedAt||'';
+    await send(record,'Світло: графік на завтра',`Опубліковано графік для підчерги ${q} на ${nextDate}.`,`${prefix}:tomorrow:${nextDate}:${revision}`);
+   }
+   if(pref.emergency&&freshEvent(event,timestamp)&&(!Array.isArray(event.queues)||!event.queues.length||event.queues.includes(q))){
+    const title=event.status==='active'?'🪫Графік не діє':event.status==='ended'?'✅ Екстрені обмеження завершено':null;
+    const body=event.status==='active'?'Розпочинаються екстрені відключення світла поза графіком.':event.status==='ended'?'Оператор повідомив про завершення екстрених обмежень. Перевірте актуальний графік.':null;
+    if(title)await send(record,title,body,`${prefix}:emergency:${event.status}:${hash(event.id||event.source)}:${event.publishedAt}`,{ttl:3600,urgency:'high'});
+   }
+   if(pref.changes)for(const change of (source.changes||[]).slice(-30)){
+    const date=Date.parse(change.publishedAt||''),age=timestamp-date;
+    if(!Array.isArray(change.queues)||!change.queues.includes(q)||change.date<now.date||!Number.isFinite(date)||age<0||age>=65*60000)continue;
+    await send(record,'Світло: графік змінено',`Оновлено графік для підчерги ${q} на ${change.date}.`,`${prefix}:change:${change.date}:${change.publishedAt}`);
+   }
+  });
+  const cutoff=timestamp-14*86400_000;
+  for(const [key,stamp] of Object.entries(sent))if(!Number.isFinite(Date.parse(stamp))||Date.parse(stamp)<cutoff)delete sent[key];
+  save();lastSuccess=new Date().toISOString();lastError=scheduleIssue;
+ }catch(e){lastError=e.message;console.error('Push cycle failed:',e.message)}
+ finally{running=false}
+}
+const validEndpoint=raw=>{
+ if(typeof raw!=='string'||raw.length>2048)return false;
+ try{const u=new URL(raw);if(u.protocol!=='https:'||u.username||u.password||u.port)return false;
+  const h=u.hostname.toLowerCase();return h.endsWith('.push.apple.com')||h==='fcm.googleapis.com'||h==='updates.push.services.mozilla.com'||h.endsWith('.push.services.mozilla.com')||h.endsWith('.googleapis.com');}
+ catch{return false}
+};
+async function readPayload(req,limit=12000){
+ let bytes=0,chunks=[];
+ for await(const c of req){bytes+=c.length;if(bytes>limit)throw Error('Request too large');chunks.push(c)}
+ return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+}
+const server=http.createServer(async(req,res)=>{
+ const origin=req.headers.origin||'';
+ if(req.method==='OPTIONS'){
+  if(origin!==APP_ORIGIN){response(res,403,{error:'Origin not allowed'});return}
+  res.writeHead(204,{'access-control-allow-origin':APP_ORIGIN,'access-control-allow-methods':'POST, OPTIONS, GET, PUT, PATCH, DELETE','access-control-allow-headers':'content-type, authorization','vary':'Origin'});res.end();return;
  }
- if(record.preferences?.changes){for(const c of (source.changes||[]).slice(-16))if(c.queues?.includes(q)&&c.date>=now.date){const d=new Date(c.publishedAt);if(Date.now()-d.getTime()<65*60*1000){await send(record,'Світло: графік змінено',`Оновлено підчергу ${q} на ${c.date}.`,`${hash(record.subscription.endpoint)}:change:${c.date}:${c.publishedAt}`)}}}
+ if(req.url?.startsWith('/api/admin/')){await adminRouter(req,res,manualPush,feedback);return}
+ if(req.url==='/api/feedback'){
+  if(req.method!=='POST'){response(res,405,{error:'Method not allowed'});return}
+  if(origin!==APP_ORIGIN){response(res,403,{error:'Origin not allowed'});return}
+  try{
+   const data=await readFeedbackBody(req);
+   const ip=(String(req.headers['x-forwarded-for']||'').split(',')[0].trim()||req.socket.remoteAddress||'unknown').slice(0,80);
+   const saved=feedback.submit(data,ip);
+   response(res,201,saved);
+  }catch(e){response(res,e.statusCode||500,{error:e.statusCode?e.message:'Не вдалося зберегти звернення.'})}
+  return;
  }
- const cutoff=Date.now()-14*86400*1000;for(const [key,stamp] of Object.entries(sent))if(new Date(stamp).getTime()<cutoff)delete sent[key];save()}
-const respond=(res,code,obj,origin)=>{res.writeHead(code,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','access-control-allow-origin':origin===APP_ORIGIN?origin:APP_ORIGIN,'vary':'Origin'});res.end(JSON.stringify(obj))};
-const server=http.createServer(async(req,res)=>{const origin=req.headers.origin||'';if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':APP_ORIGIN,'access-control-allow-methods':'POST, OPTIONS, GET, PUT','access-control-allow-headers':'content-type, authorization','vary':'Origin'});res.end();return}
- if(req.url?.startsWith('/api/admin/')){await adminRouter(req,res,manualPush);return}
- if(req.url==='/health'){respond(res,200,{ok:true,subscriberCount:Object.keys(subscribers).length},origin);return}
- if(req.url!=='/api/subscribe'||req.method!=='POST'){respond(res,404,{error:'Not found'},origin);return}
- if(origin!==APP_ORIGIN){respond(res,403,{error:'Origin not allowed'},origin);return}
- try{let size=0;let body='';for await(const c of req){size+=c.length;if(size>12_000)throw Error('Too large');body+=c.toString()}const data=JSON.parse(body);const endpoint=data.subscription?.endpoint;const host=new URL(endpoint).hostname;if(!endpoint?.startsWith('https://')||!(host.endsWith('.push.apple.com')||host==='fcm.googleapis.com'||host==='updates.push.services.mozilla.com'||host.endsWith('.mozilla.com')||host.endsWith('.googleapis.com')))throw Error('Invalid push service');if(!data.subscription.keys?.p256dh||!data.subscription.keys?.auth||!ALL.has(data.queue))throw Error('Invalid subscription or queue');const preferences={off:!!data.preferences?.off,on:!!data.preferences?.on,changes:!!data.preferences?.changes,tomorrow:!!data.preferences?.tomorrow,emergency:!!data.preferences?.emergency};const key=hash(endpoint);subscribers[key]={subscription:data.subscription,queue:data.queue,preferences};save();respond(res,200,{ok:true},origin)}catch(e){respond(res,400,{error:'Bad subscription payload'},origin)}});
-server.listen(+PORT,()=>console.log('Push companion listening on port '+PORT));
+ if(req.url==='/health'&&req.method==='GET'){
+  response(res,200,{ok:true,subscriberCount:Object.keys(subscribers).length,lastPushCheck:lastSuccess,pushCheckError:lastError});return;
+ }
+ if(!['/api/subscribe','/api/unsubscribe'].includes(req.url)||req.method!=='POST'){response(res,404,{error:'Not found'});return}
+ if(origin!==APP_ORIGIN){response(res,403,{error:'Origin not allowed'});return}
+ try{
+  const data=await readPayload(req),endpoint=data?.subscription?.endpoint;
+  if(!validEndpoint(endpoint))throw Error('Invalid endpoint');
+  const key=hash(endpoint);
+  if(req.url==='/api/unsubscribe'){
+   delete subscribers[key];save();response(res,200,{ok:true});return;
+  }
+  if(!data.subscription.keys?.p256dh||!data.subscription.keys?.auth||!QUEUES.has(data.queue))throw Error('Invalid subscription or queue');
+  const prefs=data.preferences||{};
+  const preferences={off:!!prefs.off,on:!!prefs.on,changes:!!prefs.changes,tomorrow:!!prefs.tomorrow,emergency:!!prefs.emergency};
+  subscribers[key]={subscription:data.subscription,queue:data.queue,preferences};
+  save();response(res,200,{ok:true});
+ }catch(e){response(res,e.message?.includes('save failed')?500:400,{error:'Invalid subscription request'})}
+});
+server.listen(Number(PORT),()=>console.log('Push companion listening on port '+PORT));
 job().catch(console.error);setInterval(()=>job().catch(console.error),60_000);
