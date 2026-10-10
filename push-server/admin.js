@@ -47,7 +47,8 @@ async function github(path,method='GET',payload){
  if(!response.ok)throw Error('GitHub API: '+response.status+' '+String(data.message||'Помилка').slice(0,150));
  return data;
 }
-export async function adminRouter(req,res){
+async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
+export async function adminRouter(req,res,manualPush){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(req.headers.origin!==origin){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const ip=String(req.headers['x-forwarded-for']||req.socket.remoteAddress||'').slice(0,120);
@@ -59,13 +60,17 @@ export async function adminRouter(req,res){
    track.count++;ATTEMPTS.set(ip,track);send(res,401,{error:'Неправильний пароль'});return true;
  }
  ATTEMPTS.delete(ip);
- if(!GH_TOKEN||!repoValid()){send(res,503,{error:'На сервері не налаштовані GITHUB_TOKEN та GITHUB_REPOSITORY'});return true}
  try{
    const url=new URL(req.url,'http://localhost');
+   if(url.pathname==='/api/admin/push/status'&&req.method==='GET'){send(res,200,manualPush.stats());return true}
+   if(url.pathname==='/api/admin/push/test'&&req.method==='POST'){send(res,200,await manualPush.test(await readJson(req)));return true}
+   if(url.pathname==='/api/admin/push/send'&&req.method==='POST'){send(res,200,await manualPush.broadcast(await readJson(req)));return true}
+   const ghReady=!!GH_TOKEN&&repoValid();
    if(url.pathname==='/api/admin/status'&&req.method==='GET'){
-     const result=await github('data/manual_overrides.json');
-     send(res,200,{ok:true,repository:REPO,branch:BRANCH,overridesLastCommit:result.sha,editable:Object.keys(PATHS),publicOrigin:origin});return true;
+     if(!ghReady){send(res,200,{ok:true,repository:null,branch:BRANCH,editingEnabled:false,publicOrigin:origin});return true}
+     send(res,200,{ok:true,repository:REPO,branch:BRANCH,editingEnabled:true,editable:Object.keys(PATHS),publicOrigin:origin});return true;
    }
+   if(!ghReady){send(res,503,{error:'Для редагування файлів потрібно задати GITHUB_TOKEN і GITHUB_REPOSITORY. Push-повідомлення вже доступні.'});return true}
    if(url.pathname==='/api/admin/file'&&req.method==='GET'){
      const kind=url.searchParams.get('kind');const path=PATHS[kind];if(!path)throw Error('Невідомий файл');
      const entry=await github(path);
@@ -85,5 +90,5 @@ export async function adminRouter(req,res){
      send(res,200,{ok:true,commit:r.commit?.sha,url:r.content?.html_url});return true;
    }
    send(res,404,{error:'Неіснуючий метод'});return true;
- }catch(e){send(res,400,{error:String(e.message).slice(0,240)});return true}
+ }catch(e){send(res,e.statusCode||400,{error:String(e.message).slice(0,240)});return true}
 }

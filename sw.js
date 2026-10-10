@@ -1,6 +1,6 @@
-const VERSION='svitlo-cherkasy-v6.3-20261010';
+const VERSION='svitlo-cherkasy-v6.4-push-20261010';
 const SHELL=['./','./index.html','./app.js','./hour-paint.js','./admin.html','./admin.js','./style.css','./manifest.webmanifest','./assets/icon.svg','./assets/icon-192.png','./assets/icon-512.png'];
-const CACHE_DATA='svitlo-cherkasy-data-v6.3';
+const CACHE_DATA='svitlo-cherkasy-data-v6.4';
 self.addEventListener('install',event=>event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>![VERSION,CACHE_DATA].includes(k)).map(k=>caches.delete(k)))),self.clients.claim()])));
 self.addEventListener('fetch',event=>{
@@ -21,6 +21,6 @@ self.addEventListener('push',event=>{
  let msg={title:'Світло Черкаси',body:'Є оновлення графіка.'};
  try{if(event.data)msg=Object.assign(msg,event.data.json())}catch{}
  // iOS requires a visible notification for every push.
- event.waitUntil(self.registration.showNotification(String(msg.title).slice(0,100),{body:String(msg.body).slice(0,250),icon:'./assets/icon-192.png',badge:'./assets/icon-192.png',tag:String(msg.title).slice(0,50),data:{url:msg.url||self.registration.scope}}));
+ event.waitUntil(self.registration.showNotification(String(msg.title).slice(0,100),{body:String(msg.body).slice(0,250),icon:'./assets/icon-192.png',badge:'./assets/icon-192.png',tag:String(msg.tag||msg.title).slice(0,70),data:{url:msg.url||self.registration.scope}}));
 });
 self.addEventListener('notificationclick',event=>{event.notification.close();event.waitUntil((async()=>{const url=new URL(event.notification.data?.url||self.registration.scope);if(url.origin!==self.location.origin)url.href=self.registration.scope;const tabs=await self.clients.matchAll({type:'window',includeUncontrolled:true});for(const tab of tabs){if(tab.url.startsWith(self.registration.scope)){await tab.focus();return}}await self.clients.openWindow(url.href)})())});

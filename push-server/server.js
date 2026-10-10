@@ -1,4 +1,5 @@
 import {adminRouter} from './admin.js';
+import {createManualPush} from './manual-push.js';
 /* Companion server for GitHub Pages. Persist DATA_FILE on non-ephemeral storage.
    No real home addresses are transmitted or stored: only queue and subscription. */
 import http from 'node:http';
@@ -18,6 +19,8 @@ const shiftDay=(s,n)=>{const d=new Date(s+'T12:00:00Z');d.setUTCDate(d.getUTCDat
 const minute=s=>s==='24:00'?1440:/^([01]\d|2[0-3]):[0-5]\d$/.test(s||'')?+s.slice(0,2)*60 + +s.slice(3):-1;
 function timeline(schedule,q){const item=schedule?.queues?.[q];if(!item)return null;const start=minute(item.knownFrom||'00:00');if(start<0)return null;const a=new Int8Array(1440);a.fill(-1);a.fill(0,start);let last=0;for(const [s,e]of item.off||[]){const st=minute(s),en=minute(e);if(st<last||st>=en||en>1440)return null;a.fill(1,Math.max(st,start),en);last=en}return a}
 const hash=endpoint=>crypto.createHash('sha256').update(endpoint).digest('hex');
+const appUrl=new URL('../',SCHEDULE_URL).href;
+const manualPush=createManualPush({subscribers,webpush,appUrl,hash,save});
 const send=async(record,title,body,key)=>{if(sent[key])return;const payload=JSON.stringify({title,body,url:APP_ORIGIN});try{await webpush.sendNotification(record.subscription,payload,{TTL:1200,urgency:'normal'});sent[key]=new Date().toISOString()}catch(e){if([404,410].includes(e.statusCode)){delete subscribers[hash(record.subscription.endpoint)]}else console.warn('Push failed',e.statusCode||e.message)}};
 async function job(){let source;try{const r=await fetch(SCHEDULE_URL,{signal:AbortSignal.timeout(20000),headers:{'cache-control':'no-cache'}});if(!r.ok)throw Error(String(r.status));source=await r.json()}catch(e){console.warn('Schedule fetch failed',e.message);return}if(!Array.isArray(source.days))return;const now=dayInKyiv(),current=source.days.find(x=>x.date===now.date&&x.verified===true),nextDate=shiftDay(now.date,1),tomorrow=source.days.find(x=>x.date===nextDate&&x.verified===true);let emergencyEvents=[];
  try{
@@ -47,7 +50,7 @@ async function job(){let source;try{const r=await fetch(SCHEDULE_URL,{signal:Abo
  const cutoff=Date.now()-14*86400*1000;for(const [key,stamp] of Object.entries(sent))if(new Date(stamp).getTime()<cutoff)delete sent[key];save()}
 const respond=(res,code,obj,origin)=>{res.writeHead(code,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','access-control-allow-origin':origin===APP_ORIGIN?origin:APP_ORIGIN,'vary':'Origin'});res.end(JSON.stringify(obj))};
 const server=http.createServer(async(req,res)=>{const origin=req.headers.origin||'';if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':APP_ORIGIN,'access-control-allow-methods':'POST, OPTIONS, GET','access-control-allow-headers':'content-type, authorization','vary':'Origin'});res.end();return}
- if(req.url?.startsWith('/api/admin/')){await adminRouter(req,res);return}
+ if(req.url?.startsWith('/api/admin/')){await adminRouter(req,res,manualPush);return}
  if(req.url==='/health'){respond(res,200,{ok:true,subscriberCount:Object.keys(subscribers).length},origin);return}
  if(req.url!=='/api/subscribe'||req.method!=='POST'){respond(res,404,{error:'Not found'},origin);return}
  if(origin!==APP_ORIGIN){respond(res,403,{error:'Origin not allowed'},origin);return}

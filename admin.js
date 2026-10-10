@@ -1,7 +1,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const FILES={overrides:'manual_overrides.json',schedules:'schedules.json',addresses:'addresses.json',streets:'published_street_fallback.json',emergency:'emergency.json'};
-let server='',password='',sha='',current='',remote=false,original=null;
+let server='',password='',sha='',current='',remote=false,canPublish=false,original=null,pushBusy=false;
 function message(s,good){$('result').textContent=s;$('result').style.background=good?'#e5f7ed':'#fff2db';$('result').style.color=good?'#15633e':'#825310'}
 function validate(kind,obj){
  if(!obj||typeof obj!=='object'||Array.isArray(obj))throw Error('Потрібен JSON-об’єкт');
@@ -21,10 +21,10 @@ async function load(){
  const kind=$('kind').value;
  try{
   let contents;
-  if(remote){const r=await api('file?kind='+kind);contents=r.contents;sha=r.sha}
+  if(remote&&canPublish){const r=await api('file?kind='+kind);contents=r.contents;sha=r.sha}
   else{const r=await fetch('./data/'+FILES[kind]+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Файл недоступний');contents=await r.json();sha=''}
   original=contents;current=kind;$('editor').value=JSON.stringify(contents,null,2);
-  $('publish').disabled=!remote;$('editMode').textContent=remote?'Серверний режим':'Локальна копія';message('Дані завантажено. Ручне редагування не вплине на застосунок до публікації.',true);
+  $('publish').disabled=!(remote&&canPublish);$('editMode').textContent=remote&&canPublish?'Серверний режим':'Локальна копія';message('Дані завантажено. Ручне редагування не вплине на застосунок до публікації.',true);
  }catch(e){message('Не вдалося завантажити: '+e.message,false)}
 }
 async function diagnostics(){
@@ -40,16 +40,16 @@ async function diagnostics(){
 $('connect').onclick=async()=>{
  const url=$('server').value.trim().replace(/\/$/,'');if(!/^https:\/\//.test(url)){message('Сервер повинен мати HTTPS.',false);return}
  server=url;password=$('password').value;
- try{const status=await api('status');remote=true;$('connection').textContent=status.repository+' · '+status.branch;$('connection').className='pill ok';$('password').value='';message('Авторизовано. Пароль зберігається лише в пам’яті цієї вкладки.',true);await load()}
- catch(e){remote=false;password='';$('password').value='';$('connection').textContent='Не підключено';$('connection').className='pill err';$('publish').disabled=true;message(e.message,false)}
+ try{const status=await api('status');remote=true;canPublish=!!status.editingEnabled;$('connection').textContent=canPublish?status.repository+' · '+status.branch:'Push-сервер підключено';$('connection').className='pill ok';$('password').value='';message(canPublish?'Авторизовано. Push та редагування GitHub доступні.':'Авторизовано. Push доступний. Для редагування GitHub потрібен GitHub-токен у Railway.',true);setPushReady(true);await Promise.all([load(),refreshPushStatus()])}
+ catch(e){remote=false;canPublish=false;password='';$('password').value='';setPushReady(false);$('connection').textContent='Не підключено';$('connection').className='pill err';$('publish').disabled=true;message(e.message,false)}
 };
-$('disconnect').onclick=()=>{remote=false;password='';sha='';$('connection').textContent='Локальний перегляд';$('connection').className='pill';$('publish').disabled=true;load()};
+$('disconnect').onclick=()=>{remote=false;canPublish=false;password='';sha='';setPushReady(false);$('connection').textContent='Локальний перегляд';$('connection').className='pill';$('publish').disabled=true;load()};
 $('kind').onchange=load;
 $('reload').onclick=()=>{if(original)$('editor').value=JSON.stringify(original,null,2);message('Відновлено завантажену версію.',true)};
 $('validate').onclick=()=>{try{const obj=JSON.parse($('editor').value);validate($('kind').value,obj);message('JSON коректний, базові обмеження виконані. Це не підтверджує достовірності графіків.',true)}catch(e){message('Помилка: '+e.message,false)}};
 $('download').onclick=()=>{try{const obj=JSON.parse($('editor').value);validate($('kind').value,obj);const a=document.createElement('a');const url=URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)+'\n'],{type:'application/json'}));a.href=url;a.download=FILES[$('kind').value];a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);message('Файл експортовано. Ви можете перевірити його перед ручним завантаженням на GitHub.',true)}catch(e){message(e.message,false)}};
 $('publish').onclick=async()=>{
- if(!remote)return;
+ if(!remote||!canPublish)return;
  try{const kind=$('kind').value;const obj=JSON.parse($('editor').value);validate(kind,obj);
    if(!confirm('Опублікувати '+FILES[kind]+' у вашому GitHub? Цю зміну побачать відвідувачі сайту.'))return;
    $('publish').disabled=true;const r=await api('file?kind='+kind,{method:'PUT',body:JSON.stringify({sha,contents:obj})});message('Опубліковано. Коміт: '+r.commit+'. Дані на GitHub Pages оновляться після розгортання.',true);await load();
@@ -107,3 +107,63 @@ $('addEmergency').onclick=()=>{try{
  obj.emergency.events=obj.emergency.events.filter(e=>e.id!==entry.id);obj.emergency.events.unshift(entry);obj.updatedAt=new Date().toISOString();
  staged(obj,'Підготовлено аварійний бюлетень. Перевірте час і джерело перед публікацією.');
  }catch(e){message(e.message,false)}};
+
+
+// Test and manual Push messages are sent directly by the authenticated Railway server.
+const pushQueues=Array.from({length:6},(_,i)=>[`${i+1}.1`,`${i+1}.2`]).flat();
+$('pushQueue').append(...pushQueues.map(q=>new Option('Тільки підчерга '+q,q)));
+function pushResult(text,ok=null){$('pushResult').textContent=text;$('pushResult').className='push-state'+(ok===true?' good':ok===false?' error':'')}
+function setPushReady(ready){$('pushAvailability').textContent=ready?'Сервер підключений':'Увійдіть для надсилання';$('pushAvailability').className='pill'+(ready?' ok':'');$('testPush').disabled=!ready;$('refreshPush').disabled=!ready;updatePushDraft()}
+function updatePushDraft(){
+ const title=$('pushTitle').value.trim(),body=$('pushBody').value.trim();
+ $('pushTitleCount').textContent=$('pushTitle').value.length+' / 85';$('pushBodyCount').textContent=$('pushBody').value.length+' / 280';
+ $('pushPreviewTitle').textContent=title||'Заголовок сповіщення';$('pushPreviewBody').textContent=body||'Тут буде твій текст повідомлення.';
+ $('sendPush').disabled=!remote||pushBusy||!title||!body;
+}
+$('pushTitle').addEventListener('input',updatePushDraft);
+$('pushBody').addEventListener('input',updatePushDraft);
+async function refreshPushStatus(){
+ try{const r=await api('push/status');$('pushCount').textContent=r.subscribers;return r}
+ catch(e){$('pushCount').textContent='—';pushResult('Не вдалося перевірити підписки: '+e.message,false);return null}
+}
+$('refreshPush').onclick=async()=>{if(!remote)return;const r=await refreshPushStatus();if(r)pushResult('Зареєстровано '+r.subscribers+' пристроїв.',true)};
+async function currentDeviceEndpoint(){
+ if(!('serviceWorker' in navigator))return null;
+ const registration=await navigator.serviceWorker.getRegistration('./');
+ const subscription=await registration?.pushManager?.getSubscription();
+ return subscription?.endpoint||null;
+}
+function deliverySummary(result){
+ if(result.error)return result.error;
+ return 'Прийнято Push-службами: '+result.accepted+' з '+result.attempted+'. '+
+   (result.failed?'Помилок: '+result.failed+'. ':'')+
+   (result.expired?'Недійсних підписок видалено: '+result.expired+'. ':'')+
+   'Фактична поява на екрані iPhone перевіряється окремо.';
+}
+$('testPush').onclick=async()=>{
+ if(!remote||pushBusy)return;
+ const target=$('testAudience').value;
+ if(target==='all'&&!confirm('Надіслати тестове повідомлення на ВСІ підписані пристрої?'))return;
+ let endpoint='';
+ if(target==='mine'){
+   try{endpoint=await currentDeviceEndpoint()||''}catch{}
+   if(!endpoint){pushResult('На цьому браузері не знайдено Push-підписку. Відкрийте адмінпанель із встановленого iPhone PWA або оберіть «Усім підписаним пристроям».',false);return}
+ }
+ pushBusy=true;$('testPush').disabled=true;
+ try{const result=await api('push/test',{method:'POST',body:JSON.stringify({target,endpoint,confirmAll:target==='all'})});pushResult(deliverySummary(result),result.ok);await refreshPushStatus()}
+ catch(e){pushResult('Тест не надіслано: '+e.message,false)}
+ finally{pushBusy=false;$('testPush').disabled=!remote;updatePushDraft()}
+};
+$('sendPush').onclick=async()=>{
+ if(!remote||pushBusy)return;
+ const title=$('pushTitle').value.trim(),body=$('pushBody').value.trim(),queue=$('pushQueue').value;
+ if(!title||!body)return;
+ if(!confirm('НАДІСЛАТИ повідомлення '+(queue==='all'?'усім підписаним пристроям':'підчерзі '+queue)+'? Воно може з’явитися на заблокованих телефонах.'))return;
+ pushBusy=true;updatePushDraft();
+ try{
+  const result=await api('push/send',{method:'POST',body:JSON.stringify({title,body,queue,confirmSend:true})});
+  pushResult(deliverySummary(result),result.ok);await refreshPushStatus();
+ }catch(e){pushResult('Повідомлення не надіслано: '+e.message,false)}
+ finally{pushBusy=false;updatePushDraft()}
+};
+setPushReady(false);
