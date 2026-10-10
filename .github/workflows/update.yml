@@ -6,6 +6,7 @@ on:
   push:
     paths:
       - 'scripts/update_data.py'
+      - 'release.json'
       - '.github/workflows/update.yml'
 permissions:
   contents: write
@@ -25,16 +26,16 @@ jobs:
       - run: python -m pip install -r requirements.txt pytest
       - name: Run importer tests
         run: python -m pytest -q tests
+      # Do not mark a failed import as successful. Keep previous verified data,
+      # publish any diagnostics, then make this workflow RED if a fetch failed.
       - name: Refresh official schedules
-        run: |
-          if ! python scripts/update_data.py --schedules-only; then
-            echo '::warning::Schedule import failed. Previous schedule JSON retained.'
-          fi
+        id: schedules
+        continue-on-error: true
+        run: python scripts/update_data.py --schedules-only
       - name: Refresh address queue index
-        run: |
-          if ! python scripts/update_data.py --addresses-only; then
-            echo '::warning::Address import failed. Previous verified address JSON retained.'
-          fi
+        id: addresses
+        continue-on-error: true
+        run: python scripts/update_data.py --addresses-only
       - name: Show import summary
         run: |
           python - <<'PY'
@@ -61,3 +62,8 @@ jobs:
             # Request a deployment only after actual verified data changes.
             gh api repos/${{ github.repository }}/dispatches -f event_type=svitlo-data-updated
           fi
+      - name: Report failed operator checks
+        if: ${{ always() && (steps.schedules.outcome == 'failure' || steps.addresses.outcome == 'failure') }}
+        run: |
+          echo '::error::The operator import did not complete successfully. Published verified data were preserved.'
+          exit 1
