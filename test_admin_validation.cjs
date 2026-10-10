@@ -1,0 +1,20 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const root=path.resolve(__dirname,'..');
+const server=fs.readFileSync(path.join(root,'push-server/admin.js'),'utf8');
+const page=fs.readFileSync(path.join(root,'admin.html'),'utf8');
+const browser=fs.readFileSync(path.join(root,'admin.js'),'utf8');
+assert.match(server,/crypto\.timingSafeEqual/);
+assert.match(server,/process\.env\.ADMIN_PASSWORD/);
+assert.match(server,/process\.env\.GITHUB_TOKEN/);
+assert.match(server,/\[kind\]/);
+assert.match(page,/id="password"/);
+assert.match(browser,/authorization:'Bearer '\+sessionToken/);
+assert.match(server,/api\/admin\/login/);
+assert.match(server,/api\/admin\/logout/);
+assert.match(page,/id="adminDashboard" hidden/);
+assert.match(page,/id="adminLoginScreen"/);
+assert.doesNotMatch(server,/muz2901/); // Secret belongs only in deployment environment
+assert.doesNotMatch(browser,/muz2901/);
+console.log('Admin interface / secure backend static checks passed');

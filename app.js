@@ -4,13 +4,13 @@ const $=id=>document.getElementById(id);
 const TZ='Europe/Kyiv';
 const QUEUES=Array.from({length:6},(_,i)=>[`${i+1}.1`,`${i+1}.2`]).flat();
 const OFFICIAL='https://www.cherkasyoblenergo.com/off';
-const STORE='svitlo-addresses-v6', PREF='svitlo-prefs-v6', SEEN='svitlo-notifications-v6';
+const STORE='svitlo-addresses-v6', PREF='svitlo-prefs-v6', SEEN='svitlo-notifications-v6', PUSH_CONSENT='svitlo-push-consent-v6';
 const ICON='<svg class="bolt" viewBox="0 0 20 24" aria-hidden="true"><path fill="currentColor" d="M11.8 1 2 13h7l-1.5 10L18 9.9h-7z"/></svg>';
 const PIN='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0z"/><circle cx="12" cy="10" r="2.4"/></svg>';
 const safeJSON=(k,fallback)=>{try{return JSON.parse(localStorage.getItem(k)??'null')??fallback}catch{return fallback}};
 const legacy=safeJSON('svitlo-addresses-v3',safeJSON('svitlo-addresses-v2',[]));
 let addresses=safeJSON(STORE,Array.isArray(legacy)?legacy:[]), prefs=Object.assign({primaryId:null,off:true,on:true,changes:true,tomorrow:true,emergency:true},safeJSON(PREF,{}));
-let emergency={events:[],lastChecked:null},overrides={schedules:{days:[]},addresses:{},emergency:{events:[]}},data={days:[],changes:[]},index={keys:{},streets:{},localities:{}},active='home',daySelected=null,editId=null,suggestion=null,toastTimeout=null,lastPub=null,pushConfig=null,swRegistration=null,notified=new Set(safeJSON(SEEN,[])),lastRefresh=0;
+let pushActive=false, emergency={events:[],lastChecked:null},overrides={schedules:{days:[]},addresses:{},emergency:{events:[]}},data={days:[],changes:[]},index={keys:{},streets:{},localities:{}},active='home',daySelected=null,editId=null,suggestion=null,toastTimeout=null,lastPub=null,pushConfig=null,swRegistration=null,notified=new Set(safeJSON(SEEN,[])),lastRefresh=0;
 if(!Array.isArray(addresses))addresses=[];
 const byId=id=>addresses.find(x=>x.id===id);
 const primary=()=>byId(prefs.primaryId)||addresses[0]||null;
@@ -34,7 +34,7 @@ function fmtStamp(v){if(!v)return 'невідомо';const d=new Date(v);return 
 const currentDay=date=>data.days.find(x=>x.date===date&&x.verified===true);
 const minute=s=>s==='24:00'?1440:/^([01]\d|2[0-3]):[0-5]\d$/.test(s||'')?Number(s.slice(0,2))*60+Number(s.slice(3)):-1;
 const clock=n=>`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;
-function timeline(date,queue){const q=currentDay(date)?.queues?.[queue];if(!q)return null;const start=minute(q.knownFrom||'00:00');if(start<0)return null;const a=new Int8Array(1440);a.fill(-1);a.fill(0,start);let last=0;for(const [s,e] of q.off||[]){const f=minute(s),t=minute(e);if(f<last||f>=t||t>1440)return null;a.fill(1,Math.max(f,start),t);last=t}return a}
+function timeline(date,queue){const q=currentDay(date)?.queues?.[queue];if(!q)return null;const start=minute(q.knownFrom||'00:00');if(start<0)return null;const a=new Int8Array(1440);a.fill(-1);a.fill(0,start,1440);let last=0;for(const [s,e] of q.off||[]){const f=minute(s),t=minute(e);if(f<last||f>=t||t>1440)return null;a.fill(1,Math.max(f,start),t);last=t}return a}
 function stateAt(a,m){return a?.[m]===1?'off':a?.[m]===0?'on':'unknown'}
 function transition(a,m){if(!a||a[m]<0)return null;for(let i=m+1;i<1440;i++)if(a[i]!==a[m])return {time:i,to:a[i]};return null}
 function stats(a){if(!a)return null;let on=0,off=0,unknown=0,longest=0,run=0;for(const v of a){if(v===0)on++;if(v===1){off++;run++;longest=Math.max(longest,run)}else run=0;if(v<0)unknown++}return {on,off,unknown,longest}}
@@ -45,7 +45,17 @@ function label(a){return a?.nickname?.trim()||[a?.street,a?.house].filter(Boolea
 function fullAddress(a){return a?[a.settlement||'Черкаси',[a.street,a.house].filter(Boolean).join(', ')].join(' · '):'Оберіть адресу'}
 function setText(id,text){if($(id).textContent!==String(text))$(id).textContent=String(text)}
 function render(){renderHome();if(active==='detail')renderDetail();if(active==='updates')renderUpdates();if(active==='settings')renderSettings()}
-function renderHome(){renderEmergency();const a=primary();setText('primaryName',label(a));setText('primarySub',a?`${a.settlement||'Черкаси'} · ${a.queue?'підчерга '+a.queue+(a.method==='street'?' · непідтверджена за будинком':''):'підчергу не визначено'}`:'Черкаси або села району');const schedule=a?.queue?currentDay(today()):null;const timelineToday=a?.queue?timeline(today(),a.queue):null,st=stateAt(timelineToday,nowMinutes()),nxt=transition(timelineToday,nowMinutes());const panel=$('heroStatus');panel.className='status-panel status-'+st;
+function renderFreshness(){
+ const node=$('dataFreshness');if(!node)return;
+ const checked=Date.parse(data.lastChecked||'');
+ const age=Date.now()-checked;
+ const stale=!Number.isFinite(checked)||age>2*3600_000||age<0;
+ const offline=navigator.onLine===false;
+ node.hidden=!stale&&!offline;
+ if(offline)node.textContent='Немає з’єднання з інтернетом. Показано останні доступні дані — вони могли змінитися.';
+ else if(stale)node.textContent=Number.isFinite(checked)&&age>=0?'Остання перевірка джерела понад 2 години тому. Дані можуть бути застарілими — звіряйте з оператором.':'Не вдалося підтвердити час оновлення графіка. Звіряйте з оператором.';
+}
+function renderHome(){renderEmergency();renderFreshness();const a=primary();setText('primaryName',label(a));setText('primarySub',a?`${a.settlement||'Черкаси'} · ${a.queue?'підчерга '+a.queue+(a.method==='street'?' · непідтверджена за будинком':''):'підчергу не визначено'}`:'Черкаси або села району');const schedule=a?.queue?currentDay(today()):null;const timelineToday=a?.queue?timeline(today(),a.queue):null,st=stateAt(timelineToday,nowMinutes()),nxt=transition(timelineToday,nowMinutes());const panel=$('heroStatus');panel.className='status-panel status-'+st;
  $('stateIcon').innerHTML=ICON;setText('stateCaption',a?.method==='street'?'ПІДЧЕРГА ЗА ВУЛИЦЕЮ — ПЕРЕВІРТЕ БУДИНОК':a?'ЗА ОФІЦІЙНИМ ГРАФІКОМ':'ВАШ ГРАФІК');
  if(st==='unknown'){setText('heroTitle','Немає даних');setText('heroCountdown',a?.queue?'Графік для цієї години не підтверджений':'Додайте адресу або виберіть підчергу')}else{setText('heroTitle',`${st==='on'?'Є світло':'Немає світла'} до: ${nxt&&nxt.to>=0?clock(nxt.time):'—:—'}`);setText('heroCountdown',nxt&&nxt.to>=0?`До ${nxt.to===1?'відключення':'планового відновлення'} ${Math.floor((nxt.time-nowMinutes())/60)} год ${String((nxt.time-nowMinutes())%60).padStart(2,'0')} хв`:'До кінця відомого графіка змін не заплановано')}
  setText('sourceStamp',schedule?`Опубліковано ${fmtStamp(schedule.publishedAt)}`:'Графік не підтверджено');setText('queueChip',a?.queue?`Черга ${a.queue}`:'—');setText('overviewDate',formatDate(today(),{weekday:'long',day:'numeric',month:'long'}));setText('overviewLabel',timelineToday?'24 години':'Графік не опублікований');renderBar(timelineToday);const t=stats(timelineToday);setText('hoursOn',t&&t.unknown===0?minutesLabel(t.on):t&&t.on?`${minutesLabel(t.on)}+`:'—');setText('hoursOff',t&&t.unknown===0?minutesLabel(t.off):t&&t.off?`${minutesLabel(t.off)}+`:'—');
@@ -76,7 +86,7 @@ function renderDetail(){const a=primary();if(!a)return;setText('detailAddress',f
  }
  const next=transition(tToday,nowMinutes());setText('nextTime',next?clock(next.time):'—:—');setText('nextDescription',next?`Планове ${next.to===1?'відключення':'відновлення електропостачання'}`:'До завершення відомого графіка змін не виявлено');$('articleLink').href=pub?.queueSources?.[a.queue]||pub?.source||'https://www.cherkasyoblenergo.com/news'}
 function renderUpdates(){setText('lastCheck',data.lastChecked?fmtStamp(data.lastChecked):'Перевірку не підтверджено');setText('updateNote',data.lastChecked?'Дата перевірки джерела; фактичний графік міг змінитися пізніше.':'Дані з офіційних публікацій наразі недоступні.');const root=$('updateList');root.replaceChildren();const all=[...(data.changes||[]).map(x=>({kind:'change',...x})),...(data.days||[]).map(x=>({kind:'publication',...x}))].sort((a,b)=>String(b.publishedAt).localeCompare(String(a.publishedAt))).slice(0,24);if(!all.length)root.append(el('div','empty-places','Поки немає підтверджених публікацій.'));for(const d of all){const c=el('div','update-card');c.append(el('time','',fmtStamp(d.publishedAt)),el('strong','',d.kind==='change'?`Графік скориговано · ${formatDate(d.date)}`:`Опубліковано графік · ${formatDate(d.date)}`));const meta=el('div','small-source',d.kind==='change'?`Змінені підчерги: ${(d.queues||[]).join(', ')||'не уточнено'}`:`Редакцій: ${d.revisions||1}`);c.append(meta);const link=el('a','', 'Офіційна публікація ↗');link.href=d.source||'https://www.cherkasyoblenergo.com/news';link.target='_blank';link.rel='noopener';c.append(link);root.append(c)}}
-function renderSettings(){for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).checked=!!prefs[key];const connected=!!pushConfig?.apiBase&&!!pushConfig?.publicKey;setText('pushHeadline',connected?'Фонові push-сповіщення':'Сповіщення у застосунку');setText('pushDescription',connected?'Підключений окремий push-сервер. Дозвольте сповіщення, щоб отримувати їх навіть із закритим PWA.':'Нагадування працюють, поки застосунок відкритий. Щоб отримувати сповіщення на заблокований iPhone, адміністратор повинен підключити окремий Web Push сервер.');setText('enableNotifications',connected?'Дозволити та підписатися на Push':'Дозволити сповіщення у застосунку')}
+function renderSettings(){for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).checked=!!prefs[key];const connected=!!pushConfig?.apiBase&&!!pushConfig?.publicKey;setText('pushHeadline',connected?'Фонові push-сповіщення':'Сповіщення у застосунку');setText('pushDescription',connected?'Підключений окремий push-сервер. Дозвольте сповіщення, щоб отримувати їх навіть із закритим PWA.':'Нагадування працюють, поки застосунок відкритий. Щоб отримувати сповіщення на заблокований iPhone, адміністратор повинен підключити окремий Web Push сервер.');setText('enableNotifications',connected?'Дозволити та підписатися на Push':'Дозволити сповіщення у застосунку');$('disableNotifications').hidden=!connected}
 function fillQueueSelect(){const root=$('manualQueue');root.replaceChildren(new Option('Оберіть підчергу',''),...QUEUES.map(q=>new Option(q,q)))}
 function town(){return $('settlement').value==='Інше'?$('customSettlement').value.trim():$('settlement').value}
 function localIndex(){const k=normTown(town());return k===normTown('Черкаси')?{keys:index.keys||{},streets:index.streets||{},streetQueues:index.streetQueues||{}}:index.localities?.[k]||{keys:{},streets:{},streetQueues:{}}}
@@ -154,7 +164,7 @@ function showSheet(dialog){if(!document.body.classList.contains('sheet-open'))sh
 function unlockSheet(){if($('addressSheet').open||$('placesSheet').open)return;document.body.classList.remove('sheet-open');document.body.style.position='';document.body.style.top='';document.body.style.width='';window.scrollTo({top:sheetScroll,behavior:'instant'})}
 function closeSheet(dialog){if(dialog.open)dialog.close();unlockSheet()}
 function saveAddress(event){event.preventDefault();const r=checkLookup(),queue=r.status==='exact'?r.queue:$('manualQueue').value;if(!QUEUES.includes(queue)){flash('Укажіть підчергу для адреси');return}const a={id:editId||id(),nickname:$('nickname').value.trim(),street:$('street').value.trim(),house:$('house').value.trim(),settlement:normTown(town())==='слобода'?'Слобода':town(),queue,method:r.status==='exact'?'automatic':r.status==='possible'&&r.queues?.includes(queue)?'street':'manual'};if(editId){const idx=addresses.findIndex(x=>x.id===editId);if(idx>=0)addresses[idx]=a}else addresses.push(a);if(!primary()||!editId)prefs.primaryId=a.id;saveAddresses();savePrefs();closeSheet($('addressSheet'));render();flash(r.status==='exact'?'Підчергу підтверджено за номером будинку':r.status==='possible'?'Підчергу збережено як непідтверджену за будинком':'Адресу збережено');if(!editId)navigate('detail');updatePushSubscription().catch(()=>{});}
-function deleteAddress(){if(!editId||!confirm('Видалити цю адресу?'))return;addresses=addresses.filter(x=>x.id!==editId);if(prefs.primaryId===editId)prefs.primaryId=addresses[0]?.id||null;saveAddresses();savePrefs();closeSheet($('addressSheet'));navigate('home');flash('Адресу видалено')}
+function deleteAddress(){if(!editId||!confirm('Видалити цю адресу?'))return;addresses=addresses.filter(x=>x.id!==editId);if(prefs.primaryId===editId)prefs.primaryId=addresses[0]?.id||null;saveAddresses();savePrefs();closeSheet($('addressSheet'));navigate('home');flash('Адресу видалено');if(!primary())disableNotifications().catch(console.warn);else updatePushSubscription().catch(console.warn)}
 function movePlace(id,direction){const i=addresses.findIndex(x=>x.id===id);const j=i+direction;if(i<0||j<0||j>=addresses.length)return;[addresses[i],addresses[j]]=[addresses[j],addresses[i]];saveAddresses();openPickerContent();renderHome()}
 function openPickerContent(){const root=$('placesOptions');root.replaceChildren();for(const [i,a] of addresses.entries()){
  const row=el('div','place-option');row.draggable=true;row.dataset.id=a.id;
@@ -166,11 +176,11 @@ function openPicker(){openPickerContent();showSheet($('placesSheet'))}
 function officialOpen(){const address=[town(),$('street').value.trim(),$('house').value.trim()].filter(Boolean).join(', ');const link=window.open(OFFICIAL,'_blank','noopener');if(navigator.clipboard?.writeText){navigator.clipboard.writeText(address).then(()=>flash('Адресу скопійовано — вставте її на офіційному сайті')).catch(()=>flash('Офіційний пошук відкрито'))}else flash('Офіційний пошук відкрито');if(!link){/* popups may be blocked; retain plain official URL below */}}
 function emergencyEvents(){
  const all=[...(emergency.events||[]),...(overrides.emergency?.events||[])];
- return all.filter(e=>e&&e.source?.startsWith('https://www.cherkasyoblenergo.com/')&&Number.isFinite(new Date(e.publishedAt).getTime())).sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
+ return all.filter(e=>e&&typeof e.source==='string'&&/^https:\/\/(?:www\.)?cherkasyoblenergo\.com\//.test(e.source)&&Number.isFinite(new Date(e.publishedAt).getTime())).sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
 }
 function latestEmergency(){
  // Do not infer a currently active interruption from old or ambiguous reports.
- return emergencyEvents().find(e=>Date.now()-new Date(e.publishedAt).getTime()<24*60*60*1000)||null;
+ return emergencyEvents().find(e=>{const age=Date.now()-new Date(e.publishedAt).getTime();return age>=0&&age<24*60*60*1000})||null;
 }
 function renderEmergency(){
  const e=latestEmergency(),banner=$('emergencyBanner');
@@ -185,7 +195,7 @@ function renderEmergency(){
 function notifyEmergencyEvent(){
  const e=latestEmergency();if(!e||e.status!=='active')return;
  const age=Date.now()-new Date(e.publishedAt).getTime();if(age<0||age>60*60*1000)return;
- notify('Світло: аварійне повідомлення оператора',`${e.title} · За інформацією Черкасиобленерго. Уточніть ситуацію за адресою.`,`emergency:${e.id||e.source}`);
+ notify('🪫Графік не діє','Розпочинаються екстрені відключення світла поза графіком.',`emergency:${e.id||e.source}`);
 }
 function applyOverrides(){
  const days=overrides.schedules?.days;
@@ -226,7 +236,7 @@ async function refreshData(manual=false){if(Date.now()-lastRefresh<7000&&!manual
   index=mergeIndexes(live,backup);
   if($('addressSheet').open){suggestions();checkLookup()}
  }catch(e){console.warn('Address fetch:',e)}try{const [alertRes,overrideRes]=await Promise.all([fetch('./data/emergency.json?v='+Date.now(),{cache:'no-store'}),fetch('./data/manual_overrides.json?v='+Date.now(),{cache:'no-store'})]);if(alertRes.ok){const parsed=await alertRes.json();if(Array.isArray(parsed.events))emergency=parsed}if(overrideRes.ok){const parsed=await overrideRes.json();if(parsed.schemaVersion===1)overrides=parsed}applyOverrides()}catch(e){console.warn('Bulletin or admin overrides:',e)}render();if(manual)flash(schedulesOk?'Графіки перевірено':'Не вдалося оновити — показано останні дані');if(schedulesOk)announceChanges(previous,data)}
-function notify(title,body,key){if(notified.has(key)||!('Notification' in window)||Notification.permission!=='granted')return;notified.add(key);localStorage.setItem(SEEN,JSON.stringify([...notified].slice(-400)));navigator.serviceWorker?.ready.then(r=>r.showNotification(title,{body,icon:'./assets/icon-192.png',tag:key})).catch(()=>{try{new Notification(title,{body})}catch{}})}
+function notify(title,body,key){if(pushActive||notified.has(key)||!('Notification' in window)||Notification.permission!=='granted')return;notified.add(key);localStorage.setItem(SEEN,JSON.stringify([...notified].slice(-400)));navigator.serviceWorker?.ready.then(r=>r.showNotification(title,{body,icon:'./assets/icon-192.png',tag:key})).catch(()=>{try{new Notification(title,{body})}catch{}})}
 function announceChanges(previous,current){if(!prefs.changes||!previous?.lastChecked)return;const a=primary();if(!a?.queue)return;for(const c of current.changes||[])if(c.queues?.includes(a.queue)&&!previous.changes?.some(x=>x.date===c.date&&x.publishedAt===c.publishedAt)){notify('Світло: графік змінено',`Оновлена підчерга ${a.queue} на ${formatDate(c.date)}.`, `change:${c.date}:${c.publishedAt}:${a.queue}`)}}
 function checkNotifications(){
  if(!('Notification' in window)||Notification.permission!=='granted')return;
@@ -239,7 +249,7 @@ function checkNotifications(){
      if(!prefs[type])continue;
      const future=m+offset;
      if(future>=1440)continue;
-     if(arr[future]===desired&&arr[future-1]!==desired){
+     if(arr[future]===desired&&arr[future-1]!==desired&&arr[future-1]!==-1){
        notify(`Світло: скоро ${txt}`,`Через ${offset} хвилин за графіком: ${label(a)}, підчерга ${a.queue}.`,`${type}:${date}:${future}:${a.id}`);
      }
    }
@@ -248,9 +258,50 @@ function checkNotifications(){
    if(published?.queues?.[a.queue]&&m>=19*60)notify('Світло: графік на завтра',`Для підчерги ${a.queue} опубліковано графік на ${formatDate(tomorrow)}.`,`tomorrow:${tomorrow}:${a.id}`);
  }
 }
-async function getPushConfig(){try{const r=await fetch('./push-config.json',{cache:'no-store'});if(r.ok){const c=await r.json();if(c?.apiBase?.startsWith('https://')&&c.publicKey)pushConfig=c}}catch{}renderSettings()}
-function urlsafe(bytes){const padding='='.repeat((4-bytes.length%4)%4);const str=(bytes+padding).replace(/-/g,'+').replace(/_/g,'/');return Uint8Array.from(atob(str),x=>x.charCodeAt(0))}
-async function updatePushSubscription(){if(!('Notification' in window)||!pushConfig||Notification.permission!=='granted'||!primary()?.queue)return;const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlsafe(pushConfig.publicKey)});const payload={subscription:sub.toJSON(),queue:primary().queue,preferences:{off:prefs.off,on:prefs.on,changes:prefs.changes,tomorrow:prefs.tomorrow,emergency:prefs.emergency}};const response=await fetch(pushConfig.apiBase.replace(/\/$/,'')+'/api/subscribe',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});if(!response.ok)throw Error('Push server response '+response.status)}
+async function getPushConfig(){
+ try{
+  const r=await fetch('./push-config.json',{cache:'no-store'});
+  if(r.ok){const c=await r.json();if(/^https:\/\/[^\s]+$/.test(c?.apiBase||'')&&typeof c.publicKey==='string'&&/^[A-Za-z0-9_-]{87}$/.test(c.publicKey))pushConfig=c}
+  if(pushConfig&&'Notification' in window&&Notification.permission==='granted'&&localStorage.getItem(PUSH_CONSENT)!=='no'){
+   // Existing subscribers are migrated; new users must tap the consent button.
+   const existing=await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+   if(existing||localStorage.getItem(PUSH_CONSENT)==='yes')await updatePushSubscription();
+  }
+ }catch(e){console.warn('Push config:',e.message)}renderSettings();
+}
+function urlsafe(value){const str=(value+'='.repeat((4-value.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/');return Uint8Array.from(atob(str),x=>x.charCodeAt(0))}
+async function updatePushSubscription(){
+ if(!('Notification' in window)||!pushConfig||Notification.permission!=='granted'||!primary()?.queue)return;
+ const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();
+ const key=urlsafe(pushConfig.publicKey);
+ // VAPID rotation requires a new subscription. Never silently reuse an old key.
+ if(sub&&sub.options?.applicationServerKey){
+  const old=Array.from(new Uint8Array(sub.options.applicationServerKey));
+  if(old.length!==key.length||old.some((v,i)=>v!==key[i])){await sub.unsubscribe();sub=null}
+ }
+ if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
+ const payload={subscription:sub.toJSON(),queue:primary().queue,preferences:{off:prefs.off,on:prefs.on,changes:prefs.changes,tomorrow:prefs.tomorrow,emergency:prefs.emergency}};
+ const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),12000);
+ try{
+  const response=await fetch(pushConfig.apiBase.replace(/\/$/,'')+'/api/subscribe',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload),signal:controller.signal});
+  if(!response.ok)throw Error('Push server response '+response.status);
+  pushActive=true;localStorage.setItem(PUSH_CONSENT,'yes');
+ }finally{clearTimeout(timeout)}
+}
+async function disableNotifications(){
+ try{
+  const registration=await navigator.serviceWorker.ready;
+  const sub=await registration.pushManager.getSubscription();
+  if(sub){
+   if(pushConfig?.apiBase){
+    const result=await fetch(pushConfig.apiBase.replace(/\/$/,'')+'/api/unsubscribe',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({subscription:{endpoint:sub.endpoint}})});
+    if(!result.ok)throw Error('Сервер не підтвердив відписку');
+   }else throw Error('Не налаштовано Push-сервер');
+   await sub.unsubscribe();
+  }
+  pushActive=false;localStorage.setItem(PUSH_CONSENT,'no');flash('Push вимкнено, підписку видалено із сервера');renderSettings();
+ }catch(e){console.warn(e);flash('Не вдалося відписатися — повторіть, коли є інтернет')}
+}
 async function enableNotifications(){if(!('Notification' in window)){flash('Цей браузер не підтримує сповіщення');return}if(Notification.permission==='denied'){flash('Дозвольте сповіщення у налаштуваннях iPhone');return}const granted=await Notification.requestPermission();if(granted!=='granted'){flash('Дозвіл на сповіщення не надано');return}if(pushConfig){try{await updatePushSubscription();flash('Фонові Push-сповіщення увімкнено')}catch(e){console.warn(e);flash('Не вдалося підключитися до Push-сервера')}}else flash('Сповіщення працюють, поки застосунок відкритий');renderSettings()}
 // Event wiring
 for(const b of document.querySelectorAll('[data-go]'))b.addEventListener('click',()=>navigate(b.dataset.go));
@@ -259,9 +310,10 @@ $('closeSheet').onclick=()=>closeSheet($('addressSheet'));$('closePlaces').oncli
 for(const dialog of [$('addressSheet'),$('placesSheet')])dialog.addEventListener('close',unlockSheet);
 $('settlement').onchange=()=>{$('manualQueue').value='';$('customSettlement').hidden=$('settlement').value!=='Інше';suggestion=null;suggestions();checkLookup()};$('customSettlement').oninput=()=>{$('manualQueue').value='';checkLookup()};$('street').oninput=()=>{$('manualQueue').value='';suggestion=null;suggestions();checkLookup()};$('house').oninput=()=>{$('manualQueue').value='';checkLookup()};$('manualQueue').onchange=checkLookup;$('addressForm').onsubmit=saveAddress;$('deleteAddress').onclick=deleteAddress;$('goOfficial').onclick=officialOpen;
 for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).onchange=e=>{prefs[key]=e.target.checked;savePrefs();updatePushSubscription().catch(console.warn)};
-$('enableNotifications').onclick=enableNotifications;
+$('enableNotifications').onclick=enableNotifications;$('disableNotifications').onclick=disableNotifications;
 fillQueueSelect();render();refreshData();getPushConfig();
 setInterval(()=>{renderHome();if(active==='detail')renderDetail();checkNotifications()},30_000);
 setInterval(()=>refreshData(),5*60_000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();refreshData();checkNotifications()}});
+window.addEventListener('online',()=>{renderFreshness();refreshData(true)});window.addEventListener('offline',renderFreshness);
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js',{scope:'./'}).then(reg=>{swRegistration=reg}).catch(console.warn);
