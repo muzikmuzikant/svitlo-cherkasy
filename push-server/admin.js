@@ -1,5 +1,5 @@
 /* Private admin-to-GitHub proxy. NEVER put ADMIN_PASSWORD or GITHUB_TOKEN in GitHub Pages.
- * HTTPS reverse proxy is mandatory in production. Frontend passwords live only in JS memory.
+ * HTTPS reverse proxy is mandatory in production. Login creates a short-lived session.
  */
 import crypto from 'node:crypto';
 const PATHS={
@@ -10,6 +10,11 @@ const PATHS={
  emergency:'data/emergency.json'
 };
 const ATTEMPTS=new Map();
+const SESSIONS=new Map();
+const SESSION_TTL=12*60*60*1000;
+const MAX_SESSIONS=100;
+const now=()=>Date.now();
+function expireSessions(){for(const [token,expires] of SESSIONS)if(expires<=now())SESSIONS.delete(token)}
 const ADMIN_PASSWORD=process.env.ADMIN_PASSWORD||'';
 const GH_TOKEN=process.env.GITHUB_TOKEN||'';
 const REPO=process.env.GITHUB_REPOSITORY||'';
@@ -51,17 +56,42 @@ async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk
 export async function adminRouter(req,res,manualPush){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(req.headers.origin!==origin){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
- const ip=String(req.headers['x-forwarded-for']||req.socket.remoteAddress||'').slice(0,120);
- let track=ATTEMPTS.get(ip)||{count:0,until:0};
- if(Date.now()>track.until)track={count:0,until:Date.now()+60_000};
- if(track.count>=8){send(res,429,{error:'Забагато спроб. Спробуйте пізніше.'});return true}
- const bearer=/^Bearer (.+)$/.exec(String(req.headers.authorization||''));
- if(!bearer||!authCompare(bearer[1])){
-   track.count++;ATTEMPTS.set(ip,track);send(res,401,{error:'Неправильний пароль'});return true;
+ const url=new URL(req.url,'http://localhost');
+ if(url.pathname==='/api/admin/login'&&req.method==='POST'){
+   // A login uses the password ONCE. Other admin API requests use the session token.
+   // Limit failed attempts; never include secrets in logs or responses.
+   const ip=String(req.socket.remoteAddress||'unknown').slice(0,120);
+   let track=ATTEMPTS.get(ip)||{count:0,until:0};
+   if(now()>track.until)track={count:0,until:now()+60_000};
+   if(track.count>=8){send(res,429,{error:'Забагато спроб входу. Спробуйте за хвилину.'});return true}
+   if(!ADMIN_PASSWORD||ADMIN_PASSWORD.length<7){send(res,503,{error:'У Railway не задано ADMIN_PASSWORD (мінімум 7 символів).'});return true}
+   try{
+     const body=await readJson(req,1024);
+     if(!authCompare(String(body.password||''))){
+       track.count++;ATTEMPTS.set(ip,track);
+       send(res,401,{error:'Неправильний пароль'});return true;
+     }
+     ATTEMPTS.delete(ip);expireSessions();
+     if(SESSIONS.size>=MAX_SESSIONS){
+       const oldest=SESSIONS.keys().next().value;
+       if(oldest)SESSIONS.delete(oldest);
+     }
+     const token=crypto.randomBytes(32).toString('base64url');
+     SESSIONS.set(crypto.createHash('sha256').update(token).digest('hex'),now()+SESSION_TTL);
+     send(res,200,{ok:true,token,expiresIn:SESSION_TTL/1000});return true;
+   }catch(e){send(res,e.statusCode||400,{error:'Некоректний запит входу'});return true}
  }
- ATTEMPTS.delete(ip);
+ const bearer=/^Bearer ([A-Za-z0-9_-]+)$/.exec(String(req.headers.authorization||''));
+ const tokenHash=bearer?crypto.createHash('sha256').update(bearer[1]).digest('hex'):'';
+ const expiry=SESSIONS.get(tokenHash)||0;
+ if(!expiry||expiry<=now()){
+   if(expiry)SESSIONS.delete(tokenHash);
+   send(res,401,{error:'Сеанс завершився. Увійдіть знову.'});return true;
+ }
+ if(url.pathname==='/api/admin/logout'&&req.method==='POST'){
+   SESSIONS.delete(tokenHash);send(res,200,{ok:true});return true;
+ }
  try{
-   const url=new URL(req.url,'http://localhost');
    if(url.pathname==='/api/admin/push/status'&&req.method==='GET'){send(res,200,manualPush.stats());return true}
    if(url.pathname==='/api/admin/push/test'&&req.method==='POST'){send(res,200,await manualPush.test(await readJson(req)));return true}
    if(url.pathname==='/api/admin/push/send'&&req.method==='POST'){send(res,200,await manualPush.broadcast(await readJson(req)));return true}

@@ -1,7 +1,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const FILES={overrides:'manual_overrides.json',schedules:'schedules.json',addresses:'addresses.json',streets:'published_street_fallback.json',emergency:'emergency.json'};
-let server='',password='',sha='',current='',remote=false,canPublish=false,original=null,pushBusy=false;
+let server='',sessionToken='',sha='',current='',remote=false,canPublish=false,original=null,pushBusy=false;
 function message(s,good){$('result').textContent=s;$('result').style.background=good?'#e5f7ed':'#fff2db';$('result').style.color=good?'#15633e':'#825310'}
 function validate(kind,obj){
  if(!obj||typeof obj!=='object'||Array.isArray(obj))throw Error('Потрібен JSON-об’єкт');
@@ -16,7 +16,13 @@ function validate(kind,obj){
  if(JSON.stringify(obj).length>1_800_000)throw Error('Перевищений розмір файлу');
  return true;
 }
-const api=(route,opts={})=>fetch(server+'/api/admin/'+route,{...opts,headers:{authorization:'Bearer '+password,'content-type':'application/json',...opts.headers}}).then(async r=>{const j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.error||'HTTP '+r.status);return j});
+async function api(route,opts={}){
+ const response=await fetch(server+'/api/admin/'+route,{...opts,cache:'no-store',headers:{authorization:'Bearer '+sessionToken,'content-type':'application/json',...opts.headers}});
+ const data=await response.json().catch(()=>({}));
+ if(response.status===401&&remote){signOut(false);throw Error('Сеанс завершився. Увійдіть знову.')}
+ if(!response.ok)throw Error(data.error||'HTTP '+response.status);
+ return data;
+}
 async function load(){
  const kind=$('kind').value;
  try{
@@ -37,13 +43,37 @@ async function diagnostics(){
   $('emergencyStat').textContent=(emergency.events||[]).length;
  }catch(e){message('Не вдалося отримати діагностику: '+e.message,false)}
 }
-$('connect').onclick=async()=>{
- const url=$('server').value.trim().replace(/\/$/,'');if(!/^https:\/\//.test(url)){message('Сервер повинен мати HTTPS.',false);return}
- server=url;password=$('password').value;
- try{const status=await api('status');remote=true;canPublish=!!status.editingEnabled;$('connection').textContent=canPublish?status.repository+' · '+status.branch:'Push-сервер підключено';$('connection').className='pill ok';$('password').value='';message(canPublish?'Авторизовано. Push та редагування GitHub доступні.':'Авторизовано. Push доступний. Для редагування GitHub потрібен GitHub-токен у Railway.',true);setPushReady(true);await Promise.all([load(),refreshPushStatus()])}
- catch(e){remote=false;canPublish=false;password='';$('password').value='';setPushReady(false);$('connection').textContent='Не підключено';$('connection').className='pill err';$('publish').disabled=true;message(e.message,false)}
+function signOut(revoke=true){
+ const oldToken=sessionToken,oldServer=server;
+ if(revoke&&oldToken&&oldServer){fetch(oldServer+'/api/admin/logout',{method:'POST',headers:{authorization:'Bearer '+oldToken,'content-type':'application/json'},body:'{}'}).catch(()=>{})}
+ remote=false;canPublish=false;sessionToken='';sha='';
+ $('adminDashboard').hidden=true;$('adminLoginScreen').hidden=false;
+ $('connection').textContent='Авторизовано';$('publish').disabled=true;
+ $('password').value='';setPushReady(false);
+ $('loginError').textContent='';$('password').focus();
+}
+$('loginForm').onsubmit=async event=>{
+ event.preventDefault();
+ const url=$('server').value.trim().replace(/\/$/,'');
+ if(!/^https:\/\/[^\s/]+/.test(url)){$('loginError').textContent='Укажіть HTTPS-адресу Railway у налаштуваннях нижче.';return}
+ const enteredPassword=$('password').value;
+ $('connect').disabled=true;$('connect').textContent='Перевіряємо пароль…';$('loginError').textContent='';
+ try{
+   const response=await fetch(url+'/api/admin/login',{method:'POST',cache:'no-store',headers:{'content-type':'application/json'},body:JSON.stringify({password:enteredPassword})});
+   const result=await response.json().catch(()=>({}));
+   if(!response.ok||!result.token)throw Error(result.error||'Помилка входу: HTTP '+response.status);
+   server=url;sessionToken=result.token;
+   // Verify session before revealing protected tools.
+   const status=await api('status');
+   remote=true;canPublish=!!status.editingEnabled;
+   $('adminLoginScreen').hidden=true;$('adminDashboard').hidden=false;
+   $('connection').textContent='Увійшли · '+(canPublish?'Push + GitHub':'Push');$('connection').className='pill ok';
+   $('password').value='';setPushReady(true);
+   await Promise.all([load(),diagnostics(),refreshPushStatus()]);
+ }catch(e){sessionToken='';remote=false;canPublish=false;$('loginError').textContent=e.message;setPushReady(false)}
+ finally{$('password').value='';$('connect').disabled=false;$('connect').textContent='Увійти до панелі →'}
 };
-$('disconnect').onclick=()=>{remote=false;canPublish=false;password='';sha='';setPushReady(false);$('connection').textContent='Локальний перегляд';$('connection').className='pill';$('publish').disabled=true;load()};
+$('disconnect').onclick=()=>signOut(true);
 $('kind').onchange=load;
 $('reload').onclick=()=>{if(original)$('editor').value=JSON.stringify(original,null,2);message('Відновлено завантажену версію.',true)};
 $('validate').onclick=()=>{try{const obj=JSON.parse($('editor').value);validate($('kind').value,obj);message('JSON коректний, базові обмеження виконані. Це не підтверджує достовірності графіків.',true)}catch(e){message('Помилка: '+e.message,false)}};
@@ -55,7 +85,7 @@ $('publish').onclick=async()=>{
    $('publish').disabled=true;const r=await api('file?kind='+kind,{method:'PUT',body:JSON.stringify({sha,contents:obj})});message('Опубліковано. Коміт: '+r.commit+'. Дані на GitHub Pages оновляться після розгортання.',true);await load();
  }catch(e){message('Публікація не вдалася: '+e.message,false);$('publish').disabled=false}
 };
-(async()=>{try{const r=await fetch('./push-config.json',{cache:'no-store'});if(r.ok){const c=await r.json();if(c.apiBase)$('server').value=c.apiBase}}catch{}await Promise.all([load(),diagnostics()])})();
+(async()=>{try{const r=await fetch('./push-config.json',{cache:'no-store'});if(r.ok){const c=await r.json();if(c.apiBase)$('server').value=c.apiBase}}catch{} })();
 
 // Guided editor: never directly changes public data. Edits the JSON staging area.
 const queues=Array.from({length:6},(_,i)=>[`${i+1}.1`,`${i+1}.2`]).flat();

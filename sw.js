@@ -1,6 +1,6 @@
-const VERSION='svitlo-cherkasy-v6.4-push-20261010';
-const SHELL=['./','./index.html','./app.js','./hour-paint.js','./admin.html','./admin.js','./style.css','./manifest.webmanifest','./assets/icon.svg','./assets/icon-192.png','./assets/icon-512.png'];
-const CACHE_DATA='svitlo-cherkasy-data-v6.4';
+const VERSION='svitlo-cherkasy-v6.5-install-login-20261010';
+const SHELL=['./','./index.html','./app.js','./hour-paint.js','./admin.html','./admin.js','./style.css','./install.css','./install.js','./manifest.webmanifest','./assets/icon.svg','./assets/icon-192.png','./assets/icon-512.png'];
+const CACHE_DATA='svitlo-cherkasy-data-v6.5';
 self.addEventListener('install',event=>event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>![VERSION,CACHE_DATA].includes(k)).map(k=>caches.delete(k)))),self.clients.claim()])));
 self.addEventListener('fetch',event=>{

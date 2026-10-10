@@ -49,7 +49,7 @@ async function job(){let source;try{const r=await fetch(SCHEDULE_URL,{signal:Abo
  }
  const cutoff=Date.now()-14*86400*1000;for(const [key,stamp] of Object.entries(sent))if(new Date(stamp).getTime()<cutoff)delete sent[key];save()}
 const respond=(res,code,obj,origin)=>{res.writeHead(code,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','access-control-allow-origin':origin===APP_ORIGIN?origin:APP_ORIGIN,'vary':'Origin'});res.end(JSON.stringify(obj))};
-const server=http.createServer(async(req,res)=>{const origin=req.headers.origin||'';if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':APP_ORIGIN,'access-control-allow-methods':'POST, OPTIONS, GET','access-control-allow-headers':'content-type, authorization','vary':'Origin'});res.end();return}
+const server=http.createServer(async(req,res)=>{const origin=req.headers.origin||'';if(req.method==='OPTIONS'){res.writeHead(204,{'access-control-allow-origin':APP_ORIGIN,'access-control-allow-methods':'POST, OPTIONS, GET, PUT','access-control-allow-headers':'content-type, authorization','vary':'Origin'});res.end();return}
  if(req.url?.startsWith('/api/admin/')){await adminRouter(req,res,manualPush);return}
  if(req.url==='/health'){respond(res,200,{ok:true,subscriberCount:Object.keys(subscribers).length},origin);return}
  if(req.url!=='/api/subscribe'||req.method!=='POST'){respond(res,404,{error:'Not found'},origin);return}
