@@ -1,8 +1,8 @@
-name: Automatic schedule and queue data update
+name: Update official blackout data
 on:
-  schedule:
-    - cron: '7,37 * * * *' # GitHub Actions may run later under load.
   workflow_dispatch:
+  schedule:
+    - cron: '7,37 * * * *'
   push:
     paths:
       - 'scripts/update_data.py'
@@ -13,26 +13,45 @@ concurrency:
   group: svitlo-data-refresh
   cancel-in-progress: false
 jobs:
-  fetch:
+  update:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: pip
-      - run: pip install -r requirements.txt
-      - name: Download new blackout schedules
-        run: python scripts/update_data.py --schedules-only
-      - name: Download address-to-queue index (best effort)
-        run: python scripts/update_data.py --addresses-only || echo "Official PDFs could not be fully parsed today; schedule updates can still continue"
-      - name: Commit verified updates
+      - run: python -m pip install -r requirements.txt pytest
+      - name: Run importer tests
+        run: python -m pytest -q tests
+      - name: Refresh official schedules
+        run: |
+          if ! python scripts/update_data.py --schedules-only; then
+            echo '::warning::Schedule import failed. Previous schedule JSON retained.'
+          fi
+      - name: Refresh address queue index
+        run: |
+          if ! python scripts/update_data.py --addresses-only; then
+            echo '::warning::Address import failed. Previous verified address JSON retained.'
+          fi
+      - name: Show import summary
+        run: |
+          python - <<'PY'
+          import json
+          for name in ('schedules','addresses'):
+              with open('data/'+name+'.json',encoding='utf-8') as f: data=json.load(f)
+              print(name, 'checked', data.get('lastChecked',data.get('updatedAt')),
+                    'statistics',data.get('stats',{}),
+                    'days', len(data.get('days',[])),
+                    'cities', len(data.get('localities',{})))
+          PY
+      - name: Commit verified data
         run: |
           git config user.name "svitlo-data-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/schedules.json data/addresses.json
           if ! git diff --cached --quiet; then
-            git commit -m "Update public outage schedules and official addresses"
+            git commit -m "Refresh verified outage schedules and queue index"
             git push
           fi
