@@ -41,3 +41,18 @@ html{scrollbar-width:none;overflow-x:clip;overscroll-behavior-x:none;scroll-beha
 .emergency-banner .emergency-icon{display:grid;place-items:center;border-radius:12px;background:#ffdc9e;color:#89550c;font-weight:900;min-width:28px;height:28px}
 .emergency-banner.is-note .emergency-icon{background:#d8e9ff;color:#2864ad}
 .emergency-banner>div{min-width:0}.emergency-banner strong{font-size:12px;line-height:1.3;display:block}.emergency-banner p{font-size:11px;line-height:1.55;margin:5px 0 7px}.emergency-banner a{font-size:11px;text-decoration:underline;font-weight:700}
+
+/* v6.6: transparent stale-data state, accessible without relying on color alone */
+.freshness-warning{margin:0 0 14px;padding:13px 15px;border-radius:15px;background:#fff5de;border:1px solid #f5db9a;color:#624f28;font-size:13px;line-height:1.45;font-weight:550}
+.freshness-warning[hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
+
+/* App release updates: small, accessible banner inside installed PWA only. */
+.app-update-banner[hidden]{display:none!important}
+.app-update-banner{display:flex;align-items:center;gap:10px;margin:3px 0 16px;padding:12px;background:#e9f2ff;border:1px solid #c6dfff;border-radius:17px;box-shadow:0 8px 25px #2b6fb415;color:#20466f}
+.app-update-symbol{display:grid;place-items:center;width:31px;height:31px;border-radius:11px;background:#d2e4ff;color:#246ce3;font-size:23px;flex:0 0 auto}
+.app-update-copy{min-width:0;flex:1}.app-update-copy strong{font-size:13px;display:block}.app-update-copy p{font-size:11px;color:#4b6484;line-height:1.4;margin:2px 0 0}
+.app-update-action{flex:0 0 auto;border:0;background:#337bed;color:white;border-radius:11px;padding:10px 12px;font-weight:750;font-size:12px;cursor:pointer}
+.app-update-action:disabled{opacity:.6;cursor:wait}
+.app-update-close{align-self:flex-start;border:0;background:transparent;color:#647992;font-size:23px;line-height:1;padding:0 2px;cursor:pointer}
+@media(max-width:370px){.app-update-banner{gap:7px;padding:10px}.app-update-action{padding:9px 8px}}
