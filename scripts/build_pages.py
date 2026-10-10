@@ -8,7 +8,7 @@ import re
 
 ROOT=Path(__file__).resolve().parent.parent
 DEST=ROOT/'_site'
-FILES=['index.html','admin.html','app.js','address-lookup.js','admin.js','hour-paint.js','install.js','version-check.js','release.json','style.css','install.css','sw.js','manifest.webmanifest','privacy.html','about.html','feedback.html','feedback.js','help.html','help.css','help.js','admin-extra.js','robots.txt']
+FILES=['index.html','admin.html','app.js','address-lookup.js','admin.js','hour-paint.js','install.js','version-check.js','release.json','style.css','install.css','sw.js','manifest.webmanifest','privacy.html','about.html','feedback.html','feedback.js','help.html','help.css','help.js','admin-extra.js','schedule-planner.js','admin-planner.js','robots.txt']
 if DEST.exists():shutil.rmtree(DEST)
 DEST.mkdir()
 for filename in FILES:

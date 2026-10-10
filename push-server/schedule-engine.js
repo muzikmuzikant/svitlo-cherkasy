@@ -3,7 +3,7 @@ export const QUEUES = new Set(Array.from({length:6},(_,i)=>[`${i+1}.1`,`${i+1}.2
 export const parseMinute = value => value === '24:00' ? 1440 : /^([01]\d|2[0-3]):[0-5]\d$/.test(value || '') ? Number(value.slice(0,2))*60 + Number(value.slice(3)) : -1;
 export function timeline(day, queue) {
   if (!QUEUES.has(queue) || day?.verified !== true) return null;
-  const entry=day.queues?.[queue]; if(!entry || !Array.isArray(entry.off)) return null;
+  const entry=day.queues?.[queue] ?? (day.complete === true ? {knownFrom:'00:00',off:[]} : null); if(!entry || !Array.isArray(entry.off)) return null;
   const start=parseMinute(entry.knownFrom ?? '00:00');if(start<0)return null;
   const values=new Int8Array(1440);values.fill(-1);values.fill(0,start,1440);
   let last=0;

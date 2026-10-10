@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="uk"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="svitlo-version" content="6.9.0"><meta name="theme-color" content="#f6f8fc"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="svitlo-version" content="7.1.0"><meta name="theme-color" content="#f6f8fc"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Світло"><meta name="description" content="Світло Черкаси — графіки відключень за адресою, актуальні дані та сповіщення">
 
 
@@ -21,21 +21,51 @@
 </head>
 <body>
 <section id="installLanding" class="install-landing" aria-labelledby="installHeading">
- <div class="install-shell">
-  <header class="install-top"><div class="install-brand"><img src="./assets/icon-192-v692.png" alt="" width="43" height="43"><div><strong>Світло Черкаси</strong><small>Графіки відключень · Черкаси та район</small></div></div><span class="install-mark">Вебзастосунок</span></header>
-  <main class="install-hero"><span class="install-eyebrow"><span class="install-dot"></span> БУДЬТЕ В КУРСІ</span>
-   <h1 id="installHeading">Ваш графік світла.<br><span>Завжди поруч.</span></h1>
-   <p class="install-lead">Щоб користуватися графіками, адресами та сповіщеннями, встановіть «Світло Черкаси» на головний екран. Це безкоштовно і займає кілька секунд.</p>
-   <div class="install-phone" aria-hidden="true"><div class="install-notch"></div><div class="install-phone-screen"><div class="install-preview-head">світло<span>.</span> <small>Черкаси та район</small></div><div class="install-preview-card"><span>МОЯ ПІДЧЕРГА</span><strong>2.1</strong><div class="install-preview-status"><i></i> Перевіряйте актуальний графік</div></div><div class="install-preview-bars"><b></b><b></b><b></b><b></b><b></b><b></b></div><div class="install-preview-caption">Графіки · Сповіщення · Адреси</div></div></div>
-   <div class="install-panel"><div class="install-panel-head"><span>01</span><div><strong>Установіть застосунок</strong><small id="installPlatformLabel">Визначаємо ваш пристрій…</small></div></div>
-    <button type="button" class="install-button" id="installAction">Як встановити <span aria-hidden="true">↗</span></button>
-    <div class="install-instructions" id="installInstructions" hidden></div>
-    <p class="install-privacy">Не потрібні App Store, Google Play або оплата.</p>
-   </div>
-   <p class="install-open-hint" id="installOpenHint">Уже встановлено? Запустіть «Світло Черкаси» з іконки на головному екрані — не з вкладки браузера.</p>
-  </main>
-  <footer class="install-footer"><span>© Світло Черкаси · неофіційний сервіс</span><span><a href="./privacy.html">Конфіденційність</a> · <a href="./about.html">Про джерела</a> · <a href="./help.html">Допомога</a> · <a href="./feedback.html">Зв’язок із нами</a> · <a href="./help.html">Допомога</a></span></footer>
- </div>
+  <div class="install-shell">
+    <header class="install-top">
+      <div class="install-brand"><img src="./apple-touch-icon-v692.png" alt="" width="46" height="46"><div><strong>Світло Черкаси</strong><small>Черкаси та район</small></div></div>
+      <div class="install-top-actions"><span class="install-free"><span class="install-free-dot"></span> Безкоштовно</span><a href="./help.html" class="install-help-link">Допомога <span aria-hidden="true">↗</span></a></div>
+    </header>
+    <main class="install-main">
+      <div class="install-content">
+        <div class="install-kicker"><span class="install-kicker-icon" aria-hidden="true">✦</span> ВАШ ГРАФІК — ЗАВЖДИ ПОРУЧ</div>
+        <h1 id="installHeading">Коли буде <span>світло?</span><br>Знайте заздалегідь.</h1>
+        <p class="install-lead">Графіки відключень за адресою, зміни та сповіщення — в одному зручному застосунку на вашому телефоні.</p>
+        <div class="install-benefits" aria-label="Можливості застосунку">
+          <div class="install-benefit"><span class="install-benefit-icon" aria-hidden="true">⌖</span><span>Пошук за адресою</span></div>
+          <div class="install-benefit"><span class="install-benefit-icon" aria-hidden="true">↻</span><span>Автооновлення графіків</span></div>
+          <div class="install-benefit"><span class="install-benefit-icon" aria-hidden="true">♧</span><span>Push-сповіщення</span></div>
+        </div>
+        <section class="install-panel" aria-labelledby="installPanelTitle">
+          <div class="install-panel-heading"><span class="install-panel-icon" aria-hidden="true">↓</span><div><strong id="installPanelTitle">Встановіть «Світло Черкаси»</strong><small id="installPlatformLabel">Визначаємо пристрій…</small></div></div>
+          <button type="button" class="install-button" id="installAction">Як встановити застосунок <span aria-hidden="true">→</span></button>
+          <div class="install-instructions" id="installInstructions" hidden aria-live="polite"></div>
+          <p class="install-privacy"><span aria-hidden="true">✓</span> Без оплати та реєстрації. Встановлення із сайту.</p>
+        </section>
+        <p class="install-open-hint" id="installOpenHint">Уже встановили? Відкрийте застосунок з іконки на головному екрані. У звичайній вкладці браузера доступна лише сторінка встановлення.</p>
+      </div>
+      <aside class="install-showcase" aria-label="Попередній вигляд застосунку">
+        <div class="install-orbit install-orbit-one" aria-hidden="true"></div><div class="install-orbit install-orbit-two" aria-hidden="true"></div>
+        <div class="install-phone">
+          <div class="install-phone-island" aria-hidden="true"></div>
+          <div class="install-phone-body">
+            <div class="install-screen-top"><span>9:41</span><span aria-hidden="true">● ▰</span></div>
+            <div class="install-phone-apphead"><img src="./apple-touch-icon-v692.png" alt="" width="31" height="31"><div><strong>Світло Черкаси</strong><small>Графік електропостачання</small></div></div>
+            <div class="install-mock-label">МОЯ ПІДЧЕРГА <span>ПРИКЛАД</span></div>
+            <div class="install-mock-main"><span class="install-mock-sun" aria-hidden="true">☀</span><div class="install-mock-number">2.1</div><div class="install-mock-copy">Графік на сьогодні</div><span class="install-mock-info">За опублікованими даними</span></div>
+            <div class="install-mock-days"><span>Пн</span><span>Вт</span><span class="selected">Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Нд</span></div>
+            <div class="install-mock-heading">Графік відключень</div>
+            <div class="install-mock-bars" aria-hidden="true"><i></i><i></i><i class="off"></i><i class="off"></i><i></i><i></i><i class="off"></i><i class="off"></i><i></i><i></i><i></i><i></i></div>
+            <div class="install-mock-times"><span>00:00</span><span>12:00</span><span>24:00</span></div>
+            <div class="install-mock-bottom"><span>⌂ <small>Головна</small></span><span>▦ <small>Графік</small></span><span>☰ <small>Опції</small></span></div>
+          </div>
+        </div>
+        <div class="install-float-card"><span class="install-float-icon">✓</span><div><strong>Ваша адреса</strong><small>Графік під рукою</small></div></div>
+      </aside>
+    </main>
+    <div class="install-bottom-note"><span aria-hidden="true">ⓘ</span> Інформаційний сервіс. Час відключень — прогноз за даними оператора, а не фактичний стан електромережі.</div>
+    <footer class="install-footer"><span>© Світло Черкаси · Неофіційний застосунок</span><nav aria-label="Посилання"><a href="./privacy.html">Конфіденційність</a><a href="./about.html">Джерела</a><a href="./help.html">Допомога</a><a href="./feedback.html">Зв’язок із нами</a></nav></footer>
+  </div>
 </section>
 <div class="viewport"><div class="ambient" aria-hidden="true"></div>
 <header class="topbar"><div class="brand"><span class="brand-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><rect width="48" height="48" rx="15" fill="url(#bgrad)"/><defs><linearGradient id="bgrad" x2="1" y2="1"><stop stop-color="#76baff"/><stop offset="1" stop-color="#3475f6"/></linearGradient></defs><path d="M27 7 14.5 26h9l-1.8 15L35 20h-9Z" fill="white"/></svg></span><span>світло<span class="brand-period">.</span><small>Черкаси та район</small></span></div><button class="icon-btn" id="refreshTop" aria-label="Оновити графіки"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.35 6M20 4v7h-7"/></svg></button></header>
@@ -48,6 +78,11 @@
 <main id="main" class="main-content">
 <section id="home" class="screen"><div class="hero-heading"><div class="eyebrow"><i class="live-dot"></i> ВСЕ ПРО СВІТЛО</div><h1>Все під контролем.</h1><p>Оберіть адресу. Решту зробимо ми.</p></div>
 <div class="primary-picker"><div class="selected-label">МОЯ АДРЕСА</div><button class="picker-btn" id="primaryPicker"><span class="picker-place" id="primaryName">Додайте свою адресу</span><span class="picker-sub" id="primarySub">Черкаси або села району</span><svg class="chevron-svg" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg></button></div>
+<div id="syncStatus" class="auto-sync-status" data-state="pending" role="status" aria-live="polite">
+ <span class="auto-sync-indicator" aria-hidden="true"></span>
+ <div class="auto-sync-copy"><strong id="syncStatusTitle">Завантажуємо графіки…</strong><small id="syncStatusDetails">Автоматична перевірка при відкритті та кожні 5 хвилин</small></div>
+ <button type="button" class="auto-sync-action" id="syncNow" aria-label="Перевірити графіки зараз" title="Перевірити зараз">↻</button>
+</div>
 <div id="dataFreshness" class="freshness-warning" role="status" hidden></div><div class="status-panel status-unknown" id="heroStatus"><div class="status-decor"></div><div class="status-head"><span id="stateIcon" class="state-icon"></span><span id="stateCaption">ПЕРЕВІРЯЄМО ГРАФІК</span></div><div class="status-title" id="heroTitle">Немає даних</div><div class="status-count" id="heroCountdown">Додайте адресу, щоб побачити свій графік</div><div class="status-footer"><span id="sourceStamp">За офіційним графіком</span><span id="queueChip" class="queue-chip">—</span></div></div>
 <section class="emergency-banner" id="emergencyBanner" hidden aria-live="polite"><span class="emergency-icon">!</span><div><strong id="emergencyTitle">Повідомлення оператора</strong><p id="emergencyText"></p><a id="emergencySource" target="_blank" rel="noopener">Джерело ↗</a></div></section>
 <div class="section-head"><h2>Графік на сьогодні</h2><button class="inline-link" id="openDetail">Детальніше <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button></div>

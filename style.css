@@ -59,3 +59,13 @@ html{scrollbar-width:none;overflow-x:clip;overscroll-behavior-x:none;scroll-beha
 
 /* Freshness message: informative, not a raw diagnostic banner. */
 .freshness-warning strong{display:block;margin-bottom:3px;font-weight:750}.freshness-warning span{display:block}.freshness-warning a{display:inline-block;margin-top:5px;font-weight:700;color:inherit;text-decoration:underline;text-underline-offset:2px}
+
+/* Data auto-refresh status: honest about the difference between device download and operator checks. */
+.auto-sync-status{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:11px 12px;border:1px solid #e1eaf5;border-radius:15px;background:#fff;color:#405572;min-width:0;box-shadow:0 3px 12px #294e8308}
+.auto-sync-indicator{display:block;flex:0 0 9px;width:9px;height:9px;border-radius:99px;background:#4785ea;box-shadow:0 0 0 4px #e4edff}
+.auto-sync-status[data-state="fresh"] .auto-sync-indicator{background:#32b67e;box-shadow:0 0 0 4px #dff6ea}
+.auto-sync-status[data-state="stale"] .auto-sync-indicator{background:#e3a44a;box-shadow:0 0 0 4px #fff1d8}
+.auto-sync-status[data-state="error"] .auto-sync-indicator{background:#e66a6a;box-shadow:0 0 0 4px #ffeded}
+.auto-sync-copy{display:block;flex:1;min-width:0}.auto-sync-copy strong{display:block;font-size:12px;line-height:1.4;font-weight:780;color:#304a70}.auto-sync-copy small{display:block;font-size:10px;line-height:1.5;color:#8291a7;margin-top:2px;overflow-wrap:anywhere}
+.auto-sync-action{flex:0 0 33px;width:33px;height:33px;display:grid;place-items:center;background:#f0f5fd;border:1px solid #dfe8f5;border-radius:11px;color:#3371d5;font-weight:800;font-size:19px;cursor:pointer}
+.auto-sync-action:focus-visible{outline:2px solid #3371d5;outline-offset:2px}.auto-sync-action[disabled]{opacity:.6;cursor:wait}

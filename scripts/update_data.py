@@ -23,7 +23,7 @@ TZ = ZoneInfo('Europe/Kyiv')
 QUEUE = [f'{i}.{j}' for i in range(1, 7) for j in (1, 2)]
 UA_MONTHS = dict(zip('січня лютого березня квітня травня червня липня серпня вересня жовтня листопада грудня'.split(),range(1,13)))
 HEADLINE_DATE = re.compile(r'на\s+(\d{1,2})\s+('+'|'.join(UA_MONTHS)+r')',re.I)
-QUEUE_START = re.compile(r'(?<!\d)([1-6]\.[12])\s*[-–—:]?\s*(?=(?:\d{1,2}:\d{2}|відсут|не\s+відключ|без\s+відключ))',re.I)
+QUEUE_START = re.compile(r'(?<!\d)([1-6]\.[12])\s*\.?\s*[-–—:]?\s*(?=(?:\d{1,2}:\d{2}|відсут|не\s+відключ|без\s+відключ))',re.I)
 INTERVAL = re.compile(r'(?<!\d)([01]?\d|2[0-4]):([0-5]\d)\s*[–—−-]\s*([01]?\d|2[0-4]):([0-5]\d)')
 PUB_TS = re.compile(r'(?<!\d)(\d{2}\.\d{2}\.20\d\d)\s+(\d\d:\d\d)')
 PDF_LINK = re.compile(r'\.pdf(?:\?.*)?$',re.I)
@@ -108,10 +108,17 @@ def parse_article(html,url,reference=None):
     check_schedule_date(day,pub,url)
     marker=re.search(r'Години\s+відсутності\s+електропостачання\s*:',full,re.I)
     if not marker:return None
-    body=re.split(r'Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|Відключення\s+електроенергії\s+можуть',full[marker.end():],maxsplit=1,flags=re.I)[0]
+    tail=full[marker.end():]
+    footer=re.search(r'Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|Відключення\s+електроенергії\s+можуть',tail,flags=re.I)
+    body=tail[:footer.start()] if footer else tail
     found=list(QUEUE_START.finditer(body))
     if not found:return None
     if len({x.group(1) for x in found})!=len(found):return None
+    # Guard against malformed labels (for example '2,1') that the strict
+    # parser may have missed: in that case NEVER treat an omitted queue as on.
+    raw_labels=re.findall(r'(?<!\d)([1-6])\s*[.,]\s*([12])\s*\.?(?!\d)',body)
+    parsed_labels=[x.group(1) for x in found]
+    if sorted(a+'.'+b for a,b in raw_labels)!=sorted(parsed_labels):return None
     queues={}
     for i,m in enumerate(found):
         part=body[m.end():found[i+1].start() if i+1<len(found) else len(body)]
@@ -124,13 +131,16 @@ def parse_article(html,url,reference=None):
         explicitly_none=bool(re.search(r'не\s+відключ|без\s+відключ|відключення\s+не\s+передбач',part,re.I))
         if periods or explicitly_none:queues[m.group(1)]=periods
         else:return None
-    return {'date':day,'publishedAt':pub.isoformat(timespec='minutes'),'source':url,'queues':queues}
+    return {'date':day,'publishedAt':pub.isoformat(timespec='minutes'),'source':url,'queues':queues,'complete':bool(footer)}
 
 
 def compose(revisions):
-    """Merge revisions without claiming absent queues are 'on'.
-    Prior history is retained until later publication cutover, and omitted queues
-    keep previous known plan instead of turning green.
+    """Combine dated complete operator snapshots without inventing outages.
+
+    Omission of a queue from a *validated complete* listing means there are
+    no scheduled outages for that queue after this publication's cutover.
+    Before the first publication on a day, information remains unknown.
+    Incomplete/legacy revisions never implicitly clear a queue.
     """
     revs=sorted(revisions,key=lambda x:x['publishedAt'])
     if not revs:return None
@@ -140,10 +150,12 @@ def compose(revisions):
         pub=datetime.fromisoformat(rev['publishedAt'])
         cutoff=0 if pub.date().isoformat()<day else pub.hour*60+pub.minute
         if cutoff>=1440:continue
-        for q,spans in rev['queues'].items():
+        target_queues=QUEUE if rev.get('complete') is True else rev['queues'].keys()
+        for q in target_queues:
             if q not in values:continue
+            spans=rev['queues'].get(q,[])
             arr=[0]*1440
-            for s,e in spans:arr[s:e]=[1]*(e-s)
+            for a,b in spans:arr[a:b]=[1]*(b-a)
             values[q][cutoff:]=arr[cutoff:]
     result={}
     for q in QUEUE:
@@ -153,12 +165,12 @@ def compose(revisions):
         for i,v in enumerate(arr+[0]):
             if v==1 and start is None:start=i
             if v!=1 and start is not None:intervals.append([to_time(start),to_time(i)]);start=None
-        # even if knownFrom=24:00, JS treats this as unknown for whole day.
         result[q]={'knownFrom':to_time(known),'off':intervals}
+    omitted=[q for q in QUEUE if q not in revs[-1]['queues']]
     return {'date':day,'publishedAt':revs[-1]['publishedAt'],'source':revs[-1]['source'],
             'verified':True,'queues':result,'revisions':len(revs),
+            'noScheduledOutages': omitted if revs[-1].get('complete') else [],
             'publications':[{'publishedAt':r['publishedAt'],'source':r['source'],'queues':sorted(r['queues'])} for r in revs]}
-
 
 def parse_news_links(html):
     soup=BeautifulSoup(html,'html.parser');urls=[]

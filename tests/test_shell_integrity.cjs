@@ -7,7 +7,7 @@ test('service-worker precache includes only files published by GitHub Pages',()=
  const js=fs.readFileSync(path.join(root,'sw.js'),'utf8');
  const shell=/const SHELL=\[([^\]]+)\];/.exec(js)?.[1];
  assert.ok(shell,'Expected a Service Worker shell array');
- for(const item of shell.matchAll(/'\.\/([^']*)'/g)){
+ for(const item of shell.matchAll(/[\"']\.\/([^\"']*)[\"']/g)){
   const itemPath=item[1];
   if(itemPath) assert.ok(fs.existsSync(path.join(root,itemPath)),`Missing precached file: ${itemPath}`);
  }

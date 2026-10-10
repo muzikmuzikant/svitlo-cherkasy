@@ -10,7 +10,7 @@ const PIN='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="c
 const safeJSON=(k,fallback)=>{try{return JSON.parse(localStorage.getItem(k)??'null')??fallback}catch{return fallback}};
 const legacy=safeJSON('svitlo-addresses-v3',safeJSON('svitlo-addresses-v2',[]));
 let addresses=safeJSON(STORE,Array.isArray(legacy)?legacy:[]), prefs=Object.assign({primaryId:null,off:true,on:true,changes:true,tomorrow:true,emergency:true},safeJSON(PREF,{}));
-let pushActive=false, emergency={events:[],lastChecked:null},overrides={schedules:{days:[]},addresses:{},emergency:{events:[]}},data={days:[],changes:[]},index={keys:{},streets:{},localities:{}},active='home',daySelected=null,editId=null,suggestion=null,toastTimeout=null,lastPub=null,pushConfig=null,swRegistration=null,notified=new Set(safeJSON(SEEN,[])),lastRefresh=0,hasCheckedOnce=false;
+let pushActive=false, emergency={events:[],lastChecked:null},overrides={schedules:{days:[]},addresses:{},emergency:{events:[]}},data={days:[],changes:[]},index={keys:{},streets:{},localities:{}},active='home',daySelected=null,editId=null,suggestion=null,toastTimeout=null,lastPub=null,pushConfig=null,swRegistration=null,notified=new Set(safeJSON(SEEN,[])),lastRefresh=0,hasCheckedOnce=false,lastDownloadAt=null,lastSyncFailed=false,refreshInFlight=null;
 if(!Array.isArray(addresses))addresses=[];
 const byId=id=>addresses.find(x=>x.id===id);
 const primary=()=>byId(prefs.primaryId)||addresses[0]||null;
@@ -34,7 +34,7 @@ function fmtStamp(v){if(!v)return 'невідомо';const d=new Date(v);return 
 const currentDay=date=>data.days.find(x=>x.date===date&&x.verified===true);
 const minute=s=>s==='24:00'?1440:/^([01]\d|2[0-3]):[0-5]\d$/.test(s||'')?Number(s.slice(0,2))*60+Number(s.slice(3)):-1;
 const clock=n=>`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;
-function timeline(date,queue){const q=currentDay(date)?.queues?.[queue];if(!q)return null;const start=minute(q.knownFrom||'00:00');if(start<0)return null;const a=new Int8Array(1440);a.fill(-1);a.fill(0,start,1440);let last=0;for(const [s,e] of q.off||[]){const f=minute(s),t=minute(e);if(f<last||f>=t||t>1440)return null;a.fill(1,Math.max(f,start),t);last=t}return a}
+function timeline(date,queue){const day=currentDay(date);const q=day?.queues?.[queue]||(day?.verified===true&&day?.complete===true?{knownFrom:'00:00',off:[]}:null);if(!q)return null;const start=minute(q.knownFrom||'00:00');if(start<0)return null;const a=new Int8Array(1440);a.fill(-1);a.fill(0,start,1440);let last=0;for(const [s,e] of q.off||[]){const f=minute(s),t=minute(e);if(f<last||f>=t||t>1440)return null;a.fill(1,Math.max(f,start),t);last=t}return a}
 function stateAt(a,m){return a?.[m]===1?'off':a?.[m]===0?'on':'unknown'}
 function transition(a,m){if(!a||a[m]<0)return null;for(let i=m+1;i<1440;i++)if(a[i]!==a[m])return {time:i,to:a[i]};return null}
 function stats(a){if(!a)return null;let on=0,off=0,unknown=0,longest=0,run=0;for(const v of a){if(v===0)on++;if(v===1){off++;run++;longest=Math.max(longest,run)}else run=0;if(v<0)unknown++}return {on,off,unknown,longest}}
@@ -45,8 +45,27 @@ function label(a){return a?.nickname?.trim()||[a?.street,a?.house].filter(Boolea
 function fullAddress(a){return a?[a.settlement||'Черкаси',[a.street,a.house].filter(Boolean).join(', ')].join(' · '):'Оберіть адресу'}
 function setText(id,text){if($(id).textContent!==String(text))$(id).textContent=String(text)}
 function render(){renderHome();if(active==='detail')renderDetail();if(active==='updates')renderUpdates();if(active==='settings')renderSettings()}
+function scheduleQueueChanged(before, after, queue) {
+ // Ignore rollovers and re-publications which do not change actual queue intervals.
+ if (!queue || !before?.days?.length || !after?.days?.length) return false;
+ const earlier = new Map(before.days.filter(d => d.verified === true).map(d => [d.date,d.queues?.[queue]]));
+ return after.days.some(day => earlier.has(day.date) &&
+   JSON.stringify(earlier.get(day.date) ?? null) !== JSON.stringify(day.queues?.[queue] ?? null));
+}
+function renderSyncStatus(){
+ const box=$('syncStatus');if(!box)return;
+ const checked=Date.parse(data.lastChecked||'');
+ const checkKnown=Number.isFinite(checked)&&checked<=Date.now()+5*60_000;
+ const sourceStale=!checkKnown||(Date.now()-checked>2*3600_000);
+ const offline=navigator.onLine===false;
+ box.dataset.state=!hasCheckedOnce?'pending':offline||lastSyncFailed?'error':sourceStale?'stale':'fresh';
+ const title=!hasCheckedOnce?'Завантажуємо графіки…':offline?'Немає інтернету':lastSyncFailed?'Не вдалося отримати графіки':sourceStale?'Перевірка оператора затримується':'Автооновлення графіків активне';
+ const details=!hasCheckedOnce?'При відкритті й кожні 5 хвилин, поки застосунок відкритий':
+   `Джерело: ${checkKnown?fmtStamp(data.lastChecked):'час невідомий'} · На телефоні: ${lastDownloadAt?fmtStamp(lastDownloadAt):'немає нових даних'}`;
+ setText('syncStatusTitle',title);setText('syncStatusDetails',details);
+}
 function renderFreshness(){
- const node=$('dataFreshness');if(!node)return;
+ renderSyncStatus();const node=$('dataFreshness');if(!node)return;
  // The timestamp describes the source-import check, NOT the publication time and
  // not a live power meter. A manual refresh only re-downloads published data.
  const checked=Date.parse(data.lastChecked||'');
@@ -216,16 +235,50 @@ function mergeIndexes(live,backup){
  }
  return result;
 }
-async function refreshData(manual=false){if(Date.now()-lastRefresh<7000&&!manual)return;lastRefresh=Date.now();const previous=data;let schedulesOk=false;try{const r=await fetch(`./data/schedules.json?refresh=${Date.now()}`,{cache:'no-store'});if(!r.ok)throw Error('schedules HTTP '+r.status);const loaded=normalizeData(await r.json());data=loaded;schedulesOk=true}catch(e){console.warn('Schedule fetch:',e)}try{
-  const [remote,seed]=await Promise.allSettled([
-    fetch(`./data/addresses.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}),
-    fetch(`./data/published_street_fallback.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()})
-  ]);
-  const live=remote.status==='fulfilled'?remote.value:{};
-  const backup=seed.status==='fulfilled'?seed.value:{};
-  index=mergeIndexes(live,backup);
-  if($('addressSheet').open){suggestions();checkLookup()}
- }catch(e){console.warn('Address fetch:',e)}try{const [alertRes,overrideRes]=await Promise.all([fetch('./data/emergency.json?v='+Date.now(),{cache:'no-store'}),fetch('./data/manual_overrides.json?v='+Date.now(),{cache:'no-store'})]);if(alertRes.ok){const parsed=await alertRes.json();if(Array.isArray(parsed.events))emergency=parsed}if(overrideRes.ok){const parsed=await overrideRes.json();if(parsed.schemaVersion===1)overrides=parsed}applyOverrides()}catch(e){console.warn('Bulletin or admin overrides:',e)}hasCheckedOnce=true;render();if(manual)flash(schedulesOk?'Дані завантажено. Час перевірки джерела показано в оновленнях.':'Не вдалося завантажити нові дані — показано останні доступні');if(schedulesOk)announceChanges(previous,data)}
+async function refreshData(manual=false){
+ if(refreshInFlight)return refreshInFlight;
+ if(Date.now()-lastRefresh<7000&&!manual)return;
+ lastRefresh=Date.now();
+ const before=data,hadChecked=hasCheckedOnce;
+ const refreshButton=$('syncNow');if(refreshButton)refreshButton.disabled=true;
+ refreshInFlight=(async()=>{
+   let schedulesOk=false;
+   try{
+     const response=await fetch(`./data/schedules.json?refresh=${Date.now()}`,{cache:'no-store'});
+     if(!response.ok)throw Error('schedules HTTP '+response.status);
+     const loaded=normalizeData(await response.json());
+     data=loaded;schedulesOk=true;lastSyncFailed=false;lastDownloadAt=new Date().toISOString();
+   }catch(error){lastSyncFailed=true;console.warn('Schedule fetch:',error)}
+   try{
+     const [remote,seed]=await Promise.allSettled([
+       fetch(`./data/addresses.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}),
+       fetch(`./data/published_street_fallback.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()})
+     ]);
+     if(remote.status==='fulfilled'||seed.status==='fulfilled'){
+       const live=remote.status==='fulfilled'?remote.value:{};
+       const backup=seed.status==='fulfilled'?seed.value:{};
+       index=mergeIndexes(live,backup);
+       if($('addressSheet').open){suggestions();checkLookup()}
+     }
+   }catch(error){console.warn('Address fetch:',error)}
+   try{
+     const [alertRes,overrideRes]=await Promise.allSettled([
+       fetch('./data/emergency.json?v='+Date.now(),{cache:'no-store'}),
+       fetch('./data/manual_overrides.json?v='+Date.now(),{cache:'no-store'})
+     ]);
+     if(alertRes.status==='fulfilled'&&alertRes.value.ok){const parsed=await alertRes.value.json();if(Array.isArray(parsed.events))emergency=parsed}
+     if(overrideRes.status==='fulfilled'&&overrideRes.value.ok){const parsed=await overrideRes.value.json();if(parsed.schemaVersion===1)overrides=parsed}
+     applyOverrides();
+   }catch(error){console.warn('Bulletin or admin overrides:',error)}
+   hasCheckedOnce=true;render();
+   if(manual)flash(schedulesOk?'Графіки перевірено. Час перевірки оператора показано вище.':'Не вдалося завантажити дані — показуємо останні доступні');
+   if(schedulesOk){
+     if(hadChecked&&scheduleQueueChanged(before,data,primary()?.queue))flash('Графік для вашої підчерги оновлено');
+     announceChanges(before,data);
+   }
+ })();
+ try{return await refreshInFlight}finally{refreshInFlight=null;if(refreshButton)refreshButton.disabled=false}
+}
 function notify(title,body,key){if(pushActive||notified.has(key)||!('Notification' in window)||Notification.permission!=='granted')return;notified.add(key);localStorage.setItem(SEEN,JSON.stringify([...notified].slice(-400)));navigator.serviceWorker?.ready.then(r=>r.showNotification(title,{body,icon:'./assets/icon-192-v673.png',tag:key})).catch(()=>{try{new Notification(title,{body})}catch{}})}
 function announceChanges(previous,current){if(!prefs.changes||!previous?.lastChecked)return;const a=primary();if(!a?.queue)return;for(const c of current.changes||[])if(c.queues?.includes(a.queue)&&!previous.changes?.some(x=>x.date===c.date&&x.publishedAt===c.publishedAt)){notify('Світло: графік змінено',`Оновлена підчерга ${a.queue} на ${formatDate(c.date)}.`, `change:${c.date}:${c.publishedAt}:${a.queue}`)}}
 function checkNotifications(){
@@ -295,7 +348,7 @@ async function disableNotifications(){
 async function enableNotifications(){if(!('Notification' in window)){flash('Цей браузер не підтримує сповіщення');return}if(Notification.permission==='denied'){flash('Дозвольте сповіщення у налаштуваннях iPhone');return}const granted=await Notification.requestPermission();if(granted!=='granted'){flash('Дозвіл на сповіщення не надано');return}if(pushConfig){try{await updatePushSubscription();flash('Сповіщення увімкнено')}catch(e){console.warn(e);flash('Не вдалося ввімкнути сповіщення. Спробуйте пізніше')}}else flash('Нагадування увімкнено для відкритого застосунку');renderSettings()}
 // Event wiring
 for(const b of document.querySelectorAll('[data-go]'))b.addEventListener('click',()=>navigate(b.dataset.go));
-$('refreshTop').onclick=()=>refreshData(true);$('refreshDetail').onclick=()=>refreshData(true);$('manualRefresh').onclick=()=>refreshData(true);$('primaryPicker').onclick=()=>addresses.length?openPicker():openAddressSheet();$('addFromHome').onclick=()=>openAddressSheet();$('addFromSettings').onclick=()=>openAddressSheet();$('editActive').onclick=()=>openAddressSheet(primary());$('openDetail').onclick=()=>navigate('detail');
+$('syncNow').onclick=()=>refreshData(true);$('refreshTop').onclick=()=>refreshData(true);$('refreshDetail').onclick=()=>refreshData(true);$('manualRefresh').onclick=()=>refreshData(true);$('primaryPicker').onclick=()=>addresses.length?openPicker():openAddressSheet();$('addFromHome').onclick=()=>openAddressSheet();$('addFromSettings').onclick=()=>openAddressSheet();$('editActive').onclick=()=>openAddressSheet(primary());$('openDetail').onclick=()=>navigate('detail');
 $('closeSheet').onclick=()=>closeSheet($('addressSheet'));$('closePlaces').onclick=()=>closeSheet($('placesSheet'));$('sheetAddPlace').onclick=()=>{closeSheet($('placesSheet'));openAddressSheet()};
 for(const dialog of [$('addressSheet'),$('placesSheet')])dialog.addEventListener('close',unlockSheet);
 $('settlement').onchange=()=>{$('manualQueue').value='';$('customSettlement').hidden=$('settlement').value!=='Інше';suggestion=null;suggestions();checkLookup()};$('customSettlement').oninput=()=>{$('manualQueue').value='';checkLookup()};$('street').oninput=()=>{$('manualQueue').value='';suggestion=null;suggestions();checkLookup()};$('house').oninput=()=>{$('manualQueue').value='';checkLookup()};$('manualQueue').onchange=checkLookup;$('addressForm').onsubmit=saveAddress;$('deleteAddress').onclick=deleteAddress;$('goOfficial').onclick=officialOpen;
@@ -303,7 +356,7 @@ for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','noti
 $('enableNotifications').onclick=enableNotifications;$('disableNotifications').onclick=disableNotifications;
 fillQueueSelect();render();refreshData();getPushConfig();
 setInterval(()=>{renderHome();if(active==='detail')renderDetail();checkNotifications()},30_000);
-setInterval(()=>refreshData(),5*60_000);
+setInterval(()=>{if(!document.hidden)refreshData()},5*60_000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();refreshData();checkNotifications()}});
 window.addEventListener('online',()=>{renderFreshness();refreshData(true)});window.addEventListener('offline',renderFreshness);
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js',{scope:'./'}).then(reg=>{swRegistration=reg}).catch(console.warn);

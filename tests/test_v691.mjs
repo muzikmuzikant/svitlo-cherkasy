@@ -21,7 +21,7 @@ test('feedback and privacy always render a light theme',()=>{
 });
 test('favicon links and favicon files exist',()=>{
  for(const page of ['index.html','admin.html','feedback.html','privacy.html','about.html']){
-  assert.ok(fs.readFileSync(path.join(root,page),'utf8').includes('favicon-32.png?v=691'));
+  assert.ok(fs.readFileSync(path.join(root,page),'utf8').includes('favicon-32.png?v=692'));
  }
  for(const file of ['favicon.ico','favicon-16.png','favicon-32.png','favicon-48.png'])assert.ok(fs.existsSync(path.join(root,file)));
 });

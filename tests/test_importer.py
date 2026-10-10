@@ -16,11 +16,13 @@ def test_article_full_and_date():
     assert len(r['queues'])==12
     assert r['queues']['1.1']==[(480,600),(1200,1320)]
 
-def test_partial_article_supported_without_inventing_other_queues():
+def test_omitted_queue_means_no_planned_outages_in_complete_official_listing():
     r=parse_article(html(ranges={q:'08:00 - 10:00' for q in Q[:-1]}),'https://www.cherkasyoblenergo.com/media/ok',None)
     assert len(r["queues"])==11
     c=compose([r])
-    assert c["queues"]["6.2"]["knownFrom"]=="24:00"
+    assert c["queues"]["6.2"]["knownFrom"]=="00:00"
+    assert c["queues"]["6.2"]["off"]==[]
+    assert "6.2" in c["noScheduledOutages"]
     assert c["queues"]["6.1"]["knownFrom"]=="00:00"
 
 def test_invalid_intervals_rejected():
@@ -61,10 +63,10 @@ def test_labeled_queue_pdf_roman_numbers():
     assert result['1.1'].endswith('1І.pdf')
     assert result['1.2'].endswith('1ІІ.pdf')
 
-def test_latest_partial_revision_leaves_omitted_queue_untouched():
+def test_latest_complete_revision_clears_omitted_queues_after_cutover():
     a=parse_article(html(date='10 жовтня'),'https://www.cherkasyoblenergo.com/media/a',None)
     b=parse_article(html(date='10 жовтня',ts='10.10.2026 12:00',ranges={'1.1':'16:00 - 18:00'}),'https://www.cherkasyoblenergo.com/media/b',None)
-    c=compose([a,b]);assert c['queues']['1.2']['off']==[['08:00','10:00'],['20:00','22:00']]
+    c=compose([a,b]);assert c['queues']['1.2']['off']==[['08:00','10:00']]
     assert c['queues']['1.1']['off']==[['08:00','10:00'],['16:00','18:00']]
 
 
@@ -86,3 +88,34 @@ def test_exact_city_and_district_sections_are_separated(monkeypatch):
     content=extract_sections(b'%PDF-fake')
     assert 'Черкаси' in content and '12' in content['Черкаси']
     assert 'Хацьки' in content and 'Перемоги' in content['Хацьки']
+
+
+def test_legacy_incomplete_revision_does_not_clear_other_queues():
+    a=parse_article(html(date='10 жовтня'),'https://www.cherkasyoblenergo.com/media/a')
+    b=parse_article(html(date='10 жовтня',ts='10.10.2026 12:00',ranges={'1.1':'16:00 - 18:00'}),'https://www.cherkasyoblenergo.com/media/b')
+    b['complete']=False
+    c=compose([a,b])
+    assert c['queues']['1.2']['off']==[['08:00','10:00'],['20:00','22:00']]
+
+
+def test_dotted_queue_labels_are_parsed():
+    ranges={'5.2':'10:00 - 12:00','6.2':'20:00 - 22:00'}
+    page=html(ranges=ranges).replace('5.2 ', '5.2. ').replace('6.2 ', '6.2. ')
+    result=parse_article(page,'https://www.cherkasyoblenergo.com/media/ok')
+    assert result is not None
+    assert result['queues']['5.2']==[(600,720)]
+    assert result['queues']['6.2']==[(1200,1320)]
+
+
+def test_malformed_subqueue_label_not_silently_treated_as_all_day_on():
+    ranges={'1.1':'10:00 - 12:00','3.1':'16:00 - 18:00'}
+    page=html(ranges=ranges).replace('3.1 ', '3,1 ')
+    assert parse_article(page,'https://www.cherkasyoblenergo.com/media/ok') is None
+
+
+def test_truncated_article_never_inferrs_all_day_power():
+    page=html(ranges={'1.1':'08:00 - 10:00'}).replace('<p>Свою чергу можна дізнатися в чат-ботах</p>','')
+    parsed=parse_article(page,'https://www.cherkasyoblenergo.com/media/ok')
+    assert parsed['complete'] is False
+    day=compose([parsed])
+    assert day['queues']['1.2']['knownFrom']=='24:00'

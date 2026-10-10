@@ -28,6 +28,14 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png?v=692">
 <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192-v692.png">
 <link rel="icon" type="image/svg+xml" href="./assets/icon.svg">
+
+<style>
+.planner-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.planner-tools select{width:auto;max-width:220px;flex:1;min-width:140px}
+.planner-legend{display:flex;gap:18px;margin:16px 0 9px;color:#526680;font-size:12px}.planner-legend span{display:inline-flex;gap:7px;align-items:center}.planner-legend i{width:13px;height:13px;border-radius:4px;display:inline-block;border:1px solid #a8bdd8}.planner-legend-off{background:#305c9e}.planner-legend-on{background:#e8f4ed}
+.planner-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;max-height:490px;overflow:auto;padding:6px 4px 8px;border-radius:14px;background:#f4f7fd}
+.planner-hour{display:grid;grid-template-columns:47px minmax(0,1fr) minmax(0,1fr);gap:4px;align-items:center;min-width:0}.planner-hour strong{font-size:11px;color:#58718c;text-align:right;padding-right:3px}.planner-slot{background:#e8f4ed;color:#276044;font-weight:600;font-size:10px;border:1px solid #badbc8;border-radius:9px;min-width:0;min-height:37px;padding:5px 3px}.planner-slot.is-off{background:#315f9f;color:white;border-color:#315f9f}.planner-slot:focus-visible{outline:3px solid #ffac46;outline-offset:1px}.planner-summary{font-weight:700;color:#254568}.planner-tools button{min-height:40px}
+@media(max-width:650px){.planner-grid{grid-template-columns:1fr;max-height:530px}.planner-slot{font-size:12px}.planner-hour{grid-template-columns:50px 1fr 1fr}}
+</style>
 </head><body><main>
 <header><div class="flex"><svg aria-hidden="true" width="37" height="37" viewBox="0 0 48 48"><rect width="48" height="48" rx="16" fill="#347dff"/><path d="M27 7 14 26h9l-1 15L35 20h-9Z" fill="#fff"/></svg><strong>Світло Черкаси</strong></div><a href="./">← До застосунку</a></header>
 <section id="adminLoginScreen" class="login-view">
@@ -113,6 +121,20 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  <div id="ticketsList" class="tickets-list"></div>
 </section>
 <div class="two" data-admin-panel="overview"><div class="metric"><strong id="scheduleStat">—</strong><span>Опубліковані дні</span></div><div class="metric"><strong id="addressStat">—</strong><span>Розпізнані адреси + довідник</span></div><div class="metric"><strong id="townStat">—</strong><span>Населені пункти</span></div><div class="metric"><strong id="emergencyStat">—</strong><span>Екстрені бюлетені</span></div></div>
+
+<section class="card" data-admin-panel="data" hidden id="plannerSection">
+  <div class="headline"><h2>Конструктор графіків</h2><span class="pill">Крок 30 хвилин</span></div>
+  <p>Виберіть дату й підчергу. Натисніть на півгодинний проміжок, щоб відзначити відключення. Усі інші проміжки вважатимуться годинами <strong>без планових відключень</strong>. Після звірки з офіційним повідомленням можна опублікувати уточнення, яке не перезапише імпортер.</p>
+  <div class="two"><div class="field"><label for="plannerDate">Дата графіка</label><input id="plannerDate" type="date"></div><div class="field"><label for="plannerQueue">Підчерга</label><select id="plannerQueue"></select></div></div>
+  <div class="field" style="margin-top:12px"><label for="plannerSource">Посилання на офіційний графік цієї дати</label><input id="plannerSource" type="url" placeholder="https://www.cherkasyoblenergo.com/media/…" autocomplete="off"></div>
+  <div class="planner-tools" style="margin-top:12px"><button type="button" class="secondary" id="plannerLight">Увесь день без планових відключень</button><select id="plannerCopyFrom" aria-label="Звідки скопіювати графік"></select><button type="button" class="secondary" id="plannerCopy">Копіювати</button><button type="button" class="secondary" id="plannerReload">Скасувати для підчерги</button></div>
+  <div class="planner-legend"><span><i class="planner-legend-on"></i> Без відключень</span><span><i class="planner-legend-off"></i> Відключення</span></div>
+  <div id="plannerGrid" class="planner-grid" role="group" aria-label="Часова сітка відключень на 24 години"></div>
+  <p id="plannerSummary" class="planner-summary" aria-live="polite"></p>
+  <div class="flex"><button type="button" class="secondary" id="plannerStage">Підготувати зміни</button><button type="button" id="plannerPublish">Опублікувати графік</button></div>
+  <div id="plannerStatus" class="push-state" role="status">Увійдіть, щоб редагувати графіки.</div>
+  <p class="hint">Публікація в GitHub вимагає окремого налаштування GITHUB_TOKEN і GITHUB_REPOSITORY на Railway. Не позначайте неповну або непідтверджену новину як графік «на весь день».</p>
+</section>
 <div class="card" data-admin-panel="data" hidden><h2>Швидкі інструменти</h2>
  <p>Зміни готуються у файлі «Ручні уточнення». Перед публікацією перевірте джерело й натисніть «Опублікувати через GitHub».</p>
  <div class="two">
@@ -137,4 +159,4 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
 </div>
 <div class="card" data-admin-panel="data" hidden><div class="headline"><h2>Редактор та перевірка</h2><span class="pill" id="editMode">Локальна копія</span></div><div class="flex"><div class="field"><label for="kind">Файл</label><select id="kind"><option value="overrides">Ручні уточнення (не перезаписуються імпортером)</option><option value="schedules">Планові графіки</option><option value="addresses">Точні адреси</option><option value="streets">Довідник сіл і вулиць</option><option value="emergency">Повідомлення про аварійні відключення</option></select></div></div><p class="hint">Рекомендуємо змінювати <b>«Ручні уточнення»</b>: інакше наступний імпорт може перезаписати графіки чи адреси. Для виправлення обов'язково залишайте посилання на офіційну публікацію.</p><textarea id="editor" class="mono" spellcheck="false" aria-label="Редагування JSON"></textarea><div class="flex" style="margin-top:13px"><button id="validate" class="secondary">Перевірити JSON</button><button id="reload" class="secondary">Повернути збережене</button><button id="download" class="secondary">Експортувати JSON</button><button id="publish" disabled>Опублікувати через GitHub</button></div><div id="result" role="status" aria-live="polite">Оберіть файл або підключіть сервер, щоб перевіряти дані.</div></div>
 <div class="card" data-admin-panel="data" hidden><h2>Правила перевірки</h2><p>Адреси з вулицями без будинків показують <strong>можливі</strong> підчерги, а не точні. Не позначайте аварійні повідомлення як активні без офіційного підтвердження. Автоматичні Push на заблокованому iPhone працюють лише при увімкненому push-сервері й дозволі користувача.</p></div>
-</div></main><script defer src="./admin.js"></script><script defer src="./admin-extra.js"></script></body></html>
+</div></main><script defer src="./admin.js"></script><script defer src="./admin-extra.js"></script><script defer src="./schedule-planner.js"></script><script defer src="./admin-planner.js"></script></body></html>

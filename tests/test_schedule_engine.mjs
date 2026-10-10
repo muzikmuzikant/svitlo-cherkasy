@@ -40,3 +40,9 @@ test('freshest official cancellation supersedes active notification',()=>{
  assert.equal(e.id,'b');assert.equal(e.status,'ended');assert.equal(freshEvent(e,now),true);
  assert.equal(freshEvent(e,now+70*60000),false);
 });
+test('omitted queue is on only for explicitly complete verified listing',()=>{
+ const complete={date:'2026-10-10',verified:true,complete:true,queues:{'1.1':{knownFrom:'00:00',off:[['14:00','16:00']]}}};
+ assert.equal(timeline(complete,'3.2')[700],0);
+ assert.equal(timeline({...complete,complete:false},'3.2'),null);
+ assert.equal(timeline({...complete,verified:false},'3.2'),null);
+});
