@@ -1,52 +1,81 @@
 'use strict';
-// Accessible visual editor. Only authorized GitHub proxy can publish changes.
-(() => {
- const core=window.SvitloSchedulePlanner;
- const by=id=>document.getElementById(id);
- const slots=new Map(),dirty=new Set(); let day='',queue='1.1',publicDays=[],ready=false,suggestedSource='';
- const status=(text,bad=false)=>{const n=by('plannerStatus');n.textContent=text;n.className='push-state'+(bad?' error':' good')};
- const dateToday=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
- const key=(d,q)=>d+'|'+q;
- const selected=()=>{if(!day||!core.QUEUES.includes(queue))throw Error('Оберіть дату та підчергу');return key(day,queue)};
- function currentSlots(){const k=selected();if(!slots.has(k))slots.set(k,startingSlots(day,queue));return slots.get(k)}
- function startingSlots(d,q){
-   const manual=readManual(d,q);const official=publicDays.find(x=>x.date===d)?.queues?.[q];
-   try{return core.slotsFromOff((manual||official)?.off||[])}catch{return Array(48).fill(false)}
+/* Visual planner feeds the existing authenticated GitHub publishing mechanism. */
+(()=>{
+ const by=id=>document.getElementById(id),model=window.SvitloSchedulePlanner;
+ const queues=Array.from({length:6},(_,i)=>[`${i+1}.1`,`${i+1}.2`]).flat();
+ const date=by('plannerDate'),queue=by('plannerQueue'),source=by('plannerSource');
+ const summary=by('plannerSummary'),status=by('plannerStatus'),grid=by('plannerGrid');
+ let slots=Array(48).fill(false),dirty=false;
+ function announce(value,error=false){status.textContent=value;status.className='push-state'+(error?' error':' good')}
+ function draw(){
+  grid.replaceChildren();
+  for(let hour=0;hour<24;hour++){
+   const line=document.createElement('div');line.className='planner-hour';
+   const heading=document.createElement('strong');heading.textContent=model.at(hour*2);line.append(heading);
+   for(let half=0;half<2;half++){
+    const idx=hour*2+half,btn=document.createElement('button');btn.type='button';
+    btn.className='planner-slot'+(slots[idx]?' is-off':'');
+    btn.textContent=half?'30–60 хв':'00–30 хв';
+    btn.setAttribute('aria-pressed',String(slots[idx]));
+    btn.setAttribute('aria-label',`${model.at(idx)}–${model.at(idx+1)}: ${slots[idx]?'відключення':'за графіком світло є'}`);
+    btn.onclick=()=>{slots[idx]=!slots[idx];dirty=true;draw()};line.append(btn);
+   }grid.append(line);
+  }
+  const off=slots.filter(Boolean).length/2;
+  const parts=model.toIntervals(slots).map(item=>item.join('–'));
+  summary.textContent=off===0?'Планових відключень немає, 24 години без запланованих обмежень.':`Відключень: ${off.toLocaleString('uk-UA')} год · ${parts.join(', ')}`;
  }
- function readManual(d,q){
-  try{const src=JSON.parse(by('editor').value);return src.schedules?.days?.filter(x=>x.date===d&&x.verified).reverse().find(x=>x.queues?.[q])?.queues[q]||null}catch{return null}
+ function stagedObj(){
+  if(by('kind').value!=='overrides')throw Error('Спочатку оберіть файл «Ручні уточнення» у редакторі нижче.');
+  const doc=JSON.parse(by('editor').value);validate('overrides',doc);return doc;
  }
- function paint(index,val){const arr=currentSlots();dirty.add(selected());arr[index]=val;document.querySelectorAll('#plannerGrid [data-index]').forEach(n=>{if(+n.dataset.index!==index)return;n.classList.toggle('is-off',val);n.setAttribute('aria-pressed',String(val));n.title=core.tick(index)+'–'+core.tick(index+1)+' · '+(val?'відключення':'за графіком світло')});renderSummary()}
- function renderSummary(){const spans=core.intervals(currentSlots());const hours=spans.reduce((sum,pair)=>sum+(core.mins(pair[1])-core.mins(pair[0]))/60,0);by('plannerSummary').textContent=spans.length?`Підчерга ${queue} · ${hours.toLocaleString('uk-UA')} год без світла · ${spans.map(pair=>pair.join('–')).join(', ')}`:`Підчерга ${queue} · За графіком відключень немає (0 годин).`}
- function syncSource(){const input=by('plannerSource'),official=publicDays.find(x=>x.date===day)?.source||'';if(!input.value.trim()||input.value.trim()===suggestedSource){input.value=official;suggestedSource=official}}
- function renderGrid(){const grid=by('plannerGrid');grid.replaceChildren();for(let h=0;h<24;h++){
-   const row=document.createElement('div');row.className='planner-hour';const label=document.createElement('strong');label.textContent=String(h).padStart(2,'0')+':00';row.append(label);
-   for(let p=0;p<2;p++){const i=h*2+p,b=document.createElement('button');b.type='button';b.className='planner-slot'+(currentSlots()[i]?' is-off':'');b.dataset.index=String(i);b.textContent=core.tick(i)+'–'+core.tick(i+1);b.title='Натисніть, щоб змінити';b.setAttribute('aria-pressed',String(currentSlots()[i]));b.setAttribute('aria-label',b.textContent+' · '+(currentSlots()[i]?'за графіком немає світла':'за графіком світло'));b.addEventListener('click',()=>paint(i,!currentSlots()[i]));row.append(b)}grid.append(row)}renderSummary();}
- async function getData(){try{const r=await fetch('./data/schedules.json?nocache='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);publicDays=(await r.json()).days||[];for(const k of slots.keys())if(!dirty.has(k))slots.delete(k);syncSource();status('Графіки завантажені. Натискайте півгодини, щоб указати відключення.')}catch(e){status('Не вдалося завантажити публічний графік: '+e.message,true)}renderGrid()}
- async function stage(){
-   if(!remote)throw Error('Увійдіть до адмінпанелі.');
-   const date=by('plannerDate').value,source=by('plannerSource').value.trim();
-   if(!/^20\d{2}-\d{2}-\d{2}$/.test(date)||Number.isNaN(Date.parse(date+'T12:00:00Z')))throw Error('Укажіть дату');
-   if(!/^https:\/\/(?:www\.)?cherkasyoblenergo\.com\//.test(source))throw Error('Потрібне посилання на відповідну офіційну публікацію');
-   if(by('kind').value!=='overrides'){by('kind').value='overrides';await load()}
-   const obj=staging();const changed=[...slots].filter(([k])=>k.startsWith(date+'|'));
-   if(!changed.length)throw Error('Спочатку оберіть та відредагуйте підчергу');
-   if(!confirm('Підтверджуєте, що всі вибрані інтервали звірено з офіційною публікацією на '+date+'?'))return false;
-   let entry=obj.schedules.days.find(x=>x.date===date&&x.source===source);
-   if(!entry){entry={date,source,publishedAt:new Date().toISOString(),verified:true,queues:{}};obj.schedules.days.push(entry)}
-   for(const [k,value] of changed){const q=k.split('|')[1];entry.queues[q]={knownFrom:'00:00',off:core.intervals(value)}}
-   obj.updatedAt=new Date().toISOString();staged(obj,'Підготовлено '+changed.length+' підчерг на '+date+'.');status('Підготовлено '+changed.length+' підчерг. Для публікації потрібен доступ Railway до GitHub.');return true;
+ function currentEntry(){
+  const obj=stagedObj(),d=obj.schedules.days.find(x=>x.date===date.value);
+  return d?.queues?.[queue.value]||null;
  }
- const today=dateToday();by('plannerDate').value=today;day=today;
- core.QUEUES.forEach(q=>{by('plannerQueue').add(new Option('Підчерга '+q,q));by('plannerCopyFrom').add(new Option('З підчерги '+q,q))});by('plannerQueue').value=queue;
- by('plannerDate').addEventListener('change',e=>{day=e.target.value;syncSource();renderGrid();if(!publicDays.some(x=>x.date===day&&x.verified===true))status('На цю дату немає підтвердженого імпортованого графіка. Перш ніж публікувати, звірте його з оператором.',true)});
- by('plannerQueue').addEventListener('change',e=>{queue=e.target.value;renderGrid()});
- by('plannerLight').addEventListener('click',()=>{dirty.add(selected());slots.set(selected(),Array(48).fill(false));renderGrid()});
- by('plannerCopy').addEventListener('click',()=>{const from=by('plannerCopyFrom').value;if(!from)return;dirty.add(selected());slots.set(selected(),[...(slots.get(key(day,from))||startingSlots(day,from))]);renderGrid();status('Скопійовано з '+from+'. Перевірте офіційне джерело перед публікацією.')});
- by('plannerReload').addEventListener('click',()=>{if(!confirm('Скасувати незбережені зміни для цієї підчерги?'))return;dirty.delete(selected());slots.delete(selected());renderGrid()});
- by('plannerStage').addEventListener('click',async()=>{try{await stage()}catch(e){status(e.message,true)}});
- by('plannerPublish').addEventListener('click',async()=>{try{if(!canPublish)throw Error('Для прямої публікації у Railway потрібно задати GITHUB_TOKEN та GITHUB_REPOSITORY. Можна підготувати JSON і завантажити його вручну.');if(await stage())by('publish').click()}catch(e){status(e.message,true)}});
- document.addEventListener('svitlo:admin-ready',()=>{ready=true;getData()});
- document.addEventListener('svitlo:admin-logout',()=>{ready=false;slots.clear();dirty.clear();status('Увійдіть, щоб редагувати графіки.')});
- renderGrid();
+ function reload(){
+  try{
+   const entry=currentEntry();slots=entry?model.fromIntervals(entry.off||[]):Array(48).fill(false);
+   if(!dirty){
+    const doc=stagedObj(),d=doc.schedules.days.find(x=>x.date===date.value);
+    if(d?.source)source.value=d.source;
+   }
+   dirty=false;draw();announce(entry?'Завантажено з поточних ручних уточнень.':'Для цієї підчерги ручних уточнень немає. Початковий стан — без планових відключень.');
+  }catch(e){announce(e.message,true)}
+ }
+ function stage(){
+  const doc=stagedObj(),url=source.value.trim(),d=date.value,q=queue.value;
+  if(!/^20\d\d-\d\d-\d\d$/.test(d)||!queues.includes(q))throw Error('Оберіть дату й підчергу');
+  if(!/^https:\/\/(?:www\.)?cherkasyoblenergo\.com\//.test(url))throw Error('Для публікації потрібне посилання на офіційне повідомлення оператора');
+  if(!confirm(`Підготувати графік на ${d} для підчерги ${q}? Переконайтеся, що звірили всі 48 комірок із офіційною публікацією.`))return false;
+  const off=model.toIntervals(slots),existing=doc.schedules.days.find(x=>x.date===d);
+  if(existing){existing.queues??={};existing.queues[q]={knownFrom:'00:00',off};existing.source=url;existing.publishedAt=new Date().toISOString();}
+  else doc.schedules.days.push({date:d,source:url,publishedAt:new Date().toISOString(),verified:true,queues:{[q]:{knownFrom:'00:00',off}}});
+  doc.updatedAt=new Date().toISOString();
+  by('editor').value=JSON.stringify(doc,null,2);
+  dirty=false;announce('Уточнення підготовлено в редакторі. Для збереження на сайті натисніть «Опублікувати» або експортуйте JSON.');
+  return true;
+ }
+ for(const q of queues){queue.add(new Option('Підчерга '+q,q));by('plannerCopyFrom').add(new Option('Копіювати з '+q,q));}
+ const pieces=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).map(x=>[x.type,x.value]));
+ date.value=`${pieces.year}-${pieces.month}-${pieces.day}`;
+ date.onchange=reload;queue.onchange=reload;
+ by('plannerLight').onclick=()=>{slots.fill(false);dirty=true;draw()};
+ by('plannerCopy').onclick=()=>{
+  try{const q=by('plannerCopyFrom').value,doc=stagedObj(),d=doc.schedules.days.find(x=>x.date===date.value);
+   if(!d?.queues?.[q])throw Error(`Немає підготовленого графіка підчерги ${q} для цієї дати.`);
+   if(!confirm(`Копіювати графік підчерги ${q} поверх вибраної ${queue.value}?`))return;
+   slots=model.fromIntervals(d.queues[q].off);dirty=true;draw();announce('Графік скопійовано. Перевірте його перед публікацією.');
+  }catch(e){announce(e.message,true)}
+ };
+ by('plannerReload').onclick=()=>{if(dirty&&!confirm('Скасувати непідготовлені зміни для цієї підчерги?'))return;dirty=false;reload()};
+ by('plannerStage').onclick=()=>{try{stage()}catch(e){announce(e.message,true)}};
+ by('plannerPublish').onclick=()=>{
+  try{
+   if(!remote||!canPublish)throw Error('Потрібен вхід до адмінпанелі та налаштований GitHub-токен на Railway. Або підготуйте зміни та експортуйте JSON.');
+   if(stage())by('publish').click();
+  }catch(e){announce(e.message,true)}
+ };
+ document.addEventListener('svitlo:admin-ready',()=>{if(by('kind').value==='overrides')reload()});
+ draw();
 })();

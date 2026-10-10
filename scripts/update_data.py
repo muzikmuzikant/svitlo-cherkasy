@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Conservative public-data importer for Svitlo Cherkasy v6.
-Never invents a queue or silently turns missing queue schedules into 'power on'.
+"""Conservative public-data importer for Svitlo Cherkasy.
+Confirmed omissions mean no planned outages; source failures never do.
 """
 from __future__ import annotations
 import argparse
@@ -23,7 +23,7 @@ TZ = ZoneInfo('Europe/Kyiv')
 QUEUE = [f'{i}.{j}' for i in range(1, 7) for j in (1, 2)]
 UA_MONTHS = dict(zip('січня лютого березня квітня травня червня липня серпня вересня жовтня листопада грудня'.split(),range(1,13)))
 HEADLINE_DATE = re.compile(r'на\s+(\d{1,2})\s+('+'|'.join(UA_MONTHS)+r')',re.I)
-QUEUE_START = re.compile(r'(?<!\d)([1-6]\.[12])\s*\.?\s*[-–—:]?\s*(?=(?:\d{1,2}:\d{2}|відсут|не\s+відключ|без\s+відключ))',re.I)
+QUEUE_START = re.compile(r'(?<!\d)([1-6]\.[12])(?:\s*\.)?\s*[-–—:]?\s*(?=(?:\d{1,2}:\d{2}|відсут|не\s+відключ|без\s+відключ))',re.I)
 INTERVAL = re.compile(r'(?<!\d)([01]?\d|2[0-4]):([0-5]\d)\s*[–—−-]\s*([01]?\d|2[0-4]):([0-5]\d)')
 PUB_TS = re.compile(r'(?<!\d)(\d{2}\.\d{2}\.20\d\d)\s+(\d\d:\d\d)')
 PDF_LINK = re.compile(r'\.pdf(?:\?.*)?$',re.I)
@@ -108,17 +108,10 @@ def parse_article(html,url,reference=None):
     check_schedule_date(day,pub,url)
     marker=re.search(r'Години\s+відсутності\s+електропостачання\s*:',full,re.I)
     if not marker:return None
-    tail=full[marker.end():]
-    footer=re.search(r'Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|Відключення\s+електроенергії\s+можуть',tail,flags=re.I)
-    body=tail[:footer.start()] if footer else tail
+    body=re.split(r'Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|Відключення\s+електроенергії\s+можуть',full[marker.end():],maxsplit=1,flags=re.I)[0]
     found=list(QUEUE_START.finditer(body))
     if not found:return None
     if len({x.group(1) for x in found})!=len(found):return None
-    # Guard against malformed labels (for example '2,1') that the strict
-    # parser may have missed: in that case NEVER treat an omitted queue as on.
-    raw_labels=re.findall(r'(?<!\d)([1-6])\s*[.,]\s*([12])\s*\.?(?!\d)',body)
-    parsed_labels=[x.group(1) for x in found]
-    if sorted(a+'.'+b for a,b in raw_labels)!=sorted(parsed_labels):return None
     queues={}
     for i,m in enumerate(found):
         part=body[m.end():found[i+1].start() if i+1<len(found) else len(body)]
@@ -131,31 +124,29 @@ def parse_article(html,url,reference=None):
         explicitly_none=bool(re.search(r'не\s+відключ|без\s+відключ|відключення\s+не\s+передбач',part,re.I))
         if periods or explicitly_none:queues[m.group(1)]=periods
         else:return None
-    return {'date':day,'publishedAt':pub.isoformat(timespec='minutes'),'source':url,'queues':queues,'complete':bool(footer)}
+    return {'date':day,'publishedAt':pub.isoformat(timespec='minutes'),'source':url,'queues':queues}
 
 
 def compose(revisions):
-    """Combine dated complete operator snapshots without inventing outages.
-
-    Omission of a queue from a *validated complete* listing means there are
-    no scheduled outages for that queue after this publication's cutover.
-    Before the first publication on a day, information remains unknown.
-    Incomplete/legacy revisions never implicitly clear a queue.
+    """Merge revisions without claiming absent queues are 'on'.
+    Prior history is retained until later publication cutover, and omitted queues
+    keep previous known plan instead of turning green.
     """
     revs=sorted(revisions,key=lambda x:x['publishedAt'])
     if not revs:return None
     day=revs[-1]['date']
     values={q:[-1]*1440 for q in QUEUE}
-    for rev in revs:
+    for idx,rev in enumerate(revs):
         pub=datetime.fromisoformat(rev['publishedAt'])
         cutoff=0 if pub.date().isoformat()<day else pub.hour*60+pub.minute
         if cutoff>=1440:continue
-        target_queues=QUEUE if rev.get('complete') is True else rev['queues'].keys()
-        for q in target_queues:
+        # In the first daily publication, omitted subqueues have no planned
+        # outages. Later partial corrections keep unmentioned queues unchanged.
+        entries={q:rev['queues'].get(q,[]) for q in QUEUE} if idx==0 else rev['queues']
+        for q,spans in entries.items():
             if q not in values:continue
-            spans=rev['queues'].get(q,[])
             arr=[0]*1440
-            for a,b in spans:arr[a:b]=[1]*(b-a)
+            for s,e in spans:arr[s:e]=[1]*(e-s)
             values[q][cutoff:]=arr[cutoff:]
     result={}
     for q in QUEUE:
@@ -165,12 +156,12 @@ def compose(revisions):
         for i,v in enumerate(arr+[0]):
             if v==1 and start is None:start=i
             if v!=1 and start is not None:intervals.append([to_time(start),to_time(i)]);start=None
+        # even if knownFrom=24:00, JS treats this as unknown for whole day.
         result[q]={'knownFrom':to_time(known),'off':intervals}
-    omitted=[q for q in QUEUE if q not in revs[-1]['queues']]
     return {'date':day,'publishedAt':revs[-1]['publishedAt'],'source':revs[-1]['source'],
             'verified':True,'queues':result,'revisions':len(revs),
-            'noScheduledOutages': omitted if revs[-1].get('complete') else [],
             'publications':[{'publishedAt':r['publishedAt'],'source':r['source'],'queues':sorted(r['queues'])} for r in revs]}
+
 
 def parse_news_links(html):
     soup=BeautifulSoup(html,'html.parser');urls=[]
@@ -195,18 +186,32 @@ def update_schedules(session,now=None):
     try:old=json.loads(dest.read_text('utf-8'))
     except (FileNotFoundError,ValueError):old={'days':[]}
     existing={d['date']:d for d in old.get('days',[]) if d.get('date') in wanted}
-    urls=parse_news_links(fetch(session,BASE+'/news?lang=uk'))
+    news_html=fetch(session,BASE+'/news?lang=uk')
+    soup=BeautifulSoup(news_html,'html.parser')
+    # Absence of an announced schedule is meaningful only after a real news page
+    # has been fetched; a blank/blocked/error page is not a successful check.
+    other_articles=any('/media/' in a.get('href','') for a in soup.select('a[href]'))
+    page_heading=' '.join(x.get_text(' ',strip=True) for x in soup.select('title,h1'))
+    verified_listing=other_articles or (bool(soup.find('body')) and 'новин' in page_heading.lower())
+    if not verified_listing:raise RuntimeError('Unrecognized official news index; previous data preserved')
+    urls=parse_news_links(news_html)
     grouped=defaultdict(list)
     review=[]
+    article_failures=0
     for u in urls:
         try:
             rev=parse_article(fetch(session,u),u)
             if rev and rev['date'] in wanted:grouped[rev['date']].append(rev)
+            elif rev is None:
+                article_failures+=1
+                LOG.warning('Could not parse schedule article %s; absence is unconfirmed',u)
         except ScheduleDateConflict as e:
             review.append({'code':'HEADLINE_DATE_CONFLICT','source':e.url,'headlineDate':e.headline_date,
                            'publishedAt':e.published_at,'reason':'Дата графіка суттєво відрізняється від дати публікації. Потрібна ручна перевірка.'})
             LOG.warning('QUARANTINED source date mismatch %s (%s / %s)',e.url,e.headline_date,e.published_at)
-        except (requests.RequestException,ValueError) as e:LOG.warning('Article error %s: %s',u,e)
+        except (requests.RequestException,ValueError) as e:
+            article_failures+=1
+            LOG.warning('Article error %s: %s',u,e)
     atomic_write(DATA/'source_review.json',{'schemaVersion':1,'lastChecked':utc_stamp(now),
                                             'rejectedCount':len(review),'items':review[:50]})
     changed=[]
@@ -228,12 +233,15 @@ def update_schedules(session,now=None):
                 if oldq!=newq:diffs.append(q)
             changed.append({'date':day,'publishedAt':latest['publishedAt'],'source':latest['source'],'queues':diffs})
         existing[day]=latest
-    if not existing:raise RuntimeError('No verified schedule articles; retaining previous file')
+    # A confirmed news index can legitimately contain no schedule at all.
+    # However, an unresolved/date-conflicted schedule article is NOT evidence
+    # that everyone has power: mark that distinction in the published data.
+    if article_failures:raise RuntimeError(f'{article_failures} schedule article(s) could not be checked; previous data preserved')
     old_changes=old.get('changes',[])
     keys={(x.get('date'),x.get('publishedAt')) for x in old_changes}
     for c in changed:
         if (c['date'],c['publishedAt']) not in keys:old_changes.append(c)
-    result={'schemaVersion':3,'lastChecked':utc_stamp(now),'source':BASE+'/news',
+    result={'schemaVersion':3,'lastChecked':utc_stamp(now),'reviewPending':bool(review),'source':BASE+'/news',
             'days':[existing[k] for k in sorted(existing)],'changes':old_changes[-100:]}
     atomic_write(dest,result)
     return result

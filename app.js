@@ -34,9 +34,67 @@ function fmtStamp(v){if(!v)return 'невідомо';const d=new Date(v);return 
 const currentDay=date=>data.days.find(x=>x.date===date&&x.verified===true);
 const minute=s=>s==='24:00'?1440:/^([01]\d|2[0-3]):[0-5]\d$/.test(s||'')?Number(s.slice(0,2))*60+Number(s.slice(3)):-1;
 const clock=n=>`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;
-function timeline(date,queue){const day=currentDay(date);const q=day?.queues?.[queue]||(day?.verified===true&&day?.complete===true?{knownFrom:'00:00',off:[]}:null);if(!q)return null;const start=minute(q.knownFrom||'00:00');if(start<0)return null;const a=new Int8Array(1440);a.fill(-1);a.fill(0,start,1440);let last=0;for(const [s,e] of q.off||[]){const f=minute(s),t=minute(e);if(f<last||f>=t||t>1440)return null;a.fill(1,Math.max(f,start),t);last=t}return a}
+// A successful recent check with no published plan means no *planned* outages.
+// An unavailable/stale operator source is different: do not invent a forecast.
+function sourceFresh(){
+ const checked=Date.parse(data.lastChecked||'');
+ return !lastSyncFailed && !data.reviewPending && Number.isFinite(checked) &&
+   checked<=Date.now()+5*60_000 && Date.now()-checked<=2*3600_000;
+}
+function withinPublishedHorizon(date){
+ const current=today();return date===current||date===shiftDay(current,1);
+}
+function timeline(date,queue){
+ if(!QUEUES.includes(queue))return null;
+ const day=currentDay(date),q=day?.queues?.[queue];
+ if(!day){
+   // The operator does not publish a graph when planned outages are absent.
+   // Do not extend this assumption beyond today/tomorrow or a fresh check.
+   return sourceFresh()&&withinPublishedHorizon(date)?new Int8Array(1440):null;
+ }
+ if(!q){return new Int8Array(1440)} // Omitted subqueue in verified publication.
+ const start=minute(q.knownFrom||'00:00');if(start<0)return null;
+ // Historical importers used knownFrom=24:00 for omitted subqueues. A fresh
+ // verified check confirms the omission means no declared planned outages.
+ if(start===1440&&!(q.off||[]).length&&sourceFresh())return new Int8Array(1440);
+ const a=new Int8Array(1440);a.fill(-1);a.fill(0,start,1440);
+ let last=0;for(const [s,e] of q.off||[]){
+  const f=minute(s),t=minute(e);if(f<last||f>=t||t>1440)return null;
+  a.fill(1,Math.max(f,start),t);last=t;
+ }return a;
+}
 function stateAt(a,m){return a?.[m]===1?'off':a?.[m]===0?'on':'unknown'}
 function transition(a,m){if(!a||a[m]<0)return null;for(let i=m+1;i<1440;i++)if(a[i]!==a[m])return {time:i,to:a[i]};return null}
+// Look beyond midnight without assuming information about day after tomorrow.
+function nextChange(date,queue,minuteNow){
+ const initial=timeline(date,queue);if(!initial||initial[minuteNow]<0)return null;
+ let state=initial[minuteNow];
+ for(let offset=0;offset<=1;offset++){
+  const d=shiftDay(date,offset),arr=offset?timeline(d,queue):initial;
+  if(!arr)return null;
+  for(let m=offset?0:minuteNow+1;m<1440;m++){
+   if(arr[m]<0)return null;
+   if(arr[m]!==state)return {time:m,date:d,dayOffset:offset,to:arr[m],minutesUntil:offset*1440+m-minuteNow};
+   state=arr[m];
+  }
+ }return null;
+}
+function nextChangeLabel(change){return clock(change.time)+(change.dayOffset===1?' завтра':'')}
+function statusCopy(state,change,queue,date){
+ if(state==='unknown')return {title:'Немає підтверджених даних',detail:queue?'Перевірте актуальність графіка оператора':'Додайте адресу або оберіть підчергу'};
+ if(change){const eta=change.minutesUntil;return {
+  title:`${state==='on'?'Є світло':'Немає світла'} до ${nextChangeLabel(change)}`,
+  detail:`До ${change.to===1?'планового відключення':'планового відновлення'} ${Math.floor(eta/60)} год ${String(eta%60).padStart(2,'0')} хв`
+ }}
+ if(state==='on'){
+  const tomorrow=timeline(shiftDay(date,1),queue);
+  const completeTomorrow=tomorrow&&tomorrow.every(v=>v===0);
+  return {title:'За графіком світло є',detail:completeTomorrow
+   ?'Планових відключень на сьогодні та завтра не оголошено.'
+   :tomorrow?'Час наступного відключення поки не підтверджений.':'На наступний день немає підтверджених даних.'};
+ }
+ return {title:'За графіком немає світла',detail:'Час наступного відновлення поки не підтверджений.'};
+}
 function stats(a){if(!a)return null;let on=0,off=0,unknown=0,longest=0,run=0;for(const v of a){if(v===0)on++;if(v===1){off++;run++;longest=Math.max(longest,run)}else run=0;if(v<0)unknown++}return {on,off,unknown,longest}}
 function minutesLabel(n){return (n/60).toLocaleString('uk-UA',{maximumFractionDigits:1})}
 function flash(s){const el=$('toast');el.textContent=s;el.hidden=false;clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>el.hidden=true,3400)}
@@ -57,9 +115,9 @@ function renderSyncStatus(){
  const checked=Date.parse(data.lastChecked||'');
  const checkKnown=Number.isFinite(checked)&&checked<=Date.now()+5*60_000;
  const sourceStale=!checkKnown||(Date.now()-checked>2*3600_000);
- const offline=navigator.onLine===false;
- box.dataset.state=!hasCheckedOnce?'pending':offline||lastSyncFailed?'error':sourceStale?'stale':'fresh';
- const title=!hasCheckedOnce?'Завантажуємо графіки…':offline?'Немає інтернету':lastSyncFailed?'Не вдалося отримати графіки':sourceStale?'Перевірка оператора затримується':'Автооновлення графіків активне';
+ const offline=navigator.onLine===false,review=data.reviewPending===true;
+ box.dataset.state=!hasCheckedOnce?'pending':offline||lastSyncFailed?'error':sourceStale||review?'stale':'fresh';
+ const title=!hasCheckedOnce?'Завантажуємо графіки…':offline?'Немає інтернету':lastSyncFailed?'Не вдалося отримати графіки':review?'Є публікація, яка потребує перевірки':sourceStale?'Перевірка оператора затримується':'Автооновлення графіків активне';
  const details=!hasCheckedOnce?'При відкритті й кожні 5 хвилин, поки застосунок відкритий':
    `Джерело: ${checkKnown?fmtStamp(data.lastChecked):'час невідомий'} · На телефоні: ${lastDownloadAt?fmtStamp(lastDownloadAt):'немає нових даних'}`;
  setText('syncStatusTitle',title);setText('syncStatusDetails',details);
@@ -72,14 +130,15 @@ function renderFreshness(){
  const age=Date.now()-checked;
  const hasTime=Number.isFinite(checked)&&age>=0;
  const stale=!hasTime||age>2*3600_000;
- const offline=navigator.onLine===false;
+ const offline=navigator.onLine===false,review=data.reviewPending===true;
  // Avoid alarming users while the initial network request is still in flight.
- node.hidden=!hasCheckedOnce||(!stale&&!offline);
+ node.hidden=!hasCheckedOnce||(!stale&&!offline&&!review);
  if(node.hidden)return;
  node.replaceChildren();
- const title=el('strong','',offline?'Немає інтернету':hasTime?'Можливо, графік застарів':'Актуальність графіка не підтверджена');
+ const title=el('strong','',offline?'Немає інтернету':review?'Є неперевірена публікація':hasTime?'Можливо, графік застарів':'Актуальність графіка не підтверджена');
  const message=el('span','',offline
    ?' Показуємо останні доступні дані. Вони могли змінитися.'
+   :review?' Знайдено публікацію з підозрілою датою. До її перевірки відсутність графіка не означає відсутність обмежень.'
    :hasTime
      ?` Публікації оператора востаннє перевіряли ${fmtStamp(data.lastChecked)}. Новіші зміни можуть бути відсутні.`
      :' Не вдалося визначити час останньої перевірки публікацій.');
@@ -87,16 +146,39 @@ function renderFreshness(){
  link.href=OFFICIAL;link.target='_blank';link.rel='noopener noreferrer';
  node.append(title,message,link);
 }
-function renderHome(){renderEmergency();renderFreshness();const a=primary();setText('primaryName',label(a));setText('primarySub',a?`${a.settlement||'Черкаси'} · ${a.queue?'підчерга '+a.queue:'підчергу не визначено'}`:'Черкаси або села району');const schedule=a?.queue?currentDay(today()):null;const timelineToday=a?.queue?timeline(today(),a.queue):null,st=stateAt(timelineToday,nowMinutes()),nxt=transition(timelineToday,nowMinutes());const panel=$('heroStatus');panel.className='status-panel status-'+st;
- $('stateIcon').innerHTML=ICON;setText('stateCaption',a?.method==='street-auto'?'ПІДЧЕРГА ЗА ПЕРЕЛІКОМ ВУЛИЦЬ':a?'ЗА ОПУБЛІКОВАНИМ ГРАФІКОМ':'ВАШ ГРАФІК');
- if(st==='unknown'){setText('heroTitle','Немає даних');setText('heroCountdown',a?.queue?'Графік для цієї години не підтверджений':'Додайте адресу або виберіть підчергу')}else{setText('heroTitle',`${st==='on'?'Є світло':'Немає світла'} до: ${nxt&&nxt.to>=0?clock(nxt.time):'—:—'}`);setText('heroCountdown',nxt&&nxt.to>=0?`До ${nxt.to===1?'відключення':'планового відновлення'} ${Math.floor((nxt.time-nowMinutes())/60)} год ${String((nxt.time-nowMinutes())%60).padStart(2,'0')} хв`:'До кінця відомого графіка змін не заплановано')}
- setText('sourceStamp',schedule?`Опубліковано ${fmtStamp(schedule.publishedAt)}`:'Графік не підтверджено');setText('queueChip',a?.queue?`Черга ${a.queue}`:'—');setText('overviewDate',formatDate(today(),{weekday:'long',day:'numeric',month:'long'}));setText('overviewLabel',timelineToday?'24 години':'Графік не опублікований');renderBar(timelineToday);const t=stats(timelineToday);setText('hoursOn',t&&t.unknown===0?minutesLabel(t.on):t&&t.on?`${minutesLabel(t.on)}+`:'—');setText('hoursOff',t&&t.unknown===0?minutesLabel(t.off):t&&t.off?`${minutesLabel(t.off)}+`:'—');
- const list=$('placeList');list.replaceChildren();for(const item of addresses){const b=el('button','place-card');b.type='button';const avatar=el('span','place-avatar');avatar.innerHTML=PIN;b.append(avatar);const copy=el('span','place-text');copy.append(el('strong','',label(item)),el('small','',`${item.settlement||'Черкаси'} · ${item.queue?'черга '+item.queue:'черга невідома'}`));b.append(copy);const state=stateAt(timeline(today(),item.queue),nowMinutes());b.append(el('span','place-status '+state,state==='on'?'Є світло':state==='off'?'Без світла':'—'));b.onclick=()=>{prefs.primaryId=item.id;savePrefs();navigate('detail')};list.append(b)}if(!addresses.length){const e=el('div','empty-places');e.append(el('strong','','Ще немає збережених місць'),el('span','','Додайте адресу, щоб отримати персональний графік.'));list.append(e)}const add=el('button','add-place-card','+  Додати адресу');add.onclick=()=>openAddressSheet();list.append(add)
+function renderHome(){
+ renderEmergency();renderFreshness();const a=primary(),date=today(),m=nowMinutes();
+ setText('primaryName',label(a));setText('primarySub',a?`${a.settlement||'Черкаси'} · ${a.queue?'підчерга '+a.queue:'підчергу не визначено'}`:'Черкаси або села району');
+ const schedule=a?.queue?currentDay(date):null;
+ const timelineToday=a?.queue?timeline(date,a.queue):null,st=stateAt(timelineToday,m);
+ const nxt=a?.queue?nextChange(date,a.queue,m):null,copy=statusCopy(st,nxt,a?.queue,date);
+ const panel=$('heroStatus');panel.className='status-panel status-'+st;
+ $('stateIcon').innerHTML=ICON;
+ setText('stateCaption',a?.method==='street-auto'?'ПІДЧЕРГА ЗА ПЕРЕЛІКОМ ВУЛИЦЬ':a?'ЗА ОПУБЛІКОВАНИМ ГРАФІКОМ':'ВАШ ГРАФІК');
+ setText('heroTitle',copy.title);setText('heroCountdown',copy.detail);
+ setText('sourceStamp',schedule?`Опубліковано ${fmtStamp(schedule.publishedAt)}`:timelineToday?'Планових відключень не оголошено':'Графік не підтверджено');
+ setText('queueChip',a?.queue?`Черга ${a.queue}`:'—');
+ setText('overviewDate',formatDate(date,{weekday:'long',day:'numeric',month:'long'}));
+ setText('overviewLabel',timelineToday?'24 години':'Графік не підтверджений');renderBar(timelineToday);
+ const t=stats(timelineToday);
+ setText('hoursOn',t&&t.unknown===0?minutesLabel(t.on):t&&t.on?`${minutesLabel(t.on)}+`:'—');
+ setText('hoursOff',t&&t.unknown===0?minutesLabel(t.off):t&&t.off?`${minutesLabel(t.off)}+`:'—');
+ const list=$('placeList');list.replaceChildren();
+ for(const item of addresses){
+  const b=el('button','place-card');b.type='button';
+  const avatar=el('span','place-avatar');avatar.innerHTML=PIN;b.append(avatar);
+  const copy=el('span','place-text');copy.append(el('strong','',label(item)),el('small','',`${item.settlement||'Черкаси'} · ${item.queue?'черга '+item.queue:'черга невідома'}`));b.append(copy);
+  const state=stateAt(timeline(date,item.queue),m);
+  b.append(el('span','place-status '+state,state==='on'?'Є світло':state==='off'?'Без світла':'—'));
+  b.onclick=()=>{prefs.primaryId=item.id;savePrefs();navigate('detail')};list.append(b);
+ }
+ if(!addresses.length){const e=el('div','empty-places');e.append(el('strong','','Ще немає збережених місць'),el('span','','Додайте адресу, щоб отримати персональний графік.'));list.append(e)}
+ const add=el('button','add-place-card','+  Додати адресу');add.onclick=()=>openAddressSheet();list.append(add);
 }
 function renderBar(a){const bar=$('overviewBar');bar.replaceChildren();if(!a){const b=el('span','bar-segment unknown');b.style.flex='1';bar.append(b);return}let start=0,v=a[0];for(let i=1;i<=1440;i++){if(i===1440||a[i]!==v){const seg=el('span','bar-segment '+(v===1?'off':v===0?'on':'unknown'));seg.style.flex=String(i-start);seg.title=`${clock(start)}–${clock(i)} · ${v===1?'відключення':v===0?'світло':'немає даних'}`;bar.append(seg);start=i;v=a[i]}}const line=el('span','bar-now');line.style.left=(nowMinutes()/1440*100)+'%';bar.append(line)}
 function navigate(name){if(!['home','detail','updates','settings'].includes(name))return;if(name==='detail'&&!primary()){openAddressSheet();return}active=name;for(const n of ['home','detail','updates','settings'])$(n).hidden=n!==name;document.querySelectorAll('[data-go]').forEach(x=>{if(x.classList.contains('nav-item'))x.classList.toggle('active',x.dataset.go===name)});if(name==='detail'){daySelected=today();renderDetail()}else if(name==='updates')renderUpdates();else if(name==='settings')renderSettings();else renderHome();window.scrollTo({top:0,behavior:'instant'});}
-function renderDetail(){const a=primary();if(!a)return;setText('detailAddress',fullAddress(a));const tToday=timeline(today(),a.queue),st=stateAt(tToday,nowMinutes()),nxt=transition(tToday,nowMinutes());const status=$('detailStatus');status.className='detail-status '+st;status.textContent=st==='unknown'?'Немає підтверджених даних':`${st==='on'?'Є світло':'Немає світла'} до: ${nxt&&nxt.to>=0?clock(nxt.time):'—:—'}`;
- const day=daySelected||today();const mon=shiftDay(day,-((new Date(day+'T12:00:00Z').getUTCDay()+6)%7));const root=$('days');root.replaceChildren();for(let i=0;i<7;i++){const d=shiftDay(mon,i),b=el('button','day-choice'+(d===day?' selected':''),['Пн','Вт','Ср','Чт','Пт','Сб','Нд'][i]);b.append(el('b','',String(Number(d.slice(8)))));b.setAttribute('aria-pressed',String(d===day));b.onclick=()=>{daySelected=d;renderDetail()};root.append(b)}const pub=currentDay(day),t=timeline(day,a.queue);setText('detailDayLabel',formatDate(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:'Не опубліковано');const grid=$('hourGrid');grid.replaceChildren();
+function renderDetail(){const a=primary();if(!a)return;setText('detailAddress',fullAddress(a));const tToday=timeline(today(),a.queue),st=stateAt(tToday,nowMinutes()),nxt=nextChange(today(),a.queue,nowMinutes());const status=$('detailStatus');status.className='detail-status '+st;status.textContent=statusCopy(st,nxt,a.queue,today()).title;
+ const day=daySelected||today();const mon=shiftDay(day,-((new Date(day+'T12:00:00Z').getUTCDay()+6)%7));const root=$('days');root.replaceChildren();for(let i=0;i<7;i++){const d=shiftDay(mon,i),b=el('button','day-choice'+(d===day?' selected':''),['Пн','Вт','Ср','Чт','Пт','Сб','Нд'][i]);b.append(el('b','',String(Number(d.slice(8)))));b.setAttribute('aria-pressed',String(d===day));b.onclick=()=>{daySelected=d;renderDetail()};root.append(b)}const pub=currentDay(day),t=timeline(day,a.queue);setText('detailDayLabel',formatDate(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:t?'Планових відключень не оголошено':'Дані не підтверджені');const grid=$('hourGrid');grid.replaceChildren();
  for(let h=0;h<24;h++){
    let on=0,off=0;
    for(let m=h*60;m<h*60+60;m++){if(t?.[m]===0)on++;if(t?.[m]===1)off++}
@@ -116,7 +198,7 @@ function renderDetail(){const a=primary();if(!a)return;setText('detailAddress',f
    c.setAttribute('aria-label',clock(h*60)+': '+(type==='unknown'?'немає підтверджених даних':type==='mixed'?`за графіком зі світлом ${on} хвилин, без світла ${off} хвилин`:type==='off'?'за графіком немає світла':'за графіком є світло'));
    c.title=c.getAttribute('aria-label');grid.append(c);
  }
- const next=transition(tToday,nowMinutes());setText('nextTime',next?clock(next.time):'—:—');setText('nextDescription',next?`Планове ${next.to===1?'відключення':'відновлення електропостачання'}`:'До завершення відомого графіка змін не виявлено');$('articleLink').href=pub?.queueSources?.[a.queue]||pub?.source||'https://www.cherkasyoblenergo.com/news'}
+ const next=nxt;setText('nextTime',next?nextChangeLabel(next):st==='on'?'Без відключень':'Невідомо');setText('nextDescription',next?`Планове ${next.to===1?'відключення':'відновлення електропостачання'}`:st==='on'?'Подальших відключень у доступному графіку не заплановано':'Точний час не підтверджено');$('articleLink').href=pub?.queueSources?.[a.queue]||pub?.source||'https://www.cherkasyoblenergo.com/news'}
 function renderUpdates(){setText('lastCheck',data.lastChecked?fmtStamp(data.lastChecked):'Час перевірки невідомий');setText('updateNote',data.lastChecked?'Це час звіряння з публікаціями оператора, а не час появи нового графіка.':'Перевірте графік безпосередньо на сайті оператора.');const root=$('updateList');root.replaceChildren();const all=[...(data.changes||[]).map(x=>({kind:'change',...x})),...(data.days||[]).map(x=>({kind:'publication',...x}))].sort((a,b)=>String(b.publishedAt).localeCompare(String(a.publishedAt))).slice(0,24);if(!all.length)root.append(el('div','empty-places','Поки немає підтверджених публікацій.'));for(const d of all){const c=el('div','update-card');c.append(el('time','',fmtStamp(d.publishedAt)),el('strong','',d.kind==='change'?`Графік скориговано · ${formatDate(d.date)}`:`Опубліковано графік · ${formatDate(d.date)}`));const meta=el('div','small-source',d.kind==='change'?`Змінені підчерги: ${(d.queues||[]).join(', ')||'не уточнено'}`:`Редакцій: ${d.revisions||1}`);c.append(meta);const link=el('a','', 'Офіційна публікація ↗');link.href=d.source||'https://www.cherkasyoblenergo.com/news';link.target='_blank';link.rel='noopener';c.append(link);root.append(c)}}
 function renderSettings(){for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).checked=!!prefs[key];const connected=!!pushConfig?.apiBase&&!!pushConfig?.publicKey;setText('pushHeadline','Сповіщення');setText('pushDescription',connected?'Отримуйте нагадування про відключення та зміни графіків, навіть коли застосунок закритий.':'Наразі нагадування доступні тільки під час використання застосунку.');setText('enableNotifications',connected?'Увімкнути сповіщення':'Дозволити нагадування');$('disableNotifications').hidden=!connected}
 function fillQueueSelect(){const root=$('manualQueue');root.replaceChildren(new Option('Оберіть підчергу',''),...QUEUES.map(q=>new Option(q,q)))}
@@ -221,7 +303,7 @@ function applyOverrides(){
  }
  index=mergeIndexes(index,overrides.addresses||{});
 }
-function normalizeData(obj){if(!obj||!Array.isArray(obj.days))throw Error('Bad JSON');return {days:obj.days.filter(x=>/^20\d\d-\d\d-\d\d$/.test(x.date)&&x.verified===true),changes:Array.isArray(obj.changes)?obj.changes:[],lastChecked:obj.lastChecked||null}}
+function normalizeData(obj){if(!obj||!Array.isArray(obj.days))throw Error('Bad JSON');return {days:obj.days.filter(x=>/^20\d\d-\d\d-\d\d$/.test(x.date)&&x.verified===true),changes:Array.isArray(obj.changes)?obj.changes:[],lastChecked:obj.lastChecked||null,reviewPending:obj.reviewPending===true}}
 function mergeIndexes(live,backup){
  const clean=x=>x&&typeof x==='object'&&!Array.isArray(x)?x:{};
  const unionQueues=(a,b)=>[...new Set([...(Array.isArray(a)?a:[]),...(Array.isArray(b)?b:[])])].sort((x,y)=>Number(x)-Number(y));
