@@ -10,7 +10,11 @@ assert.match(server,/process\.env\.ADMIN_PASSWORD/);
 assert.match(server,/process\.env\.GITHUB_TOKEN/);
 assert.match(server,/\[kind\]/);
 assert.match(page,/id="password"/);
-assert.match(browser,/authorization:'Bearer '\+password/);
+assert.match(browser,/authorization:'Bearer '\+sessionToken/);
+assert.match(server,/api\/admin\/login/);
+assert.match(server,/api\/admin\/logout/);
+assert.match(page,/id="adminDashboard" hidden/);
+assert.match(page,/id="adminLoginScreen"/);
 assert.doesNotMatch(server,/muz2901/); // Secret belongs only in deployment environment
 assert.doesNotMatch(browser,/muz2901/);
 console.log('Admin interface / secure backend static checks passed');

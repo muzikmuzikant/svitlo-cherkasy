@@ -16,6 +16,7 @@ with sync_playwright() as p:
         errors=[]
         page.on('pageerror',lambda e: errors.append(str(e)))
         page.set_content(html)
+        page.evaluate("document.documentElement.dataset.appMode='standalone'")
         page.add_style_tag(content=css)
         page.evaluate('''(contents)=>{
            const kv={}; Object.defineProperty(window,'localStorage',{configurable:true,value:{getItem:k=>kv[k]??null,setItem:(k,v)=>kv[k]=String(v)}});

@@ -19,6 +19,7 @@ def main():
                     page=browser.new_page(viewport={'width':width,'height':750},is_mobile=True,has_touch=True)
                     errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
                     page.set_content((ROOT/'index.html').read_text(encoding='utf8'))
+                    page.evaluate("document.documentElement.dataset.appMode='standalone'")
                     page.add_style_tag(content=(ROOT/'style.css').read_text(encoding='utf8'))
                     import json
                     datas={name:json.loads((ROOT/'data'/name).read_text(encoding='utf8')) for name in ('addresses.json','schedules.json','published_street_fallback.json')}

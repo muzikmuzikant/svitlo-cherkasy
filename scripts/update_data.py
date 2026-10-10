@@ -442,7 +442,7 @@ def update_emergency(session,now=None):
     except (ValueError,FileNotFoundError):old={'events':[]}
     listing=fetch(session,BASE+'/news?lang=uk')
     entries=[]
-    for url in emergency_link_candidates(listing)[:30]:
+    for url in emergency_link_candidates(listing)[:12]:
         try:
             event=parse_emergency_article(fetch(session,url),url,now)
             if event:entries.append(event)
