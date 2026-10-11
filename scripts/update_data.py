@@ -15,6 +15,8 @@ from urllib.parse import urljoin, urlparse
 from zoneinfo import ZoneInfo
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,8 +26,8 @@ TZ = ZoneInfo('Europe/Kyiv')
 QUEUE = [f'{i}.{j}' for i in range(1, 7) for j in (1, 2)]
 UA_MONTHS = dict(zip('січня лютого березня квітня травня червня липня серпня вересня жовтня листопада грудня'.split(),range(1,13)))
 HEADLINE_DATE = re.compile(r'на\s+(\d{1,2})\s+('+'|'.join(UA_MONTHS)+r')',re.I)
-QUEUE_START = re.compile(r'(?<!\d)([1-6]\.[12])(?:\s*\.)?\s*[-–—:]?\s*(?=(?:\d{1,2}:\d{2}|відсут|не\s+відключ|без\s+відключ))',re.I)
-INTERVAL = re.compile(r'(?<!\d)([01]?\d|2[0-4]):([0-5]\d)\s*[–—−-]\s*([01]?\d|2[0-4]):([0-5]\d)')
+QUEUE_START = re.compile(r'(?<!\d)([1-6]\.[12])(?:\s*\.)?\s*[-–—:]?\s*(?=(?:(?:з|із|від)\s+)?(?:\d{1,2}[:.]\d{2}|відсут|не\s+відключ|без\s+відключ))',re.I)
+INTERVAL = re.compile(r'(?<!\d)([01]?\d|2[0-4])[:.]([0-5]\d)\s*(?:[–—−-]|до)\s*([01]?\d|2[0-4])[:.]([0-5]\d)',re.I)
 PUB_TS = re.compile(r'(?<!\d)(\d{2}\.\d{2}\.20\d\d)\s+(\d\d:\d\d)')
 PDF_LINK = re.compile(r'\.pdf(?:\?.*)?$',re.I)
 BRANCH_CITY = re.compile(r'(?:ВСП\s*)?Черкаськ(?:і|их)\s+міськ(?:і|их)\s+(?:ЕМ|енергетичн(?:і|их)\s+мереж(?:і|ах))',re.I)
@@ -48,8 +50,22 @@ HOUSE = re.compile(r'\d{1,4}(?:\s*[-/]\s*\d{1,4})?(?:\s*[- ]?\s*[а-яіїєґa-
 LOG = logging.getLogger('svitlo')
 
 
+def create_session():
+    """Small bounded retries for intermittent 429/5xx; never silently accept errors."""
+    session=requests.Session()
+    retry=Retry(total=2, connect=2, read=2, backoff_factor=0.8,
+                status_forcelist=(429,500,502,503,504),
+                allowed_methods=frozenset({'GET'}),
+                respect_retry_after_header=True)
+    adapter=HTTPAdapter(max_retries=retry,pool_connections=4,pool_maxsize=4)
+    session.mount('https://',adapter)
+    return session
+
+
 def fetch(session,url,binary=False):
-    r=session.get(url,timeout=35,headers={'User-Agent':'SvitloCherkasy/7.1 public schedule aggregator',
+    # Never let an unresponsive PDF or article block the entire workflow for
+    # GitHub Actions' 12-minute job timeout.
+    r=session.get(url,timeout=(6,17),headers={'User-Agent':'SvitloCherkasy/7.1 public schedule aggregator',
                                      'Cache-Control':'no-cache','Pragma':'no-cache'})
     r.raise_for_status()
     return r.content if binary else r.text
@@ -147,7 +163,10 @@ def compose(revisions):
     planned outages for those queues. Never carry deleted outages from an older
     edition into the current forecast. Revision history remains in metadata.
     """
-    revs = sorted(revisions, key=lambda r: (r['publishedAt'], r['source']))
+    # News pages put the newest post first. On identical publication minutes,
+    # prefer the FIRST listing item, not arbitrary alphabetic URL ordering.
+    revs = [r for _, r in sorted(enumerate(revisions),
+            key=lambda item: (item[1]['publishedAt'], -item[0]))]
     if not revs:
         return None
     latest = revs[-1]
@@ -281,8 +300,16 @@ def update_schedules(session, now=None):
             old_changes.append(change)
             keys.add(identity)
 
+    # Explicit daily certainty for the PWA. Absence of a publication is only
+    # meaningful for dates actually included in the successful official check,
+    # and never for a date with a currently unresolved article.
+    blocked_dates = {item.get('targetDate') for item in review + warnings if item.get('targetDate')}
+    unknown_target = any(item.get('targetDate') is None for item in review + warnings)
+    confirmed_no_plan = [d for d in sorted(risk_dates) if d not in existing
+                         and d not in blocked_dates and not unknown_target and not pending]
     result = {'schemaVersion': 3, 'lastChecked': utc_stamp(now),
-              'reviewPending': pending, 'source': BASE + '/news',
+              'reviewPending': pending, 'confirmedNoScheduleDates': confirmed_no_plan,
+              'source': BASE + '/news',
               'days': [existing[k] for k in sorted(existing)],
               'changes': old_changes[-100:]}
     # Commit order is important: schedule must be published even when the
@@ -465,7 +492,7 @@ def update_addresses(session,now=None):
     urls=labeled_pdf_links(html)
     if len(urls)!=12:
         raise RuntimeError(f'Only {len(urls)} unambiguously labeled queue PDF links; refusing to guess queue order')
-    collected=defaultdict(lambda:defaultdict(set));street_labels=defaultdict(dict);street_q=defaultdict(lambda:defaultdict(set))
+    collected=defaultdict(lambda:defaultdict(set));street_labels=defaultdict(dict);street_q=defaultdict(lambda:defaultdict(set));town_labels={}
     errors=[]
     for queue,url in urls.items():
         try:
@@ -474,6 +501,7 @@ def update_addresses(session,now=None):
             sections=extract_sections(raw)
             for town,content in sections.items():
                 key=clean_locality(town)
+                town_labels.setdefault(key, town.strip())
                 # Numbered addresses and street-wide listings are distinct:
                 # street-wide listings are NOT proof for a specific house.
                 for kind,street,house,label in street_entries(content)+street_house_lists(content):
@@ -490,14 +518,28 @@ def update_addresses(session,now=None):
     if errors:raise RuntimeError('Incomplete official PDF import: '+'; '.join(errors))
     if not collected and not street_q:raise RuntimeError('No address or street records in PDFs')
     keycity=clean_locality('Черкаси')
-    towns={k:{'keys':{a:sorted(v) for a,v in sorted(collected.get(k,{}).items())},'streets':street_labels[k], 'streetQueues':{x:sorted(v) for x,v in street_q.get(k,{}).items()}} for k in set(street_labels)|set(collected)|set(street_q) if k!=keycity}
+    towns={k:{'keys':{a:sorted(v) for a,v in sorted(collected.get(k,{}).items())},'streets':street_labels[k], 'label':town_labels.get(k,k), 'streetQueues':{x:sorted(v) for x,v in street_q.get(k,{}).items()}} for k in set(street_labels)|set(collected)|set(street_q) if k!=keycity}
     if not towns:
         raise RuntimeError('Village index is empty after parsing all 12 PDFs; refusing to publish broken search')
     city=collected.get(keycity,{})
     result={'schemaVersion':3,'updatedAt':utc_stamp(now),'source':BASE+'/perelik-gpv?lang=uk',
             'keys':{a:sorted(v) for a,v in sorted(city.items())},'streets':street_labels.get(keycity,{}),'streetQueues':{x:sorted(v) for x,v in street_q.get(keycity,{}).items()},
             'localities':towns,'stats':{'city':len(city),'villages':len(towns),'total':sum(len(v) for v in collected.values()),'streetOnly':sum(len(v) for v in street_q.values())}}
-    atomic_write(DATA/'addresses.json',result)
+    # A PDF format change can silently drop most records while still looking
+    # syntactically valid. Quarantine catastrophic regressions instead of
+    # replacing yesterday's correct address database with a broken parser run.
+    current_file = DATA / 'addresses.json'
+    try:
+        previous = json.loads(current_file.read_text(encoding='utf-8'))
+    except (FileNotFoundError, ValueError):
+        previous = {}
+    previous_city = len(previous.get('keys', {}))
+    previous_towns = len(previous.get('localities', {}))
+    if previous_city >= 100 and len(city) < previous_city * .55:
+        raise RuntimeError(f'Address import quarantine: city house records dropped from {previous_city} to {len(city)}')
+    if previous_towns >= 10 and len(towns) < previous_towns * .55:
+        raise RuntimeError(f'Address import quarantine: localities dropped from {previous_towns} to {len(towns)}')
+    atomic_write(current_file,result)
     return result
 
 
@@ -566,7 +608,7 @@ def main():
     if sum((args.schedules_only,args.addresses_only,args.emergency_only))>1:
         parser.error('Вкажіть тільки один режим імпорту')
     logging.basicConfig(level=logging.INFO,format='%(levelname)s %(message)s')
-    session=requests.Session();failed=[]
+    session=create_session();failed=[]
     if not (args.addresses_only or args.emergency_only):
         try:update_schedules(session)
         except Exception as e:LOG.exception('schedule update failed');failed.append('schedules '+str(e))

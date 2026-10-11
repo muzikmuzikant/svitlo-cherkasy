@@ -39,10 +39,15 @@ const clock=n=>`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padSt
 function sourceFresh(){
  const checked=Date.parse(data.lastChecked||'');
  return !lastSyncFailed && !data.reviewPending && Number.isFinite(checked) &&
-   checked<=Date.now()+5*60_000 && Date.now()-checked<=2*3600_000;
+   checked<=Date.now()+5*60_000 && Date.now()-checked<=55*60_000;
 }
 function withinPublishedHorizon(date){
- const current=today();return date===current||date===shiftDay(current,1);
+ const current=today();
+ const inHorizon=date===current||date===shiftDay(current,1);
+ if(!inHorizon)return false;
+ // Latest importer explicitly certifies days without any publication.
+ // Old schema clients still work during the staged upgrade.
+ return !Array.isArray(data.confirmedNoScheduleDates)||data.confirmedNoScheduleDates.includes(date);
 }
 function timeline(date,queue){
  if(!QUEUES.includes(queue))return null;
@@ -133,7 +138,7 @@ function renderSyncStatus(){
  const box=$('syncStatus');if(!box)return;
  const checked=Date.parse(data.lastChecked||'');
  const checkKnown=Number.isFinite(checked)&&checked<=Date.now()+5*60_000;
- const sourceStale=!checkKnown||(Date.now()-checked>2*3600_000);
+ const sourceStale=!checkKnown||(Date.now()-checked>55*60_000);
  const offline=navigator.onLine===false,review=data.reviewPending===true;
  box.dataset.state=!hasCheckedOnce?'pending':offline||lastSyncFailed?'error':sourceStale||review?'stale':'fresh';
  const title=!hasCheckedOnce?'Завантажуємо графіки…':offline?'Немає інтернету':lastSyncFailed?'Не вдалося отримати графіки':review?'Є публікація, яка потребує перевірки':sourceStale?'Перевірка оператора затримується':'Автооновлення графіків активне';
@@ -148,7 +153,7 @@ function renderFreshness(){
  const checked=Date.parse(data.lastChecked||'');
  const age=Date.now()-checked;
  const hasTime=Number.isFinite(checked)&&age>=0;
- const stale=!hasTime||age>2*3600_000;
+ const stale=!hasTime||age>55*60_000;
  const offline=navigator.onLine===false,review=data.reviewPending===true;
  // Avoid alarming users while the initial network request is still in flight.
  node.hidden=!hasCheckedOnce||(!stale&&!offline&&!review);
@@ -323,6 +328,22 @@ function suggestions(){
    $('street').value=name;suggestion={key,label:name};root.hidden=true;checkLookup();
  };root.append(b)}
 }
+function populateSettlements(){
+ const select=$('settlement');
+ const previous=select.value;
+ const other=Array.from(select.options).find(o=>o.value==='Інше');
+ const present=new Set(Array.from(select.options).map(o=>normTown(o.value)));
+ const names=Object.entries(index.localities||{})
+   .filter(([key,entry])=>entry && typeof entry==='object' && (entry.streets || entry.keys))
+   .map(([key,entry])=>({key,label:entry.label||''}))
+   .filter(item=>item.label && !present.has(item.key))
+   .sort((a,b)=>a.label.localeCompare(b.label,'uk-UA'));
+ for(const item of names){
+   const option=new Option(item.label,item.label);
+   select.add(option,other||null);
+ }
+ if([...select.options].some(o=>o.value===previous))select.value=previous;
+}
 function openAddressSheet(item=null){editId=item?.id||null;suggestion=null;setText('sheetTitle',item?'Редагувати адресу':'Нова адреса');$('nickname').value=item?.nickname||'';$('street').value=item?.street||'';$('house').value=item?.house||'';const opt=Array.from($('settlement').options).find(x=>normTown(x.value)===normTown(item?.settlement));$('settlement').value=opt?opt.value:item?.settlement?'Інше':'Черкаси';$('customSettlement').hidden=$('settlement').value!=='Інше';$('customSettlement').value=opt?'':item?.settlement||'';$('manualQueue').value=item?.queue||'';$('deleteAddress').hidden=!item;$('streetSuggestions').hidden=true;checkLookup();showSheet($('addressSheet'))}
 let sheetScroll=0;
 function showSheet(dialog){if(!document.body.classList.contains('sheet-open'))sheetScroll=window.scrollY;dialog.showModal();document.body.classList.add('sheet-open');document.body.style.position='fixed';document.body.style.top=`-${sheetScroll}px`;document.body.style.width='100%'}
@@ -375,22 +396,13 @@ function applyOverrides(){
    }
    data.days=[...map.values()].sort((a,b)=>a.date.localeCompare(b.date));
  }
- index=mergeIndexes(index,overrides.addresses||{});
+ index=mergeIndexes(index,overrides.addresses||{},{manual:true});
 }
-function normalizeData(obj){if(!obj||!Array.isArray(obj.days))throw Error('Bad JSON');return {days:obj.days.filter(x=>/^20\d\d-\d\d-\d\d$/.test(x.date)&&x.verified===true),changes:Array.isArray(obj.changes)?obj.changes:[],lastChecked:obj.lastChecked||null,reviewPending:obj.reviewPending===true}}
-function mergeIndexes(live,backup){
- const clean=x=>x&&typeof x==='object'&&!Array.isArray(x)?x:{};
- const unionQueues=(a,b)=>[...new Set([...(Array.isArray(a)?a:[]),...(Array.isArray(b)?b:[])])].sort((x,y)=>Number(x)-Number(y));
- const streetQueues={...clean(live.streetQueues)};
- for(const [key,q] of Object.entries(clean(backup.streetQueues)))streetQueues[key]=unionQueues(streetQueues[key],q);
- const result={keys:{...clean(live.keys),...clean(backup.keys)},streets:{...clean(live.streets),...clean(backup.streets)},streetQueues,localities:{...clean(live.localities)}};
- for(const [town,extra] of Object.entries(clean(backup.localities))){
-   const base=clean(result.localities[town]),bq={...clean(base.streetQueues)};
-   for(const [key,queues] of Object.entries(clean(extra.streetQueues)))bq[key]=unionQueues(bq[key],queues);
-   result.localities[town]={...base,keys:{...clean(base.keys),...clean(extra.keys)},streets:{...clean(base.streets),...clean(extra.streets)},streetQueues:bq};
- }
- return result;
+function normalizeData(obj){if(!obj||!Array.isArray(obj.days))throw Error('Bad JSON');return {days:obj.days.filter(x=>/^20\d\d-\d\d-\d\d$/.test(x.date)&&x.verified===true),changes:Array.isArray(obj.changes)?obj.changes:[],lastChecked:obj.lastChecked||null,confirmedNoScheduleDates:Array.isArray(obj.confirmedNoScheduleDates)?obj.confirmedNoScheduleDates:undefined,reviewPending:obj.reviewPending===true}}
+function mergeIndexes(live,backup,options={}){
+ return SvitloDataMerge.mergeIndexes(live,backup,options);
 }
+
 async function refreshData(manual=false){
  if(refreshInFlight)return refreshInFlight;
  if(Date.now()-lastRefresh<7000&&!manual)return;
@@ -414,6 +426,7 @@ async function refreshData(manual=false){
        const live=remote.status==='fulfilled'?remote.value:{};
        const backup=seed.status==='fulfilled'?seed.value:{};
        index=mergeIndexes(live,backup);
+       populateSettlements();
        if($('addressSheet').open){suggestions();checkLookup()}
      }
    }catch(error){console.warn('Address fetch:',error)}

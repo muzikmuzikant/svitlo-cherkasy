@@ -11,7 +11,7 @@ import {originPolicy} from './origins.js';
 import webpush from 'web-push';
 import {adminRouter} from './admin.js';
 import {createManualPush} from './manual-push.js';
-import {QUEUES,timeline,dueTransition,latestOfficialEvent,freshEvent} from './schedule-engine.js';
+import {QUEUES,timeline,dueTransition,latestOfficialEvent,freshEvent,freshSchedule,dueTransitionAcrossDays} from './schedule-engine.js';
 
 const {VAPID_PUBLIC_KEY,PUSH_PRIVATE_KEY,PUSH_CONTACT,APP_ORIGIN,SCHEDULE_URL,DATA_FILE='./subscribers.json',PORT='8080'}=process.env;
 if(!VAPID_PUBLIC_KEY||!PUSH_PRIVATE_KEY||!PUSH_CONTACT||!APP_ORIGIN||!SCHEDULE_URL){
@@ -31,7 +31,7 @@ function save(){
 }
 const feedback=createFeedbackStore({filePath:process.env.FEEDBACK_FILE||path.join(path.dirname(DATA_FILE),'feedback.json')});
 const extras=createAdminExtras({directory:path.dirname(DATA_FILE)});
-const appUrl=new URL('../',SCHEDULE_URL).href;
+const appUrl=new URL('/',APP_ORIGIN).href; // Push opens PWA, never the GitHub raw JSON host.
 const manualPush=createManualPush({subscribers,webpush,appUrl,hash,save});
 const fmtKyiv=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
 function dayInKyiv(d=new Date()){const p=Object.fromEntries(fmtKyiv.formatToParts(d).map(x=>[x.type,x.value]));return {date:`${p.year}-${p.month}-${p.day}`,m:Number(p.hour)*60+Number(p.minute)}}
@@ -42,7 +42,8 @@ function response(res,status,json,origin=''){
  res.writeHead(status,headers);res.end(JSON.stringify(json));
 }
 async function loadJson(url){
- const r=await fetch(url,{signal:AbortSignal.timeout(16000),cache:'no-store',headers:{'cache-control':'no-cache'}});
+ const fresh=new URL(url);fresh.searchParams.set('_fresh',String(Math.floor(Date.now()/60000)));
+ const r=await fetch(fresh,{signal:AbortSignal.timeout(16000),cache:'no-store',headers:{'cache-control':'no-cache'}});
  if(!r.ok)throw Error(`HTTP ${r.status}`);
  return r.json();
 }
@@ -67,6 +68,8 @@ async function job(){
   try{source=await loadJson(SCHEDULE_URL);if(!Array.isArray(source.days))throw Error('Invalid schedule structure')}
   catch(e){scheduleIssue='Schedule fetch: '+e.message;console.warn(scheduleIssue);source={days:[],changes:[]}}
   const now=dayInKyiv(),timestamp=Date.now();
+  const schedulesSafe=freshSchedule(source,timestamp);
+  if(!schedulesSafe)scheduleIssue=scheduleIssue||'Schedule data stale, unconfirmed or awaiting review';
   const current=source.days.find(d=>d.date===now.date&&d.verified===true);
   const nextDate=shiftDay(now.date,1);
   const tomorrow=source.days.find(d=>d.date===nextDate&&d.verified===true);
@@ -84,14 +87,15 @@ async function job(){
    const q=record?.queue,endpoint=record?.subscription?.endpoint;
    if(!QUEUES.has(q)||!endpoint)return;
    const pref=record.preferences||{},prefix=hash(endpoint),minutes=now.m;
-   const values=timeline(current,q);
+   const values=schedulesSafe?timeline(current,q):null;
+   const valuesTomorrow=schedulesSafe?timeline(tomorrow,q):null;
    for(const [type,offset,target,description] of [['off',30,1,'відключення'],['on',15,0,'відновлення']]){
     if(!pref[type])continue;
-    const boundary=dueTransition(values,minutes,offset,target,4);
+    const boundary=dueTransitionAcrossDays(values,valuesTomorrow,minutes,offset,target,4);
     if(boundary!==null){const eta=boundary-minutes;
      await send(record,`Світло: скоро ${description}`,`Орієнтовно через ${eta} хв за графіком: ${description} для підчерги ${q}.`,`${prefix}:${type}:${now.date}:${boundary}`)}
    }
-   if(pref.tomorrow&&tomorrow?.queues?.[q]&&minutes>=19*60){
+   if(schedulesSafe&&pref.tomorrow&&tomorrow?.verified===true&&minutes>=19*60){
     const revision=tomorrow.publishedAt||'';
     await send(record,'Світло: графік на завтра',`Опубліковано графік для підчерги ${q} на ${nextDate}.`,`${prefix}:tomorrow:${nextDate}:${revision}`);
    }
@@ -100,7 +104,7 @@ async function job(){
     const body=event.status==='active'?'Розпочинаються екстрені відключення світла поза графіком.':event.status==='ended'?'Оператор повідомив про завершення екстрених обмежень. Перевірте актуальний графік.':null;
     if(title)await send(record,title,body,`${prefix}:emergency:${event.status}:${hash(event.id||event.source)}:${event.publishedAt}`,{ttl:3600,urgency:'high'});
    }
-   if(pref.changes)for(const change of (source.changes||[]).slice(-30)){
+   if(schedulesSafe&&pref.changes)for(const change of (source.changes||[]).slice(-30)){
     const date=Date.parse(change.detectedAt||change.publishedAt||''),age=timestamp-date;
     if(!Array.isArray(change.queues)||!change.queues.includes(q)||change.date<now.date||!Number.isFinite(date)||age<0||age>=65*60000)continue;
     await send(record,'Світло: графік змінено',`Оновлено графік для підчерги ${q} на ${change.date}.`,`${prefix}:change:${change.date}:${change.revisionId||change.publishedAt}`);

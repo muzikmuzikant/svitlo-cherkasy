@@ -3,7 +3,11 @@ export const QUEUES = new Set(Array.from({length:6},(_,i)=>[`${i+1}.1`,`${i+1}.2
 export const parseMinute = value => value === '24:00' ? 1440 : /^([01]\d|2[0-3]):[0-5]\d$/.test(value || '') ? Number(value.slice(0,2))*60 + Number(value.slice(3)) : -1;
 export function timeline(day, queue) {
   if (!QUEUES.has(queue) || day?.verified !== true) return null;
-  const entry=day.queues?.[queue] ?? (day.complete === true ? {knownFrom:'00:00',off:[]} : null); if(!entry || !Array.isArray(entry.off)) return null;
+  const entry=day.queues?.[queue];
+  // In a verified complete official daily publication, omitted queues have
+  // no declared planned outages (they are NOT unverified house addresses).
+  if(!entry)return new Int8Array(1440);
+  if(!Array.isArray(entry.off))return null;
   const start=parseMinute(entry.knownFrom ?? '00:00');if(start<0)return null;
   const values=new Int8Array(1440);values.fill(-1);values.fill(0,start,1440);
   let last=0;
@@ -36,4 +40,23 @@ export function latestOfficialEvent(events, now=Date.now(), maxAge=24*3600_000){
 }
 export function freshEvent(event,now=Date.now(),maxAge=65*60_000){
  if(!event)return false;const age=now-Date.parse(event.publishedAt);return age>=0&&age<maxAge;
+}
+
+/** Suppress scheduled Push if GitHub import stopped or source needs review. */
+export function freshSchedule(doc,now=Date.now(),maxAge=55*60_000){
+ if(!doc||!Array.isArray(doc.days)||doc.reviewPending===true)return false;
+ const stamp=Date.parse(doc.lastChecked||'');
+ return Number.isFinite(stamp)&&stamp<=now+5*60_000 && now-stamp<=maxAge;
+}
+/** Reminders for 00:00–00:30 tomorrow must be visible before midnight. */
+export function dueTransitionAcrossDays(today,tomorrow,now,offset,target,grace=4){
+ for(let eta=offset;eta>=Math.max(0,offset-grace);eta--){
+  const pos=now+eta;
+  if(pos<1||pos>=2880)continue;
+  const next=pos>=1440;
+  const value=next?tomorrow?.[pos-1440]:today?.[pos];
+  const previous=pos-1>=1440?tomorrow?.[pos-1441]:today?.[pos-1];
+  if(value===target&&previous!==undefined&&previous!==-1&&previous!==target)return pos;
+ }
+ return null;
 }

@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {timeline,dueTransition,latestOfficialEvent,freshEvent} from '../push-server/schedule-engine.js';
+import {timeline,dueTransition,latestOfficialEvent,freshEvent,freshSchedule,dueTransitionAcrossDays} from '../push-server/schedule-engine.js';
 const source='https://www.cherkasyoblenergo.com/media/a';
 const mk=(knownFrom,off)=>({date:'2026-10-10',verified:true,queues:{'2.1':{knownFrom,off}}});
 test('known schedule is ON outside outage intervals; before publication is UNKNOWN',()=>{
@@ -12,7 +12,7 @@ test('known schedule is ON outside outage intervals; before publication is UNKNO
 test('full-day zero outages is known ON, unknown queue never assumes electricity',()=>{
  assert.equal(timeline(mk('00:00',[]),'2.1')[1300],0);
  assert.equal(timeline(mk('24:00',[]),'2.1')[1300],-1);
- assert.equal(timeline(mk('00:00',[]),'6.1'),null);
+ assert.equal(timeline(mk('00:00',[]),'6.1')[1300],0); // omitted in confirmed day
  assert.equal(timeline({...mk('00:00',[]),verified:false},'2.1'),null);
 });
 test('bad intervals are rejected and do not yield misleading predictions',()=>{
@@ -40,9 +40,18 @@ test('freshest official cancellation supersedes active notification',()=>{
  assert.equal(e.id,'b');assert.equal(e.status,'ended');assert.equal(freshEvent(e,now),true);
  assert.equal(freshEvent(e,now+70*60000),false);
 });
-test('omitted queue is on only for explicitly complete verified listing',()=>{
- const complete={date:'2026-10-10',verified:true,complete:true,queues:{'1.1':{knownFrom:'00:00',off:[['14:00','16:00']]}}};
- assert.equal(timeline(complete,'3.2')[700],0);
- assert.equal(timeline({...complete,complete:false},'3.2'),null);
- assert.equal(timeline({...complete,verified:false},'3.2'),null);
+
+test('stale, invalid or disputed imports cannot generate schedule reminders',()=>{
+ const now=Date.parse('2026-10-11T18:00:00Z');
+ const good={lastChecked:new Date(now-5*60_000).toISOString(),reviewPending:false,days:[]};
+ assert.equal(freshSchedule(good,now),true);
+ assert.equal(freshSchedule({...good,reviewPending:true},now),false);
+ assert.equal(freshSchedule({...good,lastChecked:new Date(now-2*3600_000).toISOString()},now),false);
+ assert.equal(freshSchedule({...good,lastChecked:null},now),false);
+});
+test('30 minute reminder sees tomorrow midnight without inventing power state',()=>{
+ const today=new Int8Array(1440),tomorrow=new Int8Array(1440);
+ tomorrow.fill(1,0,120);
+ assert.equal(dueTransitionAcrossDays(today,tomorrow,1410,30,1),1440);
+ assert.equal(dueTransitionAcrossDays(today,null,1410,30,1),null);
 });

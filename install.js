@@ -9,14 +9,19 @@
       const lookup = document.createElement('script');
       lookup.src = './address-lookup.js';
       lookup.onload = () => {
-        const app = document.createElement('script');
-        app.src = './app.js';
-        app.onload = () => {
-          const updater = document.createElement('script');
-          updater.src = './version-check.js';
-          document.body.append(updater);
+        const merger = document.createElement('script');
+        merger.src = './data-merge.js';
+        merger.onload = () => {
+          const app = document.createElement('script');
+          app.src = './app.js';
+          app.onload = () => {
+            const updater = document.createElement('script');
+            updater.src = './version-check.js';
+            document.body.append(updater);
+          };
+          document.body.append(app);
         };
-        document.body.append(app);
+        document.body.append(merger);
       };
       document.body.append(lookup);
     };
