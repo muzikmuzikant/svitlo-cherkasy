@@ -118,6 +118,9 @@ def parse_article(html,url,reference=None):
         periods=[]
         for a,am,b,bm in INTERVAL.findall(part):
             start,end=int(a)*60+int(am),int(b)*60+int(bm)
+            # Operator routinely writes '23:00 - 00:00' for the final hour.
+            # Here 00:00 is the END of the day, not minute zero.
+            if end==0 and start>0:end=1440
             if not 0<=start<end<=1440 or periods and periods[-1][1]>start:return None
             periods.append((start,end))
         # Explicit 'not disconnected' text means known schedule with no outages.
@@ -125,6 +128,36 @@ def parse_article(html,url,reference=None):
         if periods or explicitly_none:queues[m.group(1)]=periods
         else:return None
     return {'date':day,'publishedAt':pub.isoformat(timespec='minutes'),'source':url,'queues':queues}
+
+
+
+def clearly_historical_article(html, oldest_wanted):
+    """Only ignore unparseable articles proved to concern an older day.
+
+    A historical headline alone is not enough: operators can post a fresh
+    correction, or accidentally put an old month in today's headline. Both
+    are relevant and must still be checked/quarantined. We require BOTH the
+    embedded publication timestamp and headline date to predate our window.
+    """
+    soup=BeautifulSoup(html,'html.parser')
+    header=soup.find('h1')
+    title=header.get_text(' ',strip=True).lower() if header else ''
+    hit=HEADLINE_DATE.search(title)
+    stamp=PUB_TS.search(soup.get_text(' ',strip=True))
+    if not (hit and stamp):return False
+    try:
+        published=datetime.strptime(' '.join(stamp.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
+        year=published.year
+        month=UA_MONTHS[hit.group(2).lower()]
+        if published.month==12 and month==1:year+=1
+        if published.month==1 and month==12:year-=1
+        target=datetime(year,month,int(hit.group(1)),tzinfo=TZ).date()
+    except ValueError:
+        return False
+    # If publication and headline disagree substantially, do not discard it
+    # silently as old news: the operator may have made a date typo.
+    return (published.date()<oldest_wanted and target<oldest_wanted
+            and abs((target-published.date()).days)<=3)
 
 
 def compose(revisions):
@@ -198,13 +231,18 @@ def update_schedules(session,now=None):
     grouped=defaultdict(list)
     review=[]
     article_failures=0
+    oldest_wanted=datetime.fromisoformat(min(wanted)).date()
     for u in urls:
         try:
-            rev=parse_article(fetch(session,u),u)
+            article_html=fetch(session,u)
+            rev=parse_article(article_html,u)
             if rev and rev['date'] in wanted:grouped[rev['date']].append(rev)
             elif rev is None:
+                if clearly_historical_article(article_html,oldest_wanted):
+                    LOG.info('Skipping historical, unparseable schedule article %s',u)
+                    continue
                 article_failures+=1
-                LOG.warning('Could not parse schedule article %s; absence is unconfirmed',u)
+                LOG.warning('Could not parse recent or unverified schedule article %s; absence is unconfirmed',u)
         except ScheduleDateConflict as e:
             review.append({'code':'HEADLINE_DATE_CONFLICT','source':e.url,'headlineDate':e.headline_date,
                            'publishedAt':e.published_at,'reason':'Дата графіка суттєво відрізняється від дати публікації. Потрібна ручна перевірка.'})
