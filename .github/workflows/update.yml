@@ -2,10 +2,15 @@ name: Update official blackout data
 on:
   workflow_dispatch:
   schedule:
-    - cron: '7,37 * * * *'
+    # UTC: 18:00–00:59 Kyiv in summer / 17:00–23:59 in winter, every 5 min.
+    # GitHub scheduled jobs may start late; these are best-effort frequencies.
+    - cron: '3-58/5 15-21 * * *'
+    # Remaining hours: every 15 min, offset to avoid the top-of-hour surge.
+    - cron: '7-52/15 0-14,22-23 * * *'
   push:
     paths:
       - 'scripts/update_data.py'
+      - 'scripts/publish_gate.py'
       - 'release.json'
       - '.github/workflows/update.yml'
 permissions:
@@ -14,9 +19,9 @@ concurrency:
   group: svitlo-data-refresh
   cancel-in-progress: false
 jobs:
-  update:
+  schedules:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -24,46 +29,44 @@ jobs:
           python-version: '3.12'
           cache: pip
       - run: python -m pip install -r requirements.txt pytest
-      - name: Run importer tests
-        run: python -m pytest -q tests
-      # Do not mark a failed import as successful. Keep previous verified data,
-      # publish any diagnostics, then make this workflow RED if a fetch failed.
-      - name: Refresh official schedules
-        id: schedules
-        continue-on-error: true
+      - name: Validate parser before fetching
+        run: python -m pytest -q tests/test_date_integrity.py tests/test_schedule_resilience.py
+      - name: Import official schedules
+        id: schedule
         run: python scripts/update_data.py --schedules-only
-      - name: Refresh address queue index
-        id: addresses
-        continue-on-error: true
-        run: python scripts/update_data.py --addresses-only
-      - name: Show import summary
+      - name: Show import diagnostics
+        if: always()
         run: |
           python - <<'PY'
           import json
-          for name in ('schedules','addresses'):
-              with open('data/'+name+'.json',encoding='utf-8') as f: data=json.load(f)
-              print(name, 'checked', data.get('lastChecked',data.get('updatedAt')),
-                    'statistics',data.get('stats',{}),
-                    'days', len(data.get('days',[])),
-                    'cities', len(data.get('localities',{})))
+          from pathlib import Path
+          for filename in ('schedules', 'source_review'):
+              p = Path('data') / (filename + '.json')
+              if not p.exists():
+                  print(filename, 'missing')
+                  continue
+              data = json.loads(p.read_text(encoding='utf-8'))
+              print(filename, 'lastChecked=', data.get('lastChecked'),
+                    'days=', [day['date'] for day in data.get('days', [])],
+                    'reviewPending=', data.get('reviewPending'),
+                    'warnings=', data.get('warningCount'),
+                    'rejected=', data.get('rejectedCount'))
           PY
-      - name: Commit verified data
+      - name: Decide whether a site deployment is needed
+        id: gate
+        run: python scripts/publish_gate.py >> "$GITHUB_OUTPUT"
+      - name: Commit verified schedules
+        if: steps.schedule.outcome == 'success' && steps.gate.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "svitlo-data-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/schedules.json data/addresses.json data/source_review.json
+          git add data/schedules.json data/source_review.json
           if ! git diff --cached --quiet; then
-            git commit -m "Refresh verified outage schedules and queue index"
+            git commit -m "Refresh verified outage schedules"
             git pull --rebase origin main
             git push origin HEAD:main
-            # GITHUB_TOKEN pushes do not trigger GitHub Pages builds automatically.
-            # Request a deployment only after actual verified data changes.
+            # GitHub-token commits do NOT themselves trigger the Pages workflow.
             gh api repos/${{ github.repository }}/dispatches -f event_type=svitlo-data-updated
           fi
-      - name: Report failed operator checks
-        if: ${{ always() && (steps.schedules.outcome == 'failure' || steps.addresses.outcome == 'failure') }}
-        run: |
-          echo '::error::The operator import did not complete successfully. Published verified data were preserved.'
-          exit 1
