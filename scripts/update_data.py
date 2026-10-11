@@ -118,9 +118,6 @@ def parse_article(html,url,reference=None):
         periods=[]
         for a,am,b,bm in INTERVAL.findall(part):
             start,end=int(a)*60+int(am),int(b)*60+int(bm)
-            # Operator routinely writes '23:00 - 00:00' for the final hour.
-            # Here 00:00 is the END of the day, not minute zero.
-            if end==0 and start>0:end=1440
             if not 0<=start<end<=1440 or periods and periods[-1][1]>start:return None
             periods.append((start,end))
         # Explicit 'not disconnected' text means known schedule with no outages.
@@ -128,36 +125,6 @@ def parse_article(html,url,reference=None):
         if periods or explicitly_none:queues[m.group(1)]=periods
         else:return None
     return {'date':day,'publishedAt':pub.isoformat(timespec='minutes'),'source':url,'queues':queues}
-
-
-
-def clearly_historical_article(html, oldest_wanted):
-    """Only ignore unparseable articles proved to concern an older day.
-
-    A historical headline alone is not enough: operators can post a fresh
-    correction, or accidentally put an old month in today's headline. Both
-    are relevant and must still be checked/quarantined. We require BOTH the
-    embedded publication timestamp and headline date to predate our window.
-    """
-    soup=BeautifulSoup(html,'html.parser')
-    header=soup.find('h1')
-    title=header.get_text(' ',strip=True).lower() if header else ''
-    hit=HEADLINE_DATE.search(title)
-    stamp=PUB_TS.search(soup.get_text(' ',strip=True))
-    if not (hit and stamp):return False
-    try:
-        published=datetime.strptime(' '.join(stamp.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
-        year=published.year
-        month=UA_MONTHS[hit.group(2).lower()]
-        if published.month==12 and month==1:year+=1
-        if published.month==1 and month==12:year-=1
-        target=datetime(year,month,int(hit.group(1)),tzinfo=TZ).date()
-    except ValueError:
-        return False
-    # If publication and headline disagree substantially, do not discard it
-    # silently as old news: the operator may have made a date typo.
-    return (published.date()<oldest_wanted and target<oldest_wanted
-            and abs((target-published.date()).days)<=3)
 
 
 def compose(revisions):
@@ -212,76 +179,111 @@ def atomic_write(path,obj):
     tmp.replace(path)
 
 
-def update_schedules(session,now=None):
-    now=now or datetime.now(TZ)
-    wanted={(now.date()+timedelta(days=i)).isoformat() for i in (-2,-1,0,1,2,3)}
-    dest=DATA/'schedules.json'
-    try:old=json.loads(dest.read_text('utf-8'))
-    except (FileNotFoundError,ValueError):old={'days':[]}
-    existing={d['date']:d for d in old.get('days',[]) if d.get('date') in wanted}
-    news_html=fetch(session,BASE+'/news?lang=uk')
-    soup=BeautifulSoup(news_html,'html.parser')
-    # Absence of an announced schedule is meaningful only after a real news page
-    # has been fetched; a blank/blocked/error page is not a successful check.
-    other_articles=any('/media/' in a.get('href','') for a in soup.select('a[href]'))
-    page_heading=' '.join(x.get_text(' ',strip=True) for x in soup.select('title,h1'))
-    verified_listing=other_articles or (bool(soup.find('body')) and 'новин' in page_heading.lower())
-    if not verified_listing:raise RuntimeError('Unrecognized official news index; previous data preserved')
-    urls=parse_news_links(news_html)
-    grouped=defaultdict(list)
-    review=[]
-    article_failures=0
-    oldest_wanted=datetime.fromisoformat(min(wanted)).date()
+def update_schedules(session, now=None):
+    """Refresh verified plans without letting one unreadable article block others.
+
+    A source index fetch failure is fatal. Individual article failures are kept
+    for review and make any *missing* daily schedule unconfirmed; already parsed
+    official schedules are still safe to publish.
+    """
+    now = now or datetime.now(TZ)
+    wanted = {(now.date() + timedelta(days=i)).isoformat() for i in (-2, -1, 0, 1, 2, 3)}
+    dest = DATA / 'schedules.json'
+    try:
+        old = json.loads(dest.read_text(encoding='utf-8'))
+    except (FileNotFoundError, ValueError):
+        old = {'days': []}
+    existing = {d['date']: d for d in old.get('days', []) if d.get('date') in wanted}
+
+    news_html = fetch(session, BASE + '/news?lang=uk')
+    soup = BeautifulSoup(news_html, 'html.parser')
+    other_articles = any('/media/' in a.get('href', '') for a in soup.select('a[href]'))
+    page_heading = ' '.join(x.get_text(' ', strip=True) for x in soup.select('title,h1'))
+    if not (other_articles or (bool(soup.find('body')) and 'новин' in page_heading.lower())):
+        raise RuntimeError('Unrecognized official news index; previous data preserved')
+
+    urls = parse_news_links(news_html)
+    # Map each listing link to its advertised date. Failure of an unrelated old
+    # article should not prevent a fresh, successful check from confirming that
+    # no graph is announced for today/tomorrow.
+    advertised_dates = {}
+    for link in soup.select('a[href]'):
+        url = urljoin(BASE, link['href'])
+        if url not in urls:
+            continue
+        match = HEADLINE_DATE.search(link.get_text(' ', strip=True))
+        if not match:
+            continue
+        month = UA_MONTHS[match.group(2).lower()]
+        year = now.year + (1 if now.month == 12 and month == 1 else -1 if now.month == 1 and month == 12 else 0)
+        try:
+            advertised_dates[url] = datetime(year, month, int(match.group(1))).date().isoformat()
+        except ValueError:
+            pass
+    grouped = defaultdict(list)
+    review = []
+    warnings = []
     for u in urls:
         try:
-            article_html=fetch(session,u)
-            rev=parse_article(article_html,u)
-            if rev and rev['date'] in wanted:grouped[rev['date']].append(rev)
+            rev = parse_article(fetch(session, u), u)
+            if rev and rev['date'] in wanted:
+                grouped[rev['date']].append(rev)
             elif rev is None:
-                if clearly_historical_article(article_html,oldest_wanted):
-                    LOG.info('Skipping historical, unparseable schedule article %s',u)
-                    continue
-                article_failures+=1
-                LOG.warning('Could not parse recent or unverified schedule article %s; absence is unconfirmed',u)
+                warnings.append({'code': 'UNREADABLE_ARTICLE', 'source': u,
+                                 'targetDate': advertised_dates.get(u),
+                                 'reason': 'Графік у новині не вдалося розпізнати.'})
+                LOG.warning('Could not parse schedule article %s', u)
         except ScheduleDateConflict as e:
-            review.append({'code':'HEADLINE_DATE_CONFLICT','source':e.url,'headlineDate':e.headline_date,
-                           'publishedAt':e.published_at,'reason':'Дата графіка суттєво відрізняється від дати публікації. Потрібна ручна перевірка.'})
-            LOG.warning('QUARANTINED source date mismatch %s (%s / %s)',e.url,e.headline_date,e.published_at)
-        except (requests.RequestException,ValueError) as e:
-            article_failures+=1
-            LOG.warning('Article error %s: %s',u,e)
-    atomic_write(DATA/'source_review.json',{'schemaVersion':1,'lastChecked':utc_stamp(now),
-                                            'rejectedCount':len(review),'items':review[:50]})
-    changed=[]
-    for day,revs in grouped.items():
-        prev=existing.get(day)
-        # News discovery is not guaranteed exhaustive. Never rewrite a day if
-        # only older revisions are visible today; do not overwrite composite
-        # with a less complete partial article.
-        latest=compose(revs)
-        if prev and prev.get('publishedAt','')>latest['publishedAt']:continue
-        if prev and prev.get('publishedAt')==latest['publishedAt']:
-            # Existing composite may have retained partial revisions elsewhere.
+            review.append({'code': 'HEADLINE_DATE_CONFLICT', 'source': e.url,
+                           'headlineDate': e.headline_date, 'publishedAt': e.published_at,
+                           'reason': 'Дата графіка суттєво відрізняється від дати публікації. Потрібна ручна перевірка.'})
+            LOG.warning('QUARANTINED source date mismatch %s (%s / %s)', e.url, e.headline_date, e.published_at)
+        except (requests.RequestException, ValueError, RuntimeError) as e:
+            warnings.append({'code': 'ARTICLE_FETCH_FAILED', 'source': u,
+                             'targetDate': advertised_dates.get(u),
+                             'reason': 'Не вдалося отримати або прочитати публікацію.'})
+            LOG.warning('Article error %s: %s', u, e)
+
+    # Never claim that an absent graph means power is planned all day while
+    # an official publication is unresolved. Publishing a *verified* other
+    # day's graph is nevertheless safe and useful.
+    risk_dates = {now.date().isoformat(), (now.date()+timedelta(days=1)).isoformat()}
+    pending = bool(review or any(w.get('targetDate') is None or w['targetDate'] in risk_dates for w in warnings))
+    changed = []
+    for day, revs in grouped.items():
+        latest = compose(revs)
+        prev = existing.get(day)
+        if prev and prev.get('publishedAt', '') >= latest['publishedAt']:
             continue
         if prev:
-            diffs=[]
-            for q in QUEUE:
-                oldq=prev.get('queues',{}).get(q,{})
-                newq=latest['queues'].get(q,{})
-                if oldq!=newq:diffs.append(q)
-            changed.append({'date':day,'publishedAt':latest['publishedAt'],'source':latest['source'],'queues':diffs})
-        existing[day]=latest
-    # A confirmed news index can legitimately contain no schedule at all.
-    # However, an unresolved/date-conflicted schedule article is NOT evidence
-    # that everyone has power: mark that distinction in the published data.
-    if article_failures:raise RuntimeError(f'{article_failures} schedule article(s) could not be checked; previous data preserved')
-    old_changes=old.get('changes',[])
-    keys={(x.get('date'),x.get('publishedAt')) for x in old_changes}
-    for c in changed:
-        if (c['date'],c['publishedAt']) not in keys:old_changes.append(c)
-    result={'schemaVersion':3,'lastChecked':utc_stamp(now),'reviewPending':bool(review),'source':BASE+'/news',
-            'days':[existing[k] for k in sorted(existing)],'changes':old_changes[-100:]}
-    atomic_write(dest,result)
+            diffs = [q for q in QUEUE if prev.get('queues', {}).get(q, {}) != latest['queues'].get(q, {})]
+            changed.append({'date': day, 'publishedAt': latest['publishedAt'],
+                            'source': latest['source'], 'queues': diffs})
+        existing[day] = latest
+
+    old_changes = old.get('changes', [])
+    keys = {(x.get('date'), x.get('publishedAt')) for x in old_changes}
+    for change in changed:
+        if (change['date'], change['publishedAt']) not in keys:
+            old_changes.append(change)
+
+    result = {'schemaVersion': 3, 'lastChecked': utc_stamp(now),
+              'reviewPending': pending, 'source': BASE + '/news',
+              'days': [existing[k] for k in sorted(existing)],
+              'changes': old_changes[-100:]}
+    # Commit order is important: schedule must be published even when the
+    # diagnostics for another publication are nonempty.
+    atomic_write(dest, result)
+    atomic_write(DATA / 'source_review.json',
+                 {'schemaVersion': 1, 'lastChecked': utc_stamp(now),
+                  'rejectedCount': len(review),
+                  'warningCount': len(warnings),
+                  'items': (review + warnings)[:50]})
+    published = sorted(grouped.keys())
+    LOG.info('Schedule import: %d parsed days, %d warnings, %d date conflicts, published through %s',
+             len(published), len(warnings), len(review), max(existing, default='none'))
+    if pending:
+        LOG.warning('Source requires review; missing-day forecasts are unconfirmed')
     return result
 
 

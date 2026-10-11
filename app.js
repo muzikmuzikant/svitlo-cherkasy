@@ -10,7 +10,7 @@ const PIN='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="c
 const safeJSON=(k,fallback)=>{try{return JSON.parse(localStorage.getItem(k)??'null')??fallback}catch{return fallback}};
 const legacy=safeJSON('svitlo-addresses-v3',safeJSON('svitlo-addresses-v2',[]));
 let addresses=safeJSON(STORE,Array.isArray(legacy)?legacy:[]), prefs=Object.assign({primaryId:null,off:true,on:true,changes:true,tomorrow:true,emergency:true},safeJSON(PREF,{}));
-let pushActive=false, emergency={events:[],lastChecked:null},overrides={schedules:{days:[]},addresses:{},emergency:{events:[]}},data={days:[],changes:[]},index={keys:{},streets:{},localities:{}},active='home',daySelected=null,editId=null,suggestion=null,toastTimeout=null,lastPub=null,pushConfig=null,swRegistration=null,notified=new Set(safeJSON(SEEN,[])),lastRefresh=0,hasCheckedOnce=false,lastDownloadAt=null,lastSyncFailed=false,refreshInFlight=null;
+let pushActive=false, emergency={events:[],lastChecked:null},overrides={schedules:{days:[]},addresses:{},emergency:{events:[]}},data={days:[],changes:[]},index={keys:{},streets:{},localities:{}},active='home',daySelected=null,dayStripStart=null,editId=null,suggestion=null,toastTimeout=null,lastPub=null,pushConfig=null,swRegistration=null,notified=new Set(safeJSON(SEEN,[])),lastRefresh=0,hasCheckedOnce=false,lastDownloadAt=null,lastSyncFailed=false,refreshInFlight=null;
 if(!Array.isArray(addresses))addresses=[];
 const byId=id=>addresses.find(x=>x.id===id);
 const primary=()=>byId(prefs.primaryId)||addresses[0]||null;
@@ -79,7 +79,26 @@ function nextChange(date,queue,minuteNow){
   }
  }return null;
 }
-function nextChangeLabel(change){return clock(change.time)+(change.dayOffset===1?' завтра':'')}
+function nextChangeLabel(change){
+ const day=change.date||shiftDay(today(),change.dayOffset||0);
+ return clock(change.time)+(change.dayOffset===1?' завтра':change.dayOffset===2?' післязавтра':(change.dayOffset>2?' · '+formatDate(day):''));
+}
+// A rolling, date-based strip: on Sunday it includes next Monday rather than
+// stopping at the artificial boundary between calendar weeks.
+function stripDates(start){return Array.from({length:7},(_,i)=>shiftDay(start,i))}
+function stripContains(start,date){return stripDates(start).includes(date)}
+function weekdayShort(date){return ['Нд','Пн','Вт','Ср','Чт','Пт','Сб'][new Date(date+'T12:00:00Z').getUTCDay()]}
+function stripRangeLabel(start){const last=shiftDay(start,6);return `${formatDate(start,{day:'numeric',month:'short'})} — ${formatDate(last,{day:'numeric',month:'short'})}`}
+function showDay(date){
+ daySelected=date;
+ if(!dayStripStart||!stripContains(dayStripStart,date))dayStripStart=date;
+ renderDetail();
+}
+function shiftDayStrip(amount){
+ dayStripStart=shiftDay(dayStripStart||today(),amount*7);
+ daySelected=dayStripStart;
+ renderDetail();
+}
 function statusCopy(state,change,queue,date){
  if(state==='unknown')return {title:'Немає підтверджених даних',detail:queue?'Перевірте актуальність графіка оператора':'Додайте адресу або оберіть підчергу'};
  if(change){const eta=change.minutesUntil;return {
@@ -176,9 +195,22 @@ function renderHome(){
  const add=el('button','add-place-card','+  Додати адресу');add.onclick=()=>openAddressSheet();list.append(add);
 }
 function renderBar(a){const bar=$('overviewBar');bar.replaceChildren();if(!a){const b=el('span','bar-segment unknown');b.style.flex='1';bar.append(b);return}let start=0,v=a[0];for(let i=1;i<=1440;i++){if(i===1440||a[i]!==v){const seg=el('span','bar-segment '+(v===1?'off':v===0?'on':'unknown'));seg.style.flex=String(i-start);seg.title=`${clock(start)}–${clock(i)} · ${v===1?'відключення':v===0?'світло':'немає даних'}`;bar.append(seg);start=i;v=a[i]}}const line=el('span','bar-now');line.style.left=(nowMinutes()/1440*100)+'%';bar.append(line)}
-function navigate(name){if(!['home','detail','updates','settings'].includes(name))return;if(name==='detail'&&!primary()){openAddressSheet();return}active=name;for(const n of ['home','detail','updates','settings'])$(n).hidden=n!==name;document.querySelectorAll('[data-go]').forEach(x=>{if(x.classList.contains('nav-item'))x.classList.toggle('active',x.dataset.go===name)});if(name==='detail'){daySelected=today();renderDetail()}else if(name==='updates')renderUpdates();else if(name==='settings')renderSettings();else renderHome();window.scrollTo({top:0,behavior:'instant'});}
+function navigate(name){if(!['home','detail','updates','settings'].includes(name))return;if(name==='detail'&&!primary()){openAddressSheet();return}active=name;for(const n of ['home','detail','updates','settings'])$(n).hidden=n!==name;document.querySelectorAll('[data-go]').forEach(x=>{if(x.classList.contains('nav-item'))x.classList.toggle('active',x.dataset.go===name)});if(name==='detail'){daySelected=today();dayStripStart=today();renderDetail()}else if(name==='updates')renderUpdates();else if(name==='settings')renderSettings();else renderHome();window.scrollTo({top:0,behavior:'instant'});}
 function renderDetail(){const a=primary();if(!a)return;setText('detailAddress',fullAddress(a));const tToday=timeline(today(),a.queue),st=stateAt(tToday,nowMinutes()),nxt=nextChange(today(),a.queue,nowMinutes());const status=$('detailStatus');status.className='detail-status '+st;status.textContent=statusCopy(st,nxt,a.queue,today()).title;
- const day=daySelected||today();const mon=shiftDay(day,-((new Date(day+'T12:00:00Z').getUTCDay()+6)%7));const root=$('days');root.replaceChildren();for(let i=0;i<7;i++){const d=shiftDay(mon,i),b=el('button','day-choice'+(d===day?' selected':''),['Пн','Вт','Ср','Чт','Пт','Сб','Нд'][i]);b.append(el('b','',String(Number(d.slice(8)))));b.setAttribute('aria-pressed',String(d===day));b.onclick=()=>{daySelected=d;renderDetail()};root.append(b)}const pub=currentDay(day),t=timeline(day,a.queue);setText('detailDayLabel',formatDate(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:t?'Планових відключень не оголошено':'Дані не підтверджені');const grid=$('hourGrid');grid.replaceChildren();
+ const day=daySelected||today();const start=dayStripStart||today();
+ setText('weekRange',stripRangeLabel(start));
+ for(const [element,date] of [['dayToday',today()],['dayTomorrow',shiftDay(today(),1)]]){
+  const button=$(element);button.classList.toggle('active',day===date);button.setAttribute('aria-pressed',String(day===date));
+ }
+ const root=$('days');root.replaceChildren();
+ for(const d of stripDates(start)){
+  const b=el('button','day-choice'+(d===day?' selected':''),weekdayShort(d));
+  b.type='button';b.append(el('b','',String(Number(d.slice(8)))));
+  b.setAttribute('aria-pressed',String(d===day));
+  b.setAttribute('aria-label',formatDate(d,{weekday:'long',day:'numeric',month:'long'}));
+  b.onclick=()=>showDay(d);root.append(b);
+ }
+ const pub=currentDay(day),t=timeline(day,a.queue);setText('detailDayLabel',formatDate(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:t?'Планових відключень не оголошено':'Дані не підтверджені');const grid=$('hourGrid');grid.replaceChildren();
  for(let h=0;h<24;h++){
    let on=0,off=0;
    for(let m=h*60;m<h*60+60;m++){if(t?.[m]===0)on++;if(t?.[m]===1)off++}
@@ -198,7 +230,10 @@ function renderDetail(){const a=primary();if(!a)return;setText('detailAddress',f
    c.setAttribute('aria-label',clock(h*60)+': '+(type==='unknown'?'немає підтверджених даних':type==='mixed'?`за графіком зі світлом ${on} хвилин, без світла ${off} хвилин`:type==='off'?'за графіком немає світла':'за графіком є світло'));
    c.title=c.getAttribute('aria-label');grid.append(c);
  }
- const next=nxt;setText('nextTime',next?nextChangeLabel(next):st==='on'?'Без відключень':'Невідомо');setText('nextDescription',next?`Планове ${next.to===1?'відключення':'відновлення електропостачання'}`:st==='on'?'Подальших відключень у доступному графіку не заплановано':'Точний час не підтверджено');$('articleLink').href=pub?.queueSources?.[a.queue]||pub?.source||'https://www.cherkasyoblenergo.com/news'}
+ const next=nxt;
+ setText('nextTime',next?nextChangeLabel(next):st==='on'?'Не заплановано':'Невідомо');
+ setText('nextDescription',next?`Планове ${next.to===1?'відключення':'відновлення електропостачання'}${next.dayOffset===1?' наступного дня':''}`:
+  st==='on'?'На сьогодні та завтра у підтверджених даних змін не зазначено':'Точний час не підтверджено');$('articleLink').href=pub?.queueSources?.[a.queue]||pub?.source||'https://www.cherkasyoblenergo.com/news'}
 function renderUpdates(){setText('lastCheck',data.lastChecked?fmtStamp(data.lastChecked):'Час перевірки невідомий');setText('updateNote',data.lastChecked?'Це час звіряння з публікаціями оператора, а не час появи нового графіка.':'Перевірте графік безпосередньо на сайті оператора.');const root=$('updateList');root.replaceChildren();const all=[...(data.changes||[]).map(x=>({kind:'change',...x})),...(data.days||[]).map(x=>({kind:'publication',...x}))].sort((a,b)=>String(b.publishedAt).localeCompare(String(a.publishedAt))).slice(0,24);if(!all.length)root.append(el('div','empty-places','Поки немає підтверджених публікацій.'));for(const d of all){const c=el('div','update-card');c.append(el('time','',fmtStamp(d.publishedAt)),el('strong','',d.kind==='change'?`Графік скориговано · ${formatDate(d.date)}`:`Опубліковано графік · ${formatDate(d.date)}`));const meta=el('div','small-source',d.kind==='change'?`Змінені підчерги: ${(d.queues||[]).join(', ')||'не уточнено'}`:`Редакцій: ${d.revisions||1}`);c.append(meta);const link=el('a','', 'Офіційна публікація ↗');link.href=d.source||'https://www.cherkasyoblenergo.com/news';link.target='_blank';link.rel='noopener';c.append(link);root.append(c)}}
 function renderSettings(){for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).checked=!!prefs[key];const connected=!!pushConfig?.apiBase&&!!pushConfig?.publicKey;setText('pushHeadline','Сповіщення');setText('pushDescription',connected?'Отримуйте нагадування про відключення та зміни графіків, навіть коли застосунок закритий.':'Наразі нагадування доступні тільки під час використання застосунку.');setText('enableNotifications',connected?'Увімкнути сповіщення':'Дозволити нагадування');$('disableNotifications').hidden=!connected}
 function fillQueueSelect(){const root=$('manualQueue');root.replaceChildren(new Option('Оберіть підчергу',''),...QUEUES.map(q=>new Option(q,q)))}
@@ -430,6 +465,10 @@ async function disableNotifications(){
 async function enableNotifications(){if(!('Notification' in window)){flash('Цей браузер не підтримує сповіщення');return}if(Notification.permission==='denied'){flash('Дозвольте сповіщення у налаштуваннях iPhone');return}const granted=await Notification.requestPermission();if(granted!=='granted'){flash('Дозвіл на сповіщення не надано');return}if(pushConfig){try{await updatePushSubscription();flash('Сповіщення увімкнено')}catch(e){console.warn(e);flash('Не вдалося ввімкнути сповіщення. Спробуйте пізніше')}}else flash('Нагадування увімкнено для відкритого застосунку');renderSettings()}
 // Event wiring
 for(const b of document.querySelectorAll('[data-go]'))b.addEventListener('click',()=>navigate(b.dataset.go));
+$('weekPrev').onclick=()=>shiftDayStrip(-1);
+$('weekNext').onclick=()=>shiftDayStrip(1);
+$('dayToday').onclick=()=>showDay(today());
+$('dayTomorrow').onclick=()=>showDay(shiftDay(today(),1));
 $('syncNow').onclick=()=>refreshData(true);$('refreshTop').onclick=()=>refreshData(true);$('refreshDetail').onclick=()=>refreshData(true);$('manualRefresh').onclick=()=>refreshData(true);$('primaryPicker').onclick=()=>addresses.length?openPicker():openAddressSheet();$('addFromHome').onclick=()=>openAddressSheet();$('addFromSettings').onclick=()=>openAddressSheet();$('editActive').onclick=()=>openAddressSheet(primary());$('openDetail').onclick=()=>navigate('detail');
 $('closeSheet').onclick=()=>closeSheet($('addressSheet'));$('closePlaces').onclick=()=>closeSheet($('placesSheet'));$('sheetAddPlace').onclick=()=>{closeSheet($('placesSheet'));openAddressSheet()};
 for(const dialog of [$('addressSheet'),$('placesSheet')])dialog.addEventListener('close',unlockSheet);
