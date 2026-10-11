@@ -2,11 +2,8 @@ name: Update official blackout data
 on:
   workflow_dispatch:
   schedule:
-    # UTC: 18:00–00:59 Kyiv in summer / 17:00–23:59 in winter, every 5 min.
-    # GitHub scheduled jobs may start late; these are best-effort frequencies.
-    - cron: '3-58/5 15-21 * * *'
-    # Remaining hours: every 15 min, offset to avoid the top-of-hour surge.
-    - cron: '7-52/15 0-14,22-23 * * *'
+    # Run every 5 minutes, all day (UTC). GitHub Actions can be delayed.
+    - cron: '2-57/5 * * * *'
   push:
     paths:
       - 'scripts/update_data.py'
@@ -30,7 +27,7 @@ jobs:
           cache: pip
       - run: python -m pip install -r requirements.txt pytest
       - name: Validate parser before fetching
-        run: python -m pytest -q tests/test_date_integrity.py tests/test_schedule_resilience.py
+        run: python -m pytest -q tests/test_date_integrity.py tests/test_schedule_resilience.py tests/test_frequent_edits_v714.py
       - name: Import official schedules
         id: schedule
         run: python scripts/update_data.py --schedules-only
