@@ -28,15 +28,15 @@ def test_invalid_intervals_rejected():
     ranges={q:'08:00 - 10:00' for q in Q};ranges['3.1']='18:30 - 18:00'
     assert parse_article(html(ranges=ranges),'https://www.cherkasyoblenergo.com/media/ok',None) is None
 
-def test_revisions_do_not_rewrite_past():
+def test_latest_revisions_replace_the_full_day():
     first=parse_article(html('9 жовтня','08.10.2026 20:59',ranges={q:'05:00 - 07:00, 19:00 - 21:00' for q in Q}), 'https://www.cherkasyoblenergo.com/media/a',None)
     second=parse_article(html('9 жовтня','09.10.2026 16:29',ranges={q:'18:30 - 20:30' for q in Q}), 'https://www.cherkasyoblenergo.com/media/b',None)
-    new=compose([first,second]);assert new['queues']['2.1']['off']==[['05:00','07:00'],['18:30','20:30']]
+    new=compose([first,second]);assert new['queues']['2.1']['off']==[['18:30','20:30']]
     assert new['queues']['2.1']['knownFrom']=='00:00'
 
-def test_day_unknown_before_first_publication():
+def test_latest_article_is_authoritative_for_full_date():
     v=parse_article(html('9 жовтня','09.10.2026 16:29'),'https://www.cherkasyoblenergo.com/media/ok',None)
-    o=compose([v]);assert o['queues']['1.1']['knownFrom']=='16:29'
+    o=compose([v]);assert o['queues']['1.1']['knownFrom']=='00:00'
 
 def test_extract_explicit_city_address_only():
     s='вул. Берегова 1а, 1А, 4, 5, 12, вул. Благовісна 436, 442, 547, б-р. Шевченка 411'
@@ -62,11 +62,12 @@ def test_labeled_queue_pdf_roman_numbers():
     assert result['1.1'].endswith('1І.pdf')
     assert result['1.2'].endswith('1ІІ.pdf')
 
-def test_latest_partial_revision_leaves_omitted_queue_untouched():
+def test_latest_partial_revision_resets_omitted_queues_to_on():
     a=parse_article(html(date='10 жовтня'),'https://www.cherkasyoblenergo.com/media/a',None)
     b=parse_article(html(date='10 жовтня',ts='10.10.2026 12:00',ranges={'1.1':'16:00 - 18:00'}),'https://www.cherkasyoblenergo.com/media/b',None)
-    c=compose([a,b]);assert c['queues']['1.2']['off']==[['08:00','10:00'],['20:00','22:00']]
-    assert c['queues']['1.1']['off']==[['08:00','10:00'],['16:00','18:00']]
+    c=compose([a,b]);assert c['queues']['1.2']['off']==[]
+    assert c['queues']['1.1']['off']==[['16:00','18:00']]
+    assert '1.2' in c['noScheduledOutages']
 
 
 def test_city_number_list_variant():

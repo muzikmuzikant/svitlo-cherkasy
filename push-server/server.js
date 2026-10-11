@@ -101,9 +101,9 @@ async function job(){
     if(title)await send(record,title,body,`${prefix}:emergency:${event.status}:${hash(event.id||event.source)}:${event.publishedAt}`,{ttl:3600,urgency:'high'});
    }
    if(pref.changes)for(const change of (source.changes||[]).slice(-30)){
-    const date=Date.parse(change.publishedAt||''),age=timestamp-date;
+    const date=Date.parse(change.detectedAt||change.publishedAt||''),age=timestamp-date;
     if(!Array.isArray(change.queues)||!change.queues.includes(q)||change.date<now.date||!Number.isFinite(date)||age<0||age>=65*60000)continue;
-    await send(record,'Світло: графік змінено',`Оновлено графік для підчерги ${q} на ${change.date}.`,`${prefix}:change:${change.date}:${change.publishedAt}`);
+    await send(record,'Світло: графік змінено',`Оновлено графік для підчерги ${q} на ${change.date}.`,`${prefix}:change:${change.date}:${change.revisionId||change.publishedAt}`);
    }
   });
   const cutoff=timestamp-14*86400_000;

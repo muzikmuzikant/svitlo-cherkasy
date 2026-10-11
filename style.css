@@ -80,16 +80,3 @@ html{scrollbar-width:none;overflow-x:clip;overscroll-behavior-x:none;scroll-beha
 .calendar-shortcuts button{border:1px solid #e5edf6;border-radius:12px;background:#f6f9fe;color:#56708e;font-size:12px;font-weight:740;padding:8px 14px;min-height:35px}
 .calendar-shortcuts button.active{color:#1d69d7;background:#e9f2ff;border-color:#b7d2ff}
 @media(max-width:360px){.calendar-shortcuts button{padding:7px 11px}.calendar-period{font-size:12px}.calendar-arrows button{width:31px}}
-
-/* v7.1.5: address search that never promises unknown house mappings */
-.house-coverage{margin:10px 0 3px;padding:10px 12px;border-radius:13px;background:#ecf5ff;color:#316498;font-size:12px;line-height:1.55}
-.house-coverage.no-house-list{background:#f1f4f9;color:#526980}
-.house-choices{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
-.house-choices-title{width:100%;color:#526881;font-weight:750;font-size:12px}
-.house-choice{min-width:54px;min-height:43px;border:1px solid #bcd4fc;border-radius:13px;background:#fff;color:#245aab;padding:9px 12px;font-size:14px;font-weight:720}
-.house-choice:focus-visible,.possible-queue:focus-visible{outline:3px solid #74aafe;outline-offset:2px}
-.house-choice:active{background:#e4efff}
-.house-choices-more{flex-basis:100%;font-size:11px;line-height:1.4;color:#78879a}
-.possible-queues:not([hidden]){display:flex;flex-wrap:wrap;gap:8px}
-.possible-title{width:100%;margin-bottom:0;font-weight:750;color:#445d78;font-size:12px}
-@media(max-width:359px){.sheet-top{padding-left:16px;padding-right:16px}.sheet-inner{padding-left:16px;padding-right:16px}.field-label{flex-wrap:wrap;gap:4px}.house-choice{min-width:46px}}

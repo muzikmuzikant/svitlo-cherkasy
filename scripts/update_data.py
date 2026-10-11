@@ -4,6 +4,7 @@ Confirmed omissions mean no planned outages; source failures never do.
 """
 from __future__ import annotations
 import argparse
+import hashlib
 import json
 import logging
 import re
@@ -48,7 +49,8 @@ LOG = logging.getLogger('svitlo')
 
 
 def fetch(session,url,binary=False):
-    r=session.get(url,timeout=35,headers={'User-Agent':'SvitloCherkasy/6.0 public schedule aggregator'})
+    r=session.get(url,timeout=35,headers={'User-Agent':'SvitloCherkasy/7.1 public schedule aggregator',
+                                     'Cache-Control':'no-cache','Pragma':'no-cache'})
     r.raise_for_status()
     return r.content if binary else r.text
 
@@ -127,40 +129,41 @@ def parse_article(html,url,reference=None):
     return {'date':day,'publishedAt':pub.isoformat(timespec='minutes'),'source':url,'queues':queues}
 
 
-def compose(revisions):
-    """Merge revisions without claiming absent queues are 'on'.
-    Prior history is retained until later publication cutover, and omitted queues
-    keep previous known plan instead of turning green.
+def plan_fingerprint(queues):
+    """Stable fingerprint of the actual forecast, not the publication timestamp.
+
+    Operator staff may edit the *same* news article repeatedly without changing
+    its displayed publication time. Cosmetic HTML edits should not create noise.
     """
-    revs=sorted(revisions,key=lambda x:x['publishedAt'])
-    if not revs:return None
-    day=revs[-1]['date']
-    values={q:[-1]*1440 for q in QUEUE}
-    for idx,rev in enumerate(revs):
-        pub=datetime.fromisoformat(rev['publishedAt'])
-        cutoff=0 if pub.date().isoformat()<day else pub.hour*60+pub.minute
-        if cutoff>=1440:continue
-        # In the first daily publication, omitted subqueues have no planned
-        # outages. Later partial corrections keep unmentioned queues unchanged.
-        entries={q:rev['queues'].get(q,[]) for q in QUEUE} if idx==0 else rev['queues']
-        for q,spans in entries.items():
-            if q not in values:continue
-            arr=[0]*1440
-            for s,e in spans:arr[s:e]=[1]*(e-s)
-            values[q][cutoff:]=arr[cutoff:]
-    result={}
+    normalized = {q: [list(span) for span in queues.get(q, [])] for q in QUEUE}
+    raw = json.dumps(normalized, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+    return hashlib.sha256(raw.encode('utf-8')).hexdigest()[:20]
+
+
+def compose(revisions):
+    """Newest official publication is the current FULL-DAY plan.
+
+    Omitted queues in *every* edition, including later corrections, mean no
+    planned outages for those queues. Never carry deleted outages from an older
+    edition into the current forecast. Revision history remains in metadata.
+    """
+    revs = sorted(revisions, key=lambda r: (r['publishedAt'], r['source']))
+    if not revs:
+        return None
+    latest = revs[-1]
+    queues = {}
     for q in QUEUE:
-        arr=values[q]
-        known=next((i for i,v in enumerate(arr) if v>=0),1440)
-        intervals=[];start=None
-        for i,v in enumerate(arr+[0]):
-            if v==1 and start is None:start=i
-            if v!=1 and start is not None:intervals.append([to_time(start),to_time(i)]);start=None
-        # even if knownFrom=24:00, JS treats this as unknown for whole day.
-        result[q]={'knownFrom':to_time(known),'off':intervals}
-    return {'date':day,'publishedAt':revs[-1]['publishedAt'],'source':revs[-1]['source'],
-            'verified':True,'queues':result,'revisions':len(revs),
-            'publications':[{'publishedAt':r['publishedAt'],'source':r['source'],'queues':sorted(r['queues'])} for r in revs]}
+        periods = latest['queues'].get(q, [])
+        queues[q] = {'knownFrom': '00:00',
+                     'off': [[to_time(start), to_time(end)] for start, end in periods]}
+    return {'date': latest['date'], 'publishedAt': latest['publishedAt'],
+            'source': latest['source'], 'verified': True,
+            'queues': queues, 'revisions': len(revs),
+            'planFingerprint': plan_fingerprint(latest['queues']),
+            'noScheduledOutages': [q for q in QUEUE if q not in latest['queues']],
+            'publications': [{'publishedAt': r['publishedAt'],
+                              'source': r['source'], 'queues': sorted(r['queues'])}
+                             for r in revs]}
 
 
 def parse_news_links(html):
@@ -253,19 +256,30 @@ def update_schedules(session, now=None):
     for day, revs in grouped.items():
         latest = compose(revs)
         prev = existing.get(day)
-        if prev and prev.get('publishedAt', '') >= latest['publishedAt']:
+        # A newer previously verified edition must not be rolled back if an
+        # earlier article is temporarily the only one visible in the news list.
+        if prev and prev.get('publishedAt', '') > latest['publishedAt']:
             continue
         if prev:
             diffs = [q for q in QUEUE if prev.get('queues', {}).get(q, {}) != latest['queues'].get(q, {})]
-            changed.append({'date': day, 'publishedAt': latest['publishedAt'],
-                            'source': latest['source'], 'queues': diffs})
+            # Same URL and same publication minute may contain different hours!
+            # Keep lastChecked heartbeat for no-op checks, but publish a true edit.
+            if not diffs and prev.get('publishedAt') == latest['publishedAt'] and prev.get('source') == latest['source']:
+                continue
+            if diffs:
+                changed.append({'date': day, 'publishedAt': latest['publishedAt'],
+                                'detectedAt': utc_stamp(now),
+                                'revisionId': latest['planFingerprint'],
+                                'source': latest['source'], 'queues': diffs})
         existing[day] = latest
 
     old_changes = old.get('changes', [])
-    keys = {(x.get('date'), x.get('publishedAt')) for x in old_changes}
+    keys = {(x.get('date'), x.get('revisionId') or x.get('publishedAt')) for x in old_changes}
     for change in changed:
-        if (change['date'], change['publishedAt']) not in keys:
+        identity = (change['date'], change['revisionId'])
+        if identity not in keys:
             old_changes.append(change)
+            keys.add(identity)
 
     result = {'schemaVersion': 3, 'lastChecked': utc_stamp(now),
               'reviewPending': pending, 'source': BASE + '/news',

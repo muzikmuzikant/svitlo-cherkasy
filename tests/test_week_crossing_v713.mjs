@@ -35,8 +35,7 @@ test('Nearest change labels next-week Monday as tomorrow, not hidden by week bou
 });
 test('Poll more often at source but GitHub site deploy is gated',()=>{
  const wf=readFileSync(join(root,'.github/workflows/update.yml'),'utf8');
- assert.match(wf,/3-58\/5 15-21/);
- assert.match(wf,/7-52\/15 0-14,22-23/);
+ assert.match(wf,/2-57\/5 \* \* \*/);
  assert.match(wf,/publish_gate\.py/);
  assert.match(wf,/steps\.gate\.outputs\.publish == 'true'/);
 });
