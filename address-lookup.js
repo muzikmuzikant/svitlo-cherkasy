@@ -12,7 +12,21 @@
       .replace(/^(вул(?:иця)?\.?|пров(?:улок|\.)?|просп(?:ект)?\.?|пр-т\.?|б-р\.?|бульвар|узвіз)\s+/i,'')
       .replace(/[^\p{L}\p{N}/]+/gu,'');
   }
-  function houseKey(value) { return normalize(value); }
+  // Official PDFs normally use Cyrillic suffixes (12-А), while phone keyboards
+  // frequently insert Latin lookalikes (12-A). Do not conflate real distinct
+  // letters or different fractions of the same building.
+  function houseKey(value) {
+    const lookalikes={a:'а',c:'с',e:'е',h:'н',i:'і',k:'к',m:'м',o:'о',p:'р',t:'т',x:'х',y:'у'};
+    return normalize(String(value||'').replace(/^\s*(?:буд(?:инок|\.)?|№|#)\s*/i,''))
+      .replace(/[acehikmoptxy]/g,c=>lookalikes[c]||c);
+  }
+  function knownHouses(idx,streetKey){
+    const prefix=streetKey+'|';
+    return Object.entries(idx?.keys||{})
+      .filter(([key,queues])=>key.startsWith(prefix)&&key.length>prefix.length&&validQueues(queues).length)
+      .map(([key,queues])=>({number:key.slice(prefix.length),queues:validQueues(queues)}))
+      .sort((a,b)=>a.number.localeCompare(b.number,'uk-UA',{numeric:true,sensitivity:'base'}));
+  }
   function kindOf(street) {
     const match=/^(пров(?:улок|\.)?|вул(?:иця)?\.?|просп(?:ект)?\.?|пр-т\.?|б-р\.?|бульвар|узвіз)\s+/i.exec(String(street||''));
     if (!match) return null;
@@ -56,23 +70,26 @@
     if(matches.length>1)return {status:'ambiguous'};
     const [key,display]=matches[0];
     const streetOnly=validQueues(idx.streetQueues?.[key]);
-    const houses=Object.entries(idx.keys||{}).filter(([address])=>address.startsWith(key+'|'));
-    const houseQueues=validQueues(houses.flatMap(([,qs])=>qs||[]));
+    const houses=knownHouses(idx,key);
+    const houseQueues=validQueues(houses.flatMap(x=>x.queues));
     const options=validQueues([...streetOnly,...houseQueues]);
-    const exact=house ? validQueues(idx.keys?.[`${key}|${houseKey(house)}`]) : [];
-    // An exact numbered address outranks unnumbered street hints. Conflicts
-    // for the SAME exact house must still be presented rather than guessed.
-    if(exact.length===1)return {status:'exact',queue:exact[0],street:display,method:'automatic'};
-    if(exact.length>1)return {status:'possible',queues:exact,street:display,reason:'house-conflict'};
-    // No house-specific listings contradict the one explicitly street-wide queue:
-    // show the queue immediately, without forcing users to type a house.
+    const exact=house ? validQueues(houses.filter(x=>houseKey(x.number)===houseKey(house)).flatMap(x=>x.queues)) : [];
+    const base={street:display,streetKey:key,queues:options,knownHouses:houses,hasHouseData:houses.length>0};
+    // Only an explicit house hit, not a coincidental street match, can confirm
+    // the queue on a street with multiple possible queues.
+    if(exact.length===1)return {...base,status:'exact',queue:exact[0],method:'automatic'};
+    if(exact.length>1)return {...base,status:'possible',queues:exact,reason:'house-conflict'};
+    // Preserve existing single-street automatic resolution where no other
+    // known house contradicts the street-wide record.
     if(streetOnly.length===1 && houseQueues.every(q=>q===streetOnly[0]))
-      return {status:'street',queue:streetOnly[0],street:display,method:'street-auto'};
-    if(options.length>1)return {status:'possible',queues:options,street:display,reason:'multiple'};
-    if(houseQueues.length && !streetOnly.length)
-      return {status:house?'nohouse':'needhouse',street:display,queues:houseQueues};
-    if(streetOnly.length>1)return {status:'possible',queues:options,street:display,reason:'multiple'};
-    return {status:'nohouse',street:display,queues:options};
+      return {...base,status:'street',queue:streetOnly[0],method:'street-auto'};
+    if(options.length>1){
+      return {...base,status:'possible',reason:houses.length?(house?'house-unlisted':'needs-house'):'no-house-index'};
+    }
+    if(houses.length&&!streetOnly.length)
+      return {...base,status:house?'nohouse':'needhouse'};
+    return {...base,status:'nohouse',reason:house?'house-unlisted':'no-address-data'};
   }
-  return {normalize,houseKey,kindOf,streetMatches,suggest,resolve};
+
+  return {normalize,houseKey,kindOf,streetMatches,suggest,knownHouses,resolve};
 });

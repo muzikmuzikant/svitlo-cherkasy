@@ -246,25 +246,62 @@ function findQueue(){
 }
 function checkLookup(){
  const r=findQueue(),hint=$('lookupFeedback'),manual=$('manualLookup'),possible=$('possibleQueues');
- hint.className='lookup-feedback'+(['exact','street'].includes(r.status)?' found':r.status==='incomplete'?'':' warn');
+ const house=$('house').value.trim(),known=r.knownHouses||[];
+ const isAutomatic=['exact','street'].includes(r.status);
+ hint.className='lookup-feedback'+(isAutomatic?' found':r.status==='incomplete'?'':' warn');
  const list=(r.queues||[]).join(', ');
  const messages={
-  incomplete:'Оберіть населений пункт і вулицю. Номер будинку вводити необов’язково.',
-  unavailable:'Для цього населеного пункту наразі немає адресного переліку. Якщо ви знаєте підчергу, можете вказати її вручну.',
-  ambiguous:'Знайдено декілька вулиць із такою назвою. Виберіть точну вулицю зі списку підказок.',
-  nostreet:'Поки не знайшли цю вулицю в переліку. Спробуйте підказки або вкажіть відому вам підчергу.',
-  needhouse:'Оператор указав окремі будинки цієї вулиці. Номер допоможе знайти точну підчергу, але ви можете вказати відому вам підчергу вручну.',
-  nohouse:'Для введеної адреси немає однозначного запису. За потреби вкажіть підчергу вручну.',
-  exact:`За офіційним переліком для цієї адреси: підчерга ${r.queue}.`,
-  street:`За переліком вулиць: підчерга ${r.queue}. Номер будинку вводити не потрібно.`,
-  possible:`Для цієї вулиці вказано декілька підчерг: ${list}. ${r.reason==='house-conflict'?'Цей номер будинку є у різних записах. ':'За можливості уточніть номер будинку.'}Оберіть свою підчергу.`
+  incomplete:'Виберіть населений пункт та вулицю — покажемо доступні варіанти.',
+  unavailable:'У цьому населеному пункті поки немає адресного переліку. Підчергу можна додати вручну.',
+  ambiguous:'Є кілька вулиць із такою назвою. Виберіть потрібну з підказок вище.',
+  nostreet:'Такої вулиці немає в завантаженому переліку. Перевірте назву або вкажіть підчергу самостійно.',
+  needhouse:'Є підтверджені номери будинків. Введіть свій номер або виберіть його зі списку нижче.',
+  nohouse:house&&known.length?'Будинок '+house+' відсутній у доступному списку точних адрес. Підчергу не визначено автоматично.':'Для цієї адреси немає однозначного запису. Виберіть підчергу вручну.',
+  exact:`Будинок ${house}: підтверджена підчерга ${r.queue} за адресним переліком.`,
+  street:`Для цієї вулиці вказано підчергу ${r.queue}; суперечливих будинкових записів не знайдено.`,
+  possible:r.reason==='house-conflict'?`Будинок ${house} згадується в різних підчергах: ${list}. Звірте дані з оператором.`:
+    r.reason==='no-house-index'?`${house?'Будинок '+house+': точного запису немає. ':''}Для вулиці можливі підчерги ${list}. У джерелі немає розподілу за номерами будинків. Виберіть підчергу нижче.`:
+    r.reason==='house-unlisted'?`Будинку ${house} немає серед точних записів цієї вулиці. Можливі підчерги: ${list}. Виберіть підтверджену вами підчергу.`:
+    `Для вулиці є підчерги ${list}. Уточніть номер будинку, щоб перевірити точний збіг, або виберіть відому підчергу.`
  };
  hint.textContent=messages[r.status]||'Не вдалося визначити підчергу.';
+ const coverage=$('houseCoverage'),choices=$('houseChoices');
+ choices.replaceChildren();choices.hidden=true;coverage.hidden=true;
+ if(r.streetKey&&r.status!=='exact'){
+  coverage.hidden=false;
+  if(!known.length){
+   coverage.hidden=r.reason==='no-house-index';
+   coverage.className='house-coverage no-house-list';
+   coverage.textContent=house?'Для будинку '+house+' автоматичне визначення недоступне: номери будинків у джерелі не вказані.':'Номерів будинків у джерелі немає. Не потрібно підбирати номер: оберіть підчергу або звірте адресу з оператором.';
+  }else{
+   coverage.className='house-coverage has-house-list';
+   coverage.textContent=`У переліку є ${known.length} ${known.length===1?'адреса':'адрес із номерами'} на цій вулиці. ${house?'Перевіряємо введений номер.':'Почніть вводити номер або виберіть нижче.'}`;
+   const needle=SvitloAddressLookup.houseKey(house);
+   const found=known.filter(x=>!needle||SvitloAddressLookup.houseKey(x.number).startsWith(needle));
+   if(found.length){
+    choices.hidden=false;
+    const label=el('div','house-choices-title',house?'Знайдені номери з переліку':'Номери з офіційного переліку');
+    choices.append(label);
+    for(const item of found.slice(0,12)){
+     const b=el('button','house-choice',item.number);
+     b.type='button';b.title='Підчерга: '+item.queues.join(', ');
+     b.setAttribute('aria-label','Будинок '+item.number+', підчерга '+item.queues.join(', '));
+     b.onclick=()=>{$('house').value=item.number;checkLookup()};
+     choices.append(b);
+    }
+    if(found.length>12)choices.append(el('div','house-choices-more',`Ще ${found.length-12} номерів — введіть свій номер для пошуку`));
+   }
+  }
+ }
  manual.hidden=['incomplete','exact','street'].includes(r.status);
+ $('manualExplanation').textContent=r.reason==='no-house-index'
+  ?'Номери будинків у джерелі відсутні. Виберіть свою підчергу зі списку можливих або перевірте її на сайті оператора.'
+  :r.reason==='house-unlisted'?'Самого будинку немає в точному переліку. Не обирайте підчергу навмання — звірте її з оператором.'
+  :'Оберіть підчергу, яку ви перевірили. Якщо не знаєте, скористайтеся офіційним пошуком.';
  possible.replaceChildren();
  if(r.status==='possible'&&r.queues?.length){
    possible.hidden=false;
-   possible.append(el('div','possible-title','Підчерги з опублікованого переліку:'));
+   possible.append(el('div','possible-title','Можливі підчерги — натисніть свою:'));
    for(const q of r.queues){
      const b=el('button','possible-queue'+($('manualQueue').value===q?' selected':''),`Підчерга ${q}`);
      b.type='button';b.setAttribute('aria-pressed',String($('manualQueue').value===q));
@@ -272,14 +309,16 @@ function checkLookup(){
    }
  }else possible.hidden=true;
  const chosen=$('manualQueue').value;
- $('saveAddress').disabled=!(r.status==='exact'||r.status==='street'||
-   (r.status!=='incomplete'&&town().trim()&&$('street').value.trim()&&QUEUES.includes(chosen)));
+ const allowed=r.status!=='incomplete'&&town().trim()&&$('street').value.trim();
+ $('saveAddress').disabled=!(isAutomatic||(allowed&&QUEUES.includes(chosen)));
+ $('saveAddress').textContent=isAutomatic?'Зберегти адресу · '+r.queue:QUEUES.includes(chosen)?'Зберегти адресу · '+chosen:'Оберіть підчергу для збереження';
  return r;
 }
+
 function suggestions(){
  const root=$('streetSuggestions');root.replaceChildren();
  const matches=SvitloAddressLookup.suggest(localIndex(),$('street').value);
- root.hidden=!matches.length;
+ root.hidden=!matches.length||SvitloAddressLookup.streetMatches(localIndex(),$('street').value).length===1;
  for(const [key,name] of matches){const b=el('button','',name);b.type='button';b.onclick=()=>{
    $('street').value=name;suggestion={key,label:name};root.hidden=true;checkLookup();
  };root.append(b)}
@@ -397,7 +436,7 @@ async function refreshData(manual=false){
  try{return await refreshInFlight}finally{refreshInFlight=null;if(refreshButton)refreshButton.disabled=false}
 }
 function notify(title,body,key){if(pushActive||notified.has(key)||!('Notification' in window)||Notification.permission!=='granted')return;notified.add(key);localStorage.setItem(SEEN,JSON.stringify([...notified].slice(-400)));navigator.serviceWorker?.ready.then(r=>r.showNotification(title,{body,icon:'./assets/icon-192-v673.png',tag:key})).catch(()=>{try{new Notification(title,{body})}catch{}})}
-function announceChanges(previous,current){if(!prefs.changes||!previous?.lastChecked)return;const a=primary();if(!a?.queue)return;for(const c of current.changes||[])if(c.queues?.includes(a.queue)&&!previous.changes?.some(x=>x.date===c.date&&x.publishedAt===c.publishedAt)){notify('Світло: графік змінено',`Оновлена підчерга ${a.queue} на ${formatDate(c.date)}.`, `change:${c.date}:${c.publishedAt}:${a.queue}`)}}
+function announceChanges(previous,current){if(!prefs.changes||!previous?.lastChecked)return;const a=primary();if(!a?.queue)return;for(const c of current.changes||[])if(c.queues?.includes(a.queue)&&!previous.changes?.some(x=>x.date===c.date&&(x.revisionId||x.publishedAt)===(c.revisionId||c.publishedAt))){notify('Світло: графік змінено',`Оновлена підчерга ${a.queue} на ${formatDate(c.date)}.`, `change:${c.date}:${c.revisionId||c.publishedAt}:${a.queue}`)}}
 function checkNotifications(){
  if(!('Notification' in window)||Notification.permission!=='granted')return;
  // Regional emergency notices are useful even when there is no known schedule.
@@ -472,7 +511,7 @@ $('dayTomorrow').onclick=()=>showDay(shiftDay(today(),1));
 $('syncNow').onclick=()=>refreshData(true);$('refreshTop').onclick=()=>refreshData(true);$('refreshDetail').onclick=()=>refreshData(true);$('manualRefresh').onclick=()=>refreshData(true);$('primaryPicker').onclick=()=>addresses.length?openPicker():openAddressSheet();$('addFromHome').onclick=()=>openAddressSheet();$('addFromSettings').onclick=()=>openAddressSheet();$('editActive').onclick=()=>openAddressSheet(primary());$('openDetail').onclick=()=>navigate('detail');
 $('closeSheet').onclick=()=>closeSheet($('addressSheet'));$('closePlaces').onclick=()=>closeSheet($('placesSheet'));$('sheetAddPlace').onclick=()=>{closeSheet($('placesSheet'));openAddressSheet()};
 for(const dialog of [$('addressSheet'),$('placesSheet')])dialog.addEventListener('close',unlockSheet);
-$('settlement').onchange=()=>{$('manualQueue').value='';$('customSettlement').hidden=$('settlement').value!=='Інше';suggestion=null;suggestions();checkLookup()};$('customSettlement').oninput=()=>{$('manualQueue').value='';checkLookup()};$('street').oninput=()=>{$('manualQueue').value='';suggestion=null;suggestions();checkLookup()};$('house').oninput=()=>{$('manualQueue').value='';checkLookup()};$('manualQueue').onchange=checkLookup;$('addressForm').onsubmit=saveAddress;$('deleteAddress').onclick=deleteAddress;$('goOfficial').onclick=officialOpen;
+$('settlement').onchange=()=>{$('manualQueue').value='';$('customSettlement').hidden=$('settlement').value!=='Інше';suggestion=null;suggestions();checkLookup()};$('customSettlement').oninput=()=>{$('manualQueue').value='';checkLookup()};$('street').oninput=()=>{$('manualQueue').value='';suggestion=null;suggestions();checkLookup()};$('house').onfocus=()=>{$('streetSuggestions').hidden=true};$('house').oninput=()=>{$('streetSuggestions').hidden=true;checkLookup()};$('manualQueue').onchange=checkLookup;$('addressForm').onsubmit=saveAddress;$('deleteAddress').onclick=deleteAddress;$('goOfficial').onclick=officialOpen;
 for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).onchange=e=>{prefs[key]=e.target.checked;savePrefs();updatePushSubscription().catch(console.warn)};
 $('enableNotifications').onclick=enableNotifications;$('disableNotifications').onclick=disableNotifications;
 fillQueueSelect();render();refreshData();getPushConfig();
