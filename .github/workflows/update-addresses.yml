@@ -2,8 +2,8 @@ name: Refresh official address queues
 on:
   workflow_dispatch:
   schedule:
-    # Weekly: PDF address lists change less often than daily schedules.
-    - cron: '17 3 * * 1'
+    # Daily address source check. Only verified changes are committed.
+    - cron: '17 3 * * *'
 permissions:
   contents: write
 concurrency:
@@ -20,6 +20,8 @@ jobs:
           python-version: '3.12'
           cache: pip
       - run: python -m pip install -r requirements.txt pytest
+      - name: Validate address parser and safety guards
+        run: python -m pytest -q tests/test_district_import.py tests/test_published_fallback.py
       - name: Refresh official PDF address lists
         run: python scripts/update_data.py --addresses-only
       - name: Commit verified addresses

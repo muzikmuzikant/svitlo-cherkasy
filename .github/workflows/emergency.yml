@@ -2,7 +2,7 @@ name: Refresh emergency bulletins
 on:
   workflow_dispatch:
   schedule:
-    - cron: '4,19,34,49 * * * *'
+    - cron: '4-59/5 * * * *'
 permissions:
   contents: write
 concurrency:
@@ -20,7 +20,11 @@ jobs:
       - run: python -m pip install -r requirements.txt
       - name: Check official operator emergency notices
         run: python scripts/update_data.py --emergency-only
+      - name: Decide whether to publish a new bulletin or heartbeat
+        id: gate
+        run: python -m scripts.emergency_gate >> "$GITHUB_OUTPUT"
       - name: Publish verified changes
+        if: steps.gate.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
