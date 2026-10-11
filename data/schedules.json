@@ -1,8 +1,7 @@
 {
   "schemaVersion": 3,
-  "lastChecked": "2026-10-11T21:19:06+03:00",
-  "reviewPending": false,
   "source": "https://www.cherkasyoblenergo.com/news",
+  "lastChecked": "2026-10-11T21:26:00+03:00",
   "days": [
     {
       "date": "2026-10-09",
@@ -318,7 +317,7 @@
     },
     {
       "date": "2026-10-11",
-      "publishedAt": "2026-10-10T19:53+03:00",
+      "publishedAt": "2026-10-10T19:53:00+03:00",
       "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-11-zhovtnya?lang=uk",
       "verified": true,
       "queues": {
@@ -427,12 +426,13 @@
         }
       },
       "revisions": 1,
+      "planFingerprint": "977cd3cd5a634b18198d",
       "noScheduledOutages": [
         "2.1"
       ],
       "publications": [
         {
-          "publishedAt": "2026-10-10T19:53+03:00",
+          "publishedAt": "2026-10-10T19:53:00+03:00",
           "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-11-zhovtnya?lang=uk",
           "queues": [
             "1.1",
@@ -452,21 +452,48 @@
     },
     {
       "date": "2026-10-12",
-      "publishedAt": "2026-10-11T19:42+03:00",
+      "publishedAt": "2026-10-11T19:42:00+03:00",
       "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-12-zhovtnya?lang=uk",
       "verified": true,
       "queues": {
         "1.1": {
           "knownFrom": "00:00",
-          "off": []
+          "off": [
+            [
+              "06:00",
+              "08:00"
+            ],
+            [
+              "16:00",
+              "18:00"
+            ]
+          ]
         },
         "1.2": {
           "knownFrom": "00:00",
-          "off": []
+          "off": [
+            [
+              "08:00",
+              "10:00"
+            ],
+            [
+              "16:00",
+              "18:00"
+            ]
+          ]
         },
         "2.1": {
           "knownFrom": "00:00",
-          "off": []
+          "off": [
+            [
+              "08:00",
+              "10:00"
+            ],
+            [
+              "20:00",
+              "22:00"
+            ]
+          ]
         },
         "2.2": {
           "knownFrom": "00:00",
@@ -485,52 +512,120 @@
               "16:00"
             ],
             [
-              "18:00",
-              "20:00"
+              "20:00",
+              "22:00"
             ]
           ]
         },
         "3.2": {
           "knownFrom": "00:00",
-          "off": []
+          "off": [
+            [
+              "10:00",
+              "12:00"
+            ],
+            [
+              "18:00",
+              "20:00"
+            ]
+          ]
         },
         "4.1": {
           "knownFrom": "00:00",
-          "off": []
+          "off": [
+            [
+              "10:00",
+              "12:00"
+            ]
+          ]
         },
         "4.2": {
           "knownFrom": "00:00",
-          "off": []
+          "off": [
+            [
+              "14:00",
+              "16:00"
+            ],
+            [
+              "22:00",
+              "24:00"
+            ]
+          ]
         },
         "5.1": {
           "knownFrom": "00:00",
-          "off": []
+          "off": [
+            [
+              "12:00",
+              "14:00"
+            ],
+            [
+              "18:00",
+              "20:00"
+            ]
+          ]
         },
         "5.2": {
           "knownFrom": "00:00",
-          "off": []
+          "off": [
+            [
+              "12:00",
+              "14:00"
+            ],
+            [
+              "18:00",
+              "20:00"
+            ]
+          ]
         },
         "6.1": {
           "knownFrom": "00:00",
-          "off": []
+          "off": [
+            [
+              "20:00",
+              "22:00"
+            ]
+          ]
         },
         "6.2": {
           "knownFrom": "00:00",
-          "off": []
+          "off": [
+            [
+              "14:00",
+              "16:00"
+            ],
+            [
+              "22:00",
+              "24:00"
+            ]
+          ]
         }
       },
       "revisions": 1,
+      "planFingerprint": "bfd3e5503397d6962bb6",
+      "noScheduledOutages": [],
       "publications": [
         {
-          "publishedAt": "2026-10-11T19:42+03:00",
+          "publishedAt": "2026-10-11T19:42:00+03:00",
           "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-12-zhovtnya?lang=uk",
           "queues": [
+            "1.1",
+            "1.2",
+            "2.1",
             "2.2",
-            "3.1"
+            "3.1",
+            "3.2",
+            "4.1",
+            "4.2",
+            "5.1",
+            "5.2",
+            "6.1",
+            "6.2"
           ]
         }
       ]
     }
   ],
+  "reviewPending": false,
   "changes": []
 }
