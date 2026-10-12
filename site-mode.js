@@ -4,7 +4,7 @@
 (()=>{'use strict';
  const overlay=document.getElementById('maintenanceScreen');if(!overlay)return;
  const $=id=>document.getElementById(id),viewport=document.querySelector('.viewport');
- let apiBase='',busy=false,lastConfig=null,lastNoticeHash='';
+ let apiBase='',busy=false,lastConfig=null;
  const banner=document.createElement('aside');banner.className='maintenance-inline';banner.hidden=true;
  banner.setAttribute('role','status');banner.setAttribute('aria-live','polite');
  if(viewport)viewport.prepend(banner);
@@ -37,9 +37,12 @@
    banner.append(icon,text);
   }
   if(!offline){
-   window.SvitloPublicConfig={announcements:Array.isArray(data.announcements)?data.announcements:[],maintenance:active};
-   const hash=JSON.stringify(window.SvitloPublicConfig.announcements);
-   if(lastNoticeHash!==hash){lastNoticeHash=hash;window.dispatchEvent(new CustomEvent('svitlo:public-config',{detail:window.SvitloPublicConfig}))}
+   // EVERY successful server snapshot must reach Inbox, including the empty list.
+   // On iPhone the first event can fire before inbox-ui.js loads. It must also
+   // be available as an immediately readable state on window.
+   window.SvitloPublicConfig={announcements:Array.isArray(data.announcements)?data.announcements:[],
+    maintenance:active,updatedAt:data.updatedAt||null,serverVerified:true};
+   window.dispatchEvent(new CustomEvent('svitlo:public-config',{detail:window.SvitloPublicConfig}));
   }
  }
  async function refresh(){
@@ -64,6 +67,7 @@
   channel.addEventListener('message',event=>{if(event.data?.type==='REFRESH_APP_CONFIG')refresh()});
   window.addEventListener('pagehide',()=>channel.close(),{once:true});
  }catch{}
+ window.SvitloControls={refresh};
  window.addEventListener('svitlo:refresh-content',refresh);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
  window.addEventListener('online',refresh);

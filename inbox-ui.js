@@ -2,7 +2,7 @@
 (()=>{'use strict';
  const $=id=>document.getElementById(id),store=window.SvitloInbox;
  if(!store||!$('inboxList'))return;
- let selected='all',rows=[],notices=window.SvitloPublicConfig?.announcements||[],busy=false,lastSync=0,activeDetail=null,noticeFeedConfirmed=false,needsResync=false;
+ let selected='all',rows=[],notices=window.SvitloPublicConfig?.announcements||[],busy=false,lastSync=0,activeDetail=null,noticeFeedConfirmed=window.SvitloPublicConfig?.serverVerified===true,needsResync=false;
  const time=s=>new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Kyiv'}).format(new Date(s));
  const date=s=>new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(s+'T12:00:00Z'));
  const el=(tag,text,cls)=>{const node=document.createElement(tag);node.textContent=String(text??'');if(cls)node.className=cls;return node};
@@ -94,7 +94,7 @@
    root.append(card);
   }
   document.querySelectorAll('[data-inbox-filter]').forEach(b=>{const state=b.dataset.inboxFilter===selected;b.classList.toggle('selected',state);b.setAttribute('aria-pressed',String(state))});
-  if(activeDetail&&dialog.open&&rows.some(x=>x.id===activeDetail)){/* keep detail open while marking read */}
+  if(activeDetail&&dialog.open&&!rows.some(x=>x.id===activeDetail))dialog.close();
  }
  async function sync(){
   if(busy){needsResync=true;return}busy=true;
@@ -147,22 +147,42 @@
  document.querySelectorAll('[data-inbox-filter]').forEach(b=>b.addEventListener('click',()=>{selected=b.dataset.inboxFilter;refresh().catch(console.warn)}));
  $('inboxMarkAll').onclick=async()=>{await store.mark(rows.map(x=>x.id));await refresh()};
  $('inboxClear').onclick=async()=>{await store.clearRead();await refresh()};
- document.querySelectorAll('[data-go="updates"]').forEach(b=>b.addEventListener('click',()=>refresh().catch(console.warn)));
+ document.querySelectorAll('[data-go="updates"]').forEach(b=>b.addEventListener('click',()=>{
+  window.dispatchEvent(new Event('svitlo:refresh-content'));
+  sync().catch(console.warn);
+ }));
  window.addEventListener('svitlo:public-config',event=>{
-  const next=event.detail?.announcements||[],changed=JSON.stringify(next)!==JSON.stringify(notices);
-  notices=next;noticeFeedConfirmed=true;
-  if(changed)sync().catch(console.warn);
+  if(event.detail?.serverVerified!==true)return;
+  notices=Array.isArray(event.detail.announcements)?event.detail.announcements:[];
+  noticeFeedConfirmed=true;
+  // Reconcile even when the latest response is [] or text is unchanged.
+  // This fixes the race where the first event arrived before inbox-ui loaded.
+  sync().catch(console.warn);
  });
  window.addEventListener('svitlo:content-updated',()=>sync().catch(console.warn));
  navigator.serviceWorker?.addEventListener('message',event=>{
-  if(event.data?.type==='SVITLO_INBOX_UPDATED')refresh().catch(console.warn);
+  if(event.data?.type==='SVITLO_INBOX_UPDATED'){
+   window.dispatchEvent(new Event('svitlo:refresh-content'));
+   sync().catch(console.warn);
+  }
   if(event.data?.type==='SVITLO_OPEN_INBOX')routePush(event.data.id);
  });
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync().catch(console.warn)});
  window.addEventListener('online',()=>sync().catch(console.warn));
- window.addEventListener('focus',()=>{if(Date.now()-lastSync>45000)sync().catch(console.warn)});
+ window.addEventListener('focus',()=>{
+  window.dispatchEvent(new Event('svitlo:refresh-content'));
+  sync().catch(console.warn)
+ });
  window.SvitloInboxUI={refresh,sync,open};
- refresh().then(async()=>{await sync();const id=new URL(location.href).searchParams.get('inbox');
+ refresh().then(async()=>{
+  // If server config was fetched before this dynamically loaded script,
+  // consume it now. Do not trust local snapshots as removal authority.
+  if(window.SvitloPublicConfig?.serverVerified===true){
+   notices=window.SvitloPublicConfig.announcements||[];
+   noticeFeedConfirmed=true;
+  }
+  await sync();window.dispatchEvent(new Event('svitlo:refresh-content'));
+  const id=new URL(location.href).searchParams.get('inbox');
   if(id){history.replaceState(null,'',location.pathname+location.hash);routePush(id)}
  }).catch(console.warn);
  setInterval(()=>{if(!document.hidden)sync().catch(console.warn)},5*60000);
