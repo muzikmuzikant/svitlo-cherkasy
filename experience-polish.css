@@ -47,3 +47,16 @@ html[data-comfort-contrast="true"] .ux-skeleton:after{display:none}
 }
 @media(prefers-reduced-motion:reduce){.ux-skeleton:after{animation:none!important}.ux-active-tab{animation:none!important}}
 @media(max-width:420px){#home .hero-heading h1{font-size:clamp(25px,7vw,36px)}#detail .detail-surface{overflow:hidden}#settings .setting-line{gap:9px}}
+
+
+/* v7.9.2 comprehensive interactive feedback, without moving the viewport. */
+@media(prefers-reduced-motion:no-preference){
+html:not([data-comfort-motion="calm"]):not(.feature-off-animations) :is(.picker-btn,.icon-btn,.back-btn,.inline-link,.primary-action,.secondary-action,.setting-action,.day-choice,.calendar-arrows button,.nav-item,.home-share-action,.inbox-filters button,.inbox-mark,.inbox-clear,.schedule-share,.sheet-close,.quick-queue-controls button,.share-preview-save,.share-preview-send,.toast,.tomorrow-card){transition:transform .22s cubic-bezier(.2,.85,.25,1),background-color .22s ease,box-shadow .22s ease,color .22s ease,opacity .22s ease,border-color .22s ease}
+html:not([data-comfort-motion="calm"]):not(.feature-off-animations) :is(.picker-btn,.icon-btn,.back-btn,.inline-link,.primary-action,.secondary-action,.setting-action,.day-choice,.calendar-arrows button,.nav-item,.home-share-action,.inbox-filters button,.inbox-mark,.inbox-clear,.schedule-share,.sheet-close,.quick-queue-controls button,.share-preview-save,.share-preview-send,.tomorrow-card):active{transform:scale(.965)}
+html:not([data-comfort-motion="calm"]):not(.feature-off-animations) :is(.place-card,.update-card,.inbox-interactive,.stat-card,.info-card){transition:box-shadow .26s ease,transform .26s cubic-bezier(.2,.85,.25,1),border-color .26s ease}
+html[data-comfort-motion="playful"]:not(.feature-off-animations) :is(.place-card,.update-card,.inbox-interactive):active{transform:scale(.985)}
+html[data-comfort-motion="playful"]:not(.feature-off-animations) .hour-cell{transition:transform .23s ease,box-shadow .23s ease}
+html[data-comfort-motion="playful"]:not(.feature-off-animations) .hour-cell:active{transform:scale(.95)}
+html[data-comfort-motion="playful"]:not(.feature-off-animations) .bottom-nav .nav-item.active{animation:uxTab .32s cubic-bezier(.2,.8,.2,1)}
+}
+@media(prefers-reduced-motion:reduce){html :is(.picker-btn,.icon-btn,.setting-action,.day-choice,.nav-item,.tomorrow-card){transform:none!important}}
