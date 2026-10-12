@@ -88,6 +88,14 @@ export function createManualPush({ subscribers, webpush, appUrl, hash, save }) {
       requireCooldown('test', 5, 10 * 60_000);
       return deliver(recipients, testCopy());
     },
+    async preview(payload) {
+      if(!payload||payload.confirmAll===true)throw Error('Цей тест призначений тільки для поточного пристрою');
+      const msg=cleanMessage(payload);
+      const recipients=selectRecipients(subscribers,{target:'mine',endpoint:payload.endpoint});
+      if(!recipients.length)return {ok:false,attempted:0,accepted:0,error:'Цей пристрій не підписаний на Push.'};
+      requireCooldown('preview',5,10*60_000);
+      return deliver(recipients,msg);
+    },
     async broadcast(payload) {
       const msg = cleanMessage(payload);
       if (payload.confirmSend !== true) throw Error('Потрібне підтвердження розсилки');
