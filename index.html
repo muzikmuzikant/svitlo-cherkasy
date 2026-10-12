@@ -85,11 +85,6 @@
   <p id="pushInviteText">Увімкніть сповіщення про відключення, повернення світла та нові графіки.</p>
   <button type="button" id="pushInviteAction">Увімкнути сповіщення <span aria-hidden="true">→</span></button></div>
  </aside>
- <div id="syncStatus" class="auto-sync-status" data-state="pending" role="status" aria-live="polite">
- <span class="auto-sync-indicator" aria-hidden="true"></span>
- <div class="auto-sync-copy"><strong id="syncStatusTitle">Завантажуємо графіки…</strong><small id="syncStatusDetails">Автоматична перевірка при відкритті та кожні 5 хвилин</small></div>
- <button type="button" class="auto-sync-action" id="syncNow" aria-label="Перевірити графіки зараз" title="Перевірити зараз">↻</button>
-</div>
 <div id="dataFreshness" class="freshness-warning" role="status" hidden></div><div class="status-panel status-unknown" id="heroStatus"><div class="status-decor"></div><div class="status-head"><span id="stateIcon" class="state-icon"></span><span id="stateCaption">ПЕРЕВІРЯЄМО ГРАФІК</span></div><div class="status-title" id="heroTitle">Немає даних</div><div class="status-count" id="heroCountdown">Додайте адресу, щоб побачити свій графік</div><div class="status-footer"><span id="sourceStamp">За офіційним графіком</span><span id="queueChip" class="queue-chip">—</span></div></div>
 <section class="emergency-banner" id="emergencyBanner" hidden aria-live="polite"><span class="emergency-icon">!</span><div><strong id="emergencyTitle">Повідомлення оператора</strong><p id="emergencyText"></p><a id="emergencySource" target="_blank" rel="noopener">Джерело ↗</a></div></section>
 <div class="section-head"><h2>Графік на сьогодні</h2><button class="inline-link" id="openDetail">Детальніше <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button></div>
@@ -103,11 +98,6 @@
    <span class="tomorrow-chevron" aria-hidden="true">›</span>
  </button>
  </section>
- <section class="home-shortcuts" aria-label="Швидкий доступ до адрес">
- <div class="section-head"><h2>Швидкий вибір</h2><span class="small-source">Натисніть, щоб змінити адресу</span></div>
- <div id="homeQuickPlaces" class="home-quick-places" role="group" aria-label="Вибрані адреси"></div>
- </section>
- <div class="home-actions"><button type="button" class="home-share-action" id="shareToday"><span aria-hidden="true">↗</span> Поділитися графіком</button><button type="button" class="home-share-action home-refresh-action" id="copyToday">Скопіювати години</button></div>
  <div class="section-head"><h2>Мої місця</h2><button class="inline-link" id="addFromHome"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Додати</button></div><div class="place-list" id="placeList"></div>
 <div class="notice-strip"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg><span>Статус показує <strong>прогноз за графіком</strong>, а не фактичну наявність електроенергії.</span></div>
 </section>
