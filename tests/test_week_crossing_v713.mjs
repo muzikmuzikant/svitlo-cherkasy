@@ -40,6 +40,6 @@ test('Railway Cron polls every five minutes without waiting for GitHub Pages',()
  assert.doesNotMatch(wf,/^  schedule:/m);
  assert.match(wf,/workflow_dispatch:/);
  assert.match(cron,/--schedules-only/);
- assert.match(cron,//api/internal/schedules/);
+ assert.ok(cron.includes('/api/internal/schedules'));
  assert.match(docs,/\*\/5 \* \* \* \*/);
 });
