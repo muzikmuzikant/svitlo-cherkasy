@@ -27,10 +27,12 @@
   const hideInbox=flags.inbox===false,hideShare=flags.sharing===false,hideHelp=flags.help===false;
   document.querySelectorAll('[data-go="updates"]').forEach(button=>{button.hidden=hideInbox});
   ['shareToday','shareDetail'].forEach(id=>setVisible($(id),!hideShare));
-  for(const anchor of document.querySelectorAll('a[href*="help.html"]')){
+  for(const anchor of document.querySelectorAll('a[href*="help.html"],a[data-managed-link="help"]')){
+   anchor.dataset.managedLink='help';
    anchor.href=safePublicLink(links.help,'./help.html?from=settings');anchor.hidden=hideHelp;
   }
-  for(const anchor of document.querySelectorAll('a[href*="feedback.html"]')){
+  for(const anchor of document.querySelectorAll('a[href*="feedback.html"],a[data-managed-link="feedback"]')){
+   anchor.dataset.managedLink='feedback';
    anchor.href=safePublicLink(links.feedback,'./feedback.html?from=settings');
   }
   for(const anchor of document.querySelectorAll('a[href*="cherkasyoblenergo.com/news"]')){
@@ -55,8 +57,14 @@
    document.querySelectorAll('[data-go="updates"]').forEach(button=>button.disabled=true);
    summary.push('«Вхідні»');
   }else document.querySelectorAll('[data-go="updates"]').forEach(button=>button.disabled=false);
-  if(disabled.includes('address-search')){const button=$('addFromHome');if(button)button.disabled=true;summary.push('пошук адрес')}
-  else if($('addFromHome'))$('addFromHome').disabled=false;
+  if(disabled.includes('address-search')){
+   for(const id of ['addFromHome','addFromSettings','sheetAddPlace'])if($(id))$(id).disabled=true;
+   summary.push('пошук адрес');
+  }else for(const id of ['addFromHome','addFromSettings','sheetAddPlace'])if($(id))$(id).disabled=false;
+  if(disabled.includes('help')){
+   document.querySelectorAll('a[data-managed-link="help"]').forEach(a=>a.hidden=true);
+   summary.push('допомогу');
+  }
   moduleBanner.hidden=!summary.length;
   moduleBanner.textContent=summary.length?'🛠️ Тимчасово призупинено: '+summary.join(', ')+'.':'';
  }
