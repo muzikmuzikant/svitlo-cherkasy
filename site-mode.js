@@ -78,6 +78,25 @@
    document.querySelectorAll('a[data-managed-link="help"]').forEach(a=>a.hidden=true);
    summary.push('допомогу');
   }
+  const limited=[
+   ['sharing',['shareToday','shareDetail'],'поширення графіка'],
+   ['push-settings',['enableNotifications','disableNotifications'],'налаштування Push'],
+   ['manual-refresh',['syncNow','refreshDetail','manualRefresh'],'ручне оновлення'],
+   ['copy-schedule',['copyToday'],'копіювання годин']
+  ];
+  for(const [module,ids,label] of limited){
+   const paused=disabled.includes(module);
+   for(const id of ids)if($(id))$(id).disabled=paused;
+   if(paused)summary.push(label);
+  }
+  const quick=$('homeQuickPlaces');
+  if(quick){
+   quick.hidden=disabled.includes('quick-addresses');
+   if(disabled.includes('quick-addresses'))summary.push('швидкі адреси');
+  }
+  for(const anchor of document.querySelectorAll('a[data-managed-link="feedback"]'))
+   anchor.hidden=disabled.includes('feedback')||lastConfig?.site?.flags?.feedback===false;
+  if(disabled.includes('feedback'))summary.push('звернення');
   moduleBanner.hidden=!summary.length;
   moduleBanner.textContent=summary.length?'🛠️ Тимчасово призупинено: '+summary.join(', ')+'.':'';
  }
