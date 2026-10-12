@@ -161,3 +161,10 @@ main{max-width:1160px!important}
  .ops-editor-main .two,.ops-fields .two{display:grid;grid-template-columns:minmax(0,1fr)}
  .ops-bottom{display:flex;flex-direction:column;align-items:stretch}
 }
+
+/* Multiple overview panels are siblings, so let them occupy consecutive rows. */
+@media(min-width:980px){
+ #adminDashboard>.admin-tabs{grid-row:2/span 25!important}
+ #adminDashboard>[data-admin-panel]:not([hidden]){grid-column:2!important;grid-row:auto!important;min-width:0}
+ #adminDashboard>[data-admin-panel="overview"]:not([hidden]){grid-row:auto!important}
+}
