@@ -140,6 +140,8 @@
  }
  function routePush(id){
   document.querySelector('[data-go="updates"]')?.click();
+  // Push tap should always request a fresh authoritative server snapshot.
+  window.dispatchEvent(new Event('svitlo:refresh-content'));
   const target=id||'';
   if(target&&open(target))return;
   if(target){sync().then(()=>open(target)).catch(console.warn)}
@@ -174,6 +176,10 @@
   sync().catch(console.warn)
  });
  window.SvitloInboxUI={refresh,sync,open};
+ // Opening the Inbox is a meaningful freshness boundary even on iOS, where
+ // background polling may be throttled while the user is on another screen.
+ document.querySelectorAll('[data-go="updates"]').forEach(button=>
+  button.addEventListener('click',()=>window.SvitloControls?.refresh?.()));
  refresh().then(async()=>{
   // If server config was fetched before this dynamically loaded script,
   // consume it now. Do not trust local snapshots as removal authority.
