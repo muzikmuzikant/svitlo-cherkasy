@@ -255,36 +255,43 @@
   options('opsNoticeKind',t.kind);options('opsNoticeIcon',t.icon);capture();previewMessage();document.dispatchEvent(new CustomEvent('svitlo:cms-loaded'))
  };
  $('opsReload').onclick=reload;
- async function saveConfig({silent=false}={}){
+ async function saveConfig({silent=false,scope='content'}={}){
   if(!state||busy)return;
-  capture();
-  const old=serverState?.maintenance?.enabled===true,newOn=$('opsMaintenance').checked;
-  if(newOn&&!old&&!confirm('Увімкнути технічні роботи для користувачів?'))throw Error('Увімкнення не підтверджено');
-  const toPush=state.announcements.filter(x=>x.active&&x.delivery==='both'&&!x.pushSentAt
-   &&(!x.scheduledAt||Date.parse(x.scheduledAt)<=Date.now()));
-  if(toPush.length&&!confirm('Надіслати Push для '+toPush.length+' повідомлень?'))throw Error('Розсилку не підтверджено');
-  // Preserve Features-tab changes, CMS notices and live server fields during the same session.
+  if(scope==='content')capture();
+  // A content save must never silently republish maintenance or overwrite
+  // newer feature/appearance settings written in another admin workspace.
   const latest=await api('app-config');
-  const next={...state,site:{...latest.site,...state.site,flags:{...latest.site?.flags,...state.site?.flags}},maintenance:{enabled:newOn,title:read('opsTitle'),message:read('opsMessage'),
-   mode:read('opsMode'),theme:read('opsTheme'),icon:read('opsIcon'),
-   imageUrl:read('opsImageUrl'),startsAt:fromLocal($('opsStartsAt').value),until:fromLocal($('opsUntil').value),...getVisual()},site:{...latest.site,...getSite(),flags:{...latest.site?.flags,...getSite().flags}}};
-  busy=true;$('opsSave').disabled=true;
+  const noticeChanges=scope==='content'?state.announcements:[...latest.announcements];
+  const toPush=noticeChanges.filter(x=>x.active&&['push','both'].includes(x.delivery)&&!x.pushSentAt
+   &&(!x.scheduledAt||Date.parse(x.scheduledAt)<=Date.now()));
+  if(toPush.length&&scope==='content'&&!confirm('Надіслати Push для '+toPush.length+' повідомлень?'))throw Error('Розсилку не підтверджено');
+  let next;
+  if(scope==='maintenance'){
+   const old=latest.maintenance?.enabled===true,newOn=$('opsMaintenance').checked;
+   if(newOn&&!old&&!confirm('Увімкнути технічні роботи для користувачів?'))throw Error('Увімкнення не підтверджено');
+   next={...latest,maintenance:{enabled:newOn,title:read('opsTitle'),message:read('opsMessage'),
+    mode:read('opsMode'),theme:read('opsTheme'),icon:read('opsIcon'),
+    imageUrl:read('opsImageUrl'),startsAt:fromLocal($('opsStartsAt').value),until:fromLocal($('opsUntil').value),...getVisual()}};
+  }else next={...latest,announcements:noticeChanges};
+  busy=true;
+  $('opsSave').disabled=true;
+  $('opsMaintenanceSave').disabled=true;
   try{
-   state=await api('app-config',{method:'PUT',body:JSON.stringify(next)});
-   serverState=structuredClone(state);
-   fill();drawList();previewMaintenance();
-   status(silent?'Збережено на сервері. Синхронізація запущена.':'Збережено. Зміни опубліковані.');
+   const saved=await api('app-config',{method:'PUT',body:JSON.stringify(next)});
+   state=saved;serverState=structuredClone(saved);
+   fillMaintenance(saved.maintenance);fillSite(saved.site);fill();drawList();previewMaintenance();
+   status(silent?'Зміни збережено на сервері.':'Збережено. Зміни опубліковані.');
    refreshHistory().catch(console.warn);
    try{const channel=new BroadcastChannel('svitlo-content-v1');
     channel.postMessage({type:'REFRESH_APP_CONFIG',at:Date.now()});channel.close()}catch{}
-   return state;
+   return saved;
   }catch(e){status('Не збережено: '+e.message,true);throw e}
-  finally{busy=false;$('opsSave').disabled=false}
+  finally{busy=false;$('opsSave').disabled=false;$('opsMaintenanceSave').disabled=false}
  }
  $('opsSave').onclick=()=>{clearTimeout(autoSaveTimer);saveConfig().catch(console.warn)};
  document.querySelector('[data-admin-tab="operations"]')?.addEventListener('click',reload);
  document.querySelector('[data-admin-tab="maintenance"]')?.addEventListener('click',reload);
- $('opsMaintenanceSave')?.addEventListener('click',()=>{$('opsSave')?.click()});
+ $('opsMaintenanceSave')?.addEventListener('click',()=>saveConfig({scope:'maintenance'}).catch(console.warn));
  document.querySelector('[data-admin-tab="audit"]')?.addEventListener('click',()=>refreshHistory().catch(console.warn));
  document.addEventListener('svitlo:admin-logout',()=>{state=null;status('Для керування потрібен вхід.')});
 })();
