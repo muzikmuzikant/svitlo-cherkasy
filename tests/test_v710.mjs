@@ -37,7 +37,7 @@ test('Railway Cron owns schedule polling while addresses remain independent',()=
  assert.doesNotMatch(workflow,/^  schedule:/m);
  assert.doesNotMatch(workflow,/^  push:/m);
  assert.match(cron,/--schedules-only/);
- assert.match(cron,//api/internal/schedules/);
+ assert.ok(cron.includes('/api/internal/schedules'));
  assert.match(addresses,/--addresses-only/);
  assert.match(addresses,/svitlo-data-updated/);
  assert.match(workflow,/svitlo-data-updated/);
