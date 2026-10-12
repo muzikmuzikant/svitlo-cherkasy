@@ -44,3 +44,14 @@ def test_old_unreadable_post_does_not_mark_today_unverified(monkeypatch,tmp_path
     assert got['reviewPending'] is False
     assert got['unresolvedDates']==[]
     assert got['confirmedNoScheduleDates']==['2026-10-12','2026-10-13']
+
+def test_operator_html_splits_clock_at_inline_tag():
+    # Live operator HTML can yield "08 :00" when text is flattened.
+    raw=article('Оновлено графік погодинних відключень на 12 жовтня',
+                'Години відсутності електропостачання:',
+                '1.1 16:00 - 18:00 1.2 <span>08</span><span>:00</span> - 10:00 '
+                '2.1 <span>20</span><span>:00</span> - 22:00')
+    parsed=u.parse_article(raw, BASE+'real-format')
+    assert parsed is not None
+    assert parsed['queues']['1.2']==[(480,600)]
+    assert parsed['queues']['2.1']==[(1200,1320)]
