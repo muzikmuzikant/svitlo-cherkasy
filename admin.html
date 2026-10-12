@@ -58,7 +58,9 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  <button type="button" data-admin-tab="sources" aria-pressed="false">Дані та перевірки</button>
  <button type="button" data-admin-tab="feedback" aria-pressed="false">Звернення</button>
  <button type="button" data-admin-tab="push" aria-pressed="false">Push</button>
- <button type="button" data-admin-tab="operations" aria-pressed="false">Контент і техроботи</button>
+ <button type="button" data-admin-tab="operations" aria-pressed="false">📣 Повідомлення</button>
+ <button type="button" data-admin-tab="maintenance" aria-pressed="false">🛠️ Техроботи</button>
+ <button type="button" data-admin-tab="features" aria-pressed="false">⚙️ Функції</button>
   <button type="button" data-admin-tab="help" aria-pressed="false">Центр допомоги</button>
  <button type="button" data-admin-tab="data" aria-pressed="false">Редактор</button>
  <button type="button" data-admin-tab="audit" aria-pressed="false">Журнал</button>
@@ -115,31 +117,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
 </section>
 
 <section class="card ops-workspace" data-admin-panel="operations" hidden>
- <div class="headline"><div><div class="panel-eyebrow">SVITLO CONTROL CENTER · V7.4</div><h2>Контент і робота застосунку</h2><p class="hint">Редактор повідомлень, медіа та оформлення технічних робіт.</p></div><span class="pill" id="opsStatusPill">Налаштування</span></div>
- <div class="ops-section ops-workspace-maintenance">
-  <div class="headline"><h2>🛠️ Конструктор технічних робіт</h2><span class="pill">Вимкнено за замовчуванням</span></div>
-  <label class="ops-toggle"><span><strong>Увімкнути технічні роботи</strong><small>Повноекранний режим закриває лише користувацький застосунок. Адмінпанель лишається доступною.</small></span><input type="checkbox" id="opsMaintenance"></label>
-  <div class="ops-editor-columns">
-   <div class="ops-fields">
-    <div class="two">
-     <div class="field"><label for="opsMode">Режим</label><select id="opsMode"><option value="full">Повний екран</option><option value="limited">Часткові роботи (банер)</option><option value="incident">Термінове повідомлення</option></select></div>
-     <div class="field"><label for="opsTheme">Оформлення</label><select id="opsTheme"><option value="blue">Синя</option><option value="midnight">Темна</option><option value="light">Світла</option><option value="violet">Фіолетова</option><option value="custom">Своя палітра</option></select></div>
-    </div>
-    <div class="two">
-     <div class="field"><label for="opsIcon">Іконка / емодзі</label><input id="opsIcon" maxlength="18" value="✨" placeholder="⚡"></div>
-     <div class="field"><label for="opsMaintenanceFile">Власна ілюстрація</label><input id="opsMaintenanceFile" type="file" accept="image/png,image/jpeg,image/webp"></div>
-    </div>
-    <div class="field"><label for="opsImageUrl">Або HTTPS-посилання на ілюстрацію</label><input id="opsImageUrl" type="url" placeholder="https://..."></div>
-    <div class="field"><label for="opsTitle">Заголовок</label><input id="opsTitle" maxlength="90"></div>
-    <div class="field"><label for="opsMessage">Пояснення користувачам</label><textarea id="opsMessage" maxlength="320" rows="3"></textarea></div>
-    <div class="two">
-     <div class="field"><label for="opsStartsAt">Розпочати не раніше (за потреби)</label><input id="opsStartsAt" type="datetime-local"></div>
-     <div class="field"><label for="opsUntil">Орієнтовне завершення</label><input id="opsUntil" type="datetime-local"></div>
-    </div>
-   </div>
-   <div class="ops-preview" id="opsPreview"><small>ПОПЕРЕДНІЙ ПЕРЕГЛЯД</small><div class="ops-preview-mark" id="opsPreviewIcon">✨</div><strong id="opsPreviewTitle">Ми покращуємо застосунок</strong><p id="opsPreviewMessage">Незабаром усе знову працюватиме.</p></div>
-  </div>
- </div>
+ <div class="headline"><div><div class="panel-eyebrow">КОНТЕНТ · ПУБЛІКАЦІЇ</div><h2>Редактор повідомлень</h2><p class="hint">Створення, редагування, медіафайли, чернетки й Push в одному просторі.</p></div><span class="pill" id="opsStatusPill">Налаштування</span></div>
  <div class="ops-edit-layout">
   <aside class="ops-editor-sidebar">
    <div class="headline"><h2>📣 Повідомлення</h2><span class="pill" id="opsNoticeCount">0</span></div>
@@ -192,7 +170,62 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  </div>
   </div>
  </div>
- <section class="ops-section ops-site-management" aria-labelledby="siteManagementTitle">
+ <div class="ops-bottom"><span class="push-state" id="opsMessageStatus" role="status">Завантаження налаштувань…</span><div class="flex"><button type="button" id="opsReload" class="secondary">Скасувати зміни</button><button type="button" id="opsSave">Зберегти налаштування</button></div></div>
+</section>
+<section class="card ops-workspace" data-admin-panel="maintenance" hidden>
+ <div class="ops-panel-head"><span class="ops-panel-kicker">ЗОВНІШНІЙ ВИГЛЯД ТА ДОСТУПНІСТЬ</span><h2>Режим технічних робіт</h2>
+ <p>Оформлення, дати й тимчасові обмеження працюють незалежно від редактора повідомлень.</p></div>
+  <div class="ops-section ops-workspace-maintenance">
+  <div class="headline"><h2>🛠️ Конструктор технічних робіт</h2><span class="pill">Вимкнено за замовчуванням</span></div>
+  <label class="ops-toggle"><span><strong>Увімкнути технічні роботи</strong><small>Повноекранний режим закриває лише користувацький застосунок. Адмінпанель лишається доступною.</small></span><input type="checkbox" id="opsMaintenance"></label>
+  <div class="ops-editor-columns">
+   <div class="ops-fields">
+    <div class="two">
+     <div class="field"><label for="opsMode">Режим</label><select id="opsMode"><option value="full">Повний екран</option><option value="limited">Часткові роботи (банер)</option><option value="incident">Термінове повідомлення</option></select></div>
+     <div class="field"><label for="opsTheme">Оформлення</label><select id="opsTheme"><option value="blue">Синя</option><option value="midnight">Темна</option><option value="light">Світла</option><option value="violet">Фіолетова</option><option value="custom">Своя палітра</option></select></div>
+    </div>
+    <div class="two">
+     <div class="field"><label for="opsIcon">Іконка / емодзі</label><input id="opsIcon" maxlength="18" value="✨" placeholder="⚡"></div>
+     <div class="field"><label for="opsMaintenanceFile">Власна ілюстрація</label><input id="opsMaintenanceFile" type="file" accept="image/png,image/jpeg,image/webp"></div>
+    </div>
+    <div class="field"><label for="opsImageUrl">Або HTTPS-посилання на ілюстрацію</label><input id="opsImageUrl" type="url" placeholder="https://..."></div>
+    <div class="field"><label for="opsTitle">Заголовок</label><input id="opsTitle" maxlength="90"></div>
+    <div class="field"><label for="opsMessage">Пояснення користувачам</label><textarea id="opsMessage" maxlength="320" rows="3"></textarea></div>
+    <div class="two">
+     <div class="field"><label for="opsStartsAt">Розпочати не раніше (за потреби)</label><input id="opsStartsAt" type="datetime-local"></div>
+     <div class="field"><label for="opsUntil">Орієнтовне завершення</label><input id="opsUntil" type="datetime-local"></div>
+    </div>
+   </div>
+   <div class="ops-preview" id="opsPreview"><small>ПОПЕРЕДНІЙ ПЕРЕГЛЯД</small><div class="ops-preview-mark" id="opsPreviewIcon">✨</div><strong id="opsPreviewTitle">Ми покращуємо застосунок</strong><p id="opsPreviewMessage">Незабаром усе знову працюватиме.</p></div>
+  </div>
+ </div>
+
+  <section class="ops-section ops-maintenance-custom" aria-labelledby="opsVisualTitle">
+ <h2 id="opsVisualTitle">🎨 Оформлення та планування техробіт</h2>
+ <div class="two ops-colors">
+  <div class="field"><label for="opsColorBackground">Фон екрана</label><input id="opsColorBackground" type="color" value="#143463"></div>
+  <div class="field"><label for="opsColorForeground">Колір тексту</label><input id="opsColorForeground" type="color" value="#ffffff"></div>
+ </div>
+ <div class="field"><label for="opsColorAccent">Акцентний колір</label><input id="opsColorAccent" type="color" value="#78aaff"></div>
+ <label class="ops-toggle"><span><strong>Попереджати про заплановані роботи</strong><small>Якщо час початку в майбутньому, користувач побачить попереджувальний банер.</small></span><input id="opsMaintenanceWarn" type="checkbox" checked></label>
+ <div class="ops-flags">
+  <label><input id="opsDisableInbox" type="checkbox"> Призупинити «Вхідні»</label>
+  <label><input id="opsDisableSearch" type="checkbox"> Призупинити пошук адрес</label>
+  <label><input id="opsDisableHelp" type="checkbox"> Призупинити допомогу</label>
+ </div>
+ </section>
+
+ <div class="ops-panel-footer"><span class="hint">Техроботи залишаються вимкненими, доки ви їх не ввімкнете.</span>
+ <button type="button" id="opsMaintenanceSave">Зберегти техроботи</button></div>
+</section>
+<section class="card ops-workspace" data-admin-panel="features" hidden>
+ <div class="ops-panel-head"><span class="ops-panel-kicker">КОНТРОЛЬ ФУНКЦІЙ</span><h2>Функції застосунку</h2>
+ <p>Керуйте користувацькими модулями, швидкими діями та службовими банерами. Основні графіки й інформація про безпеку завжди залишаються доступними.</p></div>
+ <div class="feature-toolbar"><input id="featuresSearch" type="search" placeholder="Знайти функцію..." aria-label="Пошук функцій">
+ <span id="featuresActiveCount">Підключаємо сервер…</span></div>
+ <div class="feature-grid" id="featuresGrid" aria-live="polite"></div>
+ <div class="ops-panel-head"><h3>Посилання та інформаційний банер</h3><p>Тут зібрано все, що стосується навігації та загальних повідомлень, а не техробіт.</p></div>
+  <section class="ops-section ops-site-management" aria-labelledby="siteManagementTitle">
  <div class="headline"><div><h2 id="siteManagementTitle">⚙️ Налаштування застосунку</h2><p class="hint">Зміни посилань, доступності розділів і банерів без редагування коду.</p></div></div>
  <h3>Основні посилання</h3>
  <div class="two">
@@ -215,28 +248,18 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  <div class="field"><label for="opsBannerBody">Опис</label><textarea id="opsBannerBody" rows="2" maxlength="260"></textarea></div>
  <div class="field"><label for="opsBannerUrl">Посилання з кнопки (HTTPS або ./)</label><input id="opsBannerUrl" placeholder="./help.html"></div>
  </section>
- <section class="ops-section ops-maintenance-custom" aria-labelledby="opsVisualTitle">
- <h2 id="opsVisualTitle">🎨 Оформлення та планування техробіт</h2>
- <div class="two ops-colors">
-  <div class="field"><label for="opsColorBackground">Фон екрана</label><input id="opsColorBackground" type="color" value="#143463"></div>
-  <div class="field"><label for="opsColorForeground">Колір тексту</label><input id="opsColorForeground" type="color" value="#ffffff"></div>
- </div>
- <div class="field"><label for="opsColorAccent">Акцентний колір</label><input id="opsColorAccent" type="color" value="#78aaff"></div>
- <label class="ops-toggle"><span><strong>Попереджати про заплановані роботи</strong><small>Якщо час початку в майбутньому, користувач побачить попереджувальний банер.</small></span><input id="opsMaintenanceWarn" type="checkbox" checked></label>
- <div class="ops-flags">
-  <label><input id="opsDisableInbox" type="checkbox"> Призупинити «Вхідні»</label>
-  <label><input id="opsDisableSearch" type="checkbox"> Призупинити пошук адрес</label>
-  <label><input id="opsDisableHelp" type="checkbox"> Призупинити допомогу</label>
- </div>
- </section>
- <section class="ops-section ops-revisions">
- <div class="headline"><div><h2>🕘 Історія змін</h2><p class="hint">Останні серверні редакції оголошень і налаштувань. Історія зберігається у Railway.</p></div><button type="button" class="secondary" id="opsHistoryRefresh">Оновити</button></div>
- <div id="opsHistoryList" class="ops-history-list"><p class="hint">Завантаження історії…</p></div>
- </section>
- <div class="ops-bottom"><span class="push-state" id="opsMessageStatus" role="status">Завантаження налаштувань…</span><div class="flex"><button type="button" id="opsReload" class="secondary">Скасувати зміни</button><button type="button" id="opsSave">Зберегти налаштування</button></div></div>
+
+ <div class="ops-panel-footer"><span id="featuresStatus" role="status">Зміни ще не збережено.</span>
+ <div class="flex"><button type="button" class="secondary" id="featuresReload">Скасувати</button><button type="button" id="featuresSave">Зберегти функції</button></div></div>
 </section>
 <section class="card" data-admin-panel="audit" hidden><div class="headline"><h2>Журнал дій</h2><button type="button" class="secondary" id="auditRefresh">Оновити</button></div>
  <p>Зберігаються останні 250 операцій (вхід, вихід, розсилки, зміни звернень, редагування допомоги й публікації). Паролі, тексти звернень та Push-токени не записуються.</p><div id="auditList" class="review-list"></div></section>
+<section class="card ops-workspace" data-admin-panel="audit" hidden>
+<div class="ops-panel-head"><h2>Історія налаштувань</h2><p>Збережені версії повідомлень, зміни техробіт і конфігурації.</p></div> <section class="ops-section ops-revisions">
+ <div class="headline"><div><h2>🕘 Історія змін</h2><p class="hint">Останні серверні редакції оголошень і налаштувань. Історія зберігається у Railway.</p></div><button type="button" class="secondary" id="opsHistoryRefresh">Оновити</button></div>
+ <div id="opsHistoryList" class="ops-history-list"><p class="hint">Завантаження історії…</p></div>
+ </section>
+</section>
 <section class="card" data-admin-panel="push" hidden aria-labelledby="pushToolsTitle">
   <div class="headline"><h2 id="pushToolsTitle">Push-повідомлення</h2><span class="pill" id="pushAvailability">Увійдіть для надсилання</span></div>
   <p>Перевірте доставку на iPhone або самостійно напишіть оголошення. Повідомлення надсилаються одразу на зареєстровані пристрої через Railway — без коміту в GitHub.</p>
@@ -301,4 +324,4 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
 </div>
 <div class="card" data-admin-panel="data" hidden><div class="headline"><h2>Редактор та перевірка</h2><span class="pill" id="editMode">Локальна копія</span></div><div class="flex"><div class="field"><label for="kind">Файл</label><select id="kind"><option value="overrides">Ручні уточнення (не перезаписуються імпортером)</option><option value="schedules">Планові графіки</option><option value="addresses">Точні адреси</option><option value="streets">Довідник сіл і вулиць</option><option value="emergency">Повідомлення про аварійні відключення</option></select></div></div><p class="hint">Рекомендуємо змінювати <b>«Ручні уточнення»</b>: інакше наступний імпорт може перезаписати графіки чи адреси. Для виправлення обов'язково залишайте посилання на офіційну публікацію.</p><textarea id="editor" class="mono" spellcheck="false" aria-label="Редагування JSON"></textarea><div class="flex" style="margin-top:13px"><button id="validate" class="secondary">Перевірити JSON</button><button id="reload" class="secondary">Повернути збережене</button><button id="download" class="secondary">Експортувати JSON</button><button id="publish" disabled>Опублікувати через GitHub</button></div><div id="result" role="status" aria-live="polite">Оберіть файл або підключіть сервер, щоб перевіряти дані.</div></div>
 <div class="card" data-admin-panel="data" hidden><h2>Правила перевірки</h2><p>Адреси з вулицями без будинків показують <strong>можливі</strong> підчерги, а не точні. Не позначайте аварійні повідомлення як активні без офіційного підтвердження. Автоматичні Push на заблокованому iPhone працюють лише при увімкненому push-сервері й дозволі користувача.</p></div>
-</div></main><script defer src="./admin.js"></script><script defer src="./admin-extra.js"></script><script defer src="./admin-control.js"></script><script defer src="./admin-dashboard.js"></script><script defer src="./schedule-planner.js"></script><script defer src="./admin-planner.js"></script></body></html>
+</div></main><script defer src="./admin.js"></script><script defer src="./admin-extra.js"></script><script defer src="./admin-control.js"></script><script defer src="./admin-richtext.js"></script><script defer src="./admin-features.js"></script><script defer src="./admin-dashboard.js"></script><script defer src="./schedule-planner.js"></script><script defer src="./admin-planner.js"></script></body></html>

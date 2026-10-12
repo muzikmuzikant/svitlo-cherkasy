@@ -198,6 +198,7 @@ function renderHome(){
  // A genuine tomorrow preview, not a guessed network status.
  renderTomorrowPreview();
  renderQuickPlaces();
+ updatePushInvite();
  const list=$('placeList');list.replaceChildren();
  for(const item of addresses){
   const b=el('button','place-card');b.type='button';
@@ -265,6 +266,29 @@ function shareDescription(date){
  lines.push('',day?'За опублікованим графіком.':'Графік не опубліковано. За замовчуванням позначено світло весь день.','Лише плановий графік, не фактичний стан мережі.','svitlo-cherkasy.pp.ua');
  return {queue,day,summary,ranges,text:lines.join('\n')};
 }
+async function openSharePreview(blob,filename,date,queue){
+ const dialog=$('sharePreviewDialog'),preview=$('sharePreviewImage');
+ if(!dialog||!preview)throw Error('Попередній перегляд недоступний');
+ const url=URL.createObjectURL(blob);
+ const file=new File([blob],filename,{type:'image/png'});
+ preview.src=url;
+ $('sharePreviewHeading').textContent='Графік · '+formatDate(date,{day:'numeric',month:'long'})+' · '+queue;
+ const canNativeShare=!!(navigator.share&&navigator.canShare?.({files:[file]}));
+ $('sharePreviewShare').hidden=!canNativeShare;
+ $('sharePreviewClose').onclick=()=>dialog.close();
+ $('sharePreviewSave').onclick=()=>{
+  const a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();
+  flash('Картинку графіка збережено');
+ };
+ $('sharePreviewShare').onclick=async()=>{
+  try{await navigator.share({files:[file],title:'Графік відключень · Світло Черкаси'});dialog.close()}
+  catch(e){if(e.name!=='AbortError'){console.warn('Share:',e);flash('Не вдалося поділитися. Спробуйте зберегти PNG.')}}
+ };
+ const closed=()=>{preview.removeAttribute('src');URL.revokeObjectURL(url);dialog.removeEventListener('close',closed)};
+ dialog.addEventListener('close',closed);
+ dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close()},{once:true});
+ dialog.showModal();
+}
 async function shareSchedule(date,{copy=false}={}){
  const info=shareDescription(date);
  if(!info){flash('Спочатку оберіть адресу та підчергу');return}
@@ -276,7 +300,7 @@ async function shareSchedule(date,{copy=false}={}){
  try{
   const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1880;
   const ctx=canvas.getContext('2d');if(!ctx)throw Error('Canvas unavailable');
-  const W=1080,H=1770,margin=64;
+  const W=1080,H=1880,margin=64;
   const round=(x,y,w,h,r,color)=>{
    ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill();
   };
@@ -330,12 +354,13 @@ async function shareSchedule(date,{copy=false}={}){
   line('Це прогноз, а не підтвердження фактичної наявності світла.',margin+26,footerY+77,'19px system-ui','#6e85a4');
   line('svitlo-cherkasy.pp.ua',W/2,H-39,'700 24px system-ui','#7b94b3','center');
   const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error('No image');
-  const filename='svitlo-'+date+'-'+info.queue+'.png',file=new File([blob],filename,{type:'image/png'});
-  if(navigator.share&&navigator.canShare?.({files:[file]}))await navigator.share({files:[file],title:'Графік відключень'});
-  else{
-   const href=URL.createObjectURL(blob),a=document.createElement('a');a.href=href;a.download=filename;a.click();
-   setTimeout(()=>URL.revokeObjectURL(href),10000);flash('Картинку графіка збережено');
-  }
+  const filename='svitlo-'+date+'-'+info.queue+'.png';
+  if(document.documentElement.classList.contains('feature-off-sharePreview')){
+   const file=new File([blob],filename,{type:'image/png'});
+   if(navigator.share&&navigator.canShare?.({files:[file]}))await navigator.share({files:[file],title:'Графік відключень'});
+   else {const url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.download=filename;a.href=url;a.click();setTimeout(()=>URL.revokeObjectURL(url),12000)}
+  }else await openSharePreview(blob,filename,date,info.queue);
  }catch(error){if(error?.name==='AbortError')return;console.warn('Share schedule:',error);flash('Не вдалося поділитися графіком')}
 }
 function renderBar(a){const bar=$('overviewBar');bar.replaceChildren();if(!a){const b=el('span','bar-segment unknown');b.style.flex='1';bar.append(b);return}let start=0,v=a[0];for(let i=1;i<=1440;i++){if(i===1440||a[i]!==v){const seg=el('span','bar-segment '+(v===1?'off':v===0?'on':'unknown'));seg.style.flex=String(i-start);seg.title=`${clock(start)}–${clock(i)} · ${v===1?'відключення':v===0?'світло':'немає даних'}`;bar.append(seg);start=i;v=a[i]}}const line=el('span','bar-now');line.style.left=(nowMinutes()/1440*100)+'%';bar.append(line)}
@@ -383,6 +408,19 @@ function renderDetail(){const a=primary();if(!a)return;setText('detailAddress',f
  setText('nextDescription',next?`Планове ${next.to===1?'відключення':'відновлення електропостачання'}${next.dayOffset===1?' наступного дня':''}`:
   st==='on'?'На сьогодні та завтра у підтверджених даних змін не зазначено':'Точний час не підтверджено');$('articleLink').href=pub?.queueSources?.[a.queue]||pub?.source||'https://www.cherkasyoblenergo.com/news'}
 function renderUpdates(){setText('lastCheck',data.lastChecked?fmtStamp(data.lastChecked):'Час перевірки невідомий');setText('updateNote',data.lastChecked?'Остання перевірка графіків.':'Перевірте графік безпосередньо на сайті оператора.');const root=$('updateList');root.replaceChildren();const all=[...(data.changes||[]).map(x=>({kind:'change',...x})),...(data.days||[]).map(x=>({kind:'publication',...x}))].sort((a,b)=>String(b.publishedAt).localeCompare(String(a.publishedAt))).slice(0,24);if(!all.length)root.append(el('div','empty-places','Поки немає підтверджених публікацій.'));for(const d of all){const c=el('div','update-card');c.append(el('time','',fmtStamp(d.publishedAt)),el('strong','',d.kind==='change'?`Графік скориговано · ${formatDate(d.date)}`:`Опубліковано графік · ${formatDate(d.date)}`));const meta=el('div','small-source',d.kind==='change'?`Змінені підчерги: ${(d.queues||[]).join(', ')||'не уточнено'}`:`Редакцій: ${d.revisions||1}`);c.append(meta);const link=el('a','', 'Офіційна публікація ↗');link.href=d.source||'https://www.cherkasyoblenergo.com/news';link.target='_blank';link.rel='noopener';c.append(link);root.append(c)}}
+function updatePushInvite(){
+ const box=$('pushInvite');if(!box)return;
+ const supported='Notification' in window;
+ box.hidden=!supported||pushActive;
+ if(box.hidden)return;
+ const denied=Notification.permission==='denied';
+ setText('pushInviteTitle',denied?'Сповіщення вимкнені в iPhone':'Не пропустіть зміну графіка');
+ setText('pushInviteText',denied?'Дозвольте сповіщення для «Світло Черкаси» в налаштуваннях iPhone.':
+  'Отримуйте повідомлення про відключення, повернення світла та зміни графіка.');
+ const action=$('pushInviteAction');
+ action.firstChild.textContent=denied?'Відкрити налаштування сповіщень ':'Увімкнути сповіщення ';
+ action.onclick=denied?()=>navigate('settings'):()=>enableNotifications();
+}
 function renderSettings(){for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).checked=!!prefs[key];const connected=!!pushConfig?.apiBase&&!!pushConfig?.publicKey;setText('pushHeadline','Сповіщення');setText('pushDescription',connected?'Отримуйте нагадування про відключення та зміни графіків, навіть коли застосунок закритий.':'Наразі нагадування доступні тільки під час використання застосунку.');setText('enableNotifications',connected?'Увімкнути сповіщення':'Дозволити нагадування');$('disableNotifications').hidden=!connected}
 function fillQueueSelect(){const root=$('manualQueue');root.replaceChildren(new Option('Оберіть підчергу',''),...QUEUES.map(q=>new Option(q,q)))}
 function town(){return $('settlement').value==='Інше'?$('customSettlement').value.trim():$('settlement').value}
@@ -641,7 +679,7 @@ async function getPushConfig(){
    const existing=await (await navigator.serviceWorker.ready).pushManager.getSubscription();
    if(existing||localStorage.getItem(PUSH_CONSENT)==='yes')await updatePushSubscription();
   }
- }catch(e){console.warn('Push config:',e.message)}renderSettings();
+ }catch(e){console.warn('Push config:',e.message)}renderSettings();updatePushInvite();
 }
 function urlsafe(value){const str=(value+'='.repeat((4-value.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/');return Uint8Array.from(atob(str),x=>x.charCodeAt(0))}
 async function updatePushSubscription(){
@@ -659,7 +697,7 @@ async function updatePushSubscription(){
  try{
   const response=await fetch(pushConfig.apiBase.replace(/\/$/,'')+'/api/subscribe',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload),signal:controller.signal});
   if(!response.ok)throw Error('Push server response '+response.status);
-  pushActive=true;localStorage.setItem(PUSH_CONSENT,'yes');
+  pushActive=true;localStorage.setItem(PUSH_CONSENT,'yes');updatePushInvite();
  }finally{clearTimeout(timeout)}
 }
 async function disableNotifications(){
@@ -673,10 +711,13 @@ async function disableNotifications(){
    }else throw Error('Підписка тимчасово недоступна');
    await sub.unsubscribe();
   }
-  pushActive=false;localStorage.setItem(PUSH_CONSENT,'no');flash('Сповіщення вимкнено. Підписку скасовано');renderSettings();
+  pushActive=false;localStorage.setItem(PUSH_CONSENT,'no');flash('Сповіщення вимкнено. Підписку скасовано');renderSettings();updatePushInvite();
  }catch(e){console.warn(e);flash('Не вдалося відписатися — повторіть, коли є інтернет')}
 }
-async function enableNotifications(){if(!('Notification' in window)){flash('Цей браузер не підтримує сповіщення');return}if(Notification.permission==='denied'){flash('Дозвольте сповіщення у налаштуваннях iPhone');return}const granted=await Notification.requestPermission();if(granted!=='granted'){flash('Дозвіл на сповіщення не надано');return}if(pushConfig){try{await updatePushSubscription();flash('Сповіщення увімкнено')}catch(e){console.warn(e);flash('Не вдалося ввімкнути сповіщення. Спробуйте пізніше')}}else flash('Нагадування увімкнено для відкритого застосунку');renderSettings()}
+async function enableNotifications(){if(!('Notification' in window)){flash('Цей браузер не підтримує сповіщення');return}if(Notification.permission==='denied'){flash('Дозвольте сповіщення у налаштуваннях iPhone');return}const granted=await Notification.requestPermission();if(granted!=='granted'){flash('Дозвіл на сповіщення не надано');return}if(pushConfig){try{await updatePushSubscription();flash('Сповіщення увімкнено')}catch(e){console.warn(e);flash('Не вдалося ввімкнути сповіщення. Спробуйте пізніше')}}else flash('Нагадування увімкнено для відкритого застосунку');renderSettings();updatePushInvite()}
+// An iOS permission change can happen in system Settings while the PWA is suspended.
+window.addEventListener('focus',updatePushInvite);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)updatePushInvite()});
 // Event wiring
 // Inbox uses the existing screen and date picker; no external navigation.
 window.addEventListener('svitlo:open-schedule',event=>{

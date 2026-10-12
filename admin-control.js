@@ -42,6 +42,7 @@
   options('opsNoticeSchedule',local(n?.scheduledAt));options('opsNoticeExpires',local(n?.expiresAt));
   check('opsNoticeActive',n?.active);check('opsNoticePinned',n?.pinned);
   photos=[...(n?.images||[])];drawPhotos();previewMessage();
+  document.dispatchEvent(new CustomEvent('svitlo:cms-loaded'));
  }
  function drawList(){
   const list=$('opsNoticeList');list.replaceChildren();
@@ -251,7 +252,7 @@
   const t=templates[$('opsTemplate').value];if(!t||!target())return;
   if((read('opsNoticeTitle')||read('opsNoticeContent'))&&!confirm('Замінити заголовок і текст вибраним шаблоном?'))return;
   options('opsNoticeTitle',t.title);options('opsNoticeBody',t.body);options('opsNoticeContent',t.content);
-  options('opsNoticeKind',t.kind);options('opsNoticeIcon',t.icon);capture();previewMessage()
+  options('opsNoticeKind',t.kind);options('opsNoticeIcon',t.icon);capture();previewMessage();document.dispatchEvent(new CustomEvent('svitlo:cms-loaded'))
  };
  $('opsReload').onclick=reload;
  async function saveConfig({silent=false}={}){
@@ -262,9 +263,11 @@
   const toPush=state.announcements.filter(x=>x.active&&x.delivery==='both'&&!x.pushSentAt
    &&(!x.scheduledAt||Date.parse(x.scheduledAt)<=Date.now()));
   if(toPush.length&&!confirm('Надіслати Push для '+toPush.length+' повідомлень?'))throw Error('Розсилку не підтверджено');
-  const next={...state,maintenance:{enabled:newOn,title:read('opsTitle'),message:read('opsMessage'),
+  // Preserve Features-tab changes, CMS notices and live server fields during the same session.
+  const latest=await api('app-config');
+  const next={...state,site:{...latest.site,...state.site,flags:{...latest.site?.flags,...state.site?.flags}},maintenance:{enabled:newOn,title:read('opsTitle'),message:read('opsMessage'),
    mode:read('opsMode'),theme:read('opsTheme'),icon:read('opsIcon'),
-   imageUrl:read('opsImageUrl'),startsAt:fromLocal($('opsStartsAt').value),until:fromLocal($('opsUntil').value),...getVisual()},site:getSite()};
+   imageUrl:read('opsImageUrl'),startsAt:fromLocal($('opsStartsAt').value),until:fromLocal($('opsUntil').value),...getVisual()},site:{...latest.site,...getSite(),flags:{...latest.site?.flags,...getSite().flags}}};
   busy=true;$('opsSave').disabled=true;
   try{
    state=await api('app-config',{method:'PUT',body:JSON.stringify(next)});
@@ -280,5 +283,8 @@
  }
  $('opsSave').onclick=()=>{clearTimeout(autoSaveTimer);saveConfig().catch(console.warn)};
  document.querySelector('[data-admin-tab="operations"]')?.addEventListener('click',reload);
+ document.querySelector('[data-admin-tab="maintenance"]')?.addEventListener('click',reload);
+ $('opsMaintenanceSave')?.addEventListener('click',()=>{$('opsSave')?.click()});
+ document.querySelector('[data-admin-tab="audit"]')?.addEventListener('click',()=>refreshHistory().catch(console.warn));
  document.addEventListener('svitlo:admin-logout',()=>{state=null;status('Для керування потрібен вхід.')});
 })();
