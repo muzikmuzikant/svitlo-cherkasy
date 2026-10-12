@@ -64,8 +64,8 @@ test('new files are present in public distribution and offline PWA shell',()=>{
 test('audit includes all agreed item IDs rather than claiming full completion',()=>{
  const audit=load('FEATURE_AUDIT_v750.md');
  const expected=[1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,30,32,33,34,35,36,37,38,39,40,42,43,45,47,49,50,51,52,53,54,55,57,61,62,63,64,65,66,67,68,70,71,72,73,74,75,76,77,79,80,81,82,83,84,85,87,91,92,95,97,98,99,100,101,102,103,104,105,113,114,116,117,118,119,120];
- for(const id of expected)assert.match(audit,new RegExp('^\\| '+id+' \\| (?:Г|Ч|Н) \\|','m'),'Missing audit item '+id);
- assert.match(audit,/\\| 57 \\| Н \\|/);
- assert.match(audit,/\\| 36 \\| Н \\|/);
- assert.match(audit,/\\| 72 \\| Н \\|/);
+ for(const id of expected)assert.match(audit,new RegExp('^\\| '+id+' \\| (?:Г|Ч|Н|С) \\|','m'),'Missing audit item '+id);
+ assert.match(audit,/\\| 57 \\| Ч \\|/);
+ assert.match(audit,/\\| 36 \\| Г \\|/);
+ assert.match(audit,/\\| 72 \\| С \\|/);
 });
