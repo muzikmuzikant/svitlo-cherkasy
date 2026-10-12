@@ -1,7 +1,14 @@
 {
   "schemaVersion": 1,
-  "lastChecked": "2026-10-12T08:51:23+03:00",
+  "lastChecked": "2026-10-12T10:16:01+03:00",
   "rejectedCount": 0,
-  "warningCount": 0,
-  "items": []
+  "warningCount": 1,
+  "items": [
+    {
+      "code": "UNREADABLE_ARTICLE",
+      "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-12-zhovtnya?lang=uk",
+      "targetDate": "2026-10-12",
+      "reason": "Графік у новині не вдалося розпізнати."
+    }
+  ]
 }

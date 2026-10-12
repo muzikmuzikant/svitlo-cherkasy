@@ -1,10 +1,8 @@
 {
   "schemaVersion": 3,
-  "lastChecked": "2026-10-12T08:51:23+03:00",
-  "reviewPending": false,
-  "confirmedNoScheduleDates": [
-    "2026-10-13"
-  ],
+  "lastChecked": "2026-10-12T10:16:01+03:00",
+  "reviewPending": true,
+  "confirmedNoScheduleDates": [],
   "source": "https://www.cherkasyoblenergo.com/news",
   "days": [
     {
