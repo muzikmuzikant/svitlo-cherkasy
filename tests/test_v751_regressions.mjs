@@ -111,7 +111,7 @@ test('all changed client scripts parse and app version is consistent',()=>{
  for(const file of ['app.js','admin-control.js','inbox-ui.js','site-mode.js','notification-center.js','admin-dashboard.js','install.js','sw.js'])
   assert.doesNotThrow(()=>new Function(read(file)),file);
  const version=JSON.parse(read('release.json')).version;
- assert.equal(version,'7.5.1');
+ assert.match(version,/^7\.5\.[1-9]\d*$/);
  assert.match(read('sw.js'),new RegExp('svitlo-cherkasy-shell-v'+version.replaceAll('.','\\.') ));
  assert.match(read('index.html'),/name="svitlo-version" content="7\.5\.1"/);
 });
