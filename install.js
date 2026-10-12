@@ -4,6 +4,16 @@
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   // Installed iPhone PWAs must update their own Service Worker, not only the browser installer.
   if (navigator.serviceWorker?.register) {
+    const previousController=navigator.serviceWorker.controller;
+    let restarted=false;
+    if (standalone && previousController && navigator.serviceWorker.addEventListener) {
+      navigator.serviceWorker.addEventListener('controllerchange',()=>{
+        if (!restarted && navigator.serviceWorker.controller!==previousController) {
+          restarted=true;
+          window.location.reload(); // Load compatible HTML and scripts together.
+        }
+      });
+    }
     navigator.serviceWorker.register('./sw.js', {scope:'./',updateViaCache:'none'})
       .then(reg=>reg.update?.().catch(error=>console.warn('SW update:',error)))
       .catch(error=>console.warn('SW registration:',error));
