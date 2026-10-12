@@ -141,7 +141,7 @@
  function routePush(id){
   document.querySelector('[data-go="updates"]')?.click();
   // Push tap should always request a fresh authoritative server snapshot.
-  window.dispatchEvent(new Event('svitlo:refresh-content'));
+  window.dispatchEvent(new CustomEvent('svitlo:refresh-content'));
   const target=id||'';
   if(target&&open(target))return;
   if(target){sync().then(()=>open(target)).catch(console.warn)}
@@ -150,7 +150,7 @@
  $('inboxMarkAll').onclick=async()=>{await store.mark(rows.map(x=>x.id));await refresh()};
  $('inboxClear').onclick=async()=>{await store.clearRead();await refresh()};
  document.querySelectorAll('[data-go="updates"]').forEach(b=>b.addEventListener('click',()=>{
-  window.dispatchEvent(new Event('svitlo:refresh-content'));
+  window.dispatchEvent(new CustomEvent('svitlo:refresh-content'));
   sync().catch(console.warn);
  }));
  window.addEventListener('svitlo:public-config',event=>{
@@ -164,7 +164,7 @@
  window.addEventListener('svitlo:content-updated',()=>sync().catch(console.warn));
  navigator.serviceWorker?.addEventListener('message',event=>{
   if(event.data?.type==='SVITLO_INBOX_UPDATED'){
-   window.dispatchEvent(new Event('svitlo:refresh-content'));
+   window.dispatchEvent(new CustomEvent('svitlo:refresh-content'));
    sync().catch(console.warn);
   }
   if(event.data?.type==='SVITLO_OPEN_INBOX')routePush(event.data.id);
@@ -172,7 +172,7 @@
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync().catch(console.warn)});
  window.addEventListener('online',()=>sync().catch(console.warn));
  window.addEventListener('focus',()=>{
-  window.dispatchEvent(new Event('svitlo:refresh-content'));
+  window.dispatchEvent(new CustomEvent('svitlo:refresh-content'));
   sync().catch(console.warn)
  });
  window.SvitloInboxUI={refresh,sync,open};
@@ -187,7 +187,7 @@
    notices=window.SvitloPublicConfig.announcements||[];
    noticeFeedConfirmed=true;
   }
-  await sync();window.dispatchEvent(new Event('svitlo:refresh-content'));
+  await sync();window.dispatchEvent(new CustomEvent('svitlo:refresh-content'));
   const id=new URL(location.href).searchParams.get('inbox');
   if(id){history.replaceState(null,'',location.pathname+location.hash);routePush(id)}
  }).catch(console.warn);
