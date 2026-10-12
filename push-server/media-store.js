@@ -16,5 +16,13 @@ export function createMediaStore(directory){
  const folder=path.join(directory,'media');
  function save(input){const {bytes,mime,ext}=validateUpload(input);fs.mkdirSync(folder,{recursive:true});const id=crypto.randomBytes(15).toString('hex')+ext;fs.writeFileSync(path.join(folder,id),bytes,{flag:'wx',mode:0o600});return {id,mime,size:bytes.length}}
  function read(id){if(!/^[a-f0-9]{30}\.(png|jpg|webp)$/.test(id||''))return null;try{const data=fs.readFileSync(path.join(folder,id));return {data,mime:id.endsWith('.png')?'image/png':id.endsWith('.jpg')?'image/jpeg':'image/webp'}}catch{return null}}
- return {save,read};
+ function list(){
+  try{
+   return fs.readdirSync(folder).filter(name=>/^[a-f0-9]{30}\.(?:png|jpg|webp)$/.test(name))
+    .map(name=>{const stat=fs.statSync(path.join(folder,name));
+      return {id:name,size:stat.size,uploadedAt:stat.birthtime.toISOString(),mime:name.endsWith('.png')?'image/png':name.endsWith('.jpg')?'image/jpeg':'image/webp'};})
+    .sort((a,b)=>b.uploadedAt.localeCompare(a.uploadedAt)).slice(0,400);
+  }catch(e){if(e.code==='ENOENT')return [];throw e}
+ }
+ return {save,read,list};
 }

@@ -13,7 +13,7 @@ export function cleanMessage(input) {
   const queue = input.queue == null || input.queue === '' ? 'all' : String(input.queue);
   if (queue !== 'all' && !ALL_QUEUES.has(queue)) throw Error('Невідома підчерга');
   const notificationId=typeof input.notificationId==='string'&&/^notice:[A-Za-z0-9_-]{6,64}$/.test(input.notificationId)?input.notificationId:null;
-  return notificationId?{title,body,queue,notificationId}:{title,body,queue};
+  return notificationId?{title,body,queue,notificationId,inbox:input.inbox!==false}:{title,body,queue};
 }
 
 export function selectRecipients(subscribers, { queue = 'all', target = 'all', endpoint = '' } = {}) {
@@ -59,7 +59,7 @@ export function createManualPush({ subscribers, webpush, appUrl, hash, save }) {
           await webpush.sendNotification(record.subscription, JSON.stringify({
             title: msg.title, body: msg.body, url: appUrl,
             tag: msg.notificationId||('svitlo-admin-'+Date.now().toString(36)),
-            notificationId:msg.notificationId||undefined,kind:msg.notificationId?'announcement':'push'
+            notificationId:msg.notificationId||undefined,kind:msg.notificationId?'announcement':'push',inbox:msg.inbox!==false
           }), { TTL: 3600, urgency: 'normal' });
           delivered++;
         } catch (e) {

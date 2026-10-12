@@ -45,7 +45,7 @@ test('delete and unpublish save immediately to server, not just a local array',(
  assert.match(editor,/async function saveConfig/);
  assert.match(editor,/await saveConfig\(\{silent:true\}\)/);
  assert.match(editor,/opsNoticeActive','opsNoticePinned/);
- assert.match(editor,/state=await api\('app-config',\{method:'PUT'/);
+ assert.match(editor,/const saved=await api\('app-config',\{method:'PUT'/);
  assert.match(editor,/new BroadcastChannel\('svitlo-content-v1'\)/);
 });
 test('server refresh failure cannot erase offline saved messages',()=>{

@@ -1,6 +1,6 @@
 importScripts('./notification-center.js');
-const VERSION='svitlo-cherkasy-shell-v7.7.2';
-const SHELL=["./","./index.html","./app.js","./address-lookup.js","./notification-center.js","./inbox-ui.js","./site-mode.js","./admin-control.js","./admin-richtext.js","./admin-help-richtext.js","./admin-control.css","./admin-dashboard.js","./admin-features.js","./data-merge.js","./hour-paint.js","./admin.html","./admin.js","./style.css","./install.css","./install.js","./version-check.js","./release.json","./manifest.webmanifest","./privacy.html","./about.html","./feedback.html","./feedback.js","./help.html","./help.css","./help.js","./admin-extra.js","./admin-planner.js","./schedule-planner.js","./favicon.ico","./favicon-16.png","./favicon-32.png","./favicon-48.png","./assets/icon.svg","./assets/icon-192-v692.png","./assets/icon-512-v692.png","./assets/icon-512-maskable-v692.png","./apple-touch-icon-v692.png","./apple-touch-icon.png"];
+const VERSION='svitlo-cherkasy-shell-v7.8.0';
+const SHELL=["./","./index.html","./app.js","./address-lookup.js","./notification-center.js","./inbox-ui.js","./site-mode.js","./admin-control.js","./admin-richtext.js","./admin-help-richtext.js","./admin-control.css","./admin-dashboard.js","./admin-features.js","./admin-command.js","./data-merge.js","./hour-paint.js","./admin.html","./admin.js","./style.css","./install.css","./install.js","./version-check.js","./release.json","./manifest.webmanifest","./privacy.html","./about.html","./feedback.html","./feedback.js","./help.html","./help.css","./help.js","./admin-extra.js","./admin-planner.js","./schedule-planner.js","./favicon.ico","./favicon-16.png","./favicon-32.png","./favicon-48.png","./assets/icon.svg","./assets/icon-192-v692.png","./assets/icon-512-v692.png","./assets/icon-512-maskable-v692.png","./apple-touch-icon-v692.png","./apple-touch-icon.png"];
 const CACHE_DATA='svitlo-cherkasy-data-v6.7';
 const CACHE_IMAGES='svitlo-cherkasy-media-v74';
 self.addEventListener('install',event=>event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
@@ -40,9 +40,10 @@ self.addEventListener('push',event=>{
  // iOS requires a visible notification for every push.
  const tag=String(msg.tag||msg.title).slice(0,70);
  const id=typeof msg.notificationId==='string'&&/^notice:[A-Za-z0-9_-]{6,64}$/.test(msg.notificationId)?msg.notificationId:'push:'+tag;
+ const inboxAllowed=msg.inbox!==false;
  event.waitUntil(Promise.all([
-  self.registration.showNotification(String(msg.title).slice(0,85),{body:String(msg.body).slice(0,220),icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',tag,data:{url:msg.url||self.registration.scope,inboxId:id}}),
-  self.SvitloInbox.add({id,title:msg.title,body:msg.body,kind:id.startsWith('notice:')?'announcement':'push',at:new Date().toISOString(),url:msg.url||self.registration.scope})
+  self.registration.showNotification(String(msg.title).slice(0,85),{body:String(msg.body).slice(0,220),icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',tag,data:{url:msg.url||self.registration.scope,inboxId:inboxAllowed?id:null,inbox:inboxAllowed}}),
+  (inboxAllowed?self.SvitloInbox.add({id,title:msg.title,body:msg.body,kind:id.startsWith('notice:')?'announcement':'push',at:new Date().toISOString(),url:msg.url||self.registration.scope}):Promise.resolve())
    .then(()=>self.clients.matchAll({type:'window',includeUncontrolled:true}))
    .then(clients=>clients.forEach(client=>client.postMessage({type:'SVITLO_INBOX_UPDATED'})))
    .catch(error=>console.warn('Inbox save:',error))
@@ -52,10 +53,11 @@ self.addEventListener('notificationclick',event=>{
  event.notification.close();
  event.waitUntil((async()=>{
   const id=String(event.notification.data?.inboxId||'').slice(0,150);
+  const inboxAllowed=event.notification.data?.inbox!==false;
   const tabs=await self.clients.matchAll({type:'window',includeUncontrolled:true});
   for(const tab of tabs){if(tab.url.startsWith(self.registration.scope)){
    await tab.focus();
-   tab.postMessage({type:'SVITLO_OPEN_INBOX',id});
+   if(inboxAllowed)tab.postMessage({type:'SVITLO_OPEN_INBOX',id});
    return;
   }}
   const link=new URL(self.registration.scope);

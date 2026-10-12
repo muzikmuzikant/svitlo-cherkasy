@@ -25,8 +25,8 @@ test('25 feature switches have real runtime effects and can be searched, saved a
   'help','feedback','addressSearch','pushPrompt','pushSettings','tomorrowPreview',
   'quickAddresses','homePlaces','dailyStats','overviewTimeline','statusCountdown',
   'weekNavigation','dayStats','scheduleLegend','offlineStatus','scheduleSource',
-  'manualRefresh','homeQuickActions','animations'];
- assert.equal(Object.keys(defaults).length,25);
+  'manualRefresh','homeQuickActions','animations','quickQueueLookup','nextChangeCard','dayShortcuts','detailSourceLink','hourlyLabels','inboxMarkAll','inboxClearRead','appUpdateCheck','editAddressFromGraph','syncStatus','settingsFooter','tomorrowOpenShortcut','scheduleOpenShortcut'];
+ assert.equal(Object.keys(defaults).length,38);
  for(const key of expected){
   assert.ok(key in defaults,'Config must validate '+key);
   assert.match(admin,new RegExp("['\\x22]"+key+"['\\x22]"),'Admin switch '+key);
@@ -36,7 +36,7 @@ test('25 feature switches have real runtime effects and can be searched, saved a
  assert.match(admin,/api\('app-config'\)/);
  assert.match(admin,/method:'PUT'/);
  assert.match(admin,/const cfg=await api\('app-config'\)/);
- assert.match(read('admin-control.js'),/flags:\{\.\.\.latest\.site\?\.flags,\.\.\.getSite\(\)\.flags\}/);
+ assert.match(read('admin-control.js'),/next=\{\.\.\.latest,announcements:noticeChanges\}/);
 });
 
 test('feature flags are whitelisted on the server and stored with safe defaults',()=>{

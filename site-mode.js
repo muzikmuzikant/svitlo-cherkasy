@@ -24,7 +24,13 @@
  }
  function applySite(site){
   const flags=site?.flags||{},links=site?.links||{},banner=site?.banner||{};
-  const featureKeys=["inbox","inboxFilters","inboxHistory","sharing","sharePreview","copySchedule","help","feedback","addressSearch","pushPrompt","pushSettings","tomorrowPreview","quickAddresses","homePlaces","dailyStats","overviewTimeline","statusCountdown","weekNavigation","dayStats","scheduleLegend","offlineStatus","scheduleSource","manualRefresh","homeQuickActions","animations"];
+  const appearance=site?.appearance||{},validColor=x=>typeof x==='string'&&/^#[0-9a-fA-F]{6}$/.test(x);
+  for(const [css,key,defaultValue] of [['--blue','accent','#377dff'],['--bg','background','#f6f8fc'],['--surface','surface','#ffffff']]){
+   document.documentElement.style.setProperty(css,validColor(appearance[key])?appearance[key]:defaultValue);
+  }
+  document.documentElement.dataset.siteDensity=appearance.density==='compact'?'compact':'comfortable';
+  document.documentElement.dataset.siteRounded=appearance.rounded===false?'false':'true';
+  const featureKeys=["inbox","inboxFilters","inboxHistory","sharing","sharePreview","copySchedule","help","feedback","addressSearch","pushPrompt","pushSettings","tomorrowPreview","quickAddresses","homePlaces","dailyStats","overviewTimeline","statusCountdown","weekNavigation","dayStats","scheduleLegend","offlineStatus","scheduleSource","manualRefresh","homeQuickActions","animations","quickQueueLookup","nextChangeCard","dayShortcuts","detailSourceLink","hourlyLabels","inboxMarkAll","inboxClearRead","appUpdateCheck","editAddressFromGraph","syncStatus","settingsFooter","tomorrowOpenShortcut","scheduleOpenShortcut"];
   for(const key of featureKeys)document.documentElement.classList.toggle('feature-off-'+key,flags[key]===false);
   document.documentElement.dataset.featureConfigLoaded='true';
   const hideInbox=flags.inbox===false,hideShare=flags.sharing===false,hideHelp=flags.help===false;
@@ -72,6 +78,25 @@
    document.querySelectorAll('a[data-managed-link="help"]').forEach(a=>a.hidden=true);
    summary.push('допомогу');
   }
+  const limited=[
+   ['sharing',['shareToday','shareDetail'],'поширення графіка'],
+   ['push-settings',['enableNotifications','disableNotifications'],'налаштування Push'],
+   ['manual-refresh',['syncNow','refreshDetail','manualRefresh'],'ручне оновлення'],
+   ['copy-schedule',['copyToday'],'копіювання годин']
+  ];
+  for(const [module,ids,label] of limited){
+   const paused=disabled.includes(module);
+   for(const id of ids)if($(id))$(id).disabled=paused;
+   if(paused)summary.push(label);
+  }
+  const quick=$('homeQuickPlaces');
+  if(quick){
+   quick.hidden=disabled.includes('quick-addresses');
+   if(disabled.includes('quick-addresses'))summary.push('швидкі адреси');
+  }
+  for(const anchor of document.querySelectorAll('a[data-managed-link="feedback"]'))
+   anchor.hidden=disabled.includes('feedback')||lastConfig?.site?.flags?.feedback===false;
+  if(disabled.includes('feedback'))summary.push('звернення');
   moduleBanner.hidden=!summary.length;
   moduleBanner.textContent=summary.length?'🛠️ Тимчасово призупинено: '+summary.join(', ')+'.':'';
  }
@@ -96,6 +121,7 @@
   $('maintenanceMessage').textContent=m.message||'Незабаром повернемося.';
   overlay.dataset.theme=['blue','midnight','light','violet','custom'].includes(m.theme)?m.theme:'blue';
   overlay.dataset.mode=m.mode==='incident'?'incident':m.mode==='limited'?'limited':'full';
+  overlay.dataset.layout=['centered','compact','split'].includes(m.layout)?m.layout:'centered';
   const eyebrow=overlay.querySelector('.maintenance-kicker');
   if(eyebrow)eyebrow.textContent=m.mode==='incident'?'ВАЖЛИВЕ ПОВІДОМЛЕННЯ':'СВІТЛО ЧЕРКАСИ';
   if(m.theme==='custom'&&m.colors){

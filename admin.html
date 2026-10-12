@@ -52,18 +52,32 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  </form>
 </section>
 <div id="adminDashboard" hidden>
-<div class="auth-head"><div><h1>Панель керування</h1><p class="auth-note">Ви увійшли як адміністратор. Дії підтверджуються на сервері.</p></div><div class="flex"><span id="connection" class="pill ok">Авторизовано</span><button id="disconnect" class="secondary" type="button">Вийти</button></div></div>
+<div class="auth-head"><div class="control-brand"><span class="control-logo">ϟ</span><div><span class="control-kicker">SVITLO CONTROL / ADMIN</span><h1>Центр керування</h1><p class="auth-note">Світло Черкаси · Робоче середовище</p></div></div><div class="control-head-actions"><span id="connection" class="pill ok">Авторизовано</span><span id="controlServerState" class="control-server-state">Перевіряємо сервер…</span><button id="disconnect" class="secondary" type="button">Вийти</button></div></div>
 <nav class="admin-tabs" aria-label="Розділи адмінпанелі">
- <button type="button" data-admin-tab="overview" aria-pressed="true">Огляд</button>
- <button type="button" data-admin-tab="sources" aria-pressed="false">Дані та перевірки</button>
- <button type="button" data-admin-tab="feedback" aria-pressed="false">Звернення</button>
- <button type="button" data-admin-tab="push" aria-pressed="false">Push</button>
- <button type="button" data-admin-tab="operations" aria-pressed="false">📣 Повідомлення</button>
- <button type="button" data-admin-tab="maintenance" aria-pressed="false">🛠️ Техроботи</button>
- <button type="button" data-admin-tab="features" aria-pressed="false">⚙️ Функції</button>
-  <button type="button" data-admin-tab="help" aria-pressed="false">Центр допомоги</button>
- <button type="button" data-admin-tab="data" aria-pressed="false">Редактор</button>
- <button type="button" data-admin-tab="audit" aria-pressed="false">Журнал</button>
+ <div class="control-nav-search"><label for="controlSearch">Пошук розділів</label><input type="search" id="controlSearch" placeholder="Пошук…  Ctrl+K" autocomplete="off"></div>
+ <div class="control-nav-group"><span>РОБОЧИЙ СТІЛ</span>
+ <button type="button" data-admin-tab="overview" aria-pressed="true">◫ <span>Огляд</span></button>
+ <button type="button" data-admin-tab="insights" aria-pressed="false">▥ <span>Аналітика</span></button>
+ <button type="button" data-admin-tab="quality" aria-pressed="false">◎ <span>Діагностика</span></button></div>
+ <div class="control-nav-group"><span>ПУБЛІКАЦІЇ ТА КОРИСТУВАЧІ</span>
+ <button type="button" data-admin-tab="operations" aria-pressed="false">▤ <span>Повідомлення</span></button>
+ <button type="button" data-admin-tab="push" aria-pressed="false">♧ <span>Push-розсилки</span></button>
+ <button type="button" data-admin-tab="media" aria-pressed="false">▧ <span>Медіатека</span></button>
+ <button type="button" data-admin-tab="feedback" aria-pressed="false">▣ <span>Звернення</span></button>
+ <button type="button" data-admin-tab="help" aria-pressed="false">❔ <span>Центр допомоги</span></button></div>
+ <div class="control-nav-group"><span>ЗАСТОСУНОК</span>
+ <button type="button" data-admin-tab="features" aria-pressed="false">⚙ <span>Функції</span></button>
+ <button type="button" data-admin-tab="design" aria-pressed="false">◈ <span>Оформлення</span></button>
+ <button type="button" data-admin-tab="maintenance" aria-pressed="false">⚒ <span>Техроботи</span></button></div>
+ <div class="control-nav-group"><span>ДАНІ ТА СИСТЕМА</span>
+ <button type="button" data-admin-tab="sources" aria-pressed="false">◉ <span>Джерела</span></button>
+ <button type="button" data-admin-tab="planner" aria-pressed="false">▦ <span>Планувальник</span></button>
+ <button type="button" data-admin-tab="tools" aria-pressed="false">⌘ <span>Швидкі інструменти</span></button>
+ <button type="button" data-admin-tab="data" aria-pressed="false">⌁ <span>Редактор даних</span></button>
+ <button type="button" data-admin-tab="security" aria-pressed="false">⛨ <span>Доступ і права</span></button>
+ <button type="button" data-admin-tab="backup" aria-pressed="false">▨ <span>Резервні копії</span></button>
+ <button type="button" data-admin-tab="audit" aria-pressed="false">◷ <span>Журнал</span></button></div>
+ <div class="control-nav-foot"><span id="controlNavigationCount">17 розділів</span><a href="./index.html" target="_blank" rel="noopener">Відкрити застосунок ↗</a></div>
 </nav>
 <section class="card" data-admin-panel="overview">
  <div class="headline"><h2>Огляд роботи сервісу</h2><button type="button" class="secondary" id="monitorRefresh">Оновити</button></div>
@@ -89,6 +103,56 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
   <div class="ops-dash-section-header"><h3>Історія версій застосунку</h3><span>Перевірені випуски</span></div>
   <div class="ops-release-history" id="opsReleaseHistory"><p>Завантажуємо список версій…</p></div>
  </div>
+</section>
+<section class="card control-large-panel" data-admin-panel="insights" hidden>
+ <div class="control-panel-lead"><span>REAL-TIME DATA</span><h2>Аналітика роботи</h2><p>Тільки реальні операційні показники. Без вигаданих переглядів, користувачів чи геолокацій.</p></div>
+ <div id="controlInsightsMetrics" class="control-summary-metrics"></div>
+ <div class="control-cols"><div class="control-subcard"><h3>Повідомлення за статусом</h3><div id="controlNoticeStats"></div></div>
+ <div class="control-subcard"><h3>Події адміністрації</h3><div id="controlAuditStats"></div></div></div>
+ <div class="control-cols"><div class="control-subcard"><h3>Доставка Push</h3><div id="controlPushStats"></div></div>
+ <div class="control-subcard"><h3>Час оновлення</h3><div id="controlFreshnessStats"></div></div></div>
+ <button type="button" class="secondary" id="controlInsightsReload">Оновити показники</button><p id="controlInsightsMessage" class="hint"></p>
+</section>
+<section class="card control-large-panel" data-admin-panel="quality" hidden>
+ <div class="control-panel-lead"><span>DIAGNOSTICS</span><h2>Контроль якості</h2><p>Перевірка зв'язку, публікацій, Push, дублікатів, термінів дії та службових налаштувань. Справжні результати, а не умовні галочки.</p></div>
+ <div class="control-quality-actions"><button type="button" id="controlRunChecks">Запустити перевірку</button><span id="controlCheckSummary">Перевірки ще не виконувалися.</span></div>
+ <div id="controlChecks" class="control-check-list"></div>
+</section>
+<section class="card control-large-panel" data-admin-panel="media" hidden>
+ <div class="control-panel-lead"><span>MEDIA LIBRARY</span><h2>Медіатека повідомлень</h2><p>Зображення, що використовуються в оголошеннях і техроботах. Пошук, копіювання посилання та перегляд використання.</p></div>
+ <div class="control-quality-actions"><input type="search" id="controlMediaSearch" placeholder="Пошук за повідомленням або URL…"><button type="button" class="secondary" id="controlMediaReload">Оновити</button></div>
+ <div class="control-media-upload"><input type="file" id="controlMediaFiles" accept="image/png,image/jpeg,image/webp" multiple>
+ <button type="button" id="controlMediaUpload">Завантажити зображення</button><span id="controlMediaUploadStatus">PNG, JPG, WebP до 3 МБ за файл</span></div>
+ <div id="controlMediaGrid" class="control-media-grid"></div><p id="controlMediaStatus" class="hint"></p>
+</section>
+<section class="card control-large-panel" data-admin-panel="backup" hidden>
+ <div class="control-panel-lead"><span>BACKUPS & RECOVERY</span><h2>Резервні копії</h2><p>Експорт повідомлень, налаштувань застосунку, технічних робіт і статей Центру допомоги. Не включає паролів, Push-токенів, звернень або приватних файлів.</p></div>
+ <div class="control-cols">
+  <div class="control-subcard"><h3>Створити копію</h3><p>Зберегти поточні налаштування із Railway у локальний JSON-файл.</p>
+   <button id="controlBackupExport" type="button">Завантажити резервну копію</button></div>
+  <div class="control-subcard"><h3>Відновити дані</h3><p>Попередній перегляд та підтвердження. Розсилки не запускаються, техроботи автоматично вимикаються.</p>
+  <label class="field" for="controlBackupFile">Файл резервної копії</label>
+  <input type="file" id="controlBackupFile" accept=".json,application/json">
+  <div id="controlBackupPreview" class="control-backup-preview">Оберіть резервну копію.</div>
+  <button type="button" id="controlBackupRestore" class="danger" disabled>Перевірити та відновити</button></div>
+ </div><p id="controlBackupStatus" class="hint" role="status">Зміни застосовуються тільки після явного підтвердження власника.</p>
+</section>
+<section class="card control-large-panel" data-admin-panel="security" hidden>
+ <div class="control-panel-lead"><span>ACCOUNT & SECURITY</span><h2>Доступ і права</h2><p>Поточна сесія, рівні дозволів та стан підключення. Паролі й токени не виводяться в браузер.</p></div>
+ <div id="controlAccessCards" class="control-summary-metrics"></div>
+ <div class="control-subcard"><h3>Ролі та дозволи</h3><div id="controlRoles"></div></div>
+ <div class="control-subcard"><h3>Безпека дій</h3><p>Масова Push-розсилка, увімкнення техробіт та видалення контенту вимагають підтвердження. Доступ додаткових ролей визначається конфігурацією Railway.</p></div>
+</section>
+<section class="card control-large-panel" data-admin-panel="design" hidden>
+ <div class="control-panel-lead"><span>APPEARANCE STUDIO</span><h2>Оформлення застосунку</h2><p>Кольори, щільність елементів і візуальний стиль. Публікація через Railway без перевипуску PWA.</p></div>
+ <div class="control-design-grid">
+ <div class="control-subcard"><div class="field"><label for="designAccent">Основний колір</label><input id="designAccent" type="color" value="#377dff"></div>
+ <div class="field"><label for="designBackground">Фон застосунку</label><input id="designBackground" type="color" value="#f6f8fc"></div>
+ <div class="field"><label for="designSurface">Фон карток</label><input id="designSurface" type="color" value="#ffffff"></div>
+ <div class="field"><label for="designDensity">Розмір інтерфейсу</label><select id="designDensity"><option value="comfortable">Зручний</option><option value="compact">Компактний</option></select></div>
+ <label class="checkline"><input type="checkbox" id="designRounded" checked> Великі заокруглення карток</label></div>
+ <div class="control-design-preview" id="controlDesignPreview"><span>СВІТЛО ЧЕРКАСИ · ПЕРЕГЛЯД</span><div><strong>⚡ Є світло</strong><p>Наступна зміна за графіком</p></div><aside>Налаштування застосовуються автоматично після збереження.</aside></div></div>
+ <div class="control-panel-actions"><span id="controlDesignStatus" role="status">Оформлення ще не змінено.</span><button type="button" class="secondary" id="designReset">Стандартні кольори</button><button type="button" id="designSave">Зберегти вигляд</button></div>
 </section>
 <section class="card" data-admin-panel="sources" hidden>
  <div class="headline"><h2>Надійність графіків та джерел</h2><button type="button" class="secondary" id="sourceRefresh">Перевірити зараз</button></div>
@@ -130,6 +194,14 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
    <div class="headline"><h2>📣 Повідомлення</h2><span class="pill" id="opsNoticeCount">0</span></div>
    <button type="button" id="opsNewNotice" class="ops-new-button">+ Створити повідомлення</button>
    <input type="search" id="opsNoticeSearch" placeholder="Знайти оголошення..." aria-label="Пошук повідомлень">
+   <div class="control-notice-filters"><select id="opsNoticeStatusFilter" aria-label="Статус повідомлень">
+    <option value="all">Усі статуси</option><option value="active">Опубліковані</option>
+    <option value="draft">Чернетки</option><option value="scheduled">Заплановані</option>
+    <option value="expired">Прострочені</option></select>
+    <select id="opsNoticeSort" aria-label="Сортування"><option value="new">Нові спочатку</option>
+    <option value="old">Старі спочатку</option><option value="title">За назвою</option></select></div>
+   <div class="control-notice-tools"><button type="button" class="secondary" id="opsNoticesExport">Експорт JSON</button>
+   <button type="button" class="secondary" id="opsExpireNotices">Зняти прострочені</button></div>
    <div id="opsNoticeList" class="ops-notices"></div>
   </aside>
   <div class="ops-editor-main">
@@ -152,7 +224,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
    </div>
    <div class="two">
     <div class="field"><label for="opsNoticeQueue">Одержувачі</label><select id="opsNoticeQueue"><option value="all">Усі підчерги</option></select></div>
-    <div class="field"><label for="opsNoticeDelivery">Спосіб доставки</label><select id="opsNoticeDelivery"><option value="inbox">Тільки у «Вхідні»</option><option value="both">«Вхідні» та Push</option></select></div>
+    <div class="field"><label for="opsNoticeDelivery">Спосіб доставки</label><select id="opsNoticeDelivery"><option value="inbox">Тільки у «Вхідні»</option><option value="both">«Вхідні» та Push</option><option value="push">Тільки Push (без «Вхідних»)</option></select></div>
    </div>
    <div class="two">
     <div class="field"><label for="opsNoticeSchedule">Запланований час появи</label><input id="opsNoticeSchedule" type="datetime-local"></div>
@@ -189,6 +261,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
    <div class="ops-fields">
     <div class="two">
      <div class="field"><label for="opsMode">Режим</label><select id="opsMode"><option value="full">Повний екран</option><option value="limited">Часткові роботи (банер)</option><option value="incident">Термінове повідомлення</option></select></div>
+     <div class="field"><label for="opsLayout">Компонування екрана</label><select id="opsLayout"><option value="centered">По центру</option><option value="compact">Компактно</option><option value="split">Розширена композиція</option></select></div>
      <div class="field"><label for="opsTheme">Оформлення</label><select id="opsTheme"><option value="blue">Синя</option><option value="midnight">Темна</option><option value="light">Світла</option><option value="violet">Фіолетова</option><option value="custom">Своя палітра</option></select></div>
     </div>
     <div class="two">
@@ -219,6 +292,12 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
   <label><input id="opsDisableInbox" type="checkbox"> Призупинити «Вхідні»</label>
   <label><input id="opsDisableSearch" type="checkbox"> Призупинити пошук адрес</label>
   <label><input id="opsDisableHelp" type="checkbox"> Призупинити допомогу</label>
+  <label><input id="opsDisableSharing" type="checkbox"> Призупинити поширення графіка</label>
+  <label><input id="opsDisablePushSettings" type="checkbox"> Призупинити налаштування Push</label>
+  <label><input id="opsDisableQuickAddresses" type="checkbox"> Призупинити швидкі адреси</label>
+  <label><input id="opsDisableManualRefresh" type="checkbox"> Призупинити ручне оновлення</label>
+  <label><input id="opsDisableFeedback" type="checkbox"> Призупинити звернення</label>
+  <label><input id="opsDisableCopySchedule" type="checkbox"> Призупинити копіювання годин</label>
  </div>
  </section>
 
@@ -294,7 +373,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
 </section>
 <div class="two" data-admin-panel="overview"><div class="metric"><strong id="scheduleStat">—</strong><span>Опубліковані дні</span></div><div class="metric"><strong id="addressStat">—</strong><span>Розпізнані адреси + довідник</span></div><div class="metric"><strong id="townStat">—</strong><span>Населені пункти</span></div><div class="metric"><strong id="emergencyStat">—</strong><span>Екстрені бюлетені</span></div></div>
 
-<section class="card" data-admin-panel="data" hidden id="plannerSection">
+<section class="card" data-admin-panel="planner" hidden id="plannerSection">
   <div class="headline"><h2>Конструктор графіків</h2><span class="pill">Крок 30 хвилин</span></div>
   <p>Виберіть дату й підчергу. Натисніть на півгодинний проміжок, щоб відзначити відключення. Усі інші проміжки вважатимуться годинами <strong>без планових відключень</strong>. Після звірки з офіційним повідомленням можна опублікувати уточнення, яке не перезапише імпортер.</p>
   <div class="two"><div class="field"><label for="plannerDate">Дата графіка</label><input id="plannerDate" type="date"></div><div class="field"><label for="plannerQueue">Підчерга</label><select id="plannerQueue"></select></div></div>
@@ -307,7 +386,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
   <div id="plannerStatus" class="push-state" role="status">Увійдіть, щоб редагувати графіки.</div>
   <p class="hint">Публікація в GitHub вимагає окремого налаштування GITHUB_TOKEN і GITHUB_REPOSITORY на Railway. Не позначайте неповну або непідтверджену новину як графік «на весь день».</p>
 </section>
-<div class="card" data-admin-panel="data" hidden><h2>Швидкі інструменти</h2>
+<div class="card" data-admin-panel="tools" hidden><h2>Швидкі інструменти</h2>
  <p>Зміни готуються у файлі «Ручні уточнення». Перед публікацією перевірте джерело й натисніть «Опублікувати через GitHub».</p>
  <div class="two">
   <div class="field"><label for="quickTown">Населений пункт</label><input id="quickTown" placeholder="Слобода" value="Слобода"></div>
@@ -331,4 +410,4 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
 </div>
 <div class="card" data-admin-panel="data" hidden><div class="headline"><h2>Редактор та перевірка</h2><span class="pill" id="editMode">Локальна копія</span></div><div class="flex"><div class="field"><label for="kind">Файл</label><select id="kind"><option value="overrides">Ручні уточнення (не перезаписуються імпортером)</option><option value="schedules">Планові графіки</option><option value="addresses">Точні адреси</option><option value="streets">Довідник сіл і вулиць</option><option value="emergency">Повідомлення про аварійні відключення</option></select></div></div><p class="hint">Рекомендуємо змінювати <b>«Ручні уточнення»</b>: інакше наступний імпорт може перезаписати графіки чи адреси. Для виправлення обов'язково залишайте посилання на офіційну публікацію.</p><textarea id="editor" class="mono" spellcheck="false" aria-label="Редагування JSON"></textarea><div class="flex" style="margin-top:13px"><button id="validate" class="secondary">Перевірити JSON</button><button id="reload" class="secondary">Повернути збережене</button><button id="download" class="secondary">Експортувати JSON</button><button id="publish" disabled>Опублікувати через GitHub</button></div><div id="result" role="status" aria-live="polite">Оберіть файл або підключіть сервер, щоб перевіряти дані.</div></div>
 <div class="card" data-admin-panel="data" hidden><h2>Правила перевірки</h2><p>Адреси з вулицями без будинків показують <strong>можливі</strong> підчерги, а не точні. Не позначайте аварійні повідомлення як активні без офіційного підтвердження. Автоматичні Push на заблокованому iPhone працюють лише при увімкненому push-сервері й дозволі користувача.</p></div>
-</div></main><script defer src="./admin.js"></script><script defer src="./admin-extra.js"></script><script defer src="./admin-control.js"></script><script defer src="./admin-richtext.js"></script><script defer src="./admin-help-richtext.js"></script><script defer src="./admin-features.js"></script><script defer src="./admin-dashboard.js"></script><script defer src="./schedule-planner.js"></script><script defer src="./admin-planner.js"></script></body></html>
+</div></main><script defer src="./admin.js"></script><script defer src="./admin-extra.js"></script><script defer src="./admin-control.js"></script><script defer src="./admin-richtext.js"></script><script defer src="./admin-help-richtext.js"></script><script defer src="./admin-features.js"></script><script defer src="./admin-command.js"></script><script defer src="./admin-dashboard.js"></script><script defer src="./schedule-planner.js"></script><script defer src="./admin-planner.js"></script></body></html>
