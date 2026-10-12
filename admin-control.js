@@ -20,11 +20,18 @@
  }
  function capture(){
   const n=target();if(!n)return;
+  const before=JSON.stringify({title:n.title,body:n.body,content:n.content,kind:n.kind,priority:n.priority,
+   queue:n.queue,delivery:n.delivery,icon:n.icon,pinned:n.pinned,active:n.active,scheduledAt:n.scheduledAt,
+   expiresAt:n.expiresAt,images:n.images});
   Object.assign(n,{title:read('opsNoticeTitle'),body:read('opsNoticeBody'),content:read('opsNoticeContent'),
    kind:read('opsNoticeKind'),priority:read('opsNoticePriority'),queue:read('opsNoticeQueue'),
-   delivery:read('opsNoticeDelivery'),icon:read('opsNoticeIcon'),updatedAt:now(),pinned:$('opsNoticePinned').checked,
+   delivery:read('opsNoticeDelivery'),icon:read('opsNoticeIcon'),pinned:$('opsNoticePinned').checked,
    active:$('opsNoticeActive').checked,scheduledAt:fromLocal($('opsNoticeSchedule').value),
    expiresAt:fromLocal($('opsNoticeExpires').value),images:[...photos]});
+  const after=JSON.stringify({title:n.title,body:n.body,content:n.content,kind:n.kind,priority:n.priority,
+   queue:n.queue,delivery:n.delivery,icon:n.icon,pinned:n.pinned,active:n.active,scheduledAt:n.scheduledAt,
+   expiresAt:n.expiresAt,images:n.images});
+  if(before!==after)n.updatedAt=now();
  }
  function fill(){
   const n=target();
@@ -101,7 +108,7 @@
   state.announcements=state.announcements.filter(x=>x.id!==selectedId);selectedId=state.announcements[0]?.id||'';fill();drawList();status('Позначено до видалення. Натисніть «Зберегти».')};
  $('opsNoticeSearch').oninput=drawList;
  for(const id of ['opsNoticeTitle','opsNoticeBody','opsNoticeContent','opsNoticeKind','opsNoticePriority','opsNoticeIcon','opsNoticeQueue','opsNoticeDelivery','opsNoticeActive','opsNoticePinned','opsNoticeSchedule','opsNoticeExpires']){
-  $(id).addEventListener('input',()=>{capture();previewMessage()});
+  $(id).addEventListener('input',()=>{capture();previewMessage();drawList()});
  }
  for(const id of ['opsTitle','opsMessage','opsStartsAt','opsUntil','opsMode','opsTheme','opsIcon','opsImageUrl','opsMaintenance'])$(id).addEventListener('input',previewMaintenance);
  $('opsPhotoUpload').onchange=async()=>{
@@ -148,7 +155,8 @@
   const next={...state,maintenance:{enabled:newOn,title:read('opsTitle'),message:read('opsMessage'),mode:read('opsMode'),theme:read('opsTheme'),icon:read('opsIcon'),
    imageUrl:read('opsImageUrl'),startsAt:fromLocal($('opsStartsAt').value),until:fromLocal($('opsUntil').value)}};
   busy=true;$('opsSave').disabled=true;try{state=await api('app-config',{method:'PUT',body:JSON.stringify(next)});
-   fill();drawList();previewMaintenance();status('Збережено. Оновлення з’являться у застосунку приблизно протягом хвилини.');
+   fill();drawList();previewMaintenance();status('Збережено. Повідомлення та техроботи синхронізуються автоматично.');
+   try{new BroadcastChannel('svitlo-content-v1').postMessage({type:'REFRESH_APP_CONFIG',at:Date.now()})}catch{}
   }catch(e){status('Не збережено: '+e.message,true)}
   finally{busy=false;$('opsSave').disabled=false}
  };
