@@ -107,7 +107,14 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  </div>
  <div class="field" style="margin-top:12px"><label for="helpCategory">Категорія</label><input id="helpCategory" maxlength="65" placeholder="Наприклад, Сповіщення"></div>
  <div class="field" style="margin-top:12px"><label for="helpQuestion">Запитання</label><input id="helpQuestion" maxlength="140"></div>
- <div class="field" style="margin-top:12px"><label for="helpAnswer">Відповідь</label><textarea id="helpAnswer" rows="5" maxlength="1600" style="resize:vertical"></textarea></div>
+ <div class="field" style="margin-top:12px"><label for="helpAnswer">Відповідь</label>
+ <div class="ops-text-toolbar" role="toolbar" aria-label="Форматування відповіді">
+  <button type="button" data-help-format="bold" aria-label="Жирний текст"><strong>Ж</strong></button>
+  <button type="button" data-help-format="heading" aria-label="Підзаголовок">H2</button>
+  <button type="button" data-help-format="bullet" aria-label="Список">☷</button>
+  <button type="button" data-help-format="link" aria-label="HTTPS-посилання">↗</button>
+ </div>
+ <textarea id="helpAnswer" rows="5" maxlength="1600" style="resize:vertical"></textarea></div>
  <div class="flex" style="margin-top:12px"><button type="button" id="helpApply" class="secondary">Застосувати у списку</button><button type="button" id="helpDelete" class="danger">Видалити статтю</button></div>
  <hr class="push-hr"><h2>Оголошення в Центрі допомоги</h2>
  <div class="field"><label for="noticeTitle">Заголовок</label><input id="noticeTitle" maxlength="110"></div>
@@ -324,4 +331,4 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
 </div>
 <div class="card" data-admin-panel="data" hidden><div class="headline"><h2>Редактор та перевірка</h2><span class="pill" id="editMode">Локальна копія</span></div><div class="flex"><div class="field"><label for="kind">Файл</label><select id="kind"><option value="overrides">Ручні уточнення (не перезаписуються імпортером)</option><option value="schedules">Планові графіки</option><option value="addresses">Точні адреси</option><option value="streets">Довідник сіл і вулиць</option><option value="emergency">Повідомлення про аварійні відключення</option></select></div></div><p class="hint">Рекомендуємо змінювати <b>«Ручні уточнення»</b>: інакше наступний імпорт може перезаписати графіки чи адреси. Для виправлення обов'язково залишайте посилання на офіційну публікацію.</p><textarea id="editor" class="mono" spellcheck="false" aria-label="Редагування JSON"></textarea><div class="flex" style="margin-top:13px"><button id="validate" class="secondary">Перевірити JSON</button><button id="reload" class="secondary">Повернути збережене</button><button id="download" class="secondary">Експортувати JSON</button><button id="publish" disabled>Опублікувати через GitHub</button></div><div id="result" role="status" aria-live="polite">Оберіть файл або підключіть сервер, щоб перевіряти дані.</div></div>
 <div class="card" data-admin-panel="data" hidden><h2>Правила перевірки</h2><p>Адреси з вулицями без будинків показують <strong>можливі</strong> підчерги, а не точні. Не позначайте аварійні повідомлення як активні без офіційного підтвердження. Автоматичні Push на заблокованому iPhone працюють лише при увімкненому push-сервері й дозволі користувача.</p></div>
-</div></main><script defer src="./admin.js"></script><script defer src="./admin-extra.js"></script><script defer src="./admin-control.js"></script><script defer src="./admin-richtext.js"></script><script defer src="./admin-features.js"></script><script defer src="./admin-dashboard.js"></script><script defer src="./schedule-planner.js"></script><script defer src="./admin-planner.js"></script></body></html>
+</div></main><script defer src="./admin.js"></script><script defer src="./admin-extra.js"></script><script defer src="./admin-control.js"></script><script defer src="./admin-richtext.js"></script><script defer src="./admin-help-richtext.js"></script><script defer src="./admin-features.js"></script><script defer src="./admin-dashboard.js"></script><script defer src="./schedule-planner.js"></script><script defer src="./admin-planner.js"></script></body></html>
