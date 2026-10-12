@@ -1,5 +1,6 @@
+importScripts('./notification-center.js');
 const VERSION='svitlo-cherkasy-shell-v7.2.2';
-const SHELL=["./","./index.html","./app.js","./address-lookup.js","./data-merge.js","./hour-paint.js","./admin.html","./admin.js","./style.css","./install.css","./install.js","./version-check.js","./release.json","./manifest.webmanifest","./privacy.html","./about.html","./feedback.html","./feedback.js","./help.html","./help.css","./help.js","./admin-extra.js","./admin-planner.js","./schedule-planner.js","./favicon.ico","./favicon-16.png","./favicon-32.png","./favicon-48.png","./assets/icon.svg","./assets/icon-192-v692.png","./assets/icon-512-v692.png","./assets/icon-512-maskable-v692.png","./apple-touch-icon-v692.png","./apple-touch-icon.png"];
+const SHELL=["./","./index.html","./app.js","./address-lookup.js","./notification-center.js","./site-mode.js","./data-merge.js","./hour-paint.js","./admin.html","./admin.js","./style.css","./install.css","./install.js","./version-check.js","./release.json","./manifest.webmanifest","./privacy.html","./about.html","./feedback.html","./feedback.js","./help.html","./help.css","./help.js","./admin-extra.js","./admin-planner.js","./schedule-planner.js","./favicon.ico","./favicon-16.png","./favicon-32.png","./favicon-48.png","./assets/icon.svg","./assets/icon-192-v692.png","./assets/icon-512-v692.png","./assets/icon-512-maskable-v692.png","./apple-touch-icon-v692.png","./apple-touch-icon.png"];
 const CACHE_DATA='svitlo-cherkasy-data-v6.7';
 self.addEventListener('install',event=>event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>![VERSION,CACHE_DATA].includes(k)).map(k=>caches.delete(k)))),self.clients.claim()])));
@@ -22,7 +23,14 @@ self.addEventListener('push',event=>{
  let msg={title:'💡 Світло Черкаси',body:'Є нове повідомлення про графік.'};
  try{if(event.data)msg=Object.assign(msg,event.data.json())}catch{}
  // iOS requires a visible notification for every push.
- event.waitUntil(self.registration.showNotification(String(msg.title).slice(0,85),{body:String(msg.body).slice(0,220),icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',tag:String(msg.tag||msg.title).slice(0,70),data:{url:msg.url||self.registration.scope}}));
+ const tag=String(msg.tag||msg.title).slice(0,70);
+ event.waitUntil(Promise.all([
+  self.registration.showNotification(String(msg.title).slice(0,85),{body:String(msg.body).slice(0,220),icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',tag,data:{url:msg.url||self.registration.scope}}),
+  self.SvitloInbox.add({id:'push:'+tag,title:msg.title,body:msg.body,kind:'push',at:new Date().toISOString(),url:msg.url||self.registration.scope})
+   .then(()=>self.clients.matchAll({type:'window',includeUncontrolled:true}))
+   .then(clients=>clients.forEach(client=>client.postMessage({type:'SVITLO_INBOX_UPDATED'})))
+   .catch(error=>console.warn('Inbox save:',error))
+ ]));
 });
 self.addEventListener('notificationclick',event=>{event.notification.close();event.waitUntil((async()=>{const url=new URL(event.notification.data?.url||self.registration.scope);if(url.origin!==self.location.origin)url.href=self.registration.scope;const tabs=await self.clients.matchAll({type:'window',includeUncontrolled:true});for(const tab of tabs){if(tab.url.startsWith(self.registration.scope)){await tab.focus();return}}await self.clients.openWindow(url.href)})())});
 
