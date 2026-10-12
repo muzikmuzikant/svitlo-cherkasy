@@ -28,11 +28,19 @@ function updateMotionStatus(){
   el.dataset.kind='active';
  }
 }
+function applyAccent(){
+ const colors={blue:['#377dff','#ecf3ff'],mint:['#087a60','#e8f7f1'],violet:['#6949c3','#f2ecff']};
+ const pair=colors[state.accent]||colors.blue;
+ // Inline site appearance may be refreshed by the backend, so local user choice must be re-applied.
+ root.style.setProperty('--blue',pair[0]);
+ root.style.setProperty('--bluewash',pair[1]);
+}
 function apply(){
  const motion=mq.matches?'calm':state.motion;
  root.dataset.comfortMotion=motion;
  root.dataset.comfortDensity=state.density;
  root.dataset.comfortAccent=state.accent;
+ applyAccent();
  root.dataset.comfortContrast=String(state.contrast);
  root.dataset.comfortLargeText=String(state.largeText);
  root.dataset.comfortAmbient=String(state.ambient);
@@ -110,5 +118,6 @@ function init(){
 }
 apply();
 if(mq.addEventListener)mq.addEventListener('change',apply);else mq.addListener?.(apply);
+window.addEventListener('svitlo:public-config',()=>{applyAccent();updateMotionStatus()});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
