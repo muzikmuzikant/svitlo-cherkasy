@@ -68,6 +68,23 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  <p>Поточний стан джерел і сервера. Дані отримуються з Railway та опублікованих файлів; тут немає вигаданої статистики користувачів.</p>
  <div class="monitor-grid" id="monitorMetrics"><div class="metric"><strong>—</strong><span>Очікуємо дані…</span></div></div>
  <div id="monitorMessage" class="push-state" role="status" style="margin-top:13px">Оберіть «Оновити», щоб перевірити стан.</div>
+ <div class="ops-dashboard" id="opsDashboard" aria-label="Операційний дашборд">
+  <div class="ops-dash-section-header"><h3>Сервіси та доступність</h3><span>За реальною перевіркою</span></div>
+  <div class="ops-health-grid" id="opsHealthGrid" aria-live="polite"><p>Отримуємо стан сервісів…</p></div>
+  <div class="ops-dash-section-header"><h3>Швидкі дії</h3><span>Перехід до потрібного інструменту</span></div>
+  <div class="ops-quick-actions">
+   <button type="button" data-ops-jump="operations">📣 Створити повідомлення <span>›</span></button>
+   <button type="button" data-ops-jump="push">🔔 Надіслати тестовий Push <span>›</span></button>
+   <button type="button" data-ops-jump="sources">📅 Перевірити графіки <span>›</span></button>
+   <button type="button" data-ops-jump="feedback">💬 Нові звернення <span>›</span></button>
+   <button type="button" data-ops-jump="audit">🕘 Журнал дій <span>›</span></button>
+   <button type="button" data-ops-jump="help">📚 Редактор довідки <span>›</span></button>
+  </div>
+  <div class="ops-dash-section-header"><h3>Активність за 7 днів</h3><span id="opsActivityTotal">Без даних</span></div>
+  <div class="ops-activity-chart" id="opsActivityChart" role="img" aria-label="Кількість адміністративних дій за останні сім днів"></div>
+  <div class="ops-dash-section-header"><h3>Останні дії</h3><button type="button" class="secondary" data-ops-jump="audit">Увесь журнал ›</button></div>
+  <div class="ops-activity-feed" id="opsActivityFeed"></div>
+ </div>
 </section>
 <section class="card" data-admin-panel="sources" hidden>
  <div class="headline"><h2>Надійність графіків та джерел</h2><button type="button" class="secondary" id="sourceRefresh">Перевірити зараз</button></div>
@@ -237,4 +254,4 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
 </div>
 <div class="card" data-admin-panel="data" hidden><div class="headline"><h2>Редактор та перевірка</h2><span class="pill" id="editMode">Локальна копія</span></div><div class="flex"><div class="field"><label for="kind">Файл</label><select id="kind"><option value="overrides">Ручні уточнення (не перезаписуються імпортером)</option><option value="schedules">Планові графіки</option><option value="addresses">Точні адреси</option><option value="streets">Довідник сіл і вулиць</option><option value="emergency">Повідомлення про аварійні відключення</option></select></div></div><p class="hint">Рекомендуємо змінювати <b>«Ручні уточнення»</b>: інакше наступний імпорт може перезаписати графіки чи адреси. Для виправлення обов'язково залишайте посилання на офіційну публікацію.</p><textarea id="editor" class="mono" spellcheck="false" aria-label="Редагування JSON"></textarea><div class="flex" style="margin-top:13px"><button id="validate" class="secondary">Перевірити JSON</button><button id="reload" class="secondary">Повернути збережене</button><button id="download" class="secondary">Експортувати JSON</button><button id="publish" disabled>Опублікувати через GitHub</button></div><div id="result" role="status" aria-live="polite">Оберіть файл або підключіть сервер, щоб перевіряти дані.</div></div>
 <div class="card" data-admin-panel="data" hidden><h2>Правила перевірки</h2><p>Адреси з вулицями без будинків показують <strong>можливі</strong> підчерги, а не точні. Не позначайте аварійні повідомлення як активні без офіційного підтвердження. Автоматичні Push на заблокованому iPhone працюють лише при увімкненому push-сервері й дозволі користувача.</p></div>
-</div></main><script defer src="./admin.js"></script><script defer src="./admin-extra.js"></script><script defer src="./admin-control.js"></script><script defer src="./schedule-planner.js"></script><script defer src="./admin-planner.js"></script></body></html>
+</div></main><script defer src="./admin.js"></script><script defer src="./admin-extra.js"></script><script defer src="./admin-control.js"></script><script defer src="./admin-dashboard.js"></script><script defer src="./schedule-planner.js"></script><script defer src="./admin-planner.js"></script></body></html>
