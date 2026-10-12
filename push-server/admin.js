@@ -147,6 +147,10 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    }
    if(url.pathname==='/api/admin/monitor'&&req.method==='GET'){send(res,200,await monitor());return true}
    if(url.pathname==='/api/admin/audit'&&req.method==='GET'){send(res,200,{events:extras.getAudit()});return true}
+   if(url.pathname==='/api/admin/media'&&req.method==='GET'){
+     if(!mediaStore)throw Error('Медіатека недоступна');
+     send(res,200,{items:mediaStore.list()});return true;
+   }
    if(url.pathname==='/api/admin/media'&&req.method==='POST'){
      if(!mediaStore)throw Error('Завантаження фото недоступне');
      const result=mediaStore.save(await readJson(req,4200000));
@@ -160,7 +164,7 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
      if(entry.pushSentAt)throw Error('Push для цього повідомлення вже надсилався');
      if(input.confirmSend!==true)throw Error('Підтвердіть масове надсилання');
      const outcome=await manualPush.broadcast({title:entry.title,body:entry.body,queue:entry.queue,
-       notificationId:'notice:'+entry.id,confirmSend:true});
+       notificationId:'notice:'+entry.id,inbox:entry.delivery!=='push',confirmSend:true});
      if(outcome.accepted>0)siteControls.markPushed(entry.id);
      extras?.record('push.notice',entry.id);send(res,200,outcome);return true;
    }
