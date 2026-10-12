@@ -12,6 +12,9 @@
         const merger = document.createElement('script');
         merger.src = './data-merge.js';
         merger.onload = () => {
+          const inbox = document.createElement('script');
+          inbox.src = './notification-center.js';
+          inbox.onload = () => {
           const app = document.createElement('script');
           app.src = './app.js';
           app.onload = () => {
@@ -20,6 +23,8 @@
             document.body.append(updater);
           };
           document.body.append(app);
+          };
+          document.body.append(inbox);
         };
         document.body.append(merger);
       };
