@@ -95,6 +95,10 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
  try{
    if(url.pathname==='/api/admin/push/status'&&req.method==='GET'){send(res,200,manualPush.stats());return true}
    if(url.pathname==='/api/admin/push/test'&&req.method==='POST'){const output=await manualPush.test(await readJson(req));extras?.record('push.test','test notification');send(res,200,output);return true}
+   if(url.pathname==='/api/admin/notices/test'&&req.method==='POST'){
+     const result=await manualPush.preview(await readJson(req,1200));
+     extras?.record('push.preview','test to current device');send(res,200,result);return true;
+   }
    if(url.pathname==='/api/admin/push/send'&&req.method==='POST'){
      const body=await readJson(req);
      if(body.confirmSend!==true)throw Error('Підтвердіть розсилку');
