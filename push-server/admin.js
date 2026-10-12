@@ -54,7 +54,7 @@ async function github(path,method='GET',payload){
  return data;
 }
 async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
-export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls){
+export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(!originPolicy.isAllowed(req.headers.origin)){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const url=new URL(req.url,'http://localhost');
@@ -105,6 +105,23 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    }
    if(url.pathname==='/api/admin/monitor'&&req.method==='GET'){send(res,200,await monitor());return true}
    if(url.pathname==='/api/admin/audit'&&req.method==='GET'){send(res,200,{events:extras.getAudit()});return true}
+   if(url.pathname==='/api/admin/media'&&req.method==='POST'){
+     if(!mediaStore)throw Error('Завантаження фото недоступне');
+     const result=mediaStore.save(await readJson(req,4200000));
+     extras?.record('media.upload',result.id);send(res,201,result);return true;
+   }
+   if(url.pathname==='/api/admin/notices/send'&&req.method==='POST'){
+     if(!siteControls)throw Error('Керування повідомленнями недоступне');
+     const input=await readJson(req,2000),entry=siteControls.get().announcements.find(x=>x.id===input.id);
+     if(!entry||!entry.active)throw Error('Спочатку опублікуйте повідомлення');
+     if(entry.scheduledAt&&Date.parse(entry.scheduledAt)>Date.now())throw Error('Повідомлення заплановане на майбутнє');
+     if(entry.pushSentAt)throw Error('Push для цього повідомлення вже надсилався');
+     if(input.confirmSend!==true)throw Error('Підтвердіть масове надсилання');
+     const outcome=await manualPush.broadcast({title:entry.title,body:entry.body,queue:entry.queue,
+       notificationId:'notice:'+entry.id,confirmSend:true});
+     if(outcome.accepted>0)siteControls.markPushed(entry.id);
+     extras?.record('push.notice',entry.id);send(res,200,outcome);return true;
+   }
    if(url.pathname==='/api/admin/app-config'&&req.method==='GET'){
      if(!siteControls){send(res,503,{error:'Керування застосунком недоступне'});return true}
      send(res,200,siteControls.get());return true;
