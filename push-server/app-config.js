@@ -4,7 +4,8 @@ import path from 'node:path';
 const QUEUES=new Set(['all',...Array.from({length:6},(_,i)=>[String(i+1)+'.1',String(i+1)+'.2']).flat()]);
 const defaultSite=()=>({links:{help:'./help.html',feedback:'./feedback.html',official:'https://www.cherkasyoblenergo.com/news'},
  flags:{inbox:true,inboxFilters:true,inboxHistory:true,sharing:true,sharePreview:true,copySchedule:true,help:true,feedback:true,addressSearch:true,pushPrompt:true,pushSettings:true,tomorrowPreview:true,quickAddresses:true,homePlaces:true,dailyStats:true,overviewTimeline:true,statusCountdown:true,weekNavigation:true,dayStats:true,scheduleLegend:true,offlineStatus:true,scheduleSource:true,manualRefresh:true,homeQuickActions:true,animations:true},
- banner:{enabled:false,title:'Нові можливості',body:'Оновлення застосунку доступне.',url:'',button:'Детальніше'}});
+ banner:{enabled:false,title:'Нові можливості',body:'Оновлення застосунку доступне.',url:'',button:'Детальніше'},
+ appearance:{accent:'#377dff',background:'#f6f8fc',surface:'#ffffff',density:'comfortable',rounded:true}});
 const defaults=()=>({schemaVersion:1,updatedAt:null,maintenance:{enabled:false,title:'Ми покращуємо застосунок',message:'Незабаром усе знову працюватиме. Актуальні графіки можна перевірити на сайті оператора.',until:null,startsAt:null,mode:'full',theme:'blue',icon:'✨',imageUrl:'',colors:{background:'#143463',foreground:'#ffffff',accent:'#78aaff'},noticeBefore:true,disabledModules:[]},site:defaultSite(),announcements:[]});
 const str=(v,max)=>String(v??'').trim().slice(0,max+1);
 function date(v){if(v==null||v==='')return null;if(typeof v!=='string'||v.length>36||!Number.isFinite(Date.parse(v)))throw Error('Неправильна дата');return new Date(v).toISOString()}
@@ -33,7 +34,14 @@ export function validateAppConfig(input){
   body:str(rawBanner.body??defaultsSite.banner.body,260),url:safeLink(rawBanner.url??'', ''),
   button:str(rawBanner.button??defaultsSite.banner.button,38)};
  if(banner.enabled&&(!banner.title||!banner.body))throw Error('Заповніть заголовок і текст банера');
- const site={links,flags,banner};
+ const rawAppearance=rawSite.appearance||{},appearance={
+  accent:validColor(rawAppearance.accent)||defaultsSite.appearance.accent,
+  background:validColor(rawAppearance.background)||defaultsSite.appearance.background,
+  surface:validColor(rawAppearance.surface)||defaultsSite.appearance.surface,
+  density:['comfortable','compact'].includes(rawAppearance.density)?rawAppearance.density:'comfortable',
+  rounded:rawAppearance.rounded!==false
+ };
+ const site={links,flags,banner,appearance};
  if(!Array.isArray(input.announcements)||input.announcements.length>50)throw Error('Максимум 50 повідомлень');
  const ids=new Set(),announcements=input.announcements.map(a=>{
   const id=String(a?.id||'');if(!/^[A-Za-z0-9_-]{6,64}$/.test(id)||ids.has(id))throw Error('Неправильний або повторний ID');ids.add(id);
