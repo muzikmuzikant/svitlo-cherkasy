@@ -82,9 +82,9 @@ test('new files are part of both GitHub Pages and SW cache',()=>{
  assert.match(build,/admin-features\.js/);
  assert.match(sw,/"\.\/admin-features\.js"/);
  const release=JSON.parse(read('release.json'));
- assert.equal(release.version,'7.7.0');
- assert.match(sw,/svitlo-cherkasy-shell-v7\.7\.0/);
- assert.match(read('index.html'),/name="svitlo-version" content="7\.7\.0"/);
+ assert.match(release.version,/^7\.(?:7|[89]|[1-9]\d)\./);
+ assert.match(sw,new RegExp('svitlo-cherkasy-shell-v'+release.version.replaceAll('.','\\.')));
+ assert.match(read('index.html'),new RegExp('name="svitlo-version" content="'+release.version.replaceAll('.','\\.')+'"'));
  for(const path of ['app.js','admin-control.js','admin-features.js','site-mode.js','sw.js'])
   assert.doesNotThrow(()=>new Function(read(path)),path);
 });
