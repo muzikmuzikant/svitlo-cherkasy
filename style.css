@@ -200,3 +200,7 @@ html{scrollbar-width:none;overflow-x:clip;overscroll-behavior-x:none;scroll-beha
 @media(max-width:410px){.inbox-detail-content{padding:32px 17px 23px}.inbox-detail{border-radius:22px}.inbox-gallery img{border-radius:11px}}
 @media(prefers-reduced-motion:reduce){.inbox-interactive{transition:none}.inbox-interactive:active{transform:none}}
 
+
+/* Gallery images can be expanded inside the offline-capable reader. */
+.inbox-gallery img{cursor:zoom-in;touch-action:manipulation}
+.inbox-gallery img.expanded{grid-column:1/-1;aspect-ratio:auto;max-height:none;object-fit:contain;cursor:zoom-out}
