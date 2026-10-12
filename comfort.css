@@ -1,0 +1,28 @@
+/* Local comfort preferences: transform/opacity-only motion to avoid layout shifts on iOS. */
+.comfort-section{margin-top:24px}
+.comfort-intro,.comfort-note{color:var(--muted);font-size:12px;line-height:1.55;margin:0 4px 13px}
+.comfort-note{margin:10px 5px 0}
+.comfort-row select{appearance:none;-webkit-appearance:none;border:1px solid var(--line);border-radius:12px;background:var(--surface,#fff);color:var(--ink);font:600 12px inherit;font-size:12px;padding:11px 28px 11px 12px;max-width:140px;flex-shrink:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2378879e' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.comfort-row select:focus-visible,.comfort-section input:focus-visible+span{outline:3px solid #78a9ff;outline-offset:3px}
+html[data-comfort-density="compact"] .setting-line{min-height:55px;padding-top:10px;padding-bottom:10px}
+html[data-comfort-density="compact"] .section-head{margin-top:19px}
+html[data-comfort-density="compact"] .overview-card{padding:14px}
+html[data-comfort-density="compact"] .status-panel{min-height:180px;padding:20px}
+html[data-comfort-contrast="true"]{--muted:#53647a;--line:#a8b8ca;--shadow:0 4px 18px rgba(20,35,56,.12)}
+html[data-comfort-contrast="true"] .surface{border-color:var(--line)}
+html[data-comfort-contrast="true"] .small-source{color:#465c75}
+html[data-comfort-ambient="false"] .ambient{display:none!important}
+@media(prefers-reduced-motion:no-preference){
+ html[data-comfort-motion="playful"] .comfort-enter:not([hidden]){animation:comfortSlide .46s cubic-bezier(.2,1,.28,1) both}
+ html[data-comfort-motion="playful"] .status-decor{animation:comfortFloat 7s ease-in-out infinite alternate}
+ html[data-comfort-motion="playful"] .ambient{animation:comfortFloat 14s ease-in-out infinite alternate}
+ html[data-comfort-motion="playful"] .nav-item.active svg{animation:comfortPop .46s cubic-bezier(.2,1,.2,1)}
+ html[data-comfort-motion="playful"] .surface:where(.overview-card,.tomorrow-card){transition:transform .3s ease,box-shadow .3s ease}
+ html[data-comfort-motion="playful"] .tomorrow-card:active{transform:scale(.985)}
+ html[data-comfort-motion="calm"] *:not(.maintenance-progress i),html[data-comfort-motion="calm"] *::before,html[data-comfort-motion="calm"] *::after{animation:none!important;transition-duration:.08s!important}
+ @keyframes comfortSlide{from{opacity:.55;transform:translateY(16px) scale(.99)}to{opacity:1;transform:none}}
+ @keyframes comfortFloat{from{transform:translate3d(0,0,0)}to{transform:translate3d(-8px,9px,0)}}
+ @keyframes comfortPop{0%{transform:scale(.85)}65%{transform:scale(1.15)}100%{transform:scale(1)}}
+}
+@media(prefers-reduced-motion:reduce){.comfort-enter{animation:none!important}}
+@media(max-width:360px){.comfort-row{flex-wrap:wrap}.comfort-row select{max-width:100%;width:100%}}
