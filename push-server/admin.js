@@ -54,7 +54,7 @@ async function github(path,method='GET',payload){
  return data;
 }
 async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
-export async function adminRouter(req,res,manualPush,feedback,extras,monitor){
+export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(!originPolicy.isAllowed(req.headers.origin)){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const url=new URL(req.url,'http://localhost');
@@ -105,6 +105,14 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor){
    }
    if(url.pathname==='/api/admin/monitor'&&req.method==='GET'){send(res,200,await monitor());return true}
    if(url.pathname==='/api/admin/audit'&&req.method==='GET'){send(res,200,{events:extras.getAudit()});return true}
+   if(url.pathname==='/api/admin/app-config'&&req.method==='GET'){
+     if(!siteControls){send(res,503,{error:'Керування застосунком недоступне'});return true}
+     send(res,200,siteControls.get());return true;
+   }
+   if(url.pathname==='/api/admin/app-config'&&req.method==='PUT'){
+     if(!siteControls){send(res,503,{error:'Керування застосунком недоступне'});return true}
+     const value=siteControls.update(await readJson(req,18000));send(res,200,value);return true;
+   }
    if(url.pathname==='/api/admin/help'&&req.method==='GET'){send(res,200,extras.getHelp());return true}
    if(url.pathname==='/api/admin/help'&&req.method==='PUT'){const result=extras.updateHelp(await readJson(req,70000));send(res,200,result);return true}
    const ghReady=!!GH_TOKEN&&repoValid();
