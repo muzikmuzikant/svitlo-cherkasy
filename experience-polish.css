@@ -1,0 +1,49 @@
+/* Unified Svitlo experience - accessible polished interaction layer. */
+:root{--ux-ease:cubic-bezier(.2,.8,.2,1)}
+.viewport,.screen,.main-content,.surface,.settings-card,.inbox-list,.detail-surface{min-width:0;max-width:100%}
+.viewport{isolation:isolate}
+.screen[hidden],.sheet[hidden],[hidden]{display:none!important}
+button,a,input,select{touch-action:manipulation}
+button{cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.54}
+:where(button,a,input,select,textarea):focus-visible{outline:3px solid #599bff;outline-offset:3px}
+#home .hero-heading{position:relative}
+#home .hero-heading h1{letter-spacing:-1.3px;text-wrap:balance}
+#home .hero-heading p,.screen-header p{line-height:1.55}
+#home .status-panel{transform-origin:center;will-change:auto}
+#home .overview-card,#home .tomorrow-card,#detail .detail-surface,#detail .info-card{border:1px solid var(--line);box-shadow:0 9px 26px rgba(35,72,120,.065)}
+#home .bar-track{isolation:isolate}
+#home .status-title,#home .big-number,#detail .big-number{font-variant-numeric:tabular-nums}
+#detail .day-choice{min-width:0}
+#detail .calendar-arrows button{min-width:38px;min-height:38px}
+#detail .day-choice.selected{outline:2px solid #74a8ff;outline-offset:-2px}
+#detail .hour-cell.current{outline:2px solid #ef9b45;outline-offset:-2px}
+#updates .inbox-filters{scrollbar-width:none;overscroll-behavior-x:contain}
+#updates .inbox-filters button{flex-shrink:0}
+#updates .inbox-list>:where(article,button,div){min-width:0}
+#settings .settings-card .setting-line{transition:background-color .22s ease}
+#settings .settings-card .setting-line:has(input:focus-visible),#settings .settings-card .setting-line:has(select:focus-visible){background:#f1f7ff}
+#settings .setting-line>div,#settings .setting-line>span:first-child{min-width:0;flex:1}
+#settings .setting-line p{overflow-wrap:anywhere;line-height:1.5}
+#settings .comfort-section{margin-top:12px}
+#settings .setting-action{min-height:54px}
+#settings .setting-action:active{background:#edf4ff}
+.ux-skip{position:fixed;left:12px;top:-90px;z-index:9999;background:#16396a;color:white;padding:12px;border-radius:12px}
+.ux-skip:focus{top:12px}
+.ux-view-note{margin:12px 2px 0;font-size:11px;color:var(--muted);line-height:1.5}
+.ux-toast-icon{display:inline-flex;margin-right:7px}
+.ux-skeleton{position:relative;overflow:hidden}
+.ux-skeleton:after{content:"";pointer-events:none;position:absolute;inset:0;background:linear-gradient(100deg,transparent,rgba(255,255,255,.25),transparent);animation:uxShimmer 1.6s ease-in-out infinite}
+html[data-comfort-contrast="true"] .ux-skeleton:after{display:none}
+@media(prefers-reduced-motion:no-preference){
+ html:not([data-comfort-motion="calm"]) .bottom-nav .nav-item.active{transition:background .23s var(--ux-ease),color .23s var(--ux-ease)}
+ html:not([data-comfort-motion="calm"]) .surface:where(.tomorrow-card,.place-card,.update-card){transition:box-shadow .25s ease,transform .25s var(--ux-ease)}
+ html:not([data-comfort-motion="calm"]) .surface.tomorrow-card:active{transform:scale(.987)}
+ html:not([data-comfort-motion="calm"]) #home .status-panel.status-on .status-decor{animation:uxBreathe 8s ease-in-out infinite alternate}
+ html:not([data-comfort-motion="calm"]) .ux-active-tab{animation:uxTab .3s var(--ux-ease)}
+ @keyframes uxTab{from{opacity:.72;transform:translateY(7px)}to{opacity:1;transform:none}}
+ @keyframes uxBreathe{to{transform:translate3d(-7px,8px,0) scale(1.045)}}
+ @keyframes uxShimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+}
+@media(prefers-reduced-motion:reduce){.ux-skeleton:after{animation:none!important}.ux-active-tab{animation:none!important}}
+@media(max-width:420px){#home .hero-heading h1{font-size:clamp(25px,7vw,36px)}#detail .detail-surface{overflow:hidden}#settings .setting-line{gap:9px}}
