@@ -36,8 +36,15 @@
    const p=el(heading?'h3':'p','',heading?'inbox-rich-heading':bullet?'inbox-rich-bullet':'');
    if(bullet)p.append(el('span','• ','inbox-bullet'));
    // Only **bold** is interpreted; everything else is a plain text node.
-   const parts=body.split(/(\*\*[^*]{1,160}\*\*)/g);
-   parts.forEach(part=>p.append(part.startsWith('**')&&part.endsWith('**')?el('strong',part.slice(2,-2)):document.createTextNode(part)));
+   const tokens=body.split(/(\*\*[^*]{1,160}\*\*|\[[^\]]{1,100}\]\(https:\/\/[^\s)]+\))/g);
+   tokens.forEach(part=>{
+    if(part.startsWith('**')&&part.endsWith('**'))p.append(el('strong',part.slice(2,-2)));
+    else if(/^\[[^\]]+\]\(https:\/\//.test(part)){
+     const match=part.match(/^\[([^\]]+)\]\((https:\/\/[^\s)]+)\)$/);
+     if(match){const link=el('a',match[1]);link.href=match[2];link.target='_blank';link.rel='noopener noreferrer';p.append(link)}
+     else p.append(document.createTextNode(part));
+    }else p.append(document.createTextNode(part))
+   });
    target.append(p);
   }
  }
@@ -51,7 +58,7 @@
    const gallery=el('div','','inbox-gallery');
    for(const url of item.images){
     try{const u=new URL(url);if(u.protocol!=='https:')continue;
-     const img=document.createElement('img');img.src=u.href;img.alt='Ілюстрація до повідомлення';img.loading='lazy';img.decoding='async';gallery.append(img);
+     const img=document.createElement('img');img.src=u.href;img.alt='Ілюстрація до повідомлення';img.loading='lazy';img.decoding='async';img.tabIndex=0;img.title='Натисніть, щоб збільшити';img.onclick=()=>img.classList.toggle('expanded');img.onkeydown=e=>{if(e.key==='Enter')img.classList.toggle('expanded')};gallery.append(img);
     }catch{}
    }
    if(gallery.childElementCount)content.append(gallery);
