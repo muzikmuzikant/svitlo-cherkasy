@@ -19,7 +19,7 @@ export function validateAppConfig(input){
  if(startsAt&&until&&startsAt>=until)throw Error('Час завершення має бути пізніше початку');
  const validColor=v=>typeof v==='string'&&/^#[0-9a-fA-F]{6}$/.test(v)?v:null;
  const colors={background:validColor(m.colors?.background)||'#143463',foreground:validColor(m.colors?.foreground)||'#ffffff',accent:validColor(m.colors?.accent)||'#78aaff'};
- const modules=new Set(['inbox','address-search','help']),disabledModules=Array.isArray(m.disabledModules)?m.disabledModules:[];
+ const modules=new Set(['inbox','address-search','help','sharing','push-settings','quick-addresses','manual-refresh','feedback','copy-schedule']),disabledModules=Array.isArray(m.disabledModules)?m.disabledModules:[];
  if(disabledModules.some(v=>!modules.has(v)))throw Error('Невідомий модуль технічних робіт');
  const maintenance={enabled:m.enabled===true,title,message,startsAt,until,mode:m.mode,theme:m.theme,icon:str(m.icon,18)||'✨',imageUrl:image(m.imageUrl),
   colors,noticeBefore:m.noticeBefore!==false,disabledModules:[...new Set(disabledModules)]};
