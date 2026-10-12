@@ -113,5 +113,5 @@ test('all changed client scripts parse and app version is consistent',()=>{
  const version=JSON.parse(read('release.json')).version;
  assert.match(version,/^7\.5\.[1-9]\d*$/);
  assert.match(read('sw.js'),new RegExp('svitlo-cherkasy-shell-v'+version.replaceAll('.','\\.') ));
- assert.match(read('index.html'),/name="svitlo-version" content="7\.5\.1"/);
+ assert.match(read('index.html'),new RegExp('name="svitlo-version" content="'+version.replaceAll('.','\\.')+'"'));
 });
