@@ -1,0 +1,23 @@
+/* Graph interactions v7.8.6. Prevent motion from affecting document geometry. */
+#detail .detail-surface,#home .overview-card{min-width:0;max-width:100%;overflow:hidden}
+#detail .hour-grid{contain:layout style;min-width:0}
+.schedule-insight{display:flex;align-items:center;gap:12px;margin-top:15px;padding:14px;border-radius:16px;background:#edf5ff;border:1px solid #dce9f8;color:#28496d}
+.schedule-insight-icon{display:grid;place-items:center;flex:0 0 34px;height:34px;border-radius:11px;background:#fff;font-size:19px}
+.schedule-insight-copy{display:grid;gap:3px;min-width:0}.schedule-insight strong{font-size:13px}.schedule-insight small{font-size:11px;line-height:1.4;color:#60758f}
+.schedule-insight[data-kind="off"]{background:#fff2f1;border-color:#ffe2de}
+.schedule-insight[data-kind="on"]{background:#effaf4;border-color:#dbf0e3}
+.schedule-swipe-hint{font-size:10px;line-height:1.4;text-align:center;color:var(--muted);margin:12px 0 0}
+.schedule-progress{width:100%;height:3px;background:#e3eaf4;overflow:hidden;border-radius:4px;margin-top:11px}
+.schedule-progress-fill{display:block;height:100%;width:0;background:var(--blue,#377dff);border-radius:inherit;transition:width .8s linear}
+.schedule-now-label{display:block;text-align:right;color:var(--muted);font-size:10px;font-weight:650;margin-top:5px;font-variant-numeric:tabular-nums}
+#detail .days-row{scroll-margin-inline:8px}
+#detail .day-choice.selected{box-shadow:0 5px 14px #377dff24}
+@media(prefers-reduced-motion:no-preference){
+ html:not([data-comfort-motion="calm"]) .schedule-day-enter{animation:scheduleDayIn .42s cubic-bezier(.22,1,.36,1) both}
+ html:not([data-comfort-motion="calm"]) .schedule-status-change{animation:scheduleStatusIn .5s cubic-bezier(.22,1,.36,1)}
+ html[data-comfort-motion="playful"] .schedule-insight-icon{animation:scheduleIconIn .45s cubic-bezier(.18,1.3,.35,1) both}
+ @keyframes scheduleDayIn{from{opacity:.3;transform:translate3d(13px,0,0)}to{opacity:1;transform:none}}
+ @keyframes scheduleStatusIn{from{filter:brightness(1.05);transform:scale(.988)}to{filter:none;transform:none}}
+ @keyframes scheduleIconIn{from{transform:scale(.88)}to{transform:scale(1)}}
+}
+@media(prefers-reduced-motion:reduce){.schedule-progress-fill,.schedule-day-enter,.schedule-status-change{animation:none!important;transition:none!important}}
