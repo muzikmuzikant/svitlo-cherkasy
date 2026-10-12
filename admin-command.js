@@ -212,6 +212,75 @@
  $('controlInsightsReload').onclick=insights;
  $('controlMediaReload').onclick=media;
  $('controlMediaSearch').addEventListener('input',()=>{media().catch(console.warn)});
+ // Recovery is intentionally explicit: never send a campaign or enable
+ // full maintenance as a side effect of restoring an old JSON snapshot.
+ let recovery=null;
+ const backupStatus=(msg,bad=false)=>{$('controlBackupStatus').textContent=msg;
+  $('controlBackupStatus').classList.toggle('is-error',bad)};
+ const download=(name,contents)=>{
+  const blob=new Blob([JSON.stringify(contents,null,2)+'\n'],{type:'application/json'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=name;document.body.append(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+ };
+ async function exportBackup(){
+  if(!ensure())return;
+  $('controlBackupExport').disabled=true;
+  try{
+   const [config,help]=await Promise.all([api('app-config'),api('help')]);
+   // Secrets, password hashes, sessions, tickets and subscribers are never included.
+   const saved={format:'svitlo-cherkasy-admin-backup',version:1,
+    exportedAt:new Date().toISOString(),config,help,
+    note:'Зображення зберігаються як URL. Файли медіа з Railway не копіюються.'};
+   download('svitlo-cherkasy-backup-'+saved.exportedAt.slice(0,10)+'.json',saved);
+   backupStatus('Копію створено. Захищайте цей файл, оскільки він містить чернетки повідомлень.');
+  }catch(e){backupStatus('Не вдалося створити копію: '+e.message,true)}
+  finally{$('controlBackupExport').disabled=false}
+ }
+ $('controlBackupExport').onclick=exportBackup;
+ $('controlBackupFile').addEventListener('change',async()=>{
+  recovery=null;$('controlBackupRestore').disabled=true;
+  const file=$('controlBackupFile').files?.[0];
+  if(!file){$('controlBackupPreview').textContent='Оберіть файл JSON.';return}
+  if(file.size>1500000){backupStatus('Завеликий файл. Максимум 1.5 МБ.',true);return}
+  try{
+   const value=JSON.parse(await file.text());
+   if(value.format!=='svitlo-cherkasy-admin-backup'||value.version!==1||
+      !value.config||!Array.isArray(value.config.announcements)||
+      !value.help||!Array.isArray(value.help.articles))throw Error('Невідомий формат або пошкоджений файл');
+   recovery=value;
+   $('controlBackupPreview').textContent='Створена: '+when(value.exportedAt)+' · '+
+    value.config.announcements.length+' повідомлень · '+value.help.articles.length+' статей довідки. '+
+    'Відновлення НЕ запустить Push і НЕ увімкне техроботи.';
+   $('controlBackupRestore').disabled=false;backupStatus('Файл перевірено. Для відновлення потрібне підтвердження.');
+  }catch(e){backupStatus('Не вдалося відкрити копію: '+e.message,true)}
+ });
+ $('controlBackupRestore').onclick=async()=>{
+  if(!recovery||!ensure())return;
+  if(typeof adminRole!=='undefined'&&adminRole!=='owner'){backupStatus('Відновлення доступне лише власнику.',true);return}
+  if(!confirm('Замінити поточні повідомлення, налаштування і довідку даними з резервної копії? Це вплине на всіх користувачів. Масові Push НЕ надсилатимуться, техроботи будуть вимкнені.'))return;
+  $('controlBackupRestore').disabled=true;
+  try{
+   const live=await api('app-config'),oldHelp=await api('help'),stamp=new Date().toISOString();
+   const restored={
+    ...live,
+    site:recovery.config.site||live.site,
+    maintenance:{...live.maintenance,...recovery.config.maintenance,enabled:false},
+    announcements:recovery.config.announcements.map(n=>({
+     ...n,pushSentAt:(n.active&&['both','push'].includes(n.delivery))?stamp:n.pushSentAt
+    }))
+   };
+   // Save current content first locally for emergency rollback by the owner.
+   download('svitlo-before-restore-'+stamp.slice(0,10)+'.json',
+    {format:'svitlo-cherkasy-admin-backup',version:1,exportedAt:stamp,config:live,help:oldHelp});
+   await api('app-config',{method:'PUT',body:JSON.stringify(restored)});
+   try{await api('help',{method:'PUT',body:JSON.stringify(recovery.help)})}
+   catch(e){backupStatus('Налаштування відновлено, але довідку ні: '+e.message+'. Є копія попереднього стану.',true);return}
+   backupStatus('Відновлено. Техроботи вимкнені. Push-розсилок не було.');
+   try{const channel=new BroadcastChannel('svitlo-content-v1');channel.postMessage({type:'REFRESH_APP_CONFIG'});channel.close()}catch{}
+  }catch(e){backupStatus('Відновлення перервано: '+e.message,true)}
+  finally{$('controlBackupRestore').disabled=false}
+ };
  nav.forEach(button=>button.addEventListener('click',()=>{
   if(!ensure())return;
   const tab=button.dataset.adminTab;
@@ -221,6 +290,7 @@
   else if(tab==='media')media();
   else if(tab==='design')loadDesign();
   else if(tab==='security')access();
+  else if(tab==='backup')backupStatus('Резервні копії не містять паролів та Push-токенів.');
   else if(tab==='overview')status('● Сервер підключено');
  }));
  document.addEventListener('svitlo:admin-logout',()=>{status('Сеанс завершився');$('controlSearch').value='';navSearch()});
