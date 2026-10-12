@@ -153,8 +153,8 @@
   if(/^https:\/\//.test(url)){const img=document.createElement('img');img.src=url;img.alt='Ілюстрація техробіт';graphic.append(img)}
   else graphic.textContent=read('opsIcon')||'✨';
   $('opsPreview').dataset.theme=read('opsTheme')||'blue';
-  $('opsPreview').style.backgroundColor=read('opsColorBackground')||'#143463';
-  $('opsPreview').style.color=read('opsColorForeground')||'#ffffff';
+  $('opsPreview').style.backgroundColor=read('opsTheme')==='custom'?(read('opsColorBackground')||'#143463'):'';
+  $('opsPreview').style.color=read('opsTheme')==='custom'?(read('opsColorForeground')||'#ffffff'):'';
   $('opsStatusPill').textContent=$('opsMaintenance').checked?'Зміни до техробіт':'Режим неактивний';
  }
  function fillMaintenance(m){
