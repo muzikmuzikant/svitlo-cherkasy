@@ -123,3 +123,41 @@ main{max-width:1160px!important}
 .ops-activity-item small{grid-column:1/-1;color:#667f9e;word-break:break-word}
 @media(max-width:1000px){.ops-health-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.ops-health-grid,.ops-quick-actions{grid-template-columns:1fr}.ops-health-card{min-height:65px}.ops-quick-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-activity-chart{gap:5px;padding:14px 7px}.ops-dash-section-header span{font-size:10px}}
+
+/* v7.5.1: undo the overlapping CSS grid rows and hidden panels from v7.5.0. */
+#adminDashboard[hidden],#adminDashboard [data-admin-panel][hidden],
+#adminDashboard .ops-workspace[hidden]{display:none!important}
+@media(min-width:980px){
+ #adminDashboard:not([hidden]){display:grid;grid-template-columns:minmax(185px,220px) minmax(0,1fr);
+  grid-template-rows:auto auto;column-gap:20px;align-items:start}
+ #adminDashboard>.auth-head{grid-column:1/-1;grid-row:1;min-width:0}
+ #adminDashboard>.admin-tabs{grid-column:1;grid-row:2;align-self:start;position:sticky;top:12px;
+  max-height:calc(100dvh - 24px);overflow-y:auto}
+ #adminDashboard>[data-admin-panel]:not([hidden]),
+ #adminDashboard>[data-admin-panel="overview"]:not([hidden]),
+ #adminDashboard>[data-admin-panel="sources"]:not([hidden]),
+ #adminDashboard>[data-admin-panel="operations"]:not([hidden]),
+ #adminDashboard>[data-admin-panel="help"]:not([hidden]),
+ #adminDashboard>[data-admin-panel="push"]:not([hidden]),
+ #adminDashboard>[data-admin-panel="feedback"]:not([hidden]),
+ #adminDashboard>[data-admin-panel="audit"]:not([hidden]),
+ #adminDashboard>[data-admin-panel="data"]:not([hidden]){
+  grid-column:2;grid-row:2;min-width:0;max-width:100%;align-self:start}
+}
+.ops-workspace,.ops-editor-main,.ops-editor-sidebar,.ops-section,.ops-edit-layout,.ops-editor-columns,
+.ops-fields,.ops-media-section{min-width:0;max-width:100%}
+.ops-editor-main input,.ops-editor-main textarea,.ops-editor-main select,.ops-fields input,.ops-fields textarea,
+.ops-fields select{min-width:0;max-width:100%;box-sizing:border-box}
+.ops-edit-layout,.ops-editor-columns{overflow:visible}
+.ops-workspace .headline{flex-wrap:wrap;min-width:0;gap:10px}
+.ops-workspace .headline>div{min-width:0}
+.ops-editor-sidebar,.ops-editor-main{overflow-wrap:anywhere}
+@media(max-width:979px){
+ #adminDashboard:not([hidden]){display:block}
+ #adminDashboard .admin-tabs{position:sticky;top:0;max-width:100%;overflow-x:auto}
+ #adminDashboard>[data-admin-panel]:not([hidden]){display:block;max-width:100%}
+}
+@media(max-width:640px){
+ .ops-editor-main .two,.ops-fields .two{display:grid;grid-template-columns:minmax(0,1fr)}
+ .ops-bottom{display:flex;flex-direction:column;align-items:stretch}
+}
