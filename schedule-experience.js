@@ -40,7 +40,7 @@ function init(){
   if(title)title.textContent=hour+' - '+end;
   if(date)date.textContent=$('detailDayLabel')?.textContent||'Вибраний день';
   const data=cell.getAttribute('aria-label')||'';
-  if(desc)desc.textContent=data.slice(data.indexOf(':')+1).trim()||'Немає інформації про годину.';
+  if(desc)desc.textContent=(data.startsWith(hour+': ')?data.slice(hour.length+2):data)||'Немає інформації про годину.';
   const kind=['on','off','mixed','unknown'].find(x=>cell.classList.contains(x))||'unknown';
   if(state){state.dataset.kind=kind;state.textContent=kind==='on'?'За графіком зі світлом':kind==='off'?'За графіком без світла':kind==='mixed'?'Часткове відключення':'Немає підтверджених даних';}
   previousFocus=cell;
@@ -59,8 +59,8 @@ function init(){
   const cells=[...grid.querySelectorAll('.hour-cell')];
   if(!cells.length)return;
   for(const cell of cells){cell.tabIndex=0;cell.setAttribute('role','button');cell.setAttribute('title',(cell.getAttribute('aria-label')||'')+'. Натисніть для деталей');}
-  if(!key||key===lastDay)return;
-  const changing=!!lastDay;lastDay=key;
+  if(!key)return;
+  const changing=!!lastDay&&key!==lastDay;lastDay=key;
   if(changing&&allowed()){
    grid.classList.remove('schedule-day-enter');void grid.offsetWidth;grid.classList.add('schedule-day-enter');
   }
