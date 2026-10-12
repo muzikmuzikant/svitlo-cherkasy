@@ -1,9 +1,19 @@
 importScripts('./notification-center.js');
-const VERSION='svitlo-cherkasy-shell-v7.8.4-inbox-motion';
+const VERSION='svitlo-cherkasy-shell-v7.8.4-boot-recovery';
 const SHELL=["./","./index.html","./app.js","./address-lookup.js","./notification-center.js","./notification-text.js","./inbox-ui.js","./site-mode.js","./admin-control.js","./admin-richtext.js","./admin-help-richtext.js","./admin-control.css","./admin-dashboard.js","./admin-features.js","./admin-command.js","./data-merge.js","./hour-paint.js","./admin.html","./admin.js","./style.css","./install.css","./install.js","./version-check.js","./release.json","./manifest.webmanifest","./privacy.html","./about.html","./feedback.html","./feedback.js","./help.html","./help.css","./help.js","./admin-extra.js","./admin-planner.js","./schedule-planner.js","./favicon.ico","./favicon-16.png","./favicon-32.png","./favicon-48.png","./assets/icon.svg","./assets/icon-192-v692.png","./assets/icon-512-v692.png","./assets/icon-512-maskable-v692.png","./apple-touch-icon-v692.png","./apple-touch-icon.png"];
 const CACHE_DATA='svitlo-cherkasy-data-v6.7';
 const CACHE_IMAGES='svitlo-cherkasy-media-v74';
-self.addEventListener('install',event=>event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
+self.addEventListener('install',event=>event.waitUntil((async()=>{
+ const cache=await caches.open(VERSION);
+ // An optional missing asset must not block the repaired app shell on iOS.
+ const critical=['./','./index.html','./app.js','./style.css','./install.js','./hour-paint.js','./address-lookup.js','./data-merge.js','./notification-center.js','./inbox-ui.js','./site-mode.js'];
+ await cache.addAll(critical.map(url=>new Request(url,{cache:'reload'})));
+ await Promise.allSettled(SHELL.filter(url=>!critical.includes(url)).map(async url=>{
+  try{const response=await fetch(new Request(url,{cache:'reload'}));if(response.ok)await cache.put(url,response)}
+  catch(error){console.warn('Optional offline asset:',url,error?.message)}
+ }));
+ await self.skipWaiting();
+})()));
 self.addEventListener('activate',event=>event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>![VERSION,CACHE_DATA,CACHE_IMAGES].includes(k)).map(k=>caches.delete(k)))),self.clients.claim()])));
 self.addEventListener('fetch',event=>{
  const req=event.request;
@@ -32,7 +42,7 @@ self.addEventListener('fetch',event=>{
      try{const fresh=await fetch(req);if(fresh.ok){await cache.put(key,fresh.clone());return fresh}const old=await cache.match(key);return old||fresh}catch{const old=await cache.match(key);return old||new Response('Offline, no cache',{status:503,headers:{'Content-Type':'text/plain'}})}
    })());return;
  }
- event.respondWith((async()=>{try{const fresh=await fetch(req);if(fresh.ok&&u.pathname.match(/(?:\.js|\.css|\.html|\.png|\.svg|\.webmanifest)$/)){const c=await caches.open(VERSION);c.put(req,fresh.clone())}return fresh}catch{return (await caches.match(req))||(await caches.match('./index.html'))||Response.error()}})());
+ event.respondWith((async()=>{try{const fresh=await fetch(req);if(fresh.ok&&u.pathname.match(/(?:\.js|\.css|\.html|\.png|\.svg|\.webmanifest)$/)){const c=await caches.open(VERSION);c.put(req,fresh.clone())}return fresh}catch{const cached=await caches.match(req);if(cached)return cached;return req.mode==='navigate'?(await caches.match('./index.html'))||Response.error():Response.error()}})());
 });
 self.addEventListener('push',event=>{
  let msg={title:'💡 Світло Черкаси',body:'Є нове повідомлення про графік.'};
