@@ -327,3 +327,5 @@ html.feature-off-animations *,html.feature-off-animations *::before,html.feature
 .maintenance-screen[data-mode="incident"] .maintenance-symbol{background:linear-gradient(140deg,#d27c3e,#efac50);box-shadow:0 20px 70px #f58b3d3a}
 .maintenance-screen[data-mode="incident"] .maintenance-kicker{color:#ffd8a9}
 @media(max-width:390px){.quick-queue-controls{grid-template-columns:1fr}.quick-queue-controls button{width:100%}}
+
+html.feature-off-addressSearch .quick-queue-lookup{display:none!important}
