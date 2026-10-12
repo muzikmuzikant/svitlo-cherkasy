@@ -8,7 +8,7 @@ test('outage reminder is short, helpful and forecast-only',()=>{
  assert.equal(msg.title,'🔴 Відключення через 30 хв');
  assert.match(msg.body,/Підчерга 1\.1/);
  assert.match(msg.body,/16:00/);
- assert.match(msg.body,/орієнтовний/);
+ assert.match(msg.content,/плановий час, а не підтвердження стану мережі/);
  assert.ok(msg.body.length<100);
 });
 test('restoration reminder works across midnight and does not claim sensor reading',()=>{
@@ -37,8 +37,8 @@ test('Railway delivery, iOS service worker and local fallback use the new style'
  const server=readFileSync(new URL('../push-server/server.js',import.meta.url),'utf8');
  const sw=readFileSync(new URL('../sw.js',import.meta.url),'utf8');
  const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
- assert.match(server,/transitionCopy\(type,q,boundary,eta\)/);
- assert.match(server,/changeCopy\(q,change\.date\)/);
+ assert.match(server,/transitionCopy\(type,q,boundary,eta,boundary>=1440\?nextDate:now.date\)/);
+ assert.match(server,/changeCopy\(q,change\.date,source\.days\.find/);
  assert.match(sw,/lang:'uk'/);
  assert.match(sw,/icon-192-v692.png/);
  assert.match(app,/🔴 Відключення/);

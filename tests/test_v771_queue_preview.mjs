@@ -17,15 +17,12 @@ test('queue preview never changes address storage or push subscription',()=>{
  const click=app.slice(app.indexOf("$('quickQueueOpen').onclick"),app.indexOf("$('quickQueueOpen').onclick")+230);
  assert.doesNotMatch(click,/updatePushSubscription|savePrefs|saveAddresses|fetch\(/);
 });
-test('verified badge distinguishes official publication from no-publication display',()=>{
- const app=read('app.js'),html=read('index.html'),css=read('style.css');
- assert.match(html,/id="detailVerified"/);
- assert.match(app,/const official=!!pub/);
- assert.match(app,/is-verified/);
- assert.match(app,/is-unpublished/);
- assert.match(app,/Графік не опубліковано/);
- assert.match(css,/\.verified-source-badge\.is-verified/);
- assert.match(css,/\.verified-source-badge\.is-unpublished/);
+test('detail screen shows source context without the removed decorative verification badge',()=>{
+ const app=read('app.js'),html=read('index.html');
+ assert.doesNotMatch(html,/id="detailVerified"/);
+ assert.match(html,/id="detailUpdated"/);
+ assert.match(app,/Графік не опубліковано · світло весь день за замовчуванням/);
+ assert.match(app,/pub\?\x60Опубліковано/);
 });
 test('maintenance incident mode has its own readable look',()=>{
  const mode=read('site-mode.js'),css=read('style.css');

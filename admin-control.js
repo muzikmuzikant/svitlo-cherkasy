@@ -179,19 +179,66 @@
   options('opsMode',m.mode||'full');options('opsTheme',m.theme||'blue');options('opsLayout',m.layout||'centered');options('opsIcon',m.icon||'✨');
   options('opsImageUrl',m.imageUrl||'');fillVisual(m);previewMaintenance();
  }
+ let historyBaseline='';
  async function refreshHistory(){
-  const host=$('opsHistoryList');if(!host)return;
+  const host=$('opsHistoryList');if(!host||!remote)return;
   try{
-   const result=await api('app-config/history');host.replaceChildren();
-   if(!result.items?.length){const p=document.createElement('p');p.className='hint';p.textContent='Попередніх редакцій поки немає.';host.append(p);return}
-   for(const entry of result.items.slice(0,25)){
-    const line=document.createElement('div');line.className='ops-history-item';
-    const at=document.createElement('time');at.textContent=new Date(entry.at).toLocaleString('uk-UA',{timeZone:'Europe/Kyiv',dateStyle:'medium',timeStyle:'short'});
-    const stat=document.createElement('strong');stat.textContent=entry.active+' активних з '+entry.messages+' повідомлень';
-    const tech=document.createElement('small');tech.textContent=entry.maintenance?'Техроботи були ввімкнені':'Техроботи були вимкнені';
-    line.append(at,stat,tech);host.append(line);
+   const [result,latest]=await Promise.all([api('app-config/history'),api('app-config')]);
+   historyBaseline=latest.updatedAt||'';
+   host.replaceChildren();
+   if(!result.items?.length){
+    const p=document.createElement('p');p.className='hint';
+    p.textContent='Попередніх редакцій ще немає. Історія почне зберігатися після змін.';
+    host.append(p);return;
    }
-  }catch(e){const p=document.createElement('p');p.className='hint';p.textContent='Історія недоступна: '+e.message;host.replaceChildren(p)}
+   for(const entry of result.items.slice(0,40)){
+    const line=document.createElement('article');line.className='ops-history-item control-revision';
+    const left=document.createElement('div');left.className='control-revision-info';
+    const at=document.createElement('time');
+    at.textContent=new Date(entry.at).toLocaleString('uk-UA',{timeZone:'Europe/Kyiv',dateStyle:'medium',timeStyle:'short'});
+    const stat=document.createElement('strong');
+    stat.textContent=entry.active+' активних з '+entry.messages+' повідомлень';
+    const tech=document.createElement('small');
+    tech.textContent=entry.maintenance?'Техроботи були увімкнені':'Техроботи були вимкнені';
+    left.append(at,stat,tech);
+    const diff=document.createElement('p');diff.className='control-revision-diff';
+    const c=entry.changes||{};
+    diff.textContent=[
+     c.added?'+'+c.added+' відновлених повідомлень':'',
+     c.removed?'−'+c.removed+' прибраних повідомлень':'',
+     c.edited?c.edited+' змінених повідомлень':'',
+     c.flags?c.flags+' змін перемикачів':'',
+     c.maintenance?'техроботи відрізняються':'',
+     c.appearance?'оформлення відрізняється':''
+    ].filter(Boolean).join(' · ')||'Суттєвих відмінностей немає';
+    left.append(diff);line.append(left);
+    const button=document.createElement('button');button.type='button';button.className='secondary control-restore-btn';
+    button.textContent='Відновити';button.disabled=typeof adminRole==='undefined'||adminRole!=='owner';
+    button.title=button.disabled?'Доступно власнику':'Відновити цю редакцію';
+    button.onclick=async()=>{
+     if(button.disabled||busy)return;
+     const description=at.textContent+' · '+stat.textContent;
+     if(!confirm('Відновити редакцію '+description+'? Поточна версія збережеться в історії. Техроботи залишаться вимкненими, а попередні Push НЕ будуть надіслані повторно.'))return;
+     button.disabled=true;
+     const notice=$('opsRestoreStatus');notice.textContent='Відновлюємо серверну редакцію…';
+     try{
+      const restored=await api('app-config/history/restore',{method:'POST',body:JSON.stringify({
+       id:entry.id,expectedUpdatedAt:historyBaseline,confirmRestore:true
+      })});
+      if(!restored?.updatedAt)throw Error('Сервер не підтвердив відновлення');
+      notice.textContent='Редакцію відновлено. Публікації синхронізуються, масові Push не запускалися.';
+      selectedId='';await reload();
+      try{const bc=new BroadcastChannel('svitlo-content-v1');bc.postMessage({type:'REFRESH_APP_CONFIG'});bc.close()}catch{}
+     }catch(error){
+      notice.textContent='Не відновлено: '+error.message+' Оновіть історію та спробуйте ще раз.';
+      button.disabled=false;
+     }
+    };
+    line.append(button);host.append(line);
+   }
+  }catch(e){
+   const p=document.createElement('p');p.className='hint';p.textContent='Історія недоступна: '+e.message;host.replaceChildren(p);
+  }
  }
  $('opsHistoryRefresh').onclick=()=>refreshHistory();
  async function reload(){
@@ -330,6 +377,6 @@
  document.querySelector('[data-admin-tab="operations"]')?.addEventListener('click',reload);
  document.querySelector('[data-admin-tab="maintenance"]')?.addEventListener('click',reload);
  $('opsMaintenanceSave')?.addEventListener('click',()=>saveConfig({scope:'maintenance'}).catch(console.warn));
- document.querySelector('[data-admin-tab="audit"]')?.addEventListener('click',()=>refreshHistory().catch(console.warn));
+ document.querySelector('[data-admin-tab="revisions"]')?.addEventListener('click',()=>refreshHistory().catch(console.warn));
  document.addEventListener('svitlo:admin-logout',()=>{state=null;status('Для керування потрібен вхід.')});
 })();

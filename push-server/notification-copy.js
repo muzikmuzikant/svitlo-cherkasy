@@ -2,7 +2,13 @@
  * builds /push-server as its root and cannot rely on files outside that directory.
  * Keep templates and canonical IDs in sync with ../notification-text.js.
  */
-const dateLabel=s=>new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(s+'T12:00:00Z'));
+const dateLabel=s=>{
+ if(s==null||s==='')return 'сьогодні';
+ if(typeof s!=='string'||!/^20\d{2}-\d{2}-\d{2}$/.test(s))throw Error('Invalid date');
+ const d=new Date(s+'T12:00:00Z');
+ if(!Number.isFinite(d.getTime())||d.toISOString().slice(0,10)!==s)throw Error('Invalid date');
+ return new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'long',timeZone:'UTC'}).format(d);
+};
 const clock=n=>{if(!Number.isInteger(n)||n<0||n>=2880)throw Error('Invalid time');n%=1440;return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')};
 const firstPublishedAt=d=>String(d?.publications?.[0]?.publishedAt||d?.publishedAt||'');
 const dayId=(q,d)=>'day:'+q+':'+d.date+':'+firstPublishedAt(d);

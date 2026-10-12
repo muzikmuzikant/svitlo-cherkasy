@@ -76,8 +76,9 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  <button type="button" data-admin-tab="data" aria-pressed="false">⌁ <span>Редактор даних</span></button>
  <button type="button" data-admin-tab="security" aria-pressed="false">⛨ <span>Доступ і права</span></button>
  <button type="button" data-admin-tab="backup" aria-pressed="false">▨ <span>Резервні копії</span></button>
+ <button type="button" data-admin-tab="revisions" aria-pressed="false">↶ <span>Історія версій</span></button>
  <button type="button" data-admin-tab="audit" aria-pressed="false">◷ <span>Журнал</span></button></div>
- <div class="control-nav-foot"><span id="controlNavigationCount">17 розділів</span><a href="./index.html" target="_blank" rel="noopener">Відкрити застосунок ↗</a></div>
+ <div class="control-nav-foot"><span id="controlNavigationCount">19 розділів</span><a href="./index.html" target="_blank" rel="noopener">Відкрити застосунок ↗</a></div>
 </nav>
 <section class="card" data-admin-panel="overview">
  <div class="headline"><h2>Огляд роботи сервісу</h2><button type="button" class="secondary" id="monitorRefresh">Оновити</button></div>
@@ -158,6 +159,13 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  <div class="headline"><h2>Надійність графіків та джерел</h2><button type="button" class="secondary" id="sourceRefresh">Перевірити зараз</button></div>
  <p>Помилки дат (наприклад, липень замість жовтня) автоматично відправляються на перевірку, а не стають новим графіком. Попередні підтверджені дані зберігаються.</p>
  <div id="sourceOverview" class="push-state">Очікуємо перевірку…</div>
+ <section class="control-github-actions" aria-label="Стан автоматичних завдань GitHub">
+  <div class="headline"><div><h2>Автоматичні перевірки GitHub Actions</h2>
+  <p class="hint">Фактична історія імпорту графіків і публікації сайту з GitHub API.</p></div>
+  <button type="button" class="secondary" id="controlActionsRefresh">Оновити історію</button></div>
+  <div id="controlActionsList" class="control-action-list"><p class="hint">Відкрийте розділ для завантаження.</p></div>
+  <a class="control-actions-link" href="https://github.com/muzikmuzikant/svitlo-cherkasy/actions" target="_blank" rel="noopener">Відкрити всі запуски в GitHub ↗</a>
+ </section>
  <h2 style="margin-top:23px">Публікації, що потребують уваги</h2>
  <div id="sourceIssues" class="review-list"></div>
  <p class="hint">Перевірка не виправляє помилки офіційного сайту автоматично. Для ручного уточнення використовуйте тільки підтверджене джерело в редакторі.</p>
@@ -344,8 +352,11 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
 </section>
 <section class="card" data-admin-panel="audit" hidden><div class="headline"><h2>Журнал дій</h2><button type="button" class="secondary" id="auditRefresh">Оновити</button></div>
  <p>Зберігаються останні 250 операцій (вхід, вихід, розсилки, зміни звернень, редагування допомоги й публікації). Паролі, тексти звернень та Push-токени не записуються.</p><div id="auditList" class="review-list"></div></section>
-<section class="card ops-workspace" data-admin-panel="audit" hidden>
-<div class="ops-panel-head"><h2>Історія налаштувань</h2><p>Збережені версії повідомлень, зміни техробіт і конфігурації.</p></div> <section class="ops-section ops-revisions">
+<section class="card ops-workspace" data-admin-panel="revisions" hidden>
+<div class="ops-panel-head"><span class="ops-panel-kicker">VERSION CONTROL</span><h2>Історія версій і відновлення</h2>
+ <p>Повний журнал останніх 40 серверних редакцій. Можна повернути повідомлення й налаштування до обраного стану після підтвердження власника.</p>
+ <div class="control-history-warning">Відновлення не вмикає техроботи та не повторює старі Push. Перед ним зберігається поточна версія, тож зміни можна скасувати.</div>
+ <div id="opsRestoreStatus" role="status" class="hint">Виберіть редакцію для порівняння.</div></div> <section class="ops-section ops-revisions">
  <div class="headline"><div><h2>🕘 Історія змін</h2><p class="hint">Останні серверні редакції оголошень і налаштувань. Історія зберігається у Railway.</p></div><button type="button" class="secondary" id="opsHistoryRefresh">Оновити</button></div>
  <div id="opsHistoryList" class="ops-history-list"><p class="hint">Завантаження історії…</p></div>
  </section>

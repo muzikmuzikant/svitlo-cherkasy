@@ -73,10 +73,21 @@ export function createAppConfig({directory,record=()=>{}}){
   const temp=historyFile+'.tmp';fs.writeFileSync(temp,JSON.stringify(history,null,2)+'\n',{mode:0o600});
   fs.renameSync(temp,historyFile);
  };
- const historyView=()=>history.map(x=>({id:x.id,at:x.at,
-  messages:x.config?.announcements?.length||0,
-  active:x.config?.announcements?.filter(a=>a.active).length||0,
-  maintenance:x.config?.maintenance?.enabled===true}));
+ const historyView=()=>history.map(x=>{
+  const old=x.config||{},savedAnnouncements=old.announcements||[],nowAnnouncements=state.announcements||[],
+   savedIds=new Map(savedAnnouncements.map(n=>[n.id,n])),
+   nowIds=new Map(nowAnnouncements.map(n=>[n.id,n])),
+   changed=[...savedIds].filter(([id,n])=>nowIds.has(id)&&JSON.stringify(n)!==JSON.stringify(nowIds.get(id))).length,
+   flags=Object.keys(defaultSite().flags).filter(k=>old.site?.flags?.[k]!==state.site?.flags?.[k]).length;
+  return {id:x.id,at:x.at,messages:savedAnnouncements.length,
+   active:savedAnnouncements.filter(a=>a.active).length,
+   maintenance:old.maintenance?.enabled===true,
+   changes:{added:[...savedIds.keys()].filter(id=>!nowIds.has(id)).length,
+    removed:[...nowIds.keys()].filter(id=>!savedIds.has(id)).length,
+    edited:changed,flags,
+    maintenance:JSON.stringify(old.maintenance||{})!==JSON.stringify(state.maintenance||{}),
+    appearance:JSON.stringify(old.site?.appearance||{})!==JSON.stringify(state.site?.appearance||{})}};
+ });
 
  const persist=value=>{fs.mkdirSync(path.dirname(file),{recursive:true});const tmp=file+'.tmp';fs.writeFileSync(tmp,JSON.stringify(value,null,2)+'\n',{mode:0o600});fs.renameSync(tmp,file);state=value};
  const publicState=()=>{const t=Date.now();return {schemaVersion:1,updatedAt:state.updatedAt,maintenance:{...state.maintenance},site:state.site||defaultSite(),announcements:state.announcements.filter(x=>x.active&&x.delivery!=='push'&&(!x.scheduledAt||Date.parse(x.scheduledAt)<=t)&&(!x.expiresAt||Date.parse(x.expiresAt)>t)).map(({pushSentAt,...visible})=>visible)}};
@@ -91,7 +102,27 @@ export function createAppConfig({directory,record=()=>{}}){
   }
   record('app.settings',next.maintenance.enabled?'maintenance:on':'maintenance:off');return copy();
  };
+ const restoreHistory=(id,expectedUpdatedAt)=>{
+  if(!/^[0-9]{10,15}-[a-z0-9]{5,15}$/.test(String(id||'')))throw Error('Некоректний ID редакції');
+  const match=history.find(x=>x.id===id&&x.config?.schemaVersion===1);
+  if(!match)throw Error('Редакцію не знайдено. Оновіть історію.');
+  if(!expectedUpdatedAt||expectedUpdatedAt!==state.updatedAt){
+   const error=Error('Налаштування змінилися. Оновіть історію перед відновленням.');
+   error.statusCode=409;throw error;
+  }
+  const stamp=new Date().toISOString();
+  const snapshot=JSON.parse(JSON.stringify(match.config));
+  // Safe rollback: NEVER reactivate a maintenance lock, and NEVER trigger
+  // a past campaign just because an unsent message existed in the snapshot.
+  snapshot.maintenance={...snapshot.maintenance,enabled:false};
+  snapshot.announcements=(snapshot.announcements||[]).map(n=>({
+   ...n,pushSentAt:n.active&&['push','both'].includes(n.delivery)&&!n.pushSentAt?stamp:n.pushSentAt
+  }));
+  const restored=update(snapshot);
+  record('app.restore',id+' · '+restored.announcements.length+' messages · push suppressed');
+  return restored;
+ };
  const duePush=()=>{const t=Date.now();return state.announcements.filter(x=>x.active&&['both','push'].includes(x.delivery)&&!x.pushSentAt&&(!x.scheduledAt||Date.parse(x.scheduledAt)<=t)&&(!x.expiresAt||Date.parse(x.expiresAt)>t)).map(x=>({...x}))};
  const markPushed=id=>{if(!state.announcements.some(x=>x.id===id&&!x.pushSentAt))return false;const next=copy();next.announcements.find(x=>x.id===id).pushSentAt=new Date().toISOString();persist(next);record('push.announcement',id);return true};
- return {get:copy,publicState,update,duePush,markPushed,historyView};
+ return {get:copy,publicState,update,duePush,markPushed,historyView,restoreHistory};
 }
