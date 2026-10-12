@@ -11,6 +11,7 @@ import {originPolicy} from './origins.js';
 import webpush from 'web-push';
 import {adminRouter} from './admin.js';
 import {createManualPush} from './manual-push.js';
+import {transitionCopy,tomorrowCopy,changeCopy,emergencyCopy} from './notification-copy.js';
 import {QUEUES,timeline,dueTransition,latestOfficialEvent,freshEvent,freshSchedule,dueTransitionAcrossDays} from './schedule-engine.js';
 
 const {VAPID_PUBLIC_KEY,PUSH_PRIVATE_KEY,PUSH_CONTACT,APP_ORIGIN,SCHEDULE_URL,DATA_FILE='./subscribers.json',PORT='8080'}=process.env;
@@ -89,25 +90,27 @@ async function job(){
    const pref=record.preferences||{},prefix=hash(endpoint),minutes=now.m;
    const values=schedulesSafe?timeline(current,q):null;
    const valuesTomorrow=schedulesSafe?timeline(tomorrow,q):null;
-   for(const [type,offset,target,description] of [['off',30,1,'відключення'],['on',15,0,'відновлення']]){
+   for(const [type,offset,target] of [['off',30,1],['on',15,0]]){
     if(!pref[type])continue;
     const boundary=dueTransitionAcrossDays(values,valuesTomorrow,minutes,offset,target,4);
     if(boundary!==null){const eta=boundary-minutes;
-     await send(record,`Світло: скоро ${description}`,`Орієнтовно через ${eta} хв за графіком: ${description} для підчерги ${q}.`,`${prefix}:${type}:${now.date}:${boundary}`)}
+     const msg=transitionCopy(type,q,boundary,eta);
+     await send(record,msg.title,msg.body,`${prefix}:${type}:${now.date}:${boundary}`)}
    }
    if(schedulesSafe&&pref.tomorrow&&tomorrow?.verified===true&&minutes>=19*60){
     const revision=tomorrow.publishedAt||'';
-    await send(record,'Світло: графік на завтра',`Опубліковано графік для підчерги ${q} на ${nextDate}.`,`${prefix}:tomorrow:${nextDate}:${revision}`);
+    const msg=tomorrowCopy(q,nextDate);
+    await send(record,msg.title,msg.body,`${prefix}:tomorrow:${nextDate}:${revision}`);
    }
    if(pref.emergency&&freshEvent(event,timestamp)&&(!Array.isArray(event.queues)||!event.queues.length||event.queues.includes(q))){
-    const title=event.status==='active'?'🪫Графік не діє':event.status==='ended'?'✅ Екстрені обмеження завершено':null;
-    const body=event.status==='active'?'Розпочинаються екстрені відключення світла поза графіком.':event.status==='ended'?'Оператор повідомив про завершення екстрених обмежень. Перевірте актуальний графік.':null;
-    if(title)await send(record,title,body,`${prefix}:emergency:${event.status}:${hash(event.id||event.source)}:${event.publishedAt}`,{ttl:3600,urgency:'high'});
+    const msg=emergencyCopy(event.status);
+    if(msg)await send(record,msg.title,msg.body,`${prefix}:emergency:${event.status}:${hash(event.id||event.source)}:${event.publishedAt}`,{ttl:3600,urgency:'high'});
    }
    if(schedulesSafe&&pref.changes)for(const change of (source.changes||[]).slice(-30)){
     const date=Date.parse(change.detectedAt||change.publishedAt||''),age=timestamp-date;
     if(!Array.isArray(change.queues)||!change.queues.includes(q)||change.date<now.date||!Number.isFinite(date)||age<0||age>=65*60000)continue;
-    await send(record,'Світло: графік змінено',`Оновлено графік для підчерги ${q} на ${change.date}.`,`${prefix}:change:${change.date}:${change.revisionId||change.publishedAt}`);
+    const msg=changeCopy(q,change.date);
+    await send(record,msg.title,msg.body,`${prefix}:change:${change.date}:${change.revisionId||change.publishedAt}`);
    }
   });
   const cutoff=timestamp-14*86400_000;
