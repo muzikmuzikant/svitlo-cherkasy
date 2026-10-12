@@ -355,7 +355,12 @@ async function shareSchedule(date,{copy=false}={}){
   line('svitlo-cherkasy.pp.ua',W/2,H-39,'700 24px system-ui','#7b94b3','center');
   const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error('No image');
   const filename='svitlo-'+date+'-'+info.queue+'.png';
-  await openSharePreview(blob,filename,date,info.queue);
+  if(document.documentElement.classList.contains('feature-off-sharePreview')){
+   const file=new File([blob],filename,{type:'image/png'});
+   if(navigator.share&&navigator.canShare?.({files:[file]}))await navigator.share({files:[file],title:'Графік відключень'});
+   else {const url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.download=filename;a.href=url;a.click();setTimeout(()=>URL.revokeObjectURL(url),12000)}
+  }else await openSharePreview(blob,filename,date,info.queue);
  }catch(error){if(error?.name==='AbortError')return;console.warn('Share schedule:',error);flash('Не вдалося поділитися графіком')}
 }
 function renderBar(a){const bar=$('overviewBar');bar.replaceChildren();if(!a){const b=el('span','bar-segment unknown');b.style.flex='1';bar.append(b);return}let start=0,v=a[0];for(let i=1;i<=1440;i++){if(i===1440||a[i]!==v){const seg=el('span','bar-segment '+(v===1?'off':v===0?'on':'unknown'));seg.style.flex=String(i-start);seg.title=`${clock(start)}–${clock(i)} · ${v===1?'відключення':v===0?'світло':'немає даних'}`;bar.append(seg);start=i;v=a[i]}}const line=el('span','bar-now');line.style.left=(nowMinutes()/1440*100)+'%';bar.append(line)}
