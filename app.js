@@ -144,11 +144,11 @@ function renderSyncStatus(){
  const checked=Date.parse(data.lastChecked||'');
  const checkKnown=Number.isFinite(checked)&&checked<=Date.now()+5*60_000;
  const sourceStale=!checkKnown||(Date.now()-checked>55*60_000);
- const offline=navigator.onLine===false,review=reviewAffects(today());
+ const offline=navigator.onLine===false,review=reviewAffects(today())&&!currentDay(today());
  box.dataset.state=!hasCheckedOnce?'pending':offline||lastSyncFailed?'error':sourceStale||review?'stale':'fresh';
- const title=!hasCheckedOnce?'Завантажуємо графіки…':offline?'Немає інтернету':lastSyncFailed?'Не вдалося отримати графіки':review?'Не вдалося зчитати оновлення графіка':sourceStale?'Перевірка оператора затримується':'Автооновлення графіків активне';
+ const title=!hasCheckedOnce?'Завантажуємо графіки…':offline?'Немає інтернету':lastSyncFailed?'Не вдалося отримати графіки':review?'Уточнюємо години графіка':sourceStale?'Перевірка оператора затримується':'Автооновлення графіків активне';
  const details=!hasCheckedOnce?'При відкритті й кожні 5 хвилин, поки застосунок відкритий':
-   `Джерело: ${checkKnown?fmtStamp(data.lastChecked):'час невідомий'} · На телефоні: ${lastDownloadAt?fmtStamp(lastDownloadAt):'немає нових даних'}`;
+   checkKnown?`Перевірено ${fmtStamp(data.lastChecked)}`:'Оновлюємо інформацію';
  setText('syncStatusTitle',title);setText('syncStatusDetails',details);
 }
 function renderFreshness(){
@@ -159,15 +159,15 @@ function renderFreshness(){
  const age=Date.now()-checked;
  const hasTime=Number.isFinite(checked)&&age>=0;
  const stale=!hasTime||age>55*60_000;
- const offline=navigator.onLine===false,review=reviewAffects(today());
+ const offline=navigator.onLine===false,review=reviewAffects(today())&&!currentDay(today());
  // Avoid alarming users while the initial network request is still in flight.
  node.hidden=!hasCheckedOnce||(!stale&&!offline&&!review);
  if(node.hidden)return;
  node.replaceChildren();
- const title=el('strong','',offline?'Немає інтернету':review?'Офіційне оновлення потребує повторного зчитування':hasTime?'Можливо, графік застарів':'Актуальність графіка не підтверджена');
+ const title=el('strong','',offline?'Немає інтернету':review?'Новий графік уточнюється':hasTime?'Можливо, графік застарів':'Актуальність графіка не підтверджена');
  const message=el('span','',offline
    ?' Показуємо останні доступні дані. Вони могли змінитися.'
-   :review?' Не вдалося автоматично прочитати всі години нового офіційного повідомлення. Показаний раніше отриманий графік може бути застарілим; звірте його з оператором.'
+   :review?' Дивіться найновіший графік на сайті оператора.'
    :hasTime
      ?` Публікації оператора востаннє перевіряли ${fmtStamp(data.lastChecked)}. Новіші зміни можуть бути відсутні.`
      :' Не вдалося визначити час останньої перевірки публікацій.');
@@ -244,7 +244,7 @@ function renderDetail(){const a=primary();if(!a)return;setText('detailAddress',f
  setText('nextTime',next?nextChangeLabel(next):st==='on'?'Не заплановано':'Невідомо');
  setText('nextDescription',next?`Планове ${next.to===1?'відключення':'відновлення електропостачання'}${next.dayOffset===1?' наступного дня':''}`:
   st==='on'?'На сьогодні та завтра у підтверджених даних змін не зазначено':'Точний час не підтверджено');$('articleLink').href=pub?.queueSources?.[a.queue]||pub?.source||'https://www.cherkasyoblenergo.com/news'}
-function renderUpdates(){setText('lastCheck',data.lastChecked?fmtStamp(data.lastChecked):'Час перевірки невідомий');setText('updateNote',data.lastChecked?'Це час звіряння з публікаціями оператора, а не час появи нового графіка.':'Перевірте графік безпосередньо на сайті оператора.');const root=$('updateList');root.replaceChildren();const all=[...(data.changes||[]).map(x=>({kind:'change',...x})),...(data.days||[]).map(x=>({kind:'publication',...x}))].sort((a,b)=>String(b.publishedAt).localeCompare(String(a.publishedAt))).slice(0,24);if(!all.length)root.append(el('div','empty-places','Поки немає підтверджених публікацій.'));for(const d of all){const c=el('div','update-card');c.append(el('time','',fmtStamp(d.publishedAt)),el('strong','',d.kind==='change'?`Графік скориговано · ${formatDate(d.date)}`:`Опубліковано графік · ${formatDate(d.date)}`));const meta=el('div','small-source',d.kind==='change'?`Змінені підчерги: ${(d.queues||[]).join(', ')||'не уточнено'}`:`Редакцій: ${d.revisions||1}`);c.append(meta);const link=el('a','', 'Офіційна публікація ↗');link.href=d.source||'https://www.cherkasyoblenergo.com/news';link.target='_blank';link.rel='noopener';c.append(link);root.append(c)}}
+function renderUpdates(){setText('lastCheck',data.lastChecked?fmtStamp(data.lastChecked):'Час перевірки невідомий');setText('updateNote',data.lastChecked?'Остання перевірка графіків.':'Перевірте графік безпосередньо на сайті оператора.');const root=$('updateList');root.replaceChildren();const all=[...(data.changes||[]).map(x=>({kind:'change',...x})),...(data.days||[]).map(x=>({kind:'publication',...x}))].sort((a,b)=>String(b.publishedAt).localeCompare(String(a.publishedAt))).slice(0,24);if(!all.length)root.append(el('div','empty-places','Поки немає підтверджених публікацій.'));for(const d of all){const c=el('div','update-card');c.append(el('time','',fmtStamp(d.publishedAt)),el('strong','',d.kind==='change'?`Графік скориговано · ${formatDate(d.date)}`:`Опубліковано графік · ${formatDate(d.date)}`));const meta=el('div','small-source',d.kind==='change'?`Змінені підчерги: ${(d.queues||[]).join(', ')||'не уточнено'}`:`Редакцій: ${d.revisions||1}`);c.append(meta);const link=el('a','', 'Офіційна публікація ↗');link.href=d.source||'https://www.cherkasyoblenergo.com/news';link.target='_blank';link.rel='noopener';c.append(link);root.append(c)}}
 function renderSettings(){for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).checked=!!prefs[key];const connected=!!pushConfig?.apiBase&&!!pushConfig?.publicKey;setText('pushHeadline','Сповіщення');setText('pushDescription',connected?'Отримуйте нагадування про відключення та зміни графіків, навіть коли застосунок закритий.':'Наразі нагадування доступні тільки під час використання застосунку.');setText('enableNotifications',connected?'Увімкнути сповіщення':'Дозволити нагадування');$('disableNotifications').hidden=!connected}
 function fillQueueSelect(){const root=$('manualQueue');root.replaceChildren(new Option('Оберіть підчергу',''),...QUEUES.map(q=>new Option(q,q)))}
 function town(){return $('settlement').value==='Інше'?$('customSettlement').value.trim():$('settlement').value}
@@ -445,7 +445,7 @@ async function refreshData(manual=false){
      applyOverrides();
    }catch(error){console.warn('Bulletin or admin overrides:',error)}
    hasCheckedOnce=true;render();
-   if(manual)flash(schedulesOk?'Графіки перевірено. Час перевірки оператора показано вище.':'Не вдалося завантажити дані — показуємо останні доступні');
+   if(manual)flash(schedulesOk?'Графіки оновлено':'Немає з’єднання. Показуємо збережений графік.');
    if(schedulesOk){
      if(hadChecked&&scheduleQueueChanged(before,data,primary()?.queue))flash('Графік для вашої підчерги оновлено');
      announceChanges(before,data);
