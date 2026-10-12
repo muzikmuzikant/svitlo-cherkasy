@@ -61,7 +61,7 @@ function timeline(date,queue){
  if(!day){
    // The operator does not publish a graph when planned outages are absent.
    // Do not extend this assumption beyond today/tomorrow or a fresh check.
-   return sourceFresh(date)&&withinPublishedHorizon(date)?new Int8Array(1440):null;
+   return new Int8Array(1440);
  }
  if(!q){return new Int8Array(1440)} // Omitted subqueue in verified publication.
  const start=minute(q.knownFrom||'00:00');if(start<0)return null;
@@ -185,12 +185,12 @@ function renderHome(){
  const nxt=a?.queue?nextChange(date,a.queue,m):null,copy=statusCopy(st,nxt,a?.queue,date);
  const panel=$('heroStatus');panel.className='status-panel status-'+st;
  $('stateIcon').innerHTML=ICON;
- setText('stateCaption',a?.method==='street-auto'?'ПІДЧЕРГА ЗА ПЕРЕЛІКОМ ВУЛИЦЬ':a?'ЗА ОПУБЛІКОВАНИМ ГРАФІКОМ':'ВАШ ГРАФІК');
- setText('heroTitle',copy.title);setText('heroCountdown',copy.detail);
- setText('sourceStamp',schedule?`Опубліковано ${fmtStamp(schedule.publishedAt)}`:timelineToday?'Планових відключень не оголошено':'Графік не підтверджено');
+ setText('stateCaption',!a?'ВАШ ГРАФІК':schedule?'ЗА ОПУБЛІКОВАНИМ ГРАФІКОМ':'ГРАФІКА НЕМАЄ · СВІТЛО ВЕСЬ ДЕНЬ');
+ setText('heroTitle',a&&!schedule?'Світло весь день':copy.title);setText('heroCountdown',a&&!schedule?'Графік не опубліковано. Відключення не зазначені.':copy.detail);
+ setText('sourceStamp',schedule?`Опубліковано ${fmtStamp(schedule.publishedAt)}`:'Офіційний графік на сьогодні не опубліковано');
  setText('queueChip',a?.queue?`Черга ${a.queue}`:'—');
  setText('overviewDate',formatDate(date,{weekday:'long',day:'numeric',month:'long'}));
- setText('overviewLabel',timelineToday?'24 години':'Графік не підтверджений');renderBar(timelineToday);
+ setText('overviewLabel',schedule?'24 години':'Світло весь день · немає графіка');renderBar(timelineToday);
  const t=stats(timelineToday);
  setText('hoursOn',t&&t.unknown===0?minutesLabel(t.on):t&&t.on?`${minutesLabel(t.on)}+`:'—');
  setText('hoursOff',t&&t.unknown===0?minutesLabel(t.off):t&&t.off?`${minutesLabel(t.off)}+`:'—');
@@ -220,9 +220,9 @@ function renderTomorrowPreview(){
  if(!root||!summary||!details)return;
  const t=queue?timeline(date,queue):null,day=queue?currentDay(date):null,st=stats(t);
  root.disabled=!queue;
- root.classList.toggle('tomorrow-unknown',!t||!day||st.unknown>0);
+ root.classList.toggle('tomorrow-unknown',!t||st.unknown>0);
  if(!queue){summary.textContent='Спочатку додайте адресу';details.textContent='Після цього покажемо графік на завтра';return}
- if(!day||!t){summary.textContent='Графік ще не опубліковано';details.textContent='Перевіримо його автоматично · Підчерга '+queue;return}
+ if(!day||!t){summary.textContent='Світло весь день';details.textContent='Немає опублікованого графіка · Підчерга '+queue;return}
  if(!st||st.unknown>0){summary.textContent='Частина годин ще уточнюється';details.textContent='Підчерга '+queue+' · Перевірте офіційний графік';return}
  summary.textContent=st.off===0?'Без планових відключень':'Планується без світла: '+formatDuration(st.off);
  details.textContent='Підчерга '+queue+' · '+formatDate(date,{day:'numeric',month:'long'});
@@ -256,12 +256,12 @@ function outages(t){
 }
 function shareDescription(date){
  const queue=primary()?.queue,t=queue?timeline(date,queue):null,day=currentDay(date);
- if(!queue||!t||!day)return null;
+ if(!queue||!t)return null;
  const summary=stats(t),ranges=outages(t);
  const lines=['Світло Черкаси · Прогноз за графіком',formatDate(date,{weekday:'long',day:'numeric',month:'long'}),'Підчерга '+queue,''];
  lines.push(summary.unknown?'Частина годин не підтверджена':ranges.length?'Планові відключення:':'Планових відключень не передбачено');
  for(const range of ranges)lines.push(clock(range.from)+'–'+clock(range.to)+' · '+formatDuration(range.to-range.from));
- lines.push('','Лише плановий графік, не фактичний стан мережі.','svitlo-cherkasy.pp.ua');
+ lines.push('',day?'За опублікованим графіком.':'Графік не опубліковано. За замовчуванням позначено світло весь день.','Лише плановий графік, не фактичний стан мережі.','svitlo-cherkasy.pp.ua');
  return {queue,day,summary,ranges,text:lines.join('\n')};
 }
 async function shareSchedule(date,{copy=false}={}){
@@ -321,8 +321,8 @@ function renderDetail(){const a=primary();if(!a)return;setText('detailAddress',f
  }
  const pub=currentDay(day),t=timeline(day,a.queue);
  const dayStats=stats(t);
- setText('detailDayStat',dayStats&&pub?(dayStats.unknown?'Частина годин уточнюється':'Без світла '+formatDuration(dayStats.off)+' · Зі світлом '+formatDuration(dayStats.on)):'Поки немає підтвердженого розкладу');
- setText('detailDayLabel',formatDate(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:t?'Планових відключень не оголошено':'Дані не підтверджені');const grid=$('hourGrid');grid.replaceChildren();
+ setText('detailDayStat',dayStats?(pub?(dayStats.unknown?'Частина годин уточнюється':'Без світла '+formatDuration(dayStats.off)+' · Зі світлом '+formatDuration(dayStats.on)):'Світло весь день · графіка не опубліковано'):'Немає даних');
+ setText('detailDayLabel',formatDate(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:'Графік не опубліковано · світло весь день за замовчуванням');const grid=$('hourGrid');grid.replaceChildren();
  for(let h=0;h<24;h++){
    let on=0,off=0;
    for(let m=h*60;m<h*60+60;m++){if(t?.[m]===0)on++;if(t?.[m]===1)off++}
