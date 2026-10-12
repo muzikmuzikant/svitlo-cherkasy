@@ -19,10 +19,10 @@ self.addEventListener('fetch',event=>{
  event.respondWith((async()=>{try{const fresh=await fetch(req);if(fresh.ok&&u.pathname.match(/(?:\.js|\.css|\.html|\.png|\.svg|\.webmanifest)$/)){const c=await caches.open(VERSION);c.put(req,fresh.clone())}return fresh}catch{return (await caches.match(req))||(await caches.match('./index.html'))||Response.error()}})());
 });
 self.addEventListener('push',event=>{
- let msg={title:'Світло Черкаси',body:'Є оновлення графіка.'};
+ let msg={title:'💡 Світло Черкаси',body:'Є нове повідомлення про графік.'};
  try{if(event.data)msg=Object.assign(msg,event.data.json())}catch{}
  // iOS requires a visible notification for every push.
- event.waitUntil(self.registration.showNotification(String(msg.title).slice(0,100),{body:String(msg.body).slice(0,250),icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',tag:String(msg.tag||msg.title).slice(0,70),data:{url:msg.url||self.registration.scope}}));
+ event.waitUntil(self.registration.showNotification(String(msg.title).slice(0,85),{body:String(msg.body).slice(0,220),icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',tag:String(msg.tag||msg.title).slice(0,70),data:{url:msg.url||self.registration.scope}}));
 });
 self.addEventListener('notificationclick',event=>{event.notification.close();event.waitUntil((async()=>{const url=new URL(event.notification.data?.url||self.registration.scope);if(url.origin!==self.location.origin)url.href=self.registration.scope;const tabs=await self.clients.matchAll({type:'window',includeUncontrolled:true});for(const tab of tabs){if(tab.url.startsWith(self.registration.scope)){await tab.focus();return}}await self.clients.openWindow(url.href)})())});
 
