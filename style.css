@@ -162,3 +162,45 @@ html{scrollbar-width:none;overflow-x:clip;overscroll-behavior-x:none;scroll-beha
   user-select: none;
   -webkit-touch-callout: none;
 }
+
+
+/* v7.4 notification reader and calm offline status */
+.inbox-interactive{cursor:pointer;touch-action:manipulation;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.inbox-interactive:active{transform:scale(.987)}
+.inbox-interactive:focus-visible{outline:3px solid #70a7fa;outline-offset:2px}
+.inbox-interactive.is-pinned{border-color:#a9c9fa;background:linear-gradient(135deg,#f0f6ff,#fff)}
+.inbox-more{font-size:11px;font-weight:750;color:#3981e6}
+.inbox-cover{margin-top:4px;border-radius:13px;max-height:160px;width:100%;object-fit:cover}
+.inbox-detail{border:0;padding:0;max-width:min(100vw - 24px,560px);width:min(100% - 24px,560px);max-height:88dvh;border-radius:27px;background:#fff;color:#1a304b;box-shadow:0 20px 100px #0e2f5a58;overflow-y:auto;overscroll-behavior:contain}
+.inbox-detail::backdrop{background:#06182aa6;backdrop-filter:blur(7px)}
+.inbox-detail-close{position:sticky;z-index:2;float:right;top:12px;margin:12px 12px -35px 0;width:36px;height:36px;border:0;border-radius:50%;background:#edf3ff;color:#486e99;font-size:24px;display:grid;place-items:center}
+.inbox-detail-content{padding:37px 26px 30px;display:grid;gap:15px;min-width:0}
+.inbox-detail-top{display:flex;gap:12px;align-items:center;color:#91a1b5;font-size:11px}
+.inbox-detail-category{color:#3b7cda;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.inbox-detail-content h2{font-size:clamp(21px,5.4vw,29px);line-height:1.2;margin:0;letter-spacing:-.9px}
+.inbox-detail-summary{margin:0;font-size:14px;color:#647b96;line-height:1.6}
+.inbox-rich{font-size:13px;line-height:1.72;color:#38516d;border-top:1px solid #e6eef8;padding-top:12px}
+.inbox-rich p{margin:0 0 12px}.inbox-rich-heading{font-size:15px;color:#213b5c;margin:12px 0}
+.inbox-line-space{height:6px}.inbox-bullet{color:#397ef0;font-weight:900}.inbox-rich a{color:#2677e9;font-weight:700}
+.inbox-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.inbox-gallery img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:15px;background:#eaf1fa}
+.inbox-gallery img:first-child{grid-column:1/-1;aspect-ratio:16/10}
+.inbox-detail-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.inbox-detail-actions button{background:#397df4;color:#fff;border:0;border-radius:13px;font-weight:800;font-size:13px;padding:13px 17px}
+.inbox-detail-actions a{font-size:12px;color:#3777cb;font-weight:750;padding:12px}
+.maintenance-screen[data-theme="midnight"]{background:linear-gradient(140deg,#0b1220,#20324b)}
+.maintenance-screen[data-theme="violet"]{background:linear-gradient(135deg,#20173e,#503185 65%,#2b518f)}
+.maintenance-screen[data-theme="light"]{background:linear-gradient(135deg,#e6f0ff,#fff);color:#22416f}
+.maintenance-screen[data-theme="light"] h1{color:#1b3a67}
+.maintenance-screen[data-theme="light"] .maintenance-content>p,.maintenance-screen[data-theme="light"] .maintenance-foot{color:#607eab}
+.maintenance-symbol img{width:100%;height:100%;object-fit:cover;border-radius:32px}
+.maintenance-inline{display:flex;gap:12px;align-items:flex-start;padding:15px 17px;margin:12px 0 15px;border:1px solid #c4d9fa;background:#eaf3ff;color:#315b92;border-radius:17px;font-size:12px;line-height:1.55;box-shadow:0 8px 25px #285b9d0d}
+.maintenance-inline strong{font-size:22px}
+.offline-chip{display:flex;gap:8px;align-items:center;padding:10px 13px;background:#fff5e4;border:1px solid #f3d6a2;color:#916222;border-radius:13px;font-size:12px;margin:12px 0}
+@media(max-width:410px){.inbox-detail-content{padding:32px 17px 23px}.inbox-detail{border-radius:22px}.inbox-gallery img{border-radius:11px}}
+@media(prefers-reduced-motion:reduce){.inbox-interactive{transition:none}.inbox-interactive:active{transform:none}}
+
+
+/* Gallery images can be expanded inside the offline-capable reader. */
+.inbox-gallery img{cursor:zoom-in;touch-action:manipulation}
+.inbox-gallery img.expanded{grid-column:1/-1;aspect-ratio:auto;max-height:none;object-fit:contain;cursor:zoom-out}

@@ -54,7 +54,7 @@ async function github(path,method='GET',payload){
  return data;
 }
 async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
-export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls){
+export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(!originPolicy.isAllowed(req.headers.origin)){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const url=new URL(req.url,'http://localhost');
@@ -95,7 +95,24 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
  try{
    if(url.pathname==='/api/admin/push/status'&&req.method==='GET'){send(res,200,manualPush.stats());return true}
    if(url.pathname==='/api/admin/push/test'&&req.method==='POST'){const output=await manualPush.test(await readJson(req));extras?.record('push.test','test notification');send(res,200,output);return true}
-   if(url.pathname==='/api/admin/push/send'&&req.method==='POST'){const body=await readJson(req);const output=await manualPush.broadcast(body);extras?.record('push.broadcast',String(body.queue||'all'));send(res,200,output);return true}
+   if(url.pathname==='/api/admin/push/send'&&req.method==='POST'){
+     const body=await readJson(req);
+     if(body.confirmSend!==true)throw Error('Підтвердіть розсилку');
+     // The legacy Push editor now publishes an Inbox item too.
+     let noticeId=null;
+     if(siteControls){
+      const config=siteControls.get();
+      if(config.announcements.length>=50)throw Error('Архів оголошень переповнений. Приберіть старі повідомлення.');
+      noticeId='n_'+crypto.randomBytes(9).toString('hex');
+      config.announcements.unshift({id:noticeId,title:body.title,body:body.body,content:body.body,
+       kind:'important',queue:body.queue||'all',priority:'important',delivery:'both',
+       active:true,pinned:false,images:[],publishedAt:new Date().toISOString()});
+      siteControls.update(config);
+     }
+     const output=await manualPush.broadcast({...body,notificationId:noticeId?'notice:'+noticeId:undefined});
+     if(noticeId&&output.accepted>0)siteControls.markPushed(noticeId);
+     extras?.record('push.broadcast',String(body.queue||'all'));send(res,200,output);return true;
+   }
    if(url.pathname==='/api/admin/feedback'&&req.method==='GET'){send(res,200,feedback.list());return true}
    if(url.pathname.startsWith('/api/admin/feedback/')&&['PATCH','DELETE'].includes(req.method)){
      const id=decodeURIComponent(url.pathname.slice('/api/admin/feedback/'.length));
@@ -105,13 +122,30 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    }
    if(url.pathname==='/api/admin/monitor'&&req.method==='GET'){send(res,200,await monitor());return true}
    if(url.pathname==='/api/admin/audit'&&req.method==='GET'){send(res,200,{events:extras.getAudit()});return true}
+   if(url.pathname==='/api/admin/media'&&req.method==='POST'){
+     if(!mediaStore)throw Error('Завантаження фото недоступне');
+     const result=mediaStore.save(await readJson(req,4200000));
+     extras?.record('media.upload',result.id);send(res,201,result);return true;
+   }
+   if(url.pathname==='/api/admin/notices/send'&&req.method==='POST'){
+     if(!siteControls)throw Error('Керування повідомленнями недоступне');
+     const input=await readJson(req,2000),entry=siteControls.get().announcements.find(x=>x.id===input.id);
+     if(!entry||!entry.active)throw Error('Спочатку опублікуйте повідомлення');
+     if(entry.scheduledAt&&Date.parse(entry.scheduledAt)>Date.now())throw Error('Повідомлення заплановане на майбутнє');
+     if(entry.pushSentAt)throw Error('Push для цього повідомлення вже надсилався');
+     if(input.confirmSend!==true)throw Error('Підтвердіть масове надсилання');
+     const outcome=await manualPush.broadcast({title:entry.title,body:entry.body,queue:entry.queue,
+       notificationId:'notice:'+entry.id,confirmSend:true});
+     if(outcome.accepted>0)siteControls.markPushed(entry.id);
+     extras?.record('push.notice',entry.id);send(res,200,outcome);return true;
+   }
    if(url.pathname==='/api/admin/app-config'&&req.method==='GET'){
      if(!siteControls){send(res,503,{error:'Керування застосунком недоступне'});return true}
      send(res,200,siteControls.get());return true;
    }
    if(url.pathname==='/api/admin/app-config'&&req.method==='PUT'){
      if(!siteControls){send(res,503,{error:'Керування застосунком недоступне'});return true}
-     const value=siteControls.update(await readJson(req,18000));send(res,200,value);return true;
+     const value=siteControls.update(await readJson(req,750000));send(res,200,value);return true;
    }
    if(url.pathname==='/api/admin/help'&&req.method==='GET'){send(res,200,extras.getHelp());return true}
    if(url.pathname==='/api/admin/help'&&req.method==='PUT'){const result=extras.updateHelp(await readJson(req,70000));send(res,200,result);return true}

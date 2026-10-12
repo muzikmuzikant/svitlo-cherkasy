@@ -58,7 +58,8 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  <button type="button" data-admin-tab="sources" aria-pressed="false">Дані та перевірки</button>
  <button type="button" data-admin-tab="feedback" aria-pressed="false">Звернення</button>
  <button type="button" data-admin-tab="push" aria-pressed="false">Push</button>
- <button type="button" data-admin-tab="help" aria-pressed="false">Центр допомоги</button>
+ <button type="button" data-admin-tab="operations" aria-pressed="false">Контент і техроботи</button>
+  <button type="button" data-admin-tab="help" aria-pressed="false">Центр допомоги</button>
  <button type="button" data-admin-tab="data" aria-pressed="false">Редактор</button>
  <button type="button" data-admin-tab="audit" aria-pressed="false">Журнал</button>
 </nav>
@@ -92,6 +93,83 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  <div class="field" style="margin-top:12px"><label for="noticeBody">Текст оголошення</label><textarea id="noticeBody" rows="3" maxlength="420"></textarea></div>
  <label class="checkline"><input type="checkbox" id="noticeEnabled"> Показувати оголошення користувачам</label>
  <div class="flex" style="margin-top:16px"><button type="button" id="helpPublish">Зберегти Центр допомоги</button><span class="hint" id="helpState" role="status">Ще не завантажено</span></div>
+</section>
+
+<section class="card ops-workspace" data-admin-panel="operations" hidden>
+ <div class="headline"><div><div class="panel-eyebrow">SVITLO CONTROL CENTER · V7.4</div><h2>Контент і робота застосунку</h2><p class="hint">Редактор повідомлень, медіа та оформлення технічних робіт.</p></div><span class="pill" id="opsStatusPill">Налаштування</span></div>
+ <div class="ops-section ops-workspace-maintenance">
+  <div class="headline"><h2>🛠️ Конструктор технічних робіт</h2><span class="pill">Вимкнено за замовчуванням</span></div>
+  <label class="ops-toggle"><span><strong>Увімкнути технічні роботи</strong><small>Повноекранний режим закриває лише користувацький застосунок. Адмінпанель лишається доступною.</small></span><input type="checkbox" id="opsMaintenance"></label>
+  <div class="ops-editor-columns">
+   <div class="ops-fields">
+    <div class="two">
+     <div class="field"><label for="opsMode">Режим</label><select id="opsMode"><option value="full">Повний екран</option><option value="limited">Часткові роботи (банер)</option><option value="incident">Термінове повідомлення</option></select></div>
+     <div class="field"><label for="opsTheme">Оформлення</label><select id="opsTheme"><option value="blue">Синя</option><option value="midnight">Темна</option><option value="light">Світла</option><option value="violet">Фіолетова</option></select></div>
+    </div>
+    <div class="two">
+     <div class="field"><label for="opsIcon">Іконка / емодзі</label><input id="opsIcon" maxlength="18" value="✨" placeholder="⚡"></div>
+     <div class="field"><label for="opsMaintenanceFile">Власна ілюстрація</label><input id="opsMaintenanceFile" type="file" accept="image/png,image/jpeg,image/webp"></div>
+    </div>
+    <div class="field"><label for="opsImageUrl">Або HTTPS-посилання на ілюстрацію</label><input id="opsImageUrl" type="url" placeholder="https://..."></div>
+    <div class="field"><label for="opsTitle">Заголовок</label><input id="opsTitle" maxlength="90"></div>
+    <div class="field"><label for="opsMessage">Пояснення користувачам</label><textarea id="opsMessage" maxlength="320" rows="3"></textarea></div>
+    <div class="two">
+     <div class="field"><label for="opsStartsAt">Розпочати не раніше (за потреби)</label><input id="opsStartsAt" type="datetime-local"></div>
+     <div class="field"><label for="opsUntil">Орієнтовне завершення</label><input id="opsUntil" type="datetime-local"></div>
+    </div>
+   </div>
+   <div class="ops-preview" id="opsPreview"><small>ПОПЕРЕДНІЙ ПЕРЕГЛЯД</small><div class="ops-preview-mark" id="opsPreviewIcon">✨</div><strong id="opsPreviewTitle">Ми покращуємо застосунок</strong><p id="opsPreviewMessage">Незабаром усе знову працюватиме.</p></div>
+  </div>
+ </div>
+ <div class="ops-edit-layout">
+  <aside class="ops-editor-sidebar">
+   <div class="headline"><h2>📣 Повідомлення</h2><span class="pill" id="opsNoticeCount">0</span></div>
+   <button type="button" id="opsNewNotice" class="ops-new-button">+ Створити повідомлення</button>
+   <input type="search" id="opsNoticeSearch" placeholder="Знайти оголошення..." aria-label="Пошук повідомлень">
+   <div id="opsNoticeList" class="ops-notices"></div>
+  </aside>
+  <div class="ops-editor-main">
+   <div class="headline"><div><h2>Візуальний редактор</h2><p class="hint" id="opsEditorStatus">Оберіть повідомлення або створіть нове</p></div><div class="flex"><button type="button" id="opsDuplicateNotice" class="secondary">Копія</button><button type="button" id="opsDeleteNotice" class="danger">Видалити</button></div></div>
+   <div class="field"><label for="opsTemplate">Швидкий шаблон</label><select id="opsTemplate"><option value="">Без шаблону</option><option value="schedule">🗓️ Оновлення графіка</option><option value="emergency">⚠️ Важливе повідомлення</option><option value="maintenance">🛠️ Технічні роботи</option><option value="update">✨ Нова версія застосунку</option></select></div>
+   <div class="field"><label for="opsNoticeTitle">Заголовок</label><input id="opsNoticeTitle" maxlength="90" placeholder="Наприклад, ⚡ Оновили графік"></div>
+   <div class="field"><label for="opsNoticeBody">Короткий текст для Push та картки</label><textarea id="opsNoticeBody" rows="2" maxlength="280" placeholder="Найголовніше одним-двома реченнями"></textarea></div>
+   <div class="field"><label for="opsNoticeContent">Повний текст повідомлення</label>
+    <div class="ops-text-toolbar" role="toolbar" aria-label="Форматування тексту">
+      <button type="button" data-ops-format="bold" aria-label="Жирний текст"><strong>Ж</strong></button>
+      <button type="button" data-ops-format="heading" aria-label="Підзаголовок">H2</button>
+      <button type="button" data-ops-format="bullet" aria-label="Маркер списку">☷</button>
+      <button type="button" data-ops-format="link" aria-label="Посилання"><span>↗</span></button>
+    </div>
+    <textarea id="opsNoticeContent" rows="9" maxlength="6000" placeholder="Докладно опишіть, що сталося, і що робити користувачеві..."></textarea>
+   </div>
+   <div class="two">
+    <div class="field"><label for="opsNoticeKind">Категорія</label><select id="opsNoticeKind"><option value="info">💬 Інформація</option><option value="important">📣 Важливе</option><option value="schedule">🗓️ Графіки</option><option value="emergency">⚠️ Екстрене</option><option value="update">✨ Оновлення</option></select></div>
+    <div class="field"><label for="opsNoticePriority">Пріоритет</label><select id="opsNoticePriority"><option value="normal">Звичайний</option><option value="important">Важливий</option><option value="urgent">Терміновий</option></select></div>
+   </div>
+   <div class="two">
+    <div class="field"><label for="opsNoticeQueue">Одержувачі</label><select id="opsNoticeQueue"><option value="all">Усі підчерги</option></select></div>
+    <div class="field"><label for="opsNoticeDelivery">Спосіб доставки</label><select id="opsNoticeDelivery"><option value="inbox">Тільки у «Вхідні»</option><option value="both">«Вхідні» та Push</option></select></div>
+   </div>
+   <div class="two">
+    <div class="field"><label for="opsNoticeSchedule">Запланований час появи</label><input id="opsNoticeSchedule" type="datetime-local"></div>
+    <div class="field"><label for="opsNoticeExpires">Показувати до</label><input id="opsNoticeExpires" type="datetime-local"></div>
+   </div>
+   <div class="ops-notice-switches">
+    <label><input id="opsNoticeActive" type="checkbox"> Опубліковано</label>
+    <label><input id="opsNoticePinned" type="checkbox"> 📌 Закріпити</label>
+    <div class="field"><label for="opsNoticeIcon">Емодзі</label><input id="opsNoticeIcon" maxlength="18" placeholder="📣"></div>
+   </div>
+   <div class="ops-media-section"><h3>Фото та обкладинка</h3>
+    <p class="hint">Можна додати до шести фото, кожне до 3 МБ. Перше використовується як обкладинка.</p>
+    <div class="two">
+     <div class="field"><label for="opsPhotoUpload">Завантажити з пристрою</label><input id="opsPhotoUpload" type="file" accept="image/png,image/jpeg,image/webp" multiple></div>
+     <div class="field"><label for="opsNoticeImageUrl">Або додати HTTPS-посилання</label><div class="flex"><input id="opsNoticeImageUrl" type="url" placeholder="https://..."><button type="button" class="secondary" id="opsAddImageUrl">+</button></div></div>
+    </div><div id="opsPhotoGallery" class="ops-photo-grid"></div>
+   </div>
+   <div class="ops-message-preview"><div class="panel-eyebrow">ПЕРЕГЛЯД У «ВХІДНИХ»</div><strong id="opsEditorPreviewTitle">Заголовок</strong><p id="opsEditorPreviewBody">Короткий текст повідомлення</p></div>
+  </div>
+ </div>
+ <div class="ops-bottom"><span class="push-state" id="opsMessageStatus" role="status">Завантаження налаштувань…</span><div class="flex"><button type="button" id="opsReload" class="secondary">Скасувати зміни</button><button type="button" id="opsSave">Зберегти налаштування</button></div></div>
 </section>
 <section class="card" data-admin-panel="audit" hidden><div class="headline"><h2>Журнал дій</h2><button type="button" class="secondary" id="auditRefresh">Оновити</button></div>
  <p>Зберігаються останні 250 операцій (вхід, вихід, розсилки, зміни звернень, редагування допомоги й публікації). Паролі, тексти звернень та Push-токени не записуються.</p><div id="auditList" class="review-list"></div></section>

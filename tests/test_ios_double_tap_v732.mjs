@@ -29,7 +29,7 @@ test('accessibility zoom remains enabled rather than being locked in viewport se
 
 test('release and service worker ship a fresh PWA cache without touching Railway',()=>{
  const release=JSON.parse(read('release.json'));
- assert.equal(release.version,'7.3.2');
- assert.match(read('sw.js'),/svitlo-cherkasy-shell-v7\.3\.2/);
- assert.match(read('index.html'),/name="svitlo-version" content="7\.3\.2"/);
+ assert.ok(Number(release.version.split('.')[0])>=7,'A new release must preserve iOS zoom behavior');
+ assert.match(read('sw.js'),new RegExp('svitlo-cherkasy-shell-v'+release.version.replaceAll('.','\\.')));
+ assert.match(read('index.html'),new RegExp('name="svitlo-version" content="'+release.version.replaceAll('.','\\.')+'"'));
 });
