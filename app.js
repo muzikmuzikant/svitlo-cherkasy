@@ -594,6 +594,35 @@ function mergeIndexes(live,backup,options={}){
  return SvitloDataMerge.mergeIndexes(live,backup,options);
 }
 
+// Railway is the primary schedule publisher; Pages retains a static fallback.
+async function loadLatestSchedules(){
+ let liveError=null;
+ try{
+  const cfg=pushConfig||await fetch('./push-config.json?live='+Date.now(),{cache:'no-store'}).then(r=>{
+   if(!r.ok)throw Error('Cannot read backend config');return r.json();
+  });
+  const base=new URL(cfg.apiBase);
+  if(base.protocol!=='https:')throw Error('Railway API requires HTTPS');
+  const u=new URL('/api/data/schedules.json',base);
+  u.searchParams.set('t',String(Date.now()));
+  const ctrl=new AbortController(),timeout=setTimeout(()=>ctrl.abort(),11500);
+  try{
+   const resp=await fetch(u,{cache:'no-store',signal:ctrl.signal});
+   if(!resp.ok)throw Error('Railway HTTP '+resp.status);
+   const value=normalizeData(await resp.json());
+   if(!value.lastChecked)throw Error('Railway snapshot missing check timestamp');
+   return {value,source:'railway'};
+  }finally{clearTimeout(timeout)}
+ }catch(e){liveError=e;console.warn('Railway schedules unavailable, reading fallback:',e.message)}
+ const fallback=await fetch('./data/schedules.json?refresh='+Date.now(),{cache:'no-store'});
+ if(!fallback.ok)throw liveError||Error('Pages schedule HTTP '+fallback.status);
+ const value=normalizeData(await fallback.json());
+ const saved=safeJSON(OFFLINE_SCHEDULE,null);
+ if(saved?.lastChecked&&Date.parse(saved.lastChecked)>Date.parse(value.lastChecked||'')&&Array.isArray(saved.days))
+  return {value:normalizeData(saved),source:'device'};
+ return {value,source:'pages-fallback'};
+}
+
 async function refreshData(manual=false){
  if(refreshInFlight)return refreshInFlight;
  if(Date.now()-lastRefresh<7000&&!manual)return;
@@ -603,10 +632,12 @@ async function refreshData(manual=false){
  refreshInFlight=(async()=>{
    let schedulesOk=false;
    try{
-     const response=await fetch(`./data/schedules.json?refresh=${Date.now()}`,{cache:'no-store'});
-     if(!response.ok)throw Error('schedules HTTP '+response.status);
-     const loaded=normalizeData(await response.json());
-     data=loaded;schedulesOk=true;lastSyncFailed=false;lastDownloadAt=new Date().toISOString();
+     const {value:loaded,source}=await loadLatestSchedules();
+     const currentStamp=Date.parse(data.lastChecked||'')||0;
+     const nextStamp=Date.parse(loaded.lastChecked||'')||0;
+     // Never downgrade an already checked schedule after an outage.
+     if(nextStamp>=currentStamp||!data.days.length)data=loaded;
+     schedulesOk=true;lastSyncFailed=source==='pages-fallback';lastDownloadAt=new Date().toISOString();
      // Additional local snapshot protects against service-worker cache eviction.
      try{const serialized=JSON.stringify(loaded);if(serialized.length<1200000)localStorage.setItem(OFFLINE_SCHEDULE,serialized)}catch{}
    }catch(error){
