@@ -18,9 +18,14 @@
           const app = document.createElement('script');
           app.src = './app.js';
           app.onload = () => {
-            const inboxUi = document.createElement('script');
-            inboxUi.src = './inbox-ui.js';
-            document.body.append(inboxUi);
+            const textScript = document.createElement('script');
+            textScript.src = './notification-text.js';
+            textScript.onload = () => {
+              const inboxUi = document.createElement('script');
+              inboxUi.src = './inbox-ui.js';
+              document.body.append(inboxUi);
+            };
+            document.body.append(textScript);
             const updater = document.createElement('script');
             updater.src = './version-check.js';
             document.body.append(updater);

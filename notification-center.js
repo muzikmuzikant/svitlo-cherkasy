@@ -96,5 +96,15 @@
   await mutate(x=>(x.id.startsWith('notice:')&&!current.has(x.id))||
     LEGACY_ADMIN.test(x.id),()=>null);
  }
- root.SvitloInbox={normalize,all,add,mark,clearRead,remove,reconcileAnnouncements};
+ async function reconcileAutomated(incoming){
+  // Remove only old duplicate tomorrow Push cards when the matching day exists.
+  const dates=new Set((incoming||[]).filter(x=>x?.id?.startsWith('day:')).map(x=>x.id.split(':')[2]));
+  if(!dates.size)return;
+  await mutate(x=>{
+   if(!x.id.startsWith('push:')||!x.id.includes(':tomorrow:'))return false;
+   const date=/:tomorrow:(20\d{2}-\d{2}-\d{2}):/.exec(x.id)?.[1];
+   return Boolean(date&&dates.has(date));
+  },()=>null);
+ }
+ root.SvitloInbox={normalize,all,add,mark,clearRead,remove,reconcileAnnouncements,reconcileAutomated};
 })(typeof self!=='undefined'?self:globalThis);

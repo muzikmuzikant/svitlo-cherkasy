@@ -13,7 +13,7 @@ import {originPolicy} from './origins.js';
 import webpush from 'web-push';
 import {adminRouter} from './admin.js';
 import {createManualPush} from './manual-push.js';
-import {transitionCopy,tomorrowCopy,changeCopy,emergencyCopy} from './notification-copy.js';
+import {transitionCopy,tomorrowCopy,changeCopy,emergencyCopy,firstPublishedAt,dayId,changeId,isLatestRevision,emergencyId} from './notification-copy.js';
 import {QUEUES,timeline,dueTransition,latestOfficialEvent,freshEvent,freshSchedule,dueTransitionAcrossDays} from './schedule-engine.js';
 
 const {VAPID_PUBLIC_KEY,PUSH_PRIVATE_KEY,PUSH_CONTACT,APP_ORIGIN,SCHEDULE_URL,DATA_FILE='./subscribers.json',PORT='8080'}=process.env;
@@ -52,9 +52,11 @@ async function loadJson(url){
  if(!r.ok)throw Error(`HTTP ${r.status}`);
  return r.json();
 }
-async function send(rec,title,body,key,options={}){
+async function send(rec,message,key,options={}){
  if(sent[key])return;
- const payload=JSON.stringify({title,body,url:appUrl,tag:key.slice(-90)});
+ const payload=JSON.stringify({title:message.title,body:message.body,content:message.content||'',
+  url:options.source||appUrl,notificationId:options.notificationId,kind:options.kind||'schedule',
+  at:options.at||new Date().toISOString(),tag:options.notificationId||key.slice(-90)});
  try{await webpush.sendNotification(rec.subscription,payload,{TTL:options.ttl||1200,urgency:options.urgency||'normal'});sent[key]=new Date().toISOString()}
  catch(e){if([404,410].includes(e?.statusCode))delete subscribers[hash(rec.subscription.endpoint)];else console.warn('Auto Push failed:',e?.statusCode||e?.message)}
 }
@@ -98,23 +100,32 @@ async function job(){
     if(!pref[type])continue;
     const boundary=dueTransitionAcrossDays(values,valuesTomorrow,minutes,offset,target,4);
     if(boundary!==null){const eta=boundary-minutes;
-     const msg=transitionCopy(type,q,boundary,eta);
-     await send(record,msg.title,msg.body,`${prefix}:${type}:${now.date}:${boundary}`)}
+     const msg=transitionCopy(type,q,boundary,eta,boundary>=1440?nextDate:now.date);
+     await send(record,msg,`${prefix}:${type}:${now.date}:${boundary}`,{
+      notificationId:'transition:'+q+':'+now.date+':'+boundary+':'+type,
+      source:(boundary>=1440?tomorrow:current)?.source});
+    }
    }
-   if(schedulesSafe&&pref.tomorrow&&tomorrow?.verified===true&&minutes>=19*60){
-    const revision=tomorrow.publishedAt||'';
-    const msg=tomorrowCopy(q,nextDate);
-    await send(record,msg.title,msg.body,`${prefix}:tomorrow:${nextDate}:${revision}`);
+   const freshChanges=(source.changes||[]).slice(-30).filter(change=>{
+    const when=Date.parse(change.detectedAt||change.publishedAt||''),age=timestamp-when;
+    return Array.isArray(change.queues)&&change.queues.includes(q)&&change.date>=now.date&&
+     Number.isFinite(when)&&age>=0&&age<65*60000;
+   });
+   const tomorrowRevised=freshChanges.some(change=>isLatestRevision(change,tomorrow,q));
+   if(schedulesSafe&&pref.tomorrow&&tomorrow?.verified===true&&minutes>=19*60&&!(pref.changes&&tomorrowRevised)){
+    const revision=firstPublishedAt(tomorrow),msg=tomorrowCopy(q,nextDate,tomorrow);
+    await send(record,msg,`${prefix}:tomorrow:${nextDate}:${revision}`,{
+     notificationId:dayId(q,tomorrow),at:revision,source:tomorrow.source});
    }
    if(pref.emergency&&freshEvent(event,timestamp)&&(!Array.isArray(event.queues)||!event.queues.length||event.queues.includes(q))){
     const msg=emergencyCopy(event.status);
-    if(msg)await send(record,msg.title,msg.body,`${prefix}:emergency:${event.status}:${hash(event.id||event.source)}:${event.publishedAt}`,{ttl:3600,urgency:'high'});
+    if(msg)await send(record,msg,`${prefix}:emergency:${event.status}:${hash(event.id||event.source)}:${event.publishedAt}`,{
+     notificationId:emergencyId(event),at:event.publishedAt,source:event.source,kind:'emergency',ttl:3600,urgency:'high'});
    }
-   if(schedulesSafe&&pref.changes)for(const change of (source.changes||[]).slice(-30)){
-    const date=Date.parse(change.detectedAt||change.publishedAt||''),age=timestamp-date;
-    if(!Array.isArray(change.queues)||!change.queues.includes(q)||change.date<now.date||!Number.isFinite(date)||age<0||age>=65*60000)continue;
-    const msg=changeCopy(q,change.date);
-    await send(record,msg.title,msg.body,`${prefix}:change:${change.date}:${change.revisionId||change.publishedAt}`);
+   if(schedulesSafe&&pref.changes)for(const change of freshChanges){
+    const msg=changeCopy(q,change.date,source.days.find(d=>d.date===change.date&&d.verified===true));
+    await send(record,msg,`${prefix}:change:${change.date}:${change.revisionId||change.publishedAt}`,{
+     notificationId:changeId(q,change),at:change.detectedAt||change.publishedAt,source:change.source});
    }
   });
   // Scheduled admin messages share a stable ID between Push and the public inbox.

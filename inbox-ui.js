@@ -1,6 +1,6 @@
 /* Full-screen inbox v7.4. Safe text rendering, deep links and offline history. */
 (()=>{'use strict';
- const $=id=>document.getElementById(id),store=window.SvitloInbox;
+ const $=id=>document.getElementById(id),store=window.SvitloInbox,copy=window.SvitloNotificationText;
  if(!store||!$('inboxList'))return;
  let selected='all',rows=[],notices=window.SvitloPublicConfig?.announcements||[],busy=false,lastSync=0,activeDetail=null,noticeFeedConfirmed=window.SvitloPublicConfig?.serverVerified===true,needsResync=false;
  const time=s=>new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Kyiv'}).format(new Date(s));
@@ -116,30 +116,36 @@
     fetch('./data/emergency.json?inbox='+now,{cache:'no-store'}).then(x=>x.ok?x.json():null).catch(()=>null)
    ]);
    if(queue&&Array.isArray(schedules?.days)){
-    for(const x of schedules.changes||[]){const at=Date.parse(x.detectedAt||x.publishedAt||'');
+    for(const x of schedules.changes||[]){
+     const at=Date.parse(x.detectedAt||x.publishedAt||'');
      if(!x.queues?.includes(queue)||!Number.isFinite(at)||at<now-72*3600000||at>now+120000)continue;
-     incoming.push({id:'change:'+queue+':'+x.date+':'+(x.revisionId||x.publishedAt),title:'🔄 Графік оновлено',
-      body:'Підчерга '+queue+' · Змінено години на '+date(x.date)+'.',kind:'schedule',at:new Date(at).toISOString(),url:x.source});
+     const day=schedules.days.find(d=>d.date===x.date&&d.verified===true);
+     incoming.push({id:copy.changeId(queue,x),...copy.changeCopy(queue,x.date,day),
+      kind:'schedule',at:new Date(at).toISOString(),url:x.source});
     }
-    for(const x of schedules.days){const at=Date.parse(x.publishedAt||'');
+    for(const x of schedules.days){
+     const at=Date.parse(copy.firstPublishedAt(x));
      if(!x.verified||!Number.isFinite(at)||at<now-72*3600000||at>now+120000)continue;
-     incoming.push({id:'day:'+queue+':'+x.date+':'+x.publishedAt,title:'🗓️ Графік на '+date(x.date),
-      body:'Для підчерги '+queue+' опубліковано розклад.',kind:'schedule',at:new Date(at).toISOString(),url:x.source});
+     incoming.push({id:copy.dayId(queue,x),
+      title:'🗓️ Графік на '+date(x.date),body:'Для підчерги '+queue+' опубліковано розклад.',
+      content:copy.tomorrowCopy(queue,x.date,x).content,kind:'schedule',at:new Date(at).toISOString(),url:x.source});
     }
    }
    for(const x of (emergency?.events||[]).slice(0,12)){const at=Date.parse(x.publishedAt||'');
     if(!Number.isFinite(at)||at<now-72*3600000||at>now+120000||!validUrl(x.source))continue;
     if(x.queues?.length&&(!queue||!x.queues.includes(queue)))continue;
-    incoming.push({id:'emergency:'+String(x.id||x.source)+':'+x.publishedAt,
-     kind:'emergency',at:new Date(at).toISOString(),title:x.status==='active'?'⚠️ Екстрені відключення':x.status==='ended'?'✅ Обмеження завершено':'📣 Повідомлення оператора',
-     body:x.title||'Нова інформація від оператора.',url:x.source,priority:'important'});
+    const message=copy.emergencyCopy(x.status);
+    incoming.push({id:copy.emergencyId(x),kind:'emergency',at:new Date(at).toISOString(),
+      title:message?.title||(x.title||'📣 Повідомлення оператора'),
+      body:message?.body||(x.title||'Нова інформація від оператора.'),
+      content:message?.content||x.title||'',url:x.source,priority:'important'});
    }
    for(const a of notices){
     if(a.active!==true||!targeted(a)||a.queue&&a.queue!=='all'&&a.queue!==queue||a.scheduledAt&&Date.parse(a.scheduledAt)>now||a.expiresAt&&Date.parse(a.expiresAt)<=now)continue;
     incoming.push({id:'notice:'+a.id,kind:'announcement',title:(a.icon||({important:'📣',update:'✨',emergency:'⚠️',schedule:'🗓️'})[a.kind]||'💬')+' '+a.title,
      body:a.body,content:a.content,images:a.images,at:a.publishedAt,updatedAt:a.updatedAt,pinned:a.pinned,priority:a.priority,authoritative:true});
    }
-   if(incoming.length)await store.add(incoming);
+   if(incoming.length){await store.add(incoming);await store.reconcileAutomated(incoming)}
    lastSync=Date.now();await refresh();
   }finally{busy=false;if(needsResync){needsResync=false;queueMicrotask(()=>sync().catch(console.warn))}}
  }

@@ -385,12 +385,6 @@ function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Пі�
   b.onclick=()=>showDay(d);root.append(b);
  }
  const pub=currentDay(day),t=timeline(day,a.queue);
- const verified=$('detailVerified');
- if(verified){
-  const official=!!pub;
-  verified.className='verified-source-badge '+(official?'is-verified':'is-unpublished');
-  verified.textContent=official?'✓ Опублікований графік оператора':'ℹ Графік не опубліковано · світло весь день за умовним відображенням';
- }
  const dayStats=stats(t);
  setText('detailDayStat',dayStats?(pub?(dayStats.unknown?'Частина годин уточнюється':'Без світла '+formatDuration(dayStats.off)+' · Зі світлом '+formatDuration(dayStats.on)):'Світло весь день · графіка не опубліковано'):'Немає даних');
  setText('detailDayLabel',formatDate(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:'Графік не опубліковано · світло весь день за замовчуванням');const grid=$('hourGrid');grid.replaceChildren();
