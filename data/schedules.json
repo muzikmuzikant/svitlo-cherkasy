@@ -1,10 +1,8 @@
 {
   "schemaVersion": 3,
-  "lastChecked": "2026-10-12T13:34:28+03:00",
-  "reviewPending": true,
-  "unresolvedDates": [
-    "2026-10-12"
-  ],
+  "lastChecked": "2026-10-12T13:40:36+03:00",
+  "reviewPending": false,
+  "unresolvedDates": [],
   "confirmedNoScheduleDates": [
     "2026-10-13"
   ],
@@ -331,17 +329,13 @@
     },
     {
       "date": "2026-10-12",
-      "publishedAt": "2026-10-11T19:42:00+03:00",
-      "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-12-zhovtnya?lang=uk",
+      "publishedAt": "2026-10-12T09:55+03:00",
+      "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-12-zhovtnya?lang=uk",
       "verified": true,
       "queues": {
         "1.1": {
           "knownFrom": "00:00",
           "off": [
-            [
-              "06:00",
-              "08:00"
-            ],
             [
               "16:00",
               "18:00"
@@ -378,6 +372,10 @@
           "knownFrom": "00:00",
           "off": [
             [
+              "10:00",
+              "12:00"
+            ],
+            [
               "16:00",
               "18:00"
             ]
@@ -387,7 +385,7 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "15:00",
+              "14:00",
               "16:00"
             ],
             [
@@ -461,6 +459,10 @@
           "knownFrom": "00:00",
           "off": [
             [
+              "12:00",
+              "14:00"
+            ],
+            [
               "20:00",
               "22:00"
             ]
@@ -480,13 +482,31 @@
           ]
         }
       },
-      "revisions": 1,
-      "planFingerprint": "bfd3e5503397d6962bb6",
+      "revisions": 2,
+      "planFingerprint": "91990780997479d13c11",
       "noScheduledOutages": [],
       "publications": [
         {
-          "publishedAt": "2026-10-11T19:42:00+03:00",
+          "publishedAt": "2026-10-11T19:42+03:00",
           "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-12-zhovtnya?lang=uk",
+          "queues": [
+            "1.1",
+            "1.2",
+            "2.1",
+            "2.2",
+            "3.1",
+            "3.2",
+            "4.1",
+            "4.2",
+            "5.1",
+            "5.2",
+            "6.1",
+            "6.2"
+          ]
+        },
+        {
+          "publishedAt": "2026-10-12T09:55+03:00",
+          "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-12-zhovtnya?lang=uk",
           "queues": [
             "1.1",
             "1.2",
@@ -505,5 +525,19 @@
       ]
     }
   ],
-  "changes": []
+  "changes": [
+    {
+      "date": "2026-10-12",
+      "publishedAt": "2026-10-12T09:55+03:00",
+      "detectedAt": "2026-10-12T13:40:36+03:00",
+      "revisionId": "91990780997479d13c11",
+      "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-12-zhovtnya?lang=uk",
+      "queues": [
+        "1.1",
+        "2.2",
+        "3.1",
+        "6.1"
+      ]
+    }
+  ]
 }
