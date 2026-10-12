@@ -54,14 +54,34 @@ export function validateAppConfig(input){
  return {schemaVersion:1,updatedAt:new Date().toISOString(),maintenance,site,announcements};
 }
 export function createAppConfig({directory,record=()=>{}}){
- const file=path.join(directory,'app-config.json');let state=defaults();
+ const file=path.join(directory,'app-config.json'),historyFile=path.join(directory,'app-config-history.json');let state=defaults(),history=[];
+ try{const saved=JSON.parse(fs.readFileSync(historyFile,'utf8'));if(Array.isArray(saved))history=saved.slice(0,40)}catch(e){if(e.code!=='ENOENT')console.warn('App history:',e.message)}
  try{const saved=JSON.parse(fs.readFileSync(file,'utf8'));if(saved?.schemaVersion===1)state=validateAppConfig(saved)}
  catch(e){if(e.code!=='ENOENT')console.warn('App config read:',e.message)}
  const copy=()=>JSON.parse(JSON.stringify(state));
+ const saveHistory=()=>{
+  const temp=historyFile+'.tmp';fs.writeFileSync(temp,JSON.stringify(history,null,2)+'\n',{mode:0o600});
+  fs.renameSync(temp,historyFile);
+ };
+ const historyView=()=>history.map(x=>({id:x.id,at:x.at,
+  messages:x.config?.announcements?.length||0,
+  active:x.config?.announcements?.filter(a=>a.active).length||0,
+  maintenance:x.config?.maintenance?.enabled===true}));
+
  const persist=value=>{fs.mkdirSync(path.dirname(file),{recursive:true});const tmp=file+'.tmp';fs.writeFileSync(tmp,JSON.stringify(value,null,2)+'\n',{mode:0o600});fs.renameSync(tmp,file);state=value};
  const publicState=()=>{const t=Date.now();return {schemaVersion:1,updatedAt:state.updatedAt,maintenance:{...state.maintenance},site:state.site||defaultSite(),announcements:state.announcements.filter(x=>x.active&&(!x.scheduledAt||Date.parse(x.scheduledAt)<=t)&&(!x.expiresAt||Date.parse(x.expiresAt)>t)).map(({pushSentAt,...visible})=>visible)}};
- const update=value=>{const next=validateAppConfig(value);persist(next);record('app.settings',next.maintenance.enabled?'maintenance:on':'maintenance:off');return copy()};
+ const update=value=>{
+  const next=validateAppConfig(value),previous=copy(),changed=JSON.stringify({...previous,updatedAt:null})!==JSON.stringify({...next,updatedAt:null});
+  persist(next);
+  if(changed&&previous.updatedAt){
+   try{
+    history.unshift({id:String(Date.now())+'-'+Math.random().toString(36).slice(2,9),at:next.updatedAt,config:previous});
+    history=history.slice(0,40);saveHistory();
+   }catch(e){console.warn('Config history save:',e.message)}
+  }
+  record('app.settings',next.maintenance.enabled?'maintenance:on':'maintenance:off');return copy();
+ };
  const duePush=()=>{const t=Date.now();return state.announcements.filter(x=>x.active&&x.delivery==='both'&&!x.pushSentAt&&(!x.scheduledAt||Date.parse(x.scheduledAt)<=t)&&(!x.expiresAt||Date.parse(x.expiresAt)>t)).map(x=>({...x}))};
  const markPushed=id=>{if(!state.announcements.some(x=>x.id===id&&!x.pushSentAt))return false;const next=copy();next.announcements.find(x=>x.id===id).pushSentAt=new Date().toISOString();persist(next);record('push.announcement',id);return true};
- return {get:copy,publicState,update,duePush,markPushed};
+ return {get:copy,publicState,update,duePush,markPushed,historyView};
 }
