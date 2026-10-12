@@ -50,11 +50,13 @@ export function validateAppConfig(input){
   if(title.length>90||body.length>280||content.length>6000||(a.active===true&&(title.length<1||body.length<1)))
    throw Error('Додайте заголовок і короткий текст перед публікацією');
   const kind=a.kind||'info',priority=a.priority||'normal',queue=a.queue||'all',delivery=a.delivery||'inbox';
+  const settlement=str(a.settlement,70);
+  if(settlement.length>70)throw Error('Назва населеного пункту надто довга');
   if(!['info','important','update','schedule','emergency'].includes(kind)||!['normal','important','urgent'].includes(priority)||!QUEUES.has(queue)||!['inbox','both','push'].includes(delivery))throw Error('Невірні налаштування доставки');
   const images=a.images??[];if(!Array.isArray(images)||images.length>6)throw Error('Максимум шість зображень');
   const scheduledAt=date(a.scheduledAt),expiresAt=date(a.expiresAt);
   if(scheduledAt&&expiresAt&&scheduledAt>=expiresAt)throw Error('Термін дії раніше публікації');
-  return {id,title,body,content,kind,priority,queue,delivery,images:images.map(image).filter(Boolean),
+  return {id,title,body,content,kind,priority,queue,delivery,settlement,images:images.map(image).filter(Boolean),
    pinned:a.pinned===true,icon:str(a.icon,18),active:a.active===true,
    publishedAt:date(a.publishedAt)||new Date().toISOString(),updatedAt:date(a.updatedAt),
    scheduledAt,expiresAt,pushSentAt:date(a.pushSentAt)};

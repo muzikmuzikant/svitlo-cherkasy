@@ -7,6 +7,11 @@
  const date=s=>new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(s+'T12:00:00Z'));
  const el=(tag,text,cls)=>{const node=document.createElement(tag);node.textContent=String(text??'');if(cls)node.className=cls;return node};
  const local=(key,otherwise)=>{try{return JSON.parse(localStorage.getItem(key)||'null')??otherwise}catch{return otherwise}};
+ const normalizedTown=value=>String(value||'').normalize('NFKC').toLocaleLowerCase('uk-UA')
+  .replace(/^[мс]\.\s*/,'').replace(/[’ʼ`]/g,"'").replace(/\s+/g,' ').trim();
+ const primarySettlement=()=>{const p=local('svitlo-prefs-v6',{}),a=local('svitlo-addresses-v6',[]);
+  return (a.find(x=>x.id===p.primaryId)||a[0])?.settlement||''};
+ const targeted=a=>!a.settlement||normalizedTown(a.settlement)===normalizedTown(primarySettlement());
  const primaryQueue=()=>{const settings=local('svitlo-prefs-v6',{}),addresses=local('svitlo-addresses-v6',[]);
   return (addresses.find(x=>x.id===settings.primaryId)||addresses[0])?.queue||null};
  const validUrl=url=>{try{const u=new URL(url,location.href);return u.protocol==='https:'&&(u.origin===location.origin||/(^|\.)cherkasyoblenergo\.com$/.test(u.hostname))?u.href:''}catch{return ''}};
@@ -102,7 +107,7 @@
    const queue=primaryQueue(),now=Date.now(),incoming=[];
    if(noticeFeedConfirmed){
     const allowed=notices.filter(a=>a.active===true&&(!a.queue||a.queue==='all'||a.queue===queue)
-      &&(!a.scheduledAt||Date.parse(a.scheduledAt)<=now)&&(!a.expiresAt||Date.parse(a.expiresAt)>now))
+      &&targeted(a)&&(!a.scheduledAt||Date.parse(a.scheduledAt)<=now)&&(!a.expiresAt||Date.parse(a.expiresAt)>now))
       .map(a=>'notice:'+a.id);
     await store.reconcileAnnouncements(allowed);
    }
@@ -130,7 +135,7 @@
      body:x.title||'Нова інформація від оператора.',url:x.source,priority:'important'});
    }
    for(const a of notices){
-    if(a.active!==true||a.queue&&a.queue!=='all'&&a.queue!==queue||a.scheduledAt&&Date.parse(a.scheduledAt)>now||a.expiresAt&&Date.parse(a.expiresAt)<=now)continue;
+    if(a.active!==true||!targeted(a)||a.queue&&a.queue!=='all'&&a.queue!==queue||a.scheduledAt&&Date.parse(a.scheduledAt)>now||a.expiresAt&&Date.parse(a.expiresAt)<=now)continue;
     incoming.push({id:'notice:'+a.id,kind:'announcement',title:(a.icon||({important:'📣',update:'✨',emergency:'⚠️',schedule:'🗓️'})[a.kind]||'💬')+' '+a.title,
      body:a.body,content:a.content,images:a.images,at:a.publishedAt,updatedAt:a.updatedAt,pinned:a.pinned,priority:a.priority,authoritative:true});
    }

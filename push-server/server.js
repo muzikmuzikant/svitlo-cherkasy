@@ -121,7 +121,7 @@ async function job(){
   for(const notice of siteControls.duePush().slice(0,6)){
    try{
     const result=await manualPush.broadcast({title:notice.title,body:notice.body,queue:notice.queue,
-      notificationId:'notice:'+notice.id,inbox:notice.delivery!=='push',confirmSend:true});
+      notificationId:'notice:'+notice.id,inbox:notice.delivery!=='push',settlement:notice.settlement||'',confirmSend:true});
     if(result.accepted>0)siteControls.markPushed(notice.id);
    }catch(e){console.warn('Scheduled notice Push:',e.message)}
   }
@@ -219,7 +219,9 @@ const server=http.createServer(async(req,res)=>{
   if(!data.subscription.keys?.p256dh||!data.subscription.keys?.auth||!QUEUES.has(data.queue))throw Error('Invalid subscription or queue');
   const prefs=data.preferences||{};
   const preferences={off:!!prefs.off,on:!!prefs.on,changes:!!prefs.changes,tomorrow:!!prefs.tomorrow,emergency:!!prefs.emergency};
-  subscribers[key]={subscription:data.subscription,queue:data.queue,preferences};
+  // Store only the locality for opt-in Push targeting. Never store street/house.
+  const settlement=typeof data.settlement==='string'?data.settlement.normalize('NFKC').trim().slice(0,70):'';
+  subscribers[key]={subscription:data.subscription,queue:data.queue,preferences,settlement};
   save();response(res,200,{ok:true});
  }catch(e){response(res,e.message?.includes('save failed')?500:400,{error:'Invalid subscription request'})}
 });
