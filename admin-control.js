@@ -48,8 +48,18 @@
   const list=$('opsNoticeList');list.replaceChildren();
   $('opsNoticeCount').textContent=String(state?.announcements?.length||0);
   const query=read('opsNoticeSearch').toLowerCase();
-  for(const n of state?.announcements||[]){
-   if(query&&!((n.title+' '+n.body).toLowerCase().includes(query)))continue;
+  const filter=$('opsNoticeStatusFilter')?.value||'all',sort=$('opsNoticeSort')?.value||'new',time=Date.now();
+  let shown=[...(state?.announcements||[])].filter(n=>{
+   if(query&&!((n.title+' '+n.body).toLowerCase().includes(query)))return false;
+   if(filter==='active')return n.active===true;
+   if(filter==='draft')return n.active!==true;
+   if(filter==='scheduled')return n.active===true&&n.scheduledAt&&Date.parse(n.scheduledAt)>time;
+   if(filter==='expired')return n.active===true&&n.expiresAt&&Date.parse(n.expiresAt)<=time;
+   return true;
+  });
+  shown.sort((x,y)=>sort==='title'?String(x.title||'').localeCompare(String(y.title||''),'uk'):
+   (sort==='old'?1:-1)*(Date.parse(x.updatedAt||x.publishedAt||0)-Date.parse(y.updatedAt||y.publishedAt||0)));
+  for(const n of shown){
    const button=document.createElement('button');button.type='button';button.className='ops-notice-choice'+(selectedId===n.id?' selected':'');
    const h=document.createElement('strong');h.textContent=(kinds[n.kind]||'💬')+' '+(n.title||'Нова чернетка');
    const sub=document.createElement('small');sub.textContent=(n.active?'Опубліковано':'Чернетка')+' · '+(n.delivery==='both'?'Push + Вхідні':'Вхідні')+(n.pinned?' · 📌':'');
@@ -213,6 +223,29 @@
   catch(e){state=previous;selectedId=deleted;fill();drawList();status('Видалення НЕ виконано: '+e.message,true)}
  };
  $('opsNoticeSearch').oninput=drawList;
+ $('opsNoticeStatusFilter').onchange=drawList;
+ $('opsNoticeSort').onchange=drawList;
+ $('opsNoticesExport').onclick=()=>{
+  if(!state)return;
+  capture();
+  const blob=new Blob([JSON.stringify({exportedAt:now(),announcements:state.announcements},null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob),link=document.createElement('a');
+  link.href=url;link.download='svitlo-announcements-'+now().slice(0,10)+'.json';
+  document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+  status('Повідомлення експортовано. Зберігайте чернетки приватно.');
+ };
+ $('opsExpireNotices').onclick=async()=>{
+  if(!state||busy)return;
+  capture();
+  const exp=state.announcements.filter(n=>n.active&&n.expiresAt&&Date.parse(n.expiresAt)<=Date.now());
+  if(!exp.length){status('Активних прострочених повідомлень немає.');return}
+  if(!confirm('Зняти з публікації '+exp.length+' прострочених повідомлень? Вони зникнуть з «Вхідних» після синхронізації.'))return;
+  const backup=structuredClone(state);
+  for(const n of exp){n.active=false;n.pinned=false;n.updatedAt=now()}
+  fill();drawList();
+  try{await saveConfig({scope:'content'});status('Знято з публікації '+exp.length+' прострочених повідомлень.')}
+  catch(e){state=backup;fill();drawList();status('Не вдалося зняти повідомлення: '+e.message,true)}
+ };
  for(const id of ['opsNoticeTitle','opsNoticeBody','opsNoticeContent','opsNoticeKind','opsNoticePriority','opsNoticeIcon','opsNoticeQueue','opsNoticeDelivery','opsNoticeActive','opsNoticePinned','opsNoticeSchedule','opsNoticeExpires']){
   $(id).addEventListener('input',()=>{
    capture();previewMessage();drawList();
