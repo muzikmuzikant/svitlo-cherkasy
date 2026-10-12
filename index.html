@@ -100,6 +100,12 @@
  </section>
  <div class="section-head"><h2>Мої місця</h2><button class="inline-link" id="addFromHome"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Додати</button></div><div class="place-list" id="placeList"></div>
 <div class="notice-strip"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg><span>Статус показує <strong>прогноз за графіком</strong>, а не фактичну наявність електроенергії.</span></div>
+<div class="home-legacy-compat" hidden aria-hidden="true" inert>
+ <div id="syncStatus" hidden><span id="syncStatusTitle"></span><small id="syncStatusDetails"></small><button type="button" id="syncNow">Оновити</button></div>
+ <div id="homeQuickPlaces" hidden></div>
+ <button type="button" id="shareToday" hidden>Поділитися графіком</button>
+ <button type="button" id="copyToday" hidden>Скопіювати години</button>
+</div>
 </section>
 <section id="detail" class="screen" hidden><div class="screen-header"><button class="back-btn" data-go="home" aria-label="Назад">‹</button><div><h1>Графік відключень</h1><p id="detailAddress">Моя адреса</p></div><button class="icon-btn" id="editActive" aria-label="Редагувати адресу"><svg viewBox="0 0 24 24"><path d="m16 5 3 3M4 20l4.5-1 11-11a2.12 2.12 0 0 0-3-3l-11 11L4 20z"/></svg></button></div>
 <div class="detail-status" id="detailStatus"></div>
