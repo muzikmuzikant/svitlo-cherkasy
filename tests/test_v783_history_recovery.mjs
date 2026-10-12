@@ -64,6 +64,15 @@ test('admin UI has separate Audit and Revisions panels with wired role-based rec
  assert.match(server,/body\.confirmRestore!==true/);
  assert.match(server,/siteControls\.restoreHistory\(body\.id,body\.expectedUpdatedAt\)/);
 });
+test('sources display actual GitHub workflow statuses, not synthetic counters',()=>{
+ const html=read('admin.html'),js=read('admin-command.js');
+ assert.match(html,/id="controlActionsList"/);
+ assert.match(html,/id="controlActionsRefresh"/);
+ assert.match(js,/api\.github\.com\/repos\/muzikmuzikant\/svitlo-cherkasy\/actions\/runs/);
+ assert.match(js,/run\.conclusion==='failure'/);
+ assert.match(js,/when\(run\.created_at\)/);
+ assert.match(js,/tab==='sources'\)refreshActions\(\)/);
+});
 test('release and PWA cache refreshed for history recovery',()=>{
  const meta=JSON.parse(read('release.json'));
  assert.equal(meta.version,'7.8.3');
