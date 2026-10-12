@@ -39,6 +39,7 @@ test('Features tab truly persists flags to Railway without destroying maintenanc
  const window={};
  vm.runInNewContext(script,{document,window,api,remote:true,console,Date});
  await featureTab.listeners.click();
+ await new Promise(resolve=>setImmediate(resolve));
  const prompt=registry.find(x=>x.tag==='input'&&x.name==='pushPrompt');
  const tomorrow=registry.find(x=>x.tag==='input'&&x.name==='tomorrowPreview');
  assert.ok(prompt);assert.ok(tomorrow);
@@ -53,6 +54,7 @@ test('Features tab truly persists flags to Railway without destroying maintenanc
  assert.equal(writes[0].maintenance.enabled,false);
  assert.deepEqual(writes[0].announcements,[{id:'msg_12345',active:true,title:'Текст',body:'Зміст'}]);
  await featureTab.listeners.click();
+ await new Promise(resolve=>setImmediate(resolve));
  assert.equal(prompt.checked,false);
  assert.equal(tomorrow.checked,false);
 });
