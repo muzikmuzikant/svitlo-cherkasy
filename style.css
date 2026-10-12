@@ -356,3 +356,25 @@ html.feature-off-scheduleOpenShortcut #openDetail{display:none!important}
 :root[data-site-rounded="false"] .picker-btn,:root[data-site-rounded="false"] .tomorrow-card,
 :root[data-site-rounded="false"] .place-card{border-radius:8px!important}
 .surface,.picker-btn,.overview-card,.tomorrow-card{background:var(--surface,#fff)}
+
+
+/* Full-page maintenance layout presets; centered remains the accessible default. */
+.maintenance-screen[data-layout="compact"] .maintenance-content{width:min(100%,390px);gap:12px;padding:17px 9px}
+.maintenance-screen[data-layout="compact"] .maintenance-symbol{width:78px;height:78px;border-radius:24px;font-size:40px}
+.maintenance-screen[data-layout="compact"] .maintenance-content h1{font-size:clamp(27px,7vw,35px)}
+.maintenance-screen[data-layout="compact"] .maintenance-official{padding:12px 18px}
+@media(min-width:760px){
+ .maintenance-screen[data-layout="split"] .maintenance-content{width:min(100%,870px);
+  grid-template-columns:185px minmax(0,1fr);text-align:left;justify-items:start;
+  column-gap:45px;row-gap:17px}
+ .maintenance-screen[data-layout="split"] .maintenance-symbol{grid-column:1;grid-row:1/span 8;
+  width:166px;height:166px;font-size:72px;border-radius:45px;align-self:center}
+ .maintenance-screen[data-layout="split"] .maintenance-kicker,
+ .maintenance-screen[data-layout="split"] .maintenance-content h1,
+ .maintenance-screen[data-layout="split"] .maintenance-content>p,
+ .maintenance-screen[data-layout="split"] .maintenance-progress,
+ .maintenance-screen[data-layout="split"] .maintenance-eta,
+ .maintenance-screen[data-layout="split"] .maintenance-official,
+ .maintenance-screen[data-layout="split"] .maintenance-foot{grid-column:2}
+ .maintenance-screen[data-layout="split"] .maintenance-content>p{max-width:600px}
+}
