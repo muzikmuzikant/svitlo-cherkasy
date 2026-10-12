@@ -138,25 +138,61 @@
  async function media(){
   if(!ensure())return;
   const grid=$('controlMediaGrid'),term=$('controlMediaSearch').value.toLowerCase().trim();
-  grid.replaceChildren(make('p','Завантажуємо зображення…','hint'));
+  grid.replaceChildren(make('p','Завантажуємо медіатеку Railway…','hint'));
   try{
-   const config=await api('app-config'),items=[],used=new Set();
+   const [config,library]=await Promise.all([api('app-config'),api('media')]);
+   const labels=new Map(),all=new Map();
    for(const n of config.announcements||[])for(const url of n.images||[]){
-    if(!url||used.has(url))continue;used.add(url);items.push({url,label:n.title||'Чернетка',active:n.active})}
-   if(config.maintenance?.imageUrl&&!used.has(config.maintenance.imageUrl))items.push({url:config.maintenance.imageUrl,label:'Технічні роботи',active:config.maintenance.enabled});
+    if(!url)continue;labels.set(url,{label:n.title||'Чернетка',active:n.active});
+    all.set(url,{url,...labels.get(url)});
+   }
+   if(config.maintenance?.imageUrl){
+    const url=config.maintenance.imageUrl;
+    labels.set(url,{label:'Технічні роботи',active:config.maintenance.enabled});
+    all.set(url,{url,...labels.get(url)});
+   }
+   for(const file of library.items||[]){
+    if(!/^[a-f0-9]{30}\.(?:png|jpg|webp)$/.test(file.id))continue;
+    const url=server.replace(/\/$/,'')+'/api/media/'+file.id;
+    all.set(url,{url,label:labels.get(url)?.label||'Файл медіатеки',
+     active:labels.get(url)?.active??false,size:file.size,uploadedAt:file.uploadedAt});
+   }
    grid.replaceChildren();let count=0;
-   for(const item of items){
+   for(const item of all.values()){
     if(term&&!((item.label+' '+item.url).toLowerCase().includes(term)))continue;
     const card=make('article',null,'control-media-card'),image=document.createElement('img');
     image.src=item.url;image.loading='lazy';image.alt=item.label;
-    const heading=make('strong',item.label),state=make('small',item.active?'Використовується':'Чернетка / неактивне');
+    const heading=make('strong',item.label),state=make('small',
+     item.active?'Використовується у публікації':(item.size?'Завантажено · '+Math.ceil(item.size/1024)+' КБ':'Чернетка / неактивне'));
     const btn=make('button','Копіювати URL','secondary');btn.type='button';
     btn.onclick=()=>navigator.clipboard.writeText(item.url).then(()=>{btn.textContent='Скопійовано'}).catch(()=>{btn.textContent='Помилка копіювання'});
     card.append(image,heading,state,btn);grid.append(card);count++;
    }
-   $('controlMediaStatus').textContent=count+' зображень з '+items.length+' доступних в оголошеннях і техроботах.';
-   if(!count)grid.append(make('p','Зображень не знайдено. Завантажувати нові можна в редакторі повідомлень.','hint'));
+   $('controlMediaStatus').textContent=count+' зображень із '+all.size+' доступних у медіатеці Railway.';
+   if(!count)grid.append(make('p','Зображень не знайдено. Додайте фото або змініть пошук.','hint'));
   }catch(e){grid.replaceChildren(make('p','Медіатека недоступна: '+e.message,'hint'))}
+ }
+ async function uploadMedia(){
+  if(!ensure())return;
+  const files=Array.from($('controlMediaFiles').files||[]).slice(0,8);
+  if(!files.length){$('controlMediaUploadStatus').textContent='Оберіть зображення.';return}
+  $('controlMediaUpload').disabled=true;
+  try{
+   for(const [i,file] of files.entries()){
+    if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>3000000||file.size<20)
+     throw Error('Дозволені PNG/JPG/WebP до 3 МБ');
+    $('controlMediaUploadStatus').textContent='Завантажено '+i+' із '+files.length+'…';
+    const data=await new Promise((resolve,reject)=>{
+     const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]||'');
+     reader.onerror=()=>reject(Error('Помилка читання файлу'));reader.readAsDataURL(file);
+    });
+    await api('media',{method:'POST',body:JSON.stringify({mime:file.type,data})});
+   }
+   $('controlMediaFiles').value='';
+   $('controlMediaUploadStatus').textContent='Фото завантажені. Скопіюйте їхні URL, щоб додати до повідомлень.';
+   await media();
+  }catch(e){$('controlMediaUploadStatus').textContent='Завантаження зупинено: '+e.message}
+  finally{$('controlMediaUpload').disabled=false}
  }
  function access(){
   const roles={owner:'Власник',editor:'Редактор',operator:'Оператор',viewer:'Перегляд'},role=typeof adminRole==='string'?adminRole:'viewer';
@@ -211,6 +247,7 @@
  $('controlRunChecks').onclick=quality;
  $('controlInsightsReload').onclick=insights;
  $('controlMediaReload').onclick=media;
+ $('controlMediaUpload').onclick=uploadMedia;
  $('controlMediaSearch').addEventListener('input',()=>{media().catch(console.warn)});
  // Recovery is intentionally explicit: never send a campaign or enable
  // full maintenance as a side effect of restoring an old JSON snapshot.
