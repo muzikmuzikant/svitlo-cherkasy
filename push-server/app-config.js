@@ -6,7 +6,7 @@ const defaultSite=()=>({links:{help:'./help.html',feedback:'./feedback.html',off
  flags:{inbox:true,inboxFilters:true,inboxHistory:true,sharing:true,sharePreview:true,copySchedule:true,help:true,feedback:true,addressSearch:true,pushPrompt:true,pushSettings:true,tomorrowPreview:true,quickAddresses:true,homePlaces:true,dailyStats:true,overviewTimeline:true,statusCountdown:true,weekNavigation:true,dayStats:true,scheduleLegend:true,offlineStatus:true,scheduleSource:true,manualRefresh:true,homeQuickActions:true,animations:true,quickQueueLookup:true,nextChangeCard:true,dayShortcuts:true,detailSourceLink:true,hourlyLabels:true,inboxMarkAll:true,inboxClearRead:true,appUpdateCheck:true,editAddressFromGraph:true,syncStatus:true,settingsFooter:true,tomorrowOpenShortcut:true,scheduleOpenShortcut:true},
  banner:{enabled:false,title:'Нові можливості',body:'Оновлення застосунку доступне.',url:'',button:'Детальніше'},
  appearance:{accent:'#377dff',background:'#f6f8fc',surface:'#ffffff',density:'comfortable',rounded:true}});
-const defaults=()=>({schemaVersion:1,updatedAt:null,maintenance:{enabled:false,title:'Ми покращуємо застосунок',message:'Незабаром усе знову працюватиме. Актуальні графіки можна перевірити на сайті оператора.',until:null,startsAt:null,mode:'full',theme:'blue',icon:'✨',imageUrl:'',colors:{background:'#143463',foreground:'#ffffff',accent:'#78aaff'},noticeBefore:true,disabledModules:[]},site:defaultSite(),announcements:[]});
+const defaults=()=>({schemaVersion:1,updatedAt:null,maintenance:{enabled:false,title:'Ми покращуємо застосунок',message:'Незабаром усе знову працюватиме. Актуальні графіки можна перевірити на сайті оператора.',until:null,startsAt:null,mode:'full',theme:'blue',layout:'centered',icon:'✨',imageUrl:'',colors:{background:'#143463',foreground:'#ffffff',accent:'#78aaff'},noticeBefore:true,disabledModules:[]},site:defaultSite(),announcements:[]});
 const str=(v,max)=>String(v??'').trim().slice(0,max+1);
 function date(v){if(v==null||v==='')return null;if(typeof v!=='string'||v.length>36||!Number.isFinite(Date.parse(v)))throw Error('Неправильна дата');return new Date(v).toISOString()}
 function image(v){const url=str(v,900);if(!url)return '';try{const u=new URL(url);if(u.protocol!=='https:'||u.username||u.password||url.length>900)throw Error();return u.href}catch{throw Error('Фото повинне мати HTTPS-посилання')}}
@@ -14,14 +14,14 @@ export function validateAppConfig(input){
  if(!input||typeof input!=='object'||Array.isArray(input))throw Error('Некоректні налаштування');
  const m={...defaults().maintenance,...(input.maintenance||{})},title=str(m.title,90),message=str(m.message,320);
  if(title.length<5||title.length>90||message.length<12||message.length>320)throw Error('Перевірте заголовок та опис техробіт');
- if(!['full','limited','incident'].includes(m.mode)||!['blue','midnight','light','violet','custom'].includes(m.theme))throw Error('Невідомий режим або тема');
+ if(!['full','limited','incident'].includes(m.mode)||!['blue','midnight','light','violet','custom'].includes(m.theme)||!['centered','compact','split'].includes(m.layout))throw Error('Невідомий режим або тема');
  const startsAt=date(m.startsAt),until=date(m.until);
  if(startsAt&&until&&startsAt>=until)throw Error('Час завершення має бути пізніше початку');
  const validColor=v=>typeof v==='string'&&/^#[0-9a-fA-F]{6}$/.test(v)?v:null;
  const colors={background:validColor(m.colors?.background)||'#143463',foreground:validColor(m.colors?.foreground)||'#ffffff',accent:validColor(m.colors?.accent)||'#78aaff'};
  const modules=new Set(['inbox','address-search','help','sharing','push-settings','quick-addresses','manual-refresh','feedback','copy-schedule']),disabledModules=Array.isArray(m.disabledModules)?m.disabledModules:[];
  if(disabledModules.some(v=>!modules.has(v)))throw Error('Невідомий модуль технічних робіт');
- const maintenance={enabled:m.enabled===true,title,message,startsAt,until,mode:m.mode,theme:m.theme,icon:str(m.icon,18)||'✨',imageUrl:image(m.imageUrl),
+ const maintenance={enabled:m.enabled===true,title,message,startsAt,until,mode:m.mode,theme:m.theme,layout:m.layout,icon:str(m.icon,18)||'✨',imageUrl:image(m.imageUrl),
   colors,noticeBefore:m.noticeBefore!==false,disabledModules:[...new Set(disabledModules)]};
  const rawSite=input.site||{},defaultsSite=defaultSite();
  const safeLink=(value,otherwise)=>{if(value===undefined||value===null)return otherwise;
