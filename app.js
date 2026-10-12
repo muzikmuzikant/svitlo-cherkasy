@@ -6,6 +6,7 @@ const QUEUES=Array.from({length:6},(_,i)=>[`${i+1}.1`,`${i+1}.2`]).flat();
 const OFFICIAL='https://www.cherkasyoblenergo.com/off';
 const STORE='svitlo-addresses-v6', PREF='svitlo-prefs-v6', SEEN='svitlo-notifications-v6', PUSH_CONSENT='svitlo-push-consent-v6';
 const OFFLINE_SCHEDULE='svitlo-offline-schedule-v74',OFFLINE_ADDRESSES='svitlo-offline-address-v74';
+const SCREEN_RETURN='svitlo-return-screen-v751';
 const ICON='<svg class="bolt" viewBox="0 0 20 24" aria-hidden="true"><path fill="currentColor" d="M11.8 1 2 13h7l-1.5 10L18 9.9h-7z"/></svg>';
 const PIN='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0z"/><circle cx="12" cy="10" r="2.4"/></svg>';
 const safeJSON=(k,fallback)=>{try{return JSON.parse(localStorage.getItem(k)??'null')??fallback}catch{return fallback}};
@@ -304,7 +305,8 @@ async function shareSchedule(date,{copy=false}={}){
  }catch(error){if(error?.name==='AbortError')return;console.warn('Share schedule:',error);flash('Не вдалося поділитися графіком')}
 }
 function renderBar(a){const bar=$('overviewBar');bar.replaceChildren();if(!a){const b=el('span','bar-segment unknown');b.style.flex='1';bar.append(b);return}let start=0,v=a[0];for(let i=1;i<=1440;i++){if(i===1440||a[i]!==v){const seg=el('span','bar-segment '+(v===1?'off':v===0?'on':'unknown'));seg.style.flex=String(i-start);seg.title=`${clock(start)}–${clock(i)} · ${v===1?'відключення':v===0?'світло':'немає даних'}`;bar.append(seg);start=i;v=a[i]}}const line=el('span','bar-now');line.style.left=(nowMinutes()/1440*100)+'%';bar.append(line)}
-function navigate(name){if(!['home','detail','updates','settings'].includes(name))return;if(name==='detail'&&!primary()){openAddressSheet();return}active=name;for(const n of ['home','detail','updates','settings'])$(n).hidden=n!==name;document.querySelectorAll('[data-go]').forEach(x=>{if(x.classList.contains('nav-item'))x.classList.toggle('active',x.dataset.go===name)});if(name==='detail'){daySelected=today();dayStripStart=today();renderDetail()}else if(name==='updates')renderUpdates();else if(name==='settings')renderSettings();else renderHome();window.scrollTo({top:0,behavior:'instant'});}
+function navigate(name){if(!['home','detail','updates','settings'].includes(name))return;if(name==='detail'&&!primary()){openAddressSheet();return}active=name;try{sessionStorage.setItem(SCREEN_RETURN,name)}catch{}
+ for(const n of ['home','detail','updates','settings'])$(n).hidden=n!==name;document.querySelectorAll('[data-go]').forEach(x=>{if(x.classList.contains('nav-item'))x.classList.toggle('active',x.dataset.go===name)});if(name==='detail'){daySelected=today();dayStripStart=today();renderDetail()}else if(name==='updates')renderUpdates();else if(name==='settings')renderSettings();else renderHome();window.scrollTo({top:0,behavior:'instant'});}
 function renderDetail(){const a=primary();if(!a)return;setText('detailAddress',fullAddress(a));const tToday=timeline(today(),a.queue),st=stateAt(tToday,nowMinutes()),nxt=nextChange(today(),a.queue,nowMinutes());const status=$('detailStatus');status.className='detail-status '+st;status.textContent=statusCopy(st,nxt,a.queue,today()).title;
  const day=daySelected||today();const start=dayStripStart||today();
  setText('weekRange',stripRangeLabel(start));
@@ -660,7 +662,16 @@ for(const dialog of [$('addressSheet'),$('placesSheet')])dialog.addEventListener
 $('settlement').onchange=()=>{$('manualQueue').value='';$('customSettlement').hidden=$('settlement').value!=='Інше';suggestion=null;suggestions();checkLookup()};$('customSettlement').oninput=()=>{$('manualQueue').value='';checkLookup()};$('street').oninput=()=>{$('manualQueue').value='';suggestion=null;suggestions();checkLookup()};$('house').onfocus=()=>{$('streetSuggestions').hidden=true};$('house').oninput=()=>{$('streetSuggestions').hidden=true;checkLookup()};$('manualQueue').onchange=checkLookup;$('addressForm').onsubmit=saveAddress;$('deleteAddress').onclick=deleteAddress;$('goOfficial').onclick=officialOpen;
 for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).onchange=e=>{prefs[key]=e.target.checked;savePrefs();updatePushSubscription().catch(console.warn)};
 $('enableNotifications').onclick=enableNotifications;$('disableNotifications').onclick=disableNotifications;
-fillQueueSelect();render();refreshData();getPushConfig();
+fillQueueSelect();
+ const requestedScreen=new URL(location.href).searchParams.get('screen');
+ let restore=null;
+ try{restore=sessionStorage.getItem(SCREEN_RETURN)}catch{}
+ const preferred=requestedScreen==='settings'?'settings':(restore==='settings'?'settings':null);
+ if(preferred)active=preferred;
+ for(const name of ['home','detail','updates','settings'])$(name).hidden=name!==active;
+ document.querySelectorAll('[data-go]').forEach(x=>{if(x.classList.contains('nav-item'))x.classList.toggle('active',x.dataset.go===active)});
+ if(requestedScreen==='settings')try{const u=new URL(location.href);u.searchParams.delete('screen');history.replaceState(null,'',u.pathname+u.search+u.hash)}catch{}
+ render();refreshData();getPushConfig();
 setInterval(()=>{renderHome();if(active==='detail')renderDetail();checkNotifications()},30_000);
 setInterval(()=>{if(!document.hidden)refreshData()},5*60_000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();refreshData();checkNotifications()}});
