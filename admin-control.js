@@ -168,6 +168,7 @@
   if(/^https:\/\//.test(url)){const img=document.createElement('img');img.src=url;img.alt='Ілюстрація техробіт';graphic.append(img)}
   else graphic.textContent=read('opsIcon')||'✨';
   $('opsPreview').dataset.theme=read('opsTheme')||'blue';
+  $('opsPreview').dataset.layout=read('opsLayout')||'centered';
   $('opsPreview').style.backgroundColor=read('opsTheme')==='custom'?(read('opsColorBackground')||'#143463'):'';
   $('opsPreview').style.color=read('opsTheme')==='custom'?(read('opsColorForeground')||'#ffffff'):'';
   $('opsStatusPill').textContent=$('opsMaintenance').checked?'Зміни до техробіт':'Режим неактивний';
@@ -175,7 +176,7 @@
  function fillMaintenance(m){
   check('opsMaintenance',m.enabled);options('opsTitle',m.title);options('opsMessage',m.message);
   options('opsStartsAt',local(m.startsAt));options('opsUntil',local(m.until));
-  options('opsMode',m.mode||'full');options('opsTheme',m.theme||'blue');options('opsIcon',m.icon||'✨');
+  options('opsMode',m.mode||'full');options('opsTheme',m.theme||'blue');options('opsLayout',m.layout||'centered');options('opsIcon',m.icon||'✨');
   options('opsImageUrl',m.imageUrl||'');fillVisual(m);previewMaintenance();
  }
  async function refreshHistory(){
@@ -256,7 +257,7 @@
    }
   });
  }
- for(const id of ['opsTitle','opsMessage','opsStartsAt','opsUntil','opsMode','opsTheme','opsIcon','opsImageUrl','opsMaintenance','opsColorBackground','opsColorForeground','opsColorAccent'])$(id).addEventListener('input',previewMaintenance);
+ for(const id of ['opsTitle','opsMessage','opsStartsAt','opsUntil','opsMode','opsTheme','opsLayout','opsIcon','opsImageUrl','opsMaintenance','opsColorBackground','opsColorForeground','opsColorAccent'])$(id).addEventListener('input',previewMaintenance);
  $('opsPhotoUpload').onchange=async()=>{
   const files=[...$('opsPhotoUpload').files||[]];$('opsPhotoUpload').value='';
   if(!target())return status('Спочатку створіть повідомлення',true);
@@ -307,7 +308,7 @@
    const old=latest.maintenance?.enabled===true,newOn=$('opsMaintenance').checked;
    if(newOn&&!old&&!confirm('Увімкнути технічні роботи для користувачів?'))throw Error('Увімкнення не підтверджено');
    next={...latest,maintenance:{enabled:newOn,title:read('opsTitle'),message:read('opsMessage'),
-    mode:read('opsMode'),theme:read('opsTheme'),icon:read('opsIcon'),
+    mode:read('opsMode'),theme:read('opsTheme'),layout:read('opsLayout'),icon:read('opsIcon'),
     imageUrl:read('opsImageUrl'),startsAt:fromLocal($('opsStartsAt').value),until:fromLocal($('opsUntil').value),...getVisual()}};
   }else next={...latest,announcements:noticeChanges};
   busy=true;
