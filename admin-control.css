@@ -234,3 +234,48 @@ body[data-admin-role="viewer"] [data-admin-panel="operations"] button:not(#opsHi
 .ops-editor-columns>.ops-preview::before{content:'';position:absolute;left:50%;transform:translateX(-50%);
  top:9px;width:83px;height:16px;background:#1e2c42;border-radius:0 0 13px 13px}
 .ops-preview strong,.ops-preview p{overflow-wrap:anywhere}
+
+
+/* v7.7: full-width admin workspace. Distinct navigation destinations; no stacked
+   controls from unrelated modules in the CMS. */
+main{max-width:1680px!important;padding-left:clamp(16px,2vw,36px);padding-right:clamp(16px,2vw,36px)}
+@media(min-width:980px){
+ #adminDashboard:not([hidden]){grid-template-columns:250px minmax(0,1fr)!important;gap:0 28px}
+ #adminDashboard>.admin-tabs{border-radius:19px;top:20px;grid-row:2/span 30!important}
+ #adminDashboard>[data-admin-panel]:not([hidden]){grid-column:2!important;grid-row:auto!important;min-width:0!important;width:100%;max-width:100%!important}
+}
+.admin-tabs button{font-weight:730;letter-spacing:-.12px}
+.ops-panel-head{display:grid;gap:7px;margin:0 0 20px}
+.ops-panel-head h2{font-size:clamp(22px,2vw,29px);letter-spacing:-.8px;margin:0}
+.ops-panel-head h3{font-size:18px;margin:0}
+.ops-panel-head p{margin:0;color:#7890ac;max-width:740px}
+.ops-panel-kicker{font-size:10px;letter-spacing:.17em;font-weight:800;color:#3d80c9}
+.ops-panel-footer{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:21px 0 0;margin-top:20px;border-top:1px solid #e7eef8;flex-wrap:wrap}
+.ops-panel-footer .hint,.ops-panel-footer #featuresStatus{font-size:12px;line-height:1.5}
+.ops-panel-footer button{min-height:44px}
+.feature-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
+.feature-toolbar input{max-width:480px;min-width:220px;flex:1;border-radius:14px}
+.feature-toolbar span{font-size:12px;font-weight:800;color:#456e9a;white-space:nowrap}
+.feature-grid{display:grid;gap:20px;margin-bottom:30px}
+.feature-group{background:#f7faff;border:1px solid #e4edf8;border-radius:21px;padding:18px;min-width:0}
+.feature-group[hidden],.feature-toggle[hidden]{display:none!important}
+.feature-group-heading{font-size:15px;letter-spacing:-.2px;margin:0 0 15px;color:#284c7a}
+.feature-group-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.feature-toggle{display:flex;align-items:center;justify-content:space-between;gap:15px;background:#fff;border:1px solid #e5edf8;border-radius:15px;padding:15px;min-width:0;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.feature-toggle:focus-within{border-color:#70abff;box-shadow:0 0 0 3px #4089ff1a}
+.feature-toggle-copy{display:grid;gap:5px;min-width:0}
+.feature-toggle-copy strong{font-size:13px;color:#29476d;line-height:1.35}
+.feature-toggle-copy small{font-size:11px;color:#7b8fa9;line-height:1.45;font-weight:470}
+.feature-toggle input{width:42px;height:24px;appearance:none;-webkit-appearance:none;min-width:42px;max-width:42px;border:none;border-radius:30px;padding:0;outline:none;background:#c7d4e8;position:relative;flex:none;transition:background .2s}
+.feature-toggle input:checked{background:#347df6}
+.feature-toggle input:before{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;background:white;border-radius:50%;box-shadow:0 2px 6px #18325329;transition:transform .2s}
+.feature-toggle input:checked:before{transform:translateX(18px)}
+.feature-toggle input:focus-visible{box-shadow:0 0 0 3px #478efa55}
+.ops-workspace[data-admin-panel="features"] .ops-site-management{background:#f9fbff;border-radius:22px}
+.ops-workspace[data-admin-panel="maintenance"] .ops-editor-columns{grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr)}
+.ops-workspace[data-admin-panel="operations"] .ops-edit-layout{grid-template-columns:minmax(230px,320px) minmax(0,1fr);gap:22px}
+.ops-workspace[data-admin-panel="operations"] .ops-editor-main{padding:24px}
+.feature-feedback.is-error{color:#ae314b}
+@media(max-width:1080px){.feature-group-grid{grid-template-columns:1fr}}
+@media(max-width:979px){main{max-width:100%!important}.feature-group-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-workspace[data-admin-panel="operations"] .ops-edit-layout{grid-template-columns:1fr}}
+@media(max-width:650px){.feature-group-grid{grid-template-columns:1fr}.feature-toolbar{flex-direction:column;align-items:stretch}.feature-toolbar input{max-width:none}.ops-panel-footer{align-items:stretch;flex-direction:column}.ops-workspace[data-admin-panel="maintenance"] .ops-editor-columns{grid-template-columns:1fr}}
