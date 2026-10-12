@@ -60,3 +60,10 @@ html[data-comfort-motion="playful"]:not(.feature-off-animations) .hour-cell:acti
 html[data-comfort-motion="playful"]:not(.feature-off-animations) .bottom-nav .nav-item.active{animation:uxTab .32s cubic-bezier(.2,.8,.2,1)}
 }
 @media(prefers-reduced-motion:reduce){html :is(.picker-btn,.icon-btn,.setting-action,.day-choice,.nav-item,.tomorrow-card){transform:none!important}}
+
+
+/* Tactile-looking visual feedback without vibration or native haptics. */
+.ux-ripple-host{position:relative;isolation:isolate;overflow:hidden}
+.ux-tap-wave{position:absolute;z-index:1;pointer-events:none;border-radius:50%;background:currentColor;opacity:0;transform:scale(.08);animation:uxTapWave .58s cubic-bezier(.22,.76,.3,1) both}
+@keyframes uxTapWave{0%{opacity:.20;transform:scale(.08)}65%{opacity:.09}100%{opacity:0;transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){.ux-tap-wave{display:none!important}}
