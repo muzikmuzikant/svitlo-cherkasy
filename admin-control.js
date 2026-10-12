@@ -94,9 +94,13 @@
   check('opsDisableInbox',m.disabledModules?.includes('inbox'));
   check('opsDisableSearch',m.disabledModules?.includes('address-search'));
   check('opsDisableHelp',m.disabledModules?.includes('help'));
+  for(const [id,module] of [['opsDisableSharing','sharing'],['opsDisablePushSettings','push-settings'],
+   ['opsDisableQuickAddresses','quick-addresses'],['opsDisableManualRefresh','manual-refresh'],
+   ['opsDisableFeedback','feedback'],['opsDisableCopySchedule','copy-schedule']])
+   check(id,m.disabledModules?.includes(module));
  }
  function getVisual(){
-  const disabledModules=[['inbox','opsDisableInbox'],['address-search','opsDisableSearch'],['help','opsDisableHelp']]
+  const disabledModules=[['inbox','opsDisableInbox'],['address-search','opsDisableSearch'],['help','opsDisableHelp'],['sharing','opsDisableSharing'],['push-settings','opsDisablePushSettings'],['quick-addresses','opsDisableQuickAddresses'],['manual-refresh','opsDisableManualRefresh'],['feedback','opsDisableFeedback'],['copy-schedule','opsDisableCopySchedule']]
    .filter(([,id])=>$(id).checked).map(([name])=>name);
   return {colors:{background:read('opsColorBackground'),foreground:read('opsColorForeground'),
    accent:read('opsColorAccent')},noticeBefore:$('opsMaintenanceWarn').checked,disabledModules};
