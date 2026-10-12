@@ -11,6 +11,7 @@ class Elem {
  replaceChildren(...nodes){this.childNodes=[...nodes]}
  before(){}
  setAttribute(k,v){this.attrs[k]=v}
+ getAttribute(k){return this.attrs[k]||this[k]||null}
  addEventListener(k,callback){this.listeners[k]=callback}
  querySelectorAll(){return []}
  focus(){}
