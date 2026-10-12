@@ -90,7 +90,7 @@
   $('maintenanceEta').textContent=remaining;
   const planned=m?.enabled===true&&m.noticeBefore!==false&&m.startsAt
    &&Number.isFinite(Date.parse(m.startsAt))&&Date.parse(m.startsAt)>Date.now();
-  if((active&&!full)||planned){
+  if((active&&!full)||planned){banner.hidden=false;
    banner.replaceChildren();
    const icon=document.createElement('strong');icon.textContent=String(m.icon||'🛠️').slice(0,18);
    const text=document.createElement('span');
