@@ -51,7 +51,8 @@ function init(){
  $('hourDetailClose')?.addEventListener('click',close);
  $('hourDetailDone')?.addEventListener('click',close);
  dialog?.addEventListener('click',e=>{if(e.target===dialog)close()});
- grid.addEventListener('click',e=>{const cell=e.target.closest('.hour-cell');if(cell)describeHour(cell)});
+ let suppressTapUntil=0;
+ grid.addEventListener('click',e=>{if(Date.now()<suppressTapUntil)return;const cell=e.target.closest('.hour-cell');if(cell)describeHour(cell)});
  grid.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const cell=e.target.closest('.hour-cell');if(cell){e.preventDefault();describeHour(cell)}});
  function updateDay(){
   if($('detail')?.hidden)return;
@@ -82,9 +83,12 @@ function init(){
   if(!start||$('detail')?.hidden)return;
   const dx=e.changedTouches[0].clientX-start.x,dy=e.changedTouches[0].clientY-start.y;start=null;
   if(Math.abs(dx)<75||Math.abs(dx)<Math.abs(dy)*1.7)return;
+  suppressTapUntil=Date.now()+400;
   const options=[...days.querySelectorAll('.day-choice')],i=options.findIndex(e=>e.classList.contains('selected'));
   const next=i+(dx<0?1:-1);
-  if(options[next])options[next].click();else $(dx<0?'weekNext':'weekPrev')?.click();
+  if(options[next])options[next].click();
+  else if(dx<0)$('weekNext')?.click();
+  else{$('weekPrev')?.click();days.querySelector('.day-choice:last-child')?.click();}
  },{passive:true});
  function updateHero(){
   const kind=[...hero.classList].find(c=>/^status-(on|off|unknown)$/.test(c))||'';
