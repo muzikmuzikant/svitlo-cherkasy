@@ -1,4 +1,4 @@
-const VERSION='svitlo-cherkasy-shell-v7.2.0';
+const VERSION='svitlo-cherkasy-shell-v7.2.1';
 const SHELL=["./","./index.html","./app.js","./address-lookup.js","./data-merge.js","./hour-paint.js","./admin.html","./admin.js","./style.css","./install.css","./install.js","./version-check.js","./release.json","./manifest.webmanifest","./privacy.html","./about.html","./feedback.html","./feedback.js","./help.html","./help.css","./help.js","./admin-extra.js","./admin-planner.js","./schedule-planner.js","./favicon.ico","./favicon-16.png","./favicon-32.png","./favicon-48.png","./assets/icon.svg","./assets/icon-192-v692.png","./assets/icon-512-v692.png","./assets/icon-512-maskable-v692.png","./apple-touch-icon-v692.png","./apple-touch-icon.png"];
 const CACHE_DATA='svitlo-cherkasy-data-v6.7';
 self.addEventListener('install',event=>event.waitUntil(caches.open(VERSION).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
