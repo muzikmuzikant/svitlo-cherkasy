@@ -20,7 +20,7 @@ test('verified server snapshot purges old manual admin Push and deleted CMS noti
  ]);
  await inbox.reconcileAnnouncements(['notice:active_123']);
  const ids=(await inbox.all()).map(x=>x.id);
- assert.deepEqual(ids.filter(x=>x.startsWith('notice:')),['notice:active_123']);
+ assert.equal(Array.from(ids.filter(x=>x.startsWith('notice:'))).join(','),'notice:active_123');
  assert.ok(!ids.some(x=>x.startsWith('push:svitlo-admin-')));
  assert.ok(ids.includes('push:off:2026-10-12:400'));
  assert.ok(ids.includes('day:1.1:2026-10-12'));
