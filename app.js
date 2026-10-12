@@ -267,37 +267,71 @@ function shareDescription(date){
 }
 async function shareSchedule(date,{copy=false}={}){
  const info=shareDescription(date);
- if(!info){flash('Для цього дня ще немає підтвердженого графіка');return}
+ if(!info){flash('Спочатку оберіть адресу та підчергу');return}
  if(copy){
-  try{await navigator.clipboard.writeText(info.text);flash('Години скопійовано')}catch{flash('Не вдалося скопіювати години')}
+  try{await navigator.clipboard.writeText(info.text);flash('Години скопійовано')}
+  catch{flash('Не вдалося скопіювати години')}
   return;
  }
  try{
-  const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1350;
+  const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1770;
   const ctx=canvas.getContext('2d');if(!ctx)throw Error('Canvas unavailable');
-  const rounded=(x,y,w,h,r)=>{ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill()};
-  ctx.fillStyle='#edf4ff';ctx.fillRect(0,0,1080,1350);
-  ctx.fillStyle='#174378';rounded(56,58,968,1220,36);
-  ctx.fillStyle='#fff';ctx.font='bold 38px system-ui';ctx.fillText('⚡ Світло Черкаси',112,153);
-  ctx.fillStyle='#b7d8ff';ctx.font='28px system-ui';ctx.fillText('Офіційний плановий графік',112,207);
-  ctx.fillStyle='#fff';ctx.font='bold 48px system-ui';ctx.fillText(formatDate(date,{weekday:'long',day:'numeric',month:'long'}),112,306);
-  ctx.font='32px system-ui';ctx.fillStyle='#badbff';ctx.fillText('Підчерга '+info.queue,112,365);
-  ctx.fillStyle='#ffffff24';rounded(108,425,864,156,24);
-  ctx.font='bold 35px system-ui';ctx.fillStyle='#fff';
-  ctx.fillText(info.summary.unknown?'Дані уточнюються':'Без світла: '+formatDuration(info.summary.off),145,491);
-  ctx.font='26px system-ui';ctx.fillStyle='#d4e7ff';ctx.fillText('За опублікованим графіком',145,539);
-  ctx.fillStyle='#2d5b97';rounded(110,640,860,46,12);
-  for(const run of info.ranges){ctx.fillStyle='#ffb95e';rounded(110+run.from/1440*860,640,(run.to-run.from)/1440*860,46,5)}
-  ctx.fillStyle='#e0eeff';ctx.font='24px system-ui';for(const [index,h] of [0,6,12,18,24].entries())ctx.fillText(h+':00',105+index*208,729);
-  ctx.font='bold 32px system-ui';ctx.fillStyle='#fff';ctx.fillText('Періоди відключень',112,814);
-  ctx.font='27px system-ui';ctx.fillStyle='#d6e6ff';
-  const rows=info.ranges.slice(0,8);if(!rows.length)ctx.fillText('Планових відключень немає',112,867);
-  rows.forEach((x,i)=>ctx.fillText(clock(x.from)+'–'+clock(x.to)+'   ·   '+formatDuration(x.to-x.from),112,864+i*48));
-  ctx.font='22px system-ui';ctx.fillStyle='#bcd6fa';ctx.fillText('Прогноз, а не фактична наявність електроенергії',112,1190);
-  ctx.fillText('svitlo-cherkasy.pp.ua',112,1232);
+  const W=1080,H=1770,margin=64;
+  const round=(x,y,w,h,r,color)=>{
+   ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill();
+  };
+  const line=(text,x,y,font,color,align='left')=>{
+   ctx.font=font;ctx.fillStyle=color;ctx.textAlign=align;ctx.fillText(text,x,y);ctx.textAlign='left';
+  };
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#eff5ff');bg.addColorStop(1,'#f9fbff');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  // Brand header, designed for legible photo sharing on a phone.
+  const header=ctx.createLinearGradient(50,70,980,400);
+  header.addColorStop(0,'#102e5c');header.addColorStop(.55,'#1b4d85');header.addColorStop(1,'#337bc6');
+  round(margin,66,W-margin*2,348,38,header);
+  round(101,100,70,70,21,'#ffffff24');
+  line('ϟ',136,153,'700 53px system-ui','#ffffff','center');
+  line('СВІТЛО ЧЕРКАСИ',197,127,'700 28px system-ui','#b6d8ff');
+  line('МІЙ ГРАФІК ВІДКЛЮЧЕНЬ',197,163,'650 17px system-ui','#c9e1ff');
+  line(formatDate(date,{weekday:'long',day:'numeric',month:'long'}),104,252,'750 42px system-ui','#ffffff');
+  round(105,282,249,60,19,'#ffffff28');
+  line('ПІДЧЕРГА  '+info.queue,129,321,'750 27px system-ui','#ffffff');
+  line(info.day?'За опублікованим графіком':'Графік на цей день не опубліковано',104,377,'23px system-ui','#d9e8ff');
+  const subtitle=info.summary.unknown?'Частина годин ще уточнюється':
+   info.summary.off?'Відключення · '+formatDuration(info.summary.off):
+   'Світло весь день';
+  line(subtitle,74,475,'750 39px system-ui','#193e72');
+  line('Розклад за годинами',74,524,'24px system-ui','#7086a1');
+  const schedule=timeline(date,info.queue),cols=4,gap=15,cellW=(W-2*margin-gap*(cols-1))/cols;
+  const cellH=165,top=558,rowGap=15;
+  for(let hour=0;hour<24;hour++){
+   const values=schedule?.slice(hour*60,hour*60+60),off=values?.filter(x=>x===1).length||0;
+   const unknown=values?.filter(x=>x<0).length||0;
+   const status=unknown?'unknown':off===0?'on':off===60?'off':'mixed';
+   const colors={
+    on:{bg:'#e2f6ed',fg:'#146b4f',label:'Світло',icon:'●',small:'#4f9f80'},
+    off:{bg:'#fde9e5',fg:'#ad4939',label:'Без світла',icon:'●',small:'#d87865'},
+    mixed:{bg:'#fff0d6',fg:'#956323',label:'Частково',icon:'◐',small:'#bb8d42'},
+    unknown:{bg:'#e6edf6',fg:'#687b98',label:'Немає даних',icon:'○',small:'#93a5bb'}
+   }[status];
+   const x=margin+(hour%cols)*(cellW+gap),y=top+Math.floor(hour/cols)*(cellH+rowGap);
+   round(x,y+5,cellW,cellH,24,'#153d6c08');
+   round(x,y,cellW,cellH,24,colors.bg);
+   round(x+16,y+18,30,30,15,'#ffffff9e');
+   line(colors.icon,x+31,y+40,'700 21px system-ui',colors.fg,'center');
+   line(clock(hour*60),x+17,y+92,'750 38px system-ui',colors.fg);
+   line(colors.label,x+17,y+133,'600 22px system-ui',colors.fg);
+   if(status==='mixed')line(formatDuration(off),x+cellW-17,y+133,'500 18px system-ui',colors.fg,'right');
+  }
+  const footerY=top+6*(cellH+rowGap)+8;
+  round(margin,footerY,W-2*margin,104,23,'#e5eefb');
+  line(info.day?'Періоди за офіційним графіком':'Немає опублікованого графіка. Світло весь день за замовчуванням.',
+   margin+26,footerY+42,'650 22px system-ui','#315a88');
+  line('Це прогноз, а не підтвердження фактичної наявності світла.',margin+26,footerY+77,'19px system-ui','#6e85a4');
+  line('svitlo-cherkasy.pp.ua',W/2,H-39,'700 24px system-ui','#7b94b3','center');
   const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error('No image');
   const filename='svitlo-'+date+'-'+info.queue+'.png',file=new File([blob],filename,{type:'image/png'});
-  if(navigator.share&&navigator.canShare?.({files:[file]}))await navigator.share({files:[file],title:'Мій графік відключень'});
+  if(navigator.share&&navigator.canShare?.({files:[file]}))await navigator.share({files:[file],title:'Графік відключень'});
   else{
    const href=URL.createObjectURL(blob),a=document.createElement('a');a.href=href;a.download=filename;a.click();
    setTimeout(()=>URL.revokeObjectURL(href),10000);flash('Картинку графіка збережено');
