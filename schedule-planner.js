@@ -29,6 +29,9 @@
    if((i===48||!slots[i])&&begin>=0){result.push([at(begin),at(i)]);begin=-1}
   }return result;
  }
- root.SvitloSchedulePlanner={indexOf,at,fromIntervals,toIntervals};
+ // Backward-compatible aliases for earlier tests/integrations.
+ const fullDay=day=>day?.verified===true&&day?.complete===true;
+ root.SvitloSchedulePlanner={indexOf,at,fromIntervals,toIntervals,
+  slotsFromOff:fromIntervals,intervals:toIntervals,tick:at,fullDay};
  if(typeof module!=='undefined'&&module.exports)module.exports=root.SvitloSchedulePlanner;
 })(typeof globalThis!=='undefined'?globalThis:this);

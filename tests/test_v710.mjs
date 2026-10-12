@@ -29,14 +29,20 @@ test('installed app visibly reports update timing and checks in the background',
  assert.match(app,/setInterval\(\(\)=>\{if\(!document\.hidden\)refreshData\(\)\},5\*60_000\)/);
  assert.match(app,/visibilitychange/);assert.match(app,/lastDownloadAt/);assert.match(app,/lastSyncFailed/);
 });
-test('GitHub operator workflow does not mask failed imports as successes',()=>{
+test('GitHub schedule importer publishes independently from address refresh',()=>{
  const workflow=read('.github/workflows/update.yml');
- assert.match(workflow,/schedule:/);assert.match(workflow,/Refresh official schedules/);
- assert.match(workflow,/steps\.schedules\.outcome == 'failure'/);
- assert.match(workflow,/steps\.addresses\.outcome == 'failure'/);
- assert.match(workflow,/exit 1/);
+ const addresses=read('.github/workflows/update-addresses.yml');
+ assert.match(workflow,/schedule:/);
+ assert.match(workflow,/Import official schedules/);
+ assert.match(workflow,/--schedules-only/);
+ assert.match(workflow,/steps\.schedule\.outcome == 'success'/);
+ assert.doesNotMatch(workflow,/--addresses-only/);
+ assert.match(addresses,/--addresses-only/);
+ assert.match(workflow,/svitlo-data-updated/);
+ assert.match(addresses,/svitlo-data-updated/);
  assert.doesNotMatch(workflow,/if ! python scripts\/update_data\.py/);
 });
+
 test('installation is platform-aware and preserves iOS icon',()=>{
  const html=read('index.html'),js=read('install.js');
  assert.match(html,/id="installLanding"/);

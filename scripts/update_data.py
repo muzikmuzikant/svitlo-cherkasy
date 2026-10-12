@@ -124,9 +124,22 @@ def parse_article(html,url,reference=None):
     try:day=datetime(year,month,int(date_hit.group(1)),tzinfo=TZ).date().isoformat()
     except ValueError:return None
     check_schedule_date(day,pub,url)
-    marker=re.search(r'Години\s+відсутності\s+електропостачання\s*:',full,re.I)
-    if not marker:return None
-    body=re.split(r'Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|Відключення\s+електроенергії\s+можуть',full[marker.end():],maxsplit=1,flags=re.I)[0]
+    # Operator edits are separate official news posts and sometimes change
+    # the wording before the queue table. A fixed introductory phrase must not
+    # make an otherwise well-formed official revision unreadable.
+    marker=re.search(r'(?:Години\s+відсутності\s+електропостачання|Години\s+відключень|Години\s+відсутності\s+(?:світла|електрики)|електропостачання\s+буде\s+відсутнє\s+у\s+наступні\s+години)\s*:', full, re.I)
+    if marker:
+        table_text=full[marker.end():]
+    else:
+        # Strict fallback: start at the article heading and require three
+        # recognizable queues; navigation/sidebar numbers are not a plan.
+        container=soup.select_one('article, .article-content, .news-article, main') or soup
+        text=container.get_text(' ', strip=True).replace('\xa0',' ').replace('−','-')
+        heading_pos=text.lower().find(heading)
+        table_text=text[heading_pos+len(heading):] if heading_pos>=0 else text
+        if len(set(m.group(1) for m in QUEUE_START.finditer(table_text))) < 3:
+            return None
+    body=re.split(r'Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|Відключення\s+електроенергії\s+можуть',table_text,maxsplit=1,flags=re.I)[0]
     found=list(QUEUE_START.finditer(body))
     if not found:return None
     if len({x.group(1) for x in found})!=len(found):return None
@@ -190,7 +203,7 @@ def parse_news_links(html):
     for a in soup.select('a[href]'):
         txt=a.get_text(' ',strip=True).lower()
         u=urljoin(BASE,a['href'])
-        if 'графік погодинних відключень' in txt and '/media/' in u and urlparse(u).netloc.endswith('cherkasyoblenergo.com') and u not in urls:urls.append(u)
+        if re.search(r'графік\s+погодинних\s+відключень', txt) and '/media/' in urlparse(u).path and urlparse(u).netloc.endswith('cherkasyoblenergo.com') and u not in urls:urls.append(u)
     return urls
 
 
@@ -270,7 +283,18 @@ def update_schedules(session, now=None):
     # an official publication is unresolved. Publishing a *verified* other
     # day's graph is nevertheless safe and useful.
     risk_dates = {now.date().isoformat(), (now.date()+timedelta(days=1)).isoformat()}
-    pending = bool(review or any(w.get('targetDate') is None or w['targetDate'] in risk_dates for w in warnings))
+    # An impossible headline/publication date is a deeper integrity issue:
+    # keep conservative behavior for both dates until staff resolve it.
+    unresolved_dates = set(risk_dates) if review else set()
+    for issue in warnings:
+        target = issue.get('targetDate')
+        if target is None:
+            unresolved_dates.update(risk_dates)
+        elif target in risk_dates:
+            unresolved_dates.add(target)
+    # reviewPending remains the audit flag. The UI uses date-scoped warnings;
+    # a failure for an unrelated older date cannot invalidate today's plan.
+    pending = bool(review or unresolved_dates)
     changed = []
     for day, revs in grouped.items():
         latest = compose(revs)
@@ -303,12 +327,11 @@ def update_schedules(session, now=None):
     # Explicit daily certainty for the PWA. Absence of a publication is only
     # meaningful for dates actually included in the successful official check,
     # and never for a date with a currently unresolved article.
-    blocked_dates = {item.get('targetDate') for item in review + warnings if item.get('targetDate')}
-    unknown_target = any(item.get('targetDate') is None for item in review + warnings)
     confirmed_no_plan = [d for d in sorted(risk_dates) if d not in existing
-                         and d not in blocked_dates and not unknown_target and not pending]
+                         and d not in unresolved_dates]
     result = {'schemaVersion': 3, 'lastChecked': utc_stamp(now),
-              'reviewPending': pending, 'confirmedNoScheduleDates': confirmed_no_plan,
+              'reviewPending': pending, 'unresolvedDates': sorted(unresolved_dates),
+              'confirmedNoScheduleDates': confirmed_no_plan,
               'source': BASE + '/news',
               'days': [existing[k] for k in sorted(existing)],
               'changes': old_changes[-100:]}
