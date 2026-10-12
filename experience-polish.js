@@ -32,6 +32,23 @@ function init(){
  document.querySelectorAll('dialog.sheet, dialog.share-preview-dialog').forEach(d=>d.addEventListener('close',()=>document.activeElement?.blur?.()));
  // Respect keyboard navigation without disabling page scrolling on touch devices.
  nav?.setAttribute('aria-label','Основні розділи');
+ // Every meaningful tap gets visible, short feedback. Buttons remain native controls.
+ document.addEventListener('pointerdown',event=>{
+  if(!motion()||event.button>0)return;
+  const target=event.target.closest?.('button,.setting-action,.inbox-interactive,[role="button"]');
+  if(!target||target.disabled||target.getAttribute('aria-disabled')==='true')return;
+  const rect=target.getBoundingClientRect();
+  if(!rect.width||!rect.height)return;
+  const bubble=document.createElement('span');
+  const size=Math.max(rect.width,rect.height)*1.5;
+  bubble.className='ux-tap-wave';bubble.setAttribute('aria-hidden','true');
+  bubble.style.width=size+'px';bubble.style.height=size+'px';
+  bubble.style.left=(event.clientX-rect.left-size/2)+'px';
+  bubble.style.top=(event.clientY-rect.top-size/2)+'px';
+  target.classList.add('ux-ripple-host');target.append(bubble);
+  bubble.addEventListener('animationend',()=>bubble.remove(),{once:true});
+  setTimeout(()=>bubble.remove(),800);
+ },{passive:true});
  // Reflect refresh state only through appearance, never interfere with existing refresh logic.
  const sync=document.getElementById('syncStatus');
  if(sync)new MutationObserver(()=>{const pending=sync.dataset.state==='pending';sync.classList.toggle('ux-skeleton',pending&&motion())}).observe(sync,{attributes:true,attributeFilter:['data-state']});
