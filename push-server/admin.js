@@ -164,6 +164,9 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
      if(outcome.accepted>0)siteControls.markPushed(entry.id);
      extras?.record('push.notice',entry.id);send(res,200,outcome);return true;
    }
+   if(url.pathname==='/api/admin/app-config/history'&&req.method==='GET'){
+     send(res,200,{items:siteControls?.historyView?.()||[]});return true;
+   }
    if(url.pathname==='/api/admin/app-config'&&req.method==='GET'){
      if(!siteControls){send(res,503,{error:'Керування застосунком недоступне'});return true}
      send(res,200,siteControls.get());return true;
