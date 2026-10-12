@@ -192,3 +192,28 @@ main{max-width:1160px!important}
 .ops-preview-images{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .ops-preview-images img{width:100%;border-radius:12px;aspect-ratio:4/3;object-fit:cover}
 @media(max-width:640px){.ops-flags{flex-direction:column;gap:14px}.ops-site-management,.ops-maintenance-custom{padding:14px}}
+
+
+/* Role-aware presentation. Authorization remains enforced by Railway. */
+body[data-admin-role="viewer"] #opsSave,
+body[data-admin-role="viewer"] #opsNewNotice,
+body[data-admin-role="viewer"] #opsDeleteNotice,
+body[data-admin-role="viewer"] #opsDuplicateNotice,
+body[data-admin-role="viewer"] .ops-preview-actions,
+body[data-admin-role="viewer"] [data-admin-panel="operations"] input,
+body[data-admin-role="viewer"] [data-admin-panel="operations"] textarea,
+body[data-admin-role="viewer"] [data-admin-panel="operations"] select{pointer-events:none;opacity:.6}
+body[data-admin-role="operator"] [data-admin-tab="operations"],
+body[data-admin-role="operator"] [data-admin-tab="push"],
+body[data-admin-role="operator"] [data-admin-tab="sources"],
+body[data-admin-role="operator"] [data-admin-tab="data"]{display:none!important}
+body[data-admin-role="editor"] .ops-workspace-maintenance,
+body[data-admin-role="editor"] .ops-maintenance-custom,
+body[data-admin-role="editor"] .ops-site-management{opacity:.65;pointer-events:none}
+body[data-admin-role="viewer"] [data-admin-panel="operations"] button:not(#opsHistoryRefresh):not(#opsReload){pointer-events:none;opacity:.55}
+.ops-revisions{margin-top:20px}
+.ops-history-list{display:grid;gap:9px;max-height:350px;overflow:auto}
+.ops-history-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;padding:12px 15px;background:#f5f9ff;border:1px solid #e2ecfb;border-radius:13px}
+.ops-history-item time{font-size:12px;color:#476fa7}
+.ops-history-item strong{font-size:11px;color:#2a527e}
+.ops-history-item small{grid-column:1/-1;font-size:10px;color:#7a92ac}
