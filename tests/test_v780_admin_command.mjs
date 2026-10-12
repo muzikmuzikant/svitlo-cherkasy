@@ -94,9 +94,9 @@ test('maintenance layout presets persist securely and render live previews',()=>
 });
 test('new admin script and source files ship in Pages and SW shell',()=>{
  const release=JSON.parse(read('release.json'));
- assert.equal(release.version,'7.8.0');
+ assert.match(release.version,/^7\.8\.\d+$/);
  assert.match(read('scripts/build_pages.py'),/admin-command\.js/);
- assert.match(read('sw.js'),/svitlo-cherkasy-shell-v7\.8\.0/);
+ assert.match(read('sw.js'),new RegExp('svitlo-cherkasy-shell-v'+release.version.replaceAll('.','\\.')));
  assert.match(read('sw.js'),/"\.\/admin-command\.js"/);
  for(const p of ['admin-command.js','admin-features.js','admin-control.js','site-mode.js','app.js','sw.js'])
   assert.doesNotThrow(()=>new Function(read(p)),p);
