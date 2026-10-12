@@ -33,9 +33,13 @@ test('Nearest change labels next-week Monday as tomorrow, not hidden by week bou
  assert.match(html,/id="weekPrev"/);assert.match(html,/id="dayTomorrow"/);
  assert.match(code,/nextChange\(today\(\),a.queue,nowMinutes\(\)\)/);
 });
-test('Poll more often at source but GitHub site deploy is gated',()=>{
+test('Railway Cron polls every five minutes without waiting for GitHub Pages',()=>{
  const wf=readFileSync(join(root,'.github/workflows/update.yml'),'utf8');
- assert.match(wf,/2-57\/5 \* \* \*/);
- assert.match(wf,/publish_gate\.py/);
- assert.match(wf,/steps\.gate\.outputs\.publish == 'true'/);
+ const cron=readFileSync(join(root,'scripts/railway_schedule_cron.py'),'utf8');
+ const docs=readFileSync(join(root,'RAILWAY_SCHEDULES.md'),'utf8');
+ assert.doesNotMatch(wf,/^  schedule:/m);
+ assert.match(wf,/workflow_dispatch:/);
+ assert.match(cron,/--schedules-only/);
+ assert.ok(cron.includes('/api/internal/schedules'));
+ assert.match(docs,/\*\/5 \* \* \* \*/);
 });
