@@ -398,3 +398,11 @@ main{max-width:1840px!important;padding-inline:clamp(16px,2.5vw,46px)}
  .control-head-actions{width:100%;justify-content:space-between}
 }
 @media(max-width:420px){.control-media-grid,.control-summary-metrics{grid-template-columns:1fr}.control-nav-group>span{flex-basis:74px}}
+
+
+.control-backup-preview{margin:13px 0;padding:15px;border-radius:13px;background:#eef5ff;border:1px solid #d7e5f7;font-size:12px;line-height:1.7;color:#406284;overflow-wrap:anywhere}
+#controlBackupFile{max-width:100%}
+#controlBackupStatus.is-error{color:#b03c45}
+.control-subcard button{margin-top:12px}
+#controlBackupRestore.danger{color:#ad3346}
+@media(max-width:640px){.control-panel-lead h2{font-size:23px}}
