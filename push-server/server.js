@@ -157,17 +157,19 @@ async function readPayload(req,limit=12000){
 }
 const statusAttempts=new Map();
 const server=http.createServer(async(req,res)=>{
+ // Routing must ignore cache-busting query strings, e.g. ?t=timestamp from the PWA.
+ const requestPath=new URL(req.url,'http://localhost').pathname;
  const origin=req.headers.origin||'';
  res._allowedAppOrigin=originPolicy.isAllowed(origin)?origin:'';
  if(req.method==='OPTIONS'){
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   res.writeHead(204,{'access-control-allow-origin':origin,'access-control-allow-methods':'POST, OPTIONS, GET, PUT, PATCH, DELETE','access-control-allow-headers':'content-type, authorization','vary':'Origin'});res.end();return;
  }
- if(req.url==='/api/data/status'&&req.method==='GET'){
+ if(requestPath==='/api/data/status'&&req.method==='GET'){
   response(res,200,officialSchedules.status());return;
  }
- if((req.url==='/api/data/schedules.json'||req.url==='/api/data/source_review.json')&&req.method==='GET'){
-  const doc=req.url.includes('source_review')?officialSchedules.review():officialSchedules.schedule();
+ if((requestPath==='/api/data/schedules.json'||requestPath==='/api/data/source_review.json')&&req.method==='GET'){
+  const doc=requestPath==='/api/data/source_review.json'?officialSchedules.review():officialSchedules.schedule();
   if(!doc){response(res,503,{error:'Railway schedule snapshot is not yet ready'});return}
   response(res,200,doc);return;
  }
