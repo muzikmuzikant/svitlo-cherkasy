@@ -145,7 +145,7 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    }
    if(url.pathname==='/api/admin/app-config'&&req.method==='PUT'){
      if(!siteControls){send(res,503,{error:'Керування застосунком недоступне'});return true}
-     const value=siteControls.update(await readJson(req,18000));send(res,200,value);return true;
+     const value=siteControls.update(await readJson(req,750000));send(res,200,value);return true;
    }
    if(url.pathname==='/api/admin/help'&&req.method==='GET'){send(res,200,extras.getHelp());return true}
    if(url.pathname==='/api/admin/help'&&req.method==='PUT'){const result=extras.updateHelp(await readJson(req,70000));send(res,200,result);return true}
