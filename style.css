@@ -311,3 +311,19 @@ html.feature-off-homeQuickActions .home-actions{display:none!important}
 html.feature-off-animations *,html.feature-off-animations *::before,html.feature-off-animations *::after{transition-duration:0ms!important;animation-duration:0ms!important}
 @media(max-width:420px){.push-invite{padding:16px;gap:12px}.push-invite-art{width:51px;height:51px;border-radius:16px}.push-invite-bell{font-size:25px}.share-preview-head{padding:19px 17px 14px}.share-preview-actions{padding:16px}}
 @media(prefers-reduced-motion:reduce){.push-invite-art{transform:none}}
+
+
+/* v7.7.1: direct queue lookup without saving an address and clear source state. */
+.quick-queue-lookup{background:linear-gradient(115deg,#f1f7ff,#fff);border:1px solid #dbe8f8;border-radius:19px;padding:20px;margin:20px 0 25px;display:grid;gap:15px}
+.quick-queue-lookup strong{font-size:15px;color:#285381}
+.quick-queue-lookup p{font-size:12px;line-height:1.55;color:#728ba7;margin:6px 0 0}
+.quick-queue-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px}
+.quick-queue-controls select{min-width:0;background:#fff;border:1px solid #dce9f7;padding:12px 13px;border-radius:12px;color:#315677;font-size:13px}
+.quick-queue-controls button{border:0;background:#347bf4;color:#fff;border-radius:12px;padding:12px 14px;font-size:12px;font-weight:800;min-height:44px}
+.verified-source-badge{display:flex;align-items:center;gap:8px;margin:3px 0 14px;padding:10px 12px;border-radius:12px;font-size:11px;line-height:1.5;font-weight:740}
+.verified-source-badge.is-verified{background:#e4f7ed;border:1px solid #b8e9d0;color:#13744b}
+.verified-source-badge.is-unpublished{background:#f0f4fb;border:1px solid #dbe6f3;color:#617b9c}
+.maintenance-screen[data-mode="incident"]{background:radial-gradient(circle at 50% 10%,#9e4a26 0%,transparent 45%),linear-gradient(150deg,#301e32,#4e2c31 55%,#634222)}
+.maintenance-screen[data-mode="incident"] .maintenance-symbol{background:linear-gradient(140deg,#d27c3e,#efac50);box-shadow:0 20px 70px #f58b3d3a}
+.maintenance-screen[data-mode="incident"] .maintenance-kicker{color:#ffd8a9}
+@media(max-width:390px){.quick-queue-controls{grid-template-columns:1fr}.quick-queue-controls button{width:100%}}
