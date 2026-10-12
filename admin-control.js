@@ -42,6 +42,7 @@
   options('opsNoticeSchedule',local(n?.scheduledAt));options('opsNoticeExpires',local(n?.expiresAt));
   check('opsNoticeActive',n?.active);check('opsNoticePinned',n?.pinned);
   photos=[...(n?.images||[])];drawPhotos();previewMessage();
+  document.dispatchEvent(new CustomEvent('svitlo:cms-loaded'));
  }
  function drawList(){
   const list=$('opsNoticeList');list.replaceChildren();
@@ -251,7 +252,7 @@
   const t=templates[$('opsTemplate').value];if(!t||!target())return;
   if((read('opsNoticeTitle')||read('opsNoticeContent'))&&!confirm('Замінити заголовок і текст вибраним шаблоном?'))return;
   options('opsNoticeTitle',t.title);options('opsNoticeBody',t.body);options('opsNoticeContent',t.content);
-  options('opsNoticeKind',t.kind);options('opsNoticeIcon',t.icon);capture();previewMessage()
+  options('opsNoticeKind',t.kind);options('opsNoticeIcon',t.icon);capture();previewMessage();document.dispatchEvent(new CustomEvent('svitlo:cms-loaded'))
  };
  $('opsReload').onclick=reload;
  async function saveConfig({silent=false}={}){
