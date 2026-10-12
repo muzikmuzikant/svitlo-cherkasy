@@ -139,3 +139,26 @@ html{scrollbar-width:none;overflow-x:clip;overscroll-behavior-x:none;scroll-beha
 .maintenance-foot{margin-top:10px;color:#95b8e5;font-size:11px;max-width:285px}
 @media(prefers-reduced-motion:reduce){.maintenance-progress i{animation:none}}
 @media(max-width:420px){.inbox-toolbar{align-items:flex-start;flex-direction:column}.inbox-filters{width:100%}.inbox-mark{padding-left:10px}.inbox-item{padding:16px}.maintenance-content{gap:16px}}
+
+
+/* v7.3.2 — prevent iOS Safari/PWA double-tap smart zoom during rapid taps.
+   "manipulation" still allows scrolling and two-finger pinch zoom for accessibility.
+   Apply at the app container so adjacent fast taps between calendar arrows are covered. */
+.viewport,
+.viewport button,
+.viewport a,
+.viewport [role="button"],
+.viewport summary,
+.calendar-arrows,
+.calendar-shortcuts,
+.days-row {
+  touch-action: manipulation;
+}
+/* Week arrows and day chips are controls, not selectable text. */
+.calendar-arrows button,
+.calendar-shortcuts button,
+.day-choice {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
