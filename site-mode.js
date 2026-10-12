@@ -25,9 +25,8 @@
    overlay.hidden=!on;
    for(const part of [document.getElementById('installLanding'),document.querySelector('.viewport')])if(part)part.inert=on;
    lastActive=on;
-   window.dispatchEvent(new CustomEvent('svitlo:public-config',{detail:{
-     announcements:Array.isArray(data.announcements)?data.announcements:[],maintenance:on
-   }}));
+   window.SvitloPublicConfig={announcements:Array.isArray(data.announcements)?data.announcements:[],maintenance:on};
+   window.dispatchEvent(new CustomEvent('svitlo:public-config',{detail:window.SvitloPublicConfig}));
   }catch(e){if(!lastActive)overlay.hidden=true;console.warn('Public site controls:',e.message)}
   finally{busy=false}
  }
