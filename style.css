@@ -234,3 +234,15 @@ html{scrollbar-width:none;overflow-x:clip;overscroll-behavior-x:none;scroll-beha
 .schedule-share{border:1px solid #d9e6f6;color:#2e78cb;background:#fff;border-radius:11px;padding:10px 12px;white-space:nowrap;font-size:12px;font-weight:750;touch-action:manipulation}
 @media(max-width:375px){.home-actions{grid-template-columns:1fr}.tomorrow-card{padding:14px}.home-shortcuts .small-source{display:none}}
 @media(prefers-reduced-motion:reduce){.tomorrow-card:active{transform:none}}
+
+
+/* Server-managed optional content, update banners and custom maintenance colors */
+.svitlo-managed-banner,.svitlo-modules-banner{display:flex;align-items:center;gap:12px;margin:12px 0;border:1px solid #cbdffd;border-radius:18px;background:#ecf5ff;padding:15px;color:#245488;box-shadow:0 8px 28px #3066a211}
+.svitlo-managed-banner .managed-banner-text{display:grid;gap:4px;min-width:0;flex:1}
+.svitlo-managed-banner strong{font-size:13px;font-weight:800}
+.svitlo-managed-banner small{font-size:11px;line-height:1.5;color:#6485a7}
+.svitlo-managed-banner>a{flex:none;padding:11px 13px;border-radius:11px;background:#397ced;color:#fff;font-size:12px;font-weight:750}
+.svitlo-modules-banner{font-size:12px;background:#fff3e2;border-color:#f0d9b1;color:#805f30}
+.maintenance-screen[data-theme="custom"]{background:var(--maintenance-bg,#143463)!important;color:var(--maintenance-fg,#fff)!important}
+.maintenance-screen[data-theme="custom"] h1,.maintenance-screen[data-theme="custom"] p,.maintenance-screen[data-theme="custom"] small{color:var(--maintenance-fg,#fff)!important}
+.maintenance-screen[data-theme="custom"] .maintenance-symbol{background:var(--maintenance-accent,#78aaff)}
