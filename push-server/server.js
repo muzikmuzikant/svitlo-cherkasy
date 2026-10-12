@@ -9,6 +9,7 @@ import {createFeedbackStore,readFeedbackBody} from './feedback-store.js';
 import {createAdminExtras} from './admin-extras.js';
 import {createAppConfig} from './app-config.js';
 import {createMediaStore} from './media-store.js';
+import {createSchedulePublication} from './schedule-publication.js';
 import {originPolicy} from './origins.js';
 import webpush from 'web-push';
 import {adminRouter} from './admin.js';
@@ -36,6 +37,7 @@ const feedback=createFeedbackStore({filePath:process.env.FEEDBACK_FILE||path.joi
 const extras=createAdminExtras({directory:path.dirname(DATA_FILE)});
 const siteControls=createAppConfig({directory:path.dirname(DATA_FILE),record:extras.record});
 const mediaStore=createMediaStore(path.dirname(DATA_FILE));
+const officialSchedules=createSchedulePublication({directory:path.dirname(DATA_FILE),token:process.env.SCHEDULE_INGEST_SECRET||''});
 const appUrl=new URL('/',APP_ORIGIN).href; // Push opens PWA, never the GitHub raw JSON host.
 const manualPush=createManualPush({subscribers,webpush,appUrl,hash,save});
 const fmtKyiv=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
@@ -72,7 +74,7 @@ async function job(){
  running=true;
  try{
   let source,scheduleIssue=null;
-  try{source=await loadJson(SCHEDULE_URL);if(!Array.isArray(source.days))throw Error('Invalid schedule structure')}
+  try{source=officialSchedules.schedule()||await loadJson(SCHEDULE_URL);if(!Array.isArray(source.days))throw Error('Invalid schedule structure')}
   catch(e){scheduleIssue='Schedule fetch: '+e.message;console.warn(scheduleIssue);source={days:[],changes:[]}}
   const now=dayInKyiv(),timestamp=Date.now();
   const schedulesSafe=freshSchedule(source,timestamp);
@@ -161,12 +163,31 @@ const server=http.createServer(async(req,res)=>{
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   res.writeHead(204,{'access-control-allow-origin':origin,'access-control-allow-methods':'POST, OPTIONS, GET, PUT, PATCH, DELETE','access-control-allow-headers':'content-type, authorization','vary':'Origin'});res.end();return;
  }
+ if(req.url==='/api/data/status'&&req.method==='GET'){
+  response(res,200,officialSchedules.status());return;
+ }
+ if((req.url==='/api/data/schedules.json'||req.url==='/api/data/source_review.json')&&req.method==='GET'){
+  const doc=req.url.includes('source_review')?officialSchedules.review():officialSchedules.schedule();
+  if(!doc){response(res,503,{error:'Railway schedule snapshot is not yet ready'});return}
+  response(res,200,doc);return;
+ }
+ if(req.url==='/api/internal/schedules'&&req.method==='POST'){
+  if(!officialSchedules.authorized(req.headers.authorization)){response(res,401,{error:'Unauthorized'});return}
+  try{
+   const body=await readPayload(req,1_400_000);
+   const state=officialSchedules.update(body.schedules,body.review);
+   console.log('[railway-schedules] Verified publication',state.lastChecked,'days='+state.verifiedDays.length);
+   response(res,200,{ok:true,...state});
+  }catch(e){console.error('[railway-schedules] Publish rejected:',e.message);
+   response(res,400,{error:e.message});}
+  return;
+ }
  if(req.url?.startsWith('/api/admin/')){
   await adminRouter(req,res,manualPush,feedback,extras,async()=>{
     const result={server:{lastPushCheck:lastSuccess,pushCheckError:lastError,pushSubscribers:Object.keys(subscribers).length},sources:{}};
     await Promise.all([['schedules',SCHEDULE_URL],['emergency',new URL('emergency.json',SCHEDULE_URL).href],['review',new URL('source_review.json',SCHEDULE_URL).href]].map(async([name,url])=>{
       try{
-        const data=await loadJson(url);
+        const data=(name==='schedules'?officialSchedules.schedule():name==='review'?officialSchedules.review():null)||await loadJson(url);
         result.sources[name]=name==='schedules'?{lastChecked:data.lastChecked,days:(data.days||[]).map(d=>({date:d.date,verified:d.verified,source:d.source,publishedAt:d.publishedAt})),changes:(data.changes||[]).length}:
           name==='emergency'?{lastChecked:data.lastChecked,count:(data.events||[]).length,latest:data.events?.[0]?.status||null}:
           {lastChecked:data.lastChecked,rejectedCount:data.rejectedCount||0,items:(data.items||[]).slice(0,30)};
@@ -216,7 +237,7 @@ const server=http.createServer(async(req,res)=>{
   return;
  }
  if(req.url==='/health'&&req.method==='GET'){
-  response(res,200,{ok:true,subscriberCount:Object.keys(subscribers).length,lastPushCheck:lastSuccess,pushCheckError:lastError});return;
+  response(res,200,{ok:true,subscriberCount:Object.keys(subscribers).length,lastPushCheck:lastSuccess,pushCheckError:lastError,schedulePublisher:officialSchedules.status()});return;
  }
  if(!['/api/subscribe','/api/unsubscribe'].includes(req.url)||req.method!=='POST'){response(res,404,{error:'Not found'});return}
  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
