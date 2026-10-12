@@ -67,6 +67,7 @@ function fillHelp(){
  extraGet('helpCategory').value=item?.category||'';
  extraGet('helpQuestion').value=item?.question||'';
  extraGet('helpAnswer').value=item?.answer||'';
+ document.dispatchEvent(new CustomEvent('svitlo:help-loaded'));
 }
 function applyHelp(){
  if(!helpDraft)throw Error('Спочатку завантажте статті');
