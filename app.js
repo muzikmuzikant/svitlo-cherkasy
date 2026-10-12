@@ -610,7 +610,7 @@ async function refreshData(manual=false){
  if(Date.now()-lastRefresh<7000&&!manual)return;
  lastRefresh=Date.now();
  const before=data,hadChecked=hasCheckedOnce;
- const refreshButton=$('syncNow');if(refreshButton)refreshButton.disabled=true;
+
  refreshInFlight=(async()=>{
    let schedulesOk=false;
    try{
@@ -663,7 +663,7 @@ async function refreshData(manual=false){
      announceChanges(before,data);
    }
  })();
- try{return await refreshInFlight}finally{refreshInFlight=null;if(refreshButton)refreshButton.disabled=false}
+ try{return await refreshInFlight}finally{refreshInFlight=null}
 }
 function notify(title,body,key){if(pushActive||notified.has(key)||!('Notification' in window)||Notification.permission!=='granted')return;notified.add(key);localStorage.setItem(SEEN,JSON.stringify([...notified].slice(-400)));navigator.serviceWorker?.ready.then(r=>r.showNotification(title,{body,icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',tag:key})).catch(()=>{try{new Notification(title,{body})}catch{}})}
 function announceChanges(previous,current){if(!prefs.changes||!previous?.lastChecked)return;const a=primary();if(!a?.queue)return;for(const c of current.changes||[])if(c.queues?.includes(a.queue)&&!previous.changes?.some(x=>x.date===c.date&&(x.revisionId||x.publishedAt)===(c.revisionId||c.publishedAt))){notify('🔄 Графік оновлено',`Підчерга ${a.queue} · Змінено години на ${formatDate(c.date)}. Перевірте розклад.`, `change:${c.date}:${c.revisionId||c.publishedAt}:${a.queue}`)}}
