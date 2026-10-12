@@ -24,7 +24,7 @@
   return {...previous,...incoming,read:previous.read||incoming.read,
    content:incoming.content||previous.content||'',
    images:incoming.images.length?incoming.images:previous.images||[],
-   pinned:incoming.pinned||previous.pinned||false};
+   pinned:incoming.content||incoming.updatedAt?incoming.pinned:previous.pinned||false};
  }
  function db(){return new Promise((resolve,reject)=>{
   if(!root.indexedDB)return reject(Error('No IndexedDB'));
