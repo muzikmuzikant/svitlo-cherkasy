@@ -15,10 +15,10 @@ class Element {
 
 async function mountInbox(item){
  const elements=Object.fromEntries(['inboxList','inboxUnread','navUnread','inboxMarkAll','inboxClear'].map(id=>[id,new Element()]));
- let read=false;const events=[];
+ let markedRead=false;const events=[];
  const store={
-  async all(){return [{...item,read}]},
-  async mark(){read=true},
+  async all(){return [{...item,read:markedRead}]},
+  async mark(){markedRead=true},
   async clearRead(){},
   async add(){}
  };
@@ -50,7 +50,7 @@ async function mountInbox(item){
   (node.children||[]).forEach(traverse);
  };
  cards.forEach(traverse);
- return {buttons,events,elements,readState:()=>read};
+ return {buttons,events,elements,readState:()=>markedRead};
 }
 
 test('schedule message opens the app graph on its publication date',async()=>{
