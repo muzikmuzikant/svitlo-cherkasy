@@ -1,28 +1,92 @@
-/* Local comfort preferences: transform/opacity-only motion to avoid layout shifts on iOS. */
-.comfort-section{margin-top:24px}
-.comfort-intro,.comfort-note{color:var(--muted);font-size:12px;line-height:1.55;margin:0 4px 13px}
-.comfort-note{margin:10px 5px 0}
-.comfort-row select{appearance:none;-webkit-appearance:none;border:1px solid var(--line);border-radius:12px;background:var(--surface,#fff);color:var(--ink);font:600 12px inherit;font-size:12px;padding:11px 28px 11px 12px;max-width:140px;flex-shrink:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2378879e' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
-.comfort-row select:focus-visible,.comfort-section input:focus-visible+span{outline:3px solid #78a9ff;outline-offset:3px}
-html[data-comfort-density="compact"] .setting-line{min-height:55px;padding-top:10px;padding-bottom:10px}
-html[data-comfort-density="compact"] .section-head{margin-top:19px}
+/* Completely rebuilt accessible mobile settings and real user preference styling. */
+#settings{--settings-gap:16px;padding-bottom:20px}
+#settings .settings-hero{position:relative;isolation:isolate;overflow:hidden;padding:27px 23px 22px;border-radius:27px;background:linear-gradient(130deg,#203b65,#4279cd);color:white;margin-bottom:17px;box-shadow:0 13px 32px #223c6b28}
+#settings .settings-hero:after{content:"";position:absolute;z-index:-1;right:-46px;top:-45px;width:170px;height:170px;border:35px solid #ffffff0c;border-radius:50%;pointer-events:none}
+.settings-hero-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.settings-eyebrow{font-size:10px;letter-spacing:1.4px;font-weight:850;color:#b9d8ff}
+.settings-release{font-size:11px;font-weight:800;border-radius:9px;background:#ffffff27;padding:6px 10px;color:white}
+#settings .settings-hero h1{font-size:clamp(27px,7vw,35px);line-height:1.12;letter-spacing:-1.1px;margin:25px 0 8px;color:#fff}
+#settings .settings-hero h1 span{color:#b9ddff}
+#settings .settings-hero p{font-size:12px;line-height:1.55;max-width:305px;margin:0;color:#e1efff}
+.settings-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;background:#eaf0f8;padding:5px;border-radius:17px;margin-bottom:22px;min-width:0}
+.settings-nav button{font:inherit;font-weight:750;font-size:clamp(9px,2.7vw,12px);color:#62748c;background:transparent;border:0;padding:12px 3px;min-width:0;border-radius:12px;white-space:normal;line-height:1.2;cursor:pointer}
+.settings-nav button.selected{background:var(--surface,#fff);color:var(--blue,#377dff);box-shadow:0 3px 11px #24375213}
+#settings.settings-enhanced [data-settings-section]:not([hidden]){animation:settingsSectionIn .36s cubic-bezier(.22,1,.36,1) both}
+#settings .settings-pane-heading{margin:0 3px 16px}
+#settings .settings-pane-heading h2{margin:0 0 6px;font-size:23px;letter-spacing:-.7px;color:var(--ink)}
+#settings .settings-pane-heading p{margin:0;color:var(--muted);font-size:12px;line-height:1.55}
+#settings .settings-block-title{margin:23px 4px 12px}
+#settings .settings-block-title h3{font-size:15px;letter-spacing:-.3px;margin:0 0 4px}
+#settings .settings-block-title p{font-size:11px;color:var(--muted);line-height:1.45;margin:0}
+.settings-preview{position:relative;isolation:isolate;overflow:hidden;min-height:158px;border-radius:23px;background:linear-gradient(125deg,#dcecff,#f5f9ff);padding:22px;border:1px solid #e1eaff}
+.settings-preview-bg{position:absolute;inset:0;z-index:-1;opacity:.6;background:radial-gradient(circle at 85% 20%,var(--blue,#377dff) 0,transparent 33%)}
+.settings-preview-content{position:relative;z-index:1;display:grid;gap:5px}
+.settings-preview-eyebrow{font-size:10px;letter-spacing:1px;color:var(--blue,#377dff);font-weight:850}
+.settings-preview-content strong{font-size:22px;letter-spacing:-.7px;color:var(--ink)}
+.settings-preview-sub{font-size:11px;color:#65778f}
+.settings-preview-track{height:11px;border-radius:20px;overflow:hidden;display:flex;gap:3px;margin-top:15px;width:min(245px,95%);background:#fff9}
+.settings-preview-track i{display:block;flex:1;min-width:0;background:#b6d8fc}
+.settings-preview-track i:nth-child(2),.settings-preview-track i:nth-child(4){background:var(--blue,#377dff)}
+.settings-preview-glow{position:absolute;right:-40px;top:-50px;border:25px solid #ffffffb0;border-radius:50%;height:190px;width:190px;z-index:0;pointer-events:none}
+.settings-swatches{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.settings-swatches button{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;min-width:0;min-height:85px;border:1px solid var(--line);border-radius:17px;background:#fff;color:var(--ink);font-size:12px;font-weight:750}
+.settings-swatches button.selected{border-color:var(--blue);background:var(--bluewash);box-shadow:inset 0 0 0 1px var(--blue)}
+.settings-swatches i{width:30px;height:30px;border-radius:11px;display:block;box-shadow:0 3px 9px #132c4612}
+.swatch-blue{background:linear-gradient(135deg,#66b4ff,#326af5)}.swatch-mint{background:linear-gradient(135deg,#85efd1,#16a884)}.swatch-violet{background:linear-gradient(135deg,#c2a1ff,#7b54dd)}
+.settings-pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px}
+.settings-pick button{border:1px solid var(--line);border-radius:16px;background:var(--surface,#fff);min-width:0;display:grid;align-content:center;gap:6px;min-height:76px;padding:11px 7px;color:var(--ink);text-align:center}
+.settings-pick button.selected{border-color:var(--blue);background:var(--bluewash);box-shadow:inset 0 0 0 1px var(--blue)}
+.settings-pick strong{font-size:13px}.settings-pick small{font-size:10px;font-weight:500;color:var(--muted);line-height:1.35}
+#settings .settings-card-modern{overflow:hidden;border-radius:20px}
+#settings .settings-card-modern .setting-line{min-height:73px;gap:10px}
+#settings .settings-card-modern .setting-line>span.settings-label{flex:1;min-width:0}
+#settings .settings-card-modern .setting-line strong{font-size:13px;font-weight:770}
+#settings .settings-card-modern .setting-line p{font-size:11px;line-height:1.42}
+#settings .settings-card-modern .setting-line:last-child{border-bottom:0}
+#settings .settings-helper{font-size:11px;line-height:1.5;margin:14px 5px 0;color:var(--muted)}
+#settings .notification-help{margin-top:13px}
+#settings .settings-reset{width:100%;margin-top:20px;padding:15px;border:1px solid #e0e8f3;background:transparent;border-radius:14px;color:#587494;font-weight:650;font-size:12px}
+#settings .settings-foot{text-align:center;margin-top:18px}
+#settings .quick-queue-lookup{margin-top:18px}
+#settings .settings-pane:not(:last-child){margin-bottom:22px}
+#settings.settings-enhanced .settings-pane:not([hidden]){margin-bottom:0}
+html[data-comfort-accent="mint"]{--blue:#158c70;--bluewash:#e6f9f2}
+html[data-comfort-accent="violet"]{--blue:#7750d4;--bluewash:#f2ecff}
+html[data-comfort-accent="mint"] #settings .settings-hero{background:linear-gradient(130deg,#134c47,#2fb894)}
+html[data-comfort-accent="violet"] #settings .settings-hero{background:linear-gradient(130deg,#342a60,#755be7)}
+html[data-comfort-density="compact"] #settings .settings-hero{padding:19px 20px}
+html[data-comfort-density="compact"] #settings .settings-card-modern .setting-line{min-height:61px;padding-block:10px}
 html[data-comfort-density="compact"] .overview-card{padding:14px}
-html[data-comfort-density="compact"] .status-panel{min-height:180px;padding:20px}
-html[data-comfort-contrast="true"]{--muted:#53647a;--line:#a8b8ca;--shadow:0 4px 18px rgba(20,35,56,.12)}
+html[data-comfort-density="compact"] .status-panel{min-height:174px;padding:19px}
+html[data-comfort-density="compact"] .section-head{margin-top:19px;margin-bottom:10px}
+html[data-comfort-density="compact"] .place-card{padding-block:10px}
+html[data-comfort-contrast="true"]{--muted:#526781;--line:#9baec7;--shadow:0 5px 21px #162b4c22}
 html[data-comfort-contrast="true"] .surface{border-color:var(--line)}
-html[data-comfort-contrast="true"] .small-source{color:#465c75}
-html[data-comfort-ambient="false"] .ambient{display:none!important}
+html[data-comfort-contrast="true"] .small-source{color:#4e627c}
+html[data-comfort-large-text="true"] .status-title{font-size:clamp(29px,7.7vw,37px)}
+html[data-comfort-large-text="true"] :is(.setting-line strong,.stat-card .stat-val,.day-choice,.tomorrow-summary){font-size:115%}
+html[data-comfort-large-text="true"] :is(.setting-line p,.settings-pane-heading p,.stat-caption,.schedule-insight-copy small){font-size:13px}
+html.user-hide-insights .schedule-insight,html.user-hide-timeline .schedule-progress,html.user-hide-timeline .schedule-now-label,html.user-hide-hour-highlight .hour-cell.current,html.user-hide-swipe-hints .schedule-swipe-hint,html.user-hide-legend .legend{animation:none}
+html.user-hide-insights .schedule-insight{display:none!important}
+html.user-hide-timeline .schedule-progress,html.user-hide-timeline .schedule-now-label{display:none!important}
+html.user-hide-swipe-hints .schedule-swipe-hint{display:none!important}
+html.user-hide-legend .legend{display:none!important}
+html.user-hide-hour-highlight .hour-cell.current{outline:none!important}
+html.user-no-ambient .status-decor,html.user-no-ambient .settings-preview-glow{animation:none!important}
 @media(prefers-reduced-motion:no-preference){
- html[data-comfort-motion="playful"] .comfort-enter:not([hidden]){animation:comfortSlide .46s cubic-bezier(.2,1,.28,1) both}
- html[data-comfort-motion="playful"] .status-decor{animation:comfortFloat 7s ease-in-out infinite alternate}
- html[data-comfort-motion="playful"] .ambient{animation:comfortFloat 14s ease-in-out infinite alternate}
- html[data-comfort-motion="playful"] .nav-item.active svg{animation:comfortPop .46s cubic-bezier(.2,1,.2,1)}
- html[data-comfort-motion="playful"] .surface:where(.overview-card,.tomorrow-card){transition:transform .3s ease,box-shadow .3s ease}
- html[data-comfort-motion="playful"] .tomorrow-card:active{transform:scale(.985)}
- html[data-comfort-motion="calm"] *:not(.maintenance-progress i),html[data-comfort-motion="calm"] *::before,html[data-comfort-motion="calm"] *::after{animation:none!important;transition-duration:.08s!important}
- @keyframes comfortSlide{from{opacity:.55;transform:translateY(16px) scale(.99)}to{opacity:1;transform:none}}
- @keyframes comfortFloat{from{transform:translate3d(0,0,0)}to{transform:translate3d(-8px,9px,0)}}
- @keyframes comfortPop{0%{transform:scale(.85)}65%{transform:scale(1.15)}100%{transform:scale(1)}}
+ #settings .settings-nav button,#settings .settings-pick button,#settings .settings-swatches button,#settings .settings-reset{transition:background .23s ease,color .23s ease,transform .23s ease,border .23s ease,box-shadow .23s ease}
+ #settings :is(.settings-nav button,.settings-pick button,.settings-swatches button,.settings-reset):active{transform:scale(.96)}
+ html[data-comfort-motion="playful"]:not(.user-no-ambient) .settings-preview-glow{animation:comfortGlow 6s ease-in-out infinite alternate}
+ html[data-comfort-motion="playful"] .settings-preview.preview-replay .settings-preview-track i{animation:comfortProgress .7s cubic-bezier(.15,.9,.3,1) backwards}
+ html[data-comfort-motion="playful"] .settings-preview.preview-replay .settings-preview-track i:nth-child(3){animation-delay:.12s}
+ html[data-comfort-motion="playful"] .settings-preview.preview-replay .settings-preview-track i:nth-child(4){animation-delay:.2s}
+ html[data-comfort-motion="playful"] .nav-item.active svg{animation:comfortPop .48s cubic-bezier(.2,1.15,.3,1)}
+ html[data-comfort-motion="playful"]:not(.user-no-ambient) .status-decor{animation:comfortGlow 7s ease-in-out infinite alternate}
+ html[data-comfort-motion="calm"] *:not(.maintenance-progress i),html[data-comfort-motion="calm"] *::before,html[data-comfort-motion="calm"] *::after{animation:none!important;transition-duration:.06s!important}
+ @keyframes settingsSectionIn{from{opacity:.4;transform:translateY(9px)}to{opacity:1;transform:none}}
+ @keyframes comfortGlow{to{transform:translate3d(-7px,10px,0) scale(1.04)}}
+ @keyframes comfortProgress{from{opacity:.4;transform:scaleY(.5)}to{opacity:1;transform:scaleY(1)}}
+ @keyframes comfortPop{0%{transform:scale(.88)}60%{transform:scale(1.13)}100%{transform:scale(1)}}
 }
-@media(prefers-reduced-motion:reduce){.comfort-enter{animation:none!important}}
-@media(max-width:360px){.comfort-row{flex-wrap:wrap}.comfort-row select{max-width:100%;width:100%}}
+@media(prefers-reduced-motion:reduce){#settings.settings-enhanced [data-settings-section]:not([hidden]),.settings-preview-glow{animation:none!important}}
+@media(max-width:370px){.settings-nav{gap:2px;padding:3px}.settings-nav button{font-size:9px;padding:12px 1px}.settings-pick strong{font-size:11px}.settings-swatches{gap:6px}}
