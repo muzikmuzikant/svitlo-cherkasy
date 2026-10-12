@@ -178,11 +178,17 @@ def run_once(github: GitHub, now=None):
 
 def main():
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
+    # Safe two-step handoff: a newly deployed Railway Cron service never
+    # publishes until the owner provisions a scoped GitHub token AND explicitly
+    # enables the importer. Keep GitHub Actions running during the handoff.
+    if os.environ.get('IMPORTER_ACTIVE', '0').lower() not in {'1', 'true', 'yes'}:
+        LOG.warning('Railway importer is STANDBY: IMPORTER_ACTIVE=0; no GitHub writes')
+        return 'standby'
     token = os.environ.get('GITHUB_TOKEN', '').strip()
     repo = os.environ.get('GITHUB_REPOSITORY', '').strip()
     branch = os.environ.get('GITHUB_BRANCH', 'main').strip()
     if not token or not repo:
-        raise ValueError('Set GITHUB_TOKEN and GITHUB_REPOSITORY in Railway Variables')
+        raise ValueError('Railway importer is active but GITHUB_TOKEN/GITHUB_REPOSITORY are missing')
     github = GitHub(token, repo, branch)
     # Concurrent updates from another system are rare but are never overwritten:
     # re-fetch remote state and re-parse after a ref conflict.
