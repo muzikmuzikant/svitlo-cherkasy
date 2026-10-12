@@ -75,6 +75,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  <button type="button" data-admin-tab="tools" aria-pressed="false">⌘ <span>Швидкі інструменти</span></button>
  <button type="button" data-admin-tab="data" aria-pressed="false">⌁ <span>Редактор даних</span></button>
  <button type="button" data-admin-tab="security" aria-pressed="false">⛨ <span>Доступ і права</span></button>
+ <button type="button" data-admin-tab="backup" aria-pressed="false">▨ <span>Резервні копії</span></button>
  <button type="button" data-admin-tab="audit" aria-pressed="false">◷ <span>Журнал</span></button></div>
  <div class="control-nav-foot"><span id="controlNavigationCount">17 розділів</span><a href="./index.html" target="_blank" rel="noopener">Відкрити застосунок ↗</a></div>
 </nav>
@@ -121,6 +122,18 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  <div class="control-panel-lead"><span>MEDIA LIBRARY</span><h2>Медіатека повідомлень</h2><p>Зображення, що використовуються в оголошеннях і техроботах. Пошук, копіювання посилання та перегляд використання.</p></div>
  <div class="control-quality-actions"><input type="search" id="controlMediaSearch" placeholder="Пошук за повідомленням або URL…"><button type="button" class="secondary" id="controlMediaReload">Оновити</button></div>
  <div id="controlMediaGrid" class="control-media-grid"></div><p id="controlMediaStatus" class="hint"></p>
+</section>
+<section class="card control-large-panel" data-admin-panel="backup" hidden>
+ <div class="control-panel-lead"><span>BACKUPS & RECOVERY</span><h2>Резервні копії</h2><p>Експорт повідомлень, налаштувань застосунку, технічних робіт і статей Центру допомоги. Не включає паролів, Push-токенів, звернень або приватних файлів.</p></div>
+ <div class="control-cols">
+  <div class="control-subcard"><h3>Створити копію</h3><p>Зберегти поточні налаштування із Railway у локальний JSON-файл.</p>
+   <button id="controlBackupExport" type="button">Завантажити резервну копію</button></div>
+  <div class="control-subcard"><h3>Відновити дані</h3><p>Попередній перегляд та підтвердження. Розсилки не запускаються, техроботи автоматично вимикаються.</p>
+  <label class="field" for="controlBackupFile">Файл резервної копії</label>
+  <input type="file" id="controlBackupFile" accept=".json,application/json">
+  <div id="controlBackupPreview" class="control-backup-preview">Оберіть резервну копію.</div>
+  <button type="button" id="controlBackupRestore" class="danger" disabled>Перевірити та відновити</button></div>
+ </div><p id="controlBackupStatus" class="hint" role="status">Зміни застосовуються тільки після явного підтвердження власника.</p>
 </section>
 <section class="card control-large-panel" data-admin-panel="security" hidden>
  <div class="control-panel-lead"><span>ACCOUNT & SECURITY</span><h2>Доступ і права</h2><p>Поточна сесія, рівні дозволів та стан підключення. Паролі й токени не виводяться в браузер.</p></div>
