@@ -2,19 +2,6 @@
 (() => {
   'use strict';
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-  // Register on BOTH installed PWA and browser landing. The standalone branch returns early.
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js', {scope:'./', updateViaCache:'none'})
-      .then(reg=>{reg.update().catch(()=>{});})
-      .catch(error=>console.warn('Service worker registration:',error));
-  }
-  if (standalone) {
-    // The updater must not wait for the schedule UI's dynamic script chain.
-    const updater=document.createElement('script');
-    updater.src='./version-check.js';
-    updater.defer=true;
-    document.body.append(updater);
-  }
   if (standalone) {
     const hour = document.createElement('script');
     hour.src = './hour-paint.js';
@@ -55,7 +42,9 @@
             document.body.append(textScript);
             // Offline or stalled script requests must not leave Inbox loading forever.
             setTimeout(startInbox, 4000);
-            // Update checking starts independently at PWA boot.
+            const updater = document.createElement('script');
+            updater.src = './version-check.js';
+            document.body.append(updater);
           };
           document.body.append(app);
           };
@@ -135,5 +124,5 @@
     instructions.hidden = false;
     instructions.textContent = 'Готово! Тепер відкрийте «Світло Черкаси» з іконки на головному екрані.';
   });
-
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(console.warn);
 })();

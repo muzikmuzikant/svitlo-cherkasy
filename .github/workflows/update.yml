@@ -1,9 +1,15 @@
 name: Update official blackout data
-# Railway Cron (svitlo-schedules-cron, */5 * * * *) now owns scheduled
-# official schedule imports and publishes to Railway volume /data.
-# This workflow is retained ONLY for emergency manual rollback.
 on:
   workflow_dispatch:
+  schedule:
+    # Run every 5 minutes, all day (UTC). GitHub Actions can be delayed.
+    - cron: '2-57/5 * * * *'
+  push:
+    paths:
+      - 'scripts/update_data.py'
+      - 'scripts/publish_gate.py'
+      - 'release.json'
+      - '.github/workflows/update.yml'
 permissions:
   contents: write
 concurrency:

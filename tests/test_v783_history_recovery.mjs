@@ -22,7 +22,7 @@ test('revision recovery restores published content, keeps old state in history a
   assert.ok(revision);
   assert.ok(revision.changes.edited>=1);
   assert.equal(revision.changes.maintenance,true);
-  assert.throws(()=>store.restoreHistory(revision.id,'2000-01-01T00:00:00Z'),/Налаштування змінилися/);
+  assert.throws(()=>store.restoreHistory(revision.id,firstSaved.updatedAt),/Налаштування змінилися/);
   assert.throws(()=>store.restoreHistory('1234567890123-badbad',active.updatedAt),/Редакцію не знайдено/);
   const restored=store.restoreHistory(revision.id,active.updatedAt);
   assert.equal(restored.announcements[0].title,'Перша версія');

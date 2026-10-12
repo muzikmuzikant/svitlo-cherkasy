@@ -110,10 +110,7 @@
       }
       // A reload downloads current HTML/CSS/JS using the network-first worker.
       // Existing localStorage, saved address and Push subscription are preserved.
-      // A navigation with a new URL bypasses stale iOS PWA document cache.
-      const next=new URL(window.location.href);
-      next.searchParams.set('app-update',release.version);
-      window.location.replace(next.href);
+      window.location.reload();
     } catch (error) {
       console.warn('Application update could not start:', error);
       message('Оновлення не вдалося. Перевірте з’єднання й спробуйте ще раз.');
