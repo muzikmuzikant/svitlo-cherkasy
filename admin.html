@@ -227,6 +227,10 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
   <label><input id="opsDisableHelp" type="checkbox"> Призупинити допомогу</label>
  </div>
  </section>
+ <section class="ops-section ops-revisions">
+ <div class="headline"><div><h2>🕘 Історія змін</h2><p class="hint">Останні серверні редакції оголошень і налаштувань. Історія зберігається у Railway.</p></div><button type="button" class="secondary" id="opsHistoryRefresh">Оновити</button></div>
+ <div id="opsHistoryList" class="ops-history-list"><p class="hint">Завантаження історії…</p></div>
+ </section>
  <div class="ops-bottom"><span class="push-state" id="opsMessageStatus" role="status">Завантаження налаштувань…</span><div class="flex"><button type="button" id="opsReload" class="secondary">Скасувати зміни</button><button type="button" id="opsSave">Зберегти налаштування</button></div></div>
 </section>
 <section class="card" data-admin-panel="audit" hidden><div class="headline"><h2>Журнал дій</h2><button type="button" class="secondary" id="auditRefresh">Оновити</button></div>
