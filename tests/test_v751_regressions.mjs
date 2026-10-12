@@ -38,7 +38,7 @@ test('notification cache follows server authority: updates, unpins, hides and de
  const memory=new Map(),window={
   localStorage:{getItem:key=>memory.get(key)||null,setItem:(key,val)=>memory.set(key,val)}
  };
- const context={window,URL,Date,console};
+ const context={window,self:window,URL,Date,console};
  vm.runInNewContext(read('notification-center.js'),context);
  const inbox=window.SvitloInbox;
  await inbox.add({id:'notice:notice001',title:'Нове',body:'Початковий текст',
@@ -60,7 +60,7 @@ test('notification cache follows server authority: updates, unpins, hides and de
 
 test('system Push must not replace a richer version of the same notice',async()=>{
  const memory=new Map(),window={localStorage:{getItem:key=>memory.get(key)||null,setItem:(key,val)=>memory.set(key,val)}};
- vm.runInNewContext(read('notification-center.js'),{window,URL,Date,console});
+ vm.runInNewContext(read('notification-center.js'),{window,self:window,URL,Date,console});
  const inbox=window.SvitloInbox;
  await inbox.add({id:'notice:abc001',title:'Повне',body:'Докладний текст',content:'Текст з деталями',
   images:['https://example.org/photo.png'],kind:'announcement',pinned:true,authoritative:true});
