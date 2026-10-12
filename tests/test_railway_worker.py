@@ -105,3 +105,19 @@ def test_github_git_commit_is_non_forced():
     assert session.calls[0][2]['json']['base_tree'] == 'tree-sha'
     assert session.calls[1][2]['json']['parents'] == ['parent-sha']
     assert session.calls[2][2]['json']['force'] is False
+
+
+
+def test_standby_never_touches_github_without_credentials(monkeypatch):
+    monkeypatch.delenv('GITHUB_TOKEN', raising=False)
+    monkeypatch.delenv('GITHUB_REPOSITORY', raising=False)
+    monkeypatch.setenv('IMPORTER_ACTIVE', '0')
+    assert worker.main() == 'standby'
+
+
+def test_active_requires_github_token(monkeypatch):
+    monkeypatch.setenv('IMPORTER_ACTIVE', '1')
+    monkeypatch.delenv('GITHUB_TOKEN', raising=False)
+    monkeypatch.setenv('GITHUB_REPOSITORY', 'muzikmuzikant/svitlo-cherkasy')
+    with pytest.raises(ValueError, match='GITHUB_TOKEN'):
+        worker.main()
