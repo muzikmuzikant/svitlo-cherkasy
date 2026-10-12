@@ -13,7 +13,7 @@ export function validateAppConfig(input){
  if(!input||typeof input!=='object'||Array.isArray(input))throw Error('Некоректні налаштування');
  const m={...defaults().maintenance,...(input.maintenance||{})},title=str(m.title,90),message=str(m.message,320);
  if(title.length<5||title.length>90||message.length<12||message.length>320)throw Error('Перевірте заголовок та опис техробіт');
- if(!['full','limited','incident'].includes(m.mode)||!['blue','midnight','light','violet'].includes(m.theme))throw Error('Невідомий режим або тема');
+ if(!['full','limited','incident'].includes(m.mode)||!['blue','midnight','light','violet','custom'].includes(m.theme))throw Error('Невідомий режим або тема');
  const startsAt=date(m.startsAt),until=date(m.until);
  if(startsAt&&until&&startsAt>=until)throw Error('Час завершення має бути пізніше початку');
  const validColor=v=>typeof v==='string'&&/^#[0-9a-fA-F]{6}$/.test(v)?v:null;
