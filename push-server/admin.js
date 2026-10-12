@@ -95,7 +95,24 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
  try{
    if(url.pathname==='/api/admin/push/status'&&req.method==='GET'){send(res,200,manualPush.stats());return true}
    if(url.pathname==='/api/admin/push/test'&&req.method==='POST'){const output=await manualPush.test(await readJson(req));extras?.record('push.test','test notification');send(res,200,output);return true}
-   if(url.pathname==='/api/admin/push/send'&&req.method==='POST'){const body=await readJson(req);const output=await manualPush.broadcast(body);extras?.record('push.broadcast',String(body.queue||'all'));send(res,200,output);return true}
+   if(url.pathname==='/api/admin/push/send'&&req.method==='POST'){
+     const body=await readJson(req);
+     if(body.confirmSend!==true)throw Error('Підтвердіть розсилку');
+     // The legacy Push editor now publishes an Inbox item too.
+     let noticeId=null;
+     if(siteControls){
+      const config=siteControls.get();
+      if(config.announcements.length>=50)throw Error('Архів оголошень переповнений. Приберіть старі повідомлення.');
+      noticeId='n_'+crypto.randomBytes(9).toString('hex');
+      config.announcements.unshift({id:noticeId,title:body.title,body:body.body,content:body.body,
+       kind:'important',queue:body.queue||'all',priority:'important',delivery:'both',
+       active:true,pinned:false,images:[],publishedAt:new Date().toISOString()});
+      siteControls.update(config);
+     }
+     const output=await manualPush.broadcast({...body,notificationId:noticeId?'notice:'+noticeId:undefined});
+     if(noticeId&&output.accepted>0)siteControls.markPushed(noticeId);
+     extras?.record('push.broadcast',String(body.queue||'all'));send(res,200,output);return true;
+   }
    if(url.pathname==='/api/admin/feedback'&&req.method==='GET'){send(res,200,feedback.list());return true}
    if(url.pathname.startsWith('/api/admin/feedback/')&&['PATCH','DELETE'].includes(req.method)){
      const id=decodeURIComponent(url.pathname.slice('/api/admin/feedback/'.length));
