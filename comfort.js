@@ -1,62 +1,99 @@
-/* Personal comfort settings. No user data is transmitted. */
-(()=>{
-'use strict';
-const KEY='svitlo-comfort-v1';
-const defaults={motion:'balanced',density:'comfortable',contrast:false,haptics:false,ambient:true};
-const choices={motion:['calm','balanced','playful'],density:['comfortable','compact']};
-let saved={};try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch{}
-const settings={...defaults,...saved};
-const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+/* Svitlo UI preferences: no haptics, no permissions, no network calls. */
+(()=>{'use strict';
+const KEY='svitlo-ui-v2';
+const LEGACY='svitlo-comfort-v1';
+const defaults={motion:'playful',density:'comfortable',accent:'blue',contrast:false,largeText:false,ambient:true,showInsights:true,showTimebar:true,highlightNow:true,showHints:true,showLegend:true};
+const enums={motion:['calm','balanced','playful'],density:['comfortable','compact'],accent:['blue','mint','violet']};
+const switches={contrast:'comfortContrast',largeText:'comfortLargeText',ambient:'comfortAmbient',showInsights:'comfortShowInsights',showTimebar:'comfortShowTimebar',highlightNow:'comfortHighlightNow',showHints:'comfortShowHints',showLegend:'comfortShowLegend'};
 const root=document.documentElement;
-function apply(){
- for(const [k,values] of Object.entries(choices))if(!values.includes(settings[k]))settings[k]=defaults[k];
- for(const k of ['contrast','haptics','ambient'])settings[k]=settings[k]===true;
- root.dataset.comfortMotion=reduced.matches?'calm':settings.motion;
- root.dataset.comfortDensity=settings.density;
- root.dataset.comfortContrast=String(settings.contrast);
- root.dataset.comfortAmbient=String(settings.ambient);
+const mq=matchMedia('(prefers-reduced-motion: reduce)');
+let stored={};try{stored=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch{}
+if(!Object.keys(stored).length){try{const old=JSON.parse(localStorage.getItem(LEGACY)||'{}')||{};stored={motion:old.motion,density:old.density,contrast:old.contrast,ambient:old.ambient};}catch{}}
+const state={...defaults};
+function validate(input){
+ for(const [k,values] of Object.entries(enums)){if(values.includes(input[k]))state[k]=input[k]}
+ for(const k of Object.keys(switches)){if(typeof input[k]==='boolean')state[k]=input[k]}
 }
-function save(){try{localStorage.setItem(KEY,JSON.stringify(settings))}catch{}apply()}
-apply();
-reduced.addEventListener?.('change',apply);
-const option=(value,label)=>'<option value="'+value+'">'+label+'</option>';
-const section=document.createElement('section');
-section.className='comfort-section';
-section.innerHTML='<h2 class="subsection-title">Вигляд і комфорт</h2>'+
- '<p class="comfort-intro">Зробіть застосунок зручним саме для себе. Усі зміни застосовуються одразу.</p>'+
- '<div class="surface settings-card">'+
- '<label class="setting-line comfort-row"><span><strong>Анімації</strong><p>Від спокійних до виразних переходів</p></span><select id="comfortMotion" aria-label="Інтенсивність анімацій">'+option('calm','Мінімальні')+option('balanced','Плавні')+option('playful','Жваві')+'</select></label>'+
- '<label class="setting-line comfort-row"><span><strong>Щільність елементів</strong><p>Більше простору або більше інформації</p></span><select id="comfortDensity" aria-label="Щільність інтерфейсу">'+option('comfortable','Комфортна')+option('compact','Компактна')+'</select></label>'+
- '<label class="setting-line"><span><strong>Підвищена контрастність</strong><p>Чіткіші межі карток і написи</p></span><span class="switch"><input type="checkbox" id="comfortContrast"><span></span></span></label>'+
- '<label class="setting-line"><span><strong>Тактильний відгук</strong><p>Легкий сигнал на сумісних пристроях</p></span><span class="switch"><input type="checkbox" id="comfortHaptics"><span></span></span></label>'+
- '<label class="setting-line"><span><strong>Живий фон</strong><p>Ледь помітний рух декоративних елементів</p></span><span class="switch"><input type="checkbox" id="comfortAmbient"><span></span></span></label>'+
- '</div><p class="comfort-note">Якщо в системі ввімкнено «Зменшення руху», застосунок автоматично вимикає інтенсивні анімації.</p>';
-function init(){
- const settingsScreen=document.getElementById('settings');
- if(!settingsScreen)return;
- const push=settingsScreen.querySelector('.settings-push-controls');
- if(!document.getElementById('comfortMotion'))(push||settingsScreen.querySelector('.subsection-title'))?.before(section);
- for(const [key,id] of [['motion','comfortMotion'],['density','comfortDensity'],['contrast','comfortContrast'],['haptics','comfortHaptics'],['ambient','comfortAmbient']]){
-  const el=document.getElementById(id);if(!el)continue;
-  if(el.type==='checkbox')el.checked=settings[key];else el.value=settings[key];
-  el.addEventListener('change',()=>{settings[key]=el.type==='checkbox'?el.checked:el.value;save()});
+validate(stored);
+function apply(){
+ const motion=mq.matches?'calm':state.motion;
+ root.dataset.comfortMotion=motion;
+ root.dataset.comfortDensity=state.density;
+ root.dataset.comfortAccent=state.accent;
+ root.dataset.comfortContrast=String(state.contrast);
+ root.dataset.comfortLargeText=String(state.largeText);
+ root.dataset.comfortAmbient=String(state.ambient);
+ for(const k of ['showInsights','showTimebar','highlightNow','showHints','showLegend'])root.dataset['comfort'+k[0].toUpperCase()+k.slice(1)]=String(state[k]);
+ root.classList.toggle('user-hide-insights',!state.showInsights);
+ root.classList.toggle('user-hide-timeline',!state.showTimebar);
+ root.classList.toggle('user-hide-hour-highlight',!state.highlightNow);
+ root.classList.toggle('user-hide-swipe-hints',!state.showHints);
+ root.classList.toggle('user-hide-legend',!state.showLegend);
+ root.classList.toggle('user-no-ambient',!state.ambient);
+ window.dispatchEvent(new CustomEvent('svitlo:comfort-change',{detail:{...state,effectiveMotion:motion}}));
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));localStorage.removeItem(LEGACY)}catch{}apply()}
+function refreshUI(){
+ for(const [key,id] of Object.entries(switches)){const e=document.getElementById(id);if(e)e.checked=state[key]}
+ for(const name of ['motion','density','accent']){
+  document.querySelectorAll('[data-comfort-'+name+']').forEach(button=>{
+   const selected=button.dataset['comfort'+name[0].toUpperCase()+name.slice(1)]===state[name];
+   button.classList.toggle('selected',selected);button.setAttribute('aria-pressed',String(selected));
+  });
  }
- // Haptic feedback is opt-in, unavailable on many iPhones; no blocking fallback.
- document.addEventListener('click',event=>{
-  const button=event.target.closest('button, .setting-action, .picker-btn');
-  if(!button||button.disabled||!settings.haptics||reduced.matches)return;
-  if(typeof navigator.vibrate==='function')navigator.vibrate(8);
- },{passive:true});
- // Animate only genuine tab changes, not every background data refresh.
- document.querySelectorAll('.bottom-nav [data-go]').forEach(button=>{
-  button.addEventListener('click',()=>{
-   if(reduced.matches||settings.motion==='calm')return;
-   const target=document.getElementById(button.dataset.go);
-   if(!target||target.hidden===false)return;
-   target.classList.remove('comfort-enter');
-   requestAnimationFrame(()=>{target.classList.add('comfort-enter');setTimeout(()=>target.classList.remove('comfort-enter'),650)});
+ const pv=document.getElementById('comfortPreview');
+ if(pv){pv.classList.remove('preview-replay');void pv.offsetWidth;pv.classList.add('preview-replay')}
+}
+function init(){
+ const screen=document.getElementById('settings');
+ if(!screen)return;
+ const tabs=[...screen.querySelectorAll('[data-settings-pane]')];
+ const panes=[...screen.querySelectorAll('[data-settings-section]')];
+ function choose(name){
+  if(!panes.some(p=>p.dataset.settingsSection===name))return;
+  for(const tab of tabs){
+   const selected=tab.dataset.settingsPane===name;
+   tab.classList.toggle('selected',selected);
+   tab.setAttribute('aria-selected',String(selected));
+   tab.tabIndex=selected?0:-1;
+  }
+  for(const pane of panes)pane.hidden=pane.dataset.settingsSection!==name;
+  try{sessionStorage.setItem('svitlo-settings-pane',name)}catch{}
+ }
+ tabs.forEach((button,i)=>{
+  button.setAttribute('aria-controls','settings-'+button.dataset.settingsPane);
+  button.addEventListener('click',()=>choose(button.dataset.settingsPane));
+  button.addEventListener('keydown',event=>{
+   if(!['ArrowRight','ArrowLeft','Home','End'].includes(event.key))return;
+   event.preventDefault();const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(i+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+   tabs[next].focus();choose(tabs[next].dataset.settingsPane);
   });
  });
+ screen.classList.add('settings-enhanced');
+ let last='appearance';try{last=sessionStorage.getItem('svitlo-settings-pane')||last}catch{}
+ choose(last);
+ document.querySelectorAll('[data-comfort-motion],[data-comfort-density],[data-comfort-accent]').forEach(button=>{
+  button.addEventListener('click',()=>{
+   for(const key of Object.keys(enums)){
+    const dataKey='comfort'+key[0].toUpperCase()+key.slice(1);
+    if(button.dataset[dataKey]&&enums[key].includes(button.dataset[dataKey])){
+     state[key]=button.dataset[dataKey];save();refreshUI();break;
+    }
+   }
+  });
+ });
+ for(const [key,id] of Object.entries(switches)){
+  const input=document.getElementById(id);
+  input?.addEventListener('change',()=>{state[key]=input.checked;save()});
+ }
+ document.getElementById('comfortReset')?.addEventListener('click',()=>{
+  Object.assign(state,defaults);save();refreshUI();
+  const toast=document.getElementById('toast');
+  if(toast){toast.textContent='Вигляд і графік повернуто до стандартних налаштувань';toast.hidden=false;setTimeout(()=>toast.hidden=true,3500)}
+ });
+ refreshUI();apply();
 }
+apply();
+if(mq.addEventListener)mq.addEventListener('change',apply);else mq.addListener?.(apply);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
