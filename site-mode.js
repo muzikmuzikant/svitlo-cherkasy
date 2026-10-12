@@ -4,7 +4,7 @@
 (()=>{'use strict';
  const overlay=document.getElementById('maintenanceScreen');if(!overlay)return;
  const $=id=>document.getElementById(id),viewport=document.querySelector('.viewport');
- let apiBase='',busy=false,lastConfig=null;
+ let apiBase='',busy=false,lastConfig=null,lastNoticeHash='';
  const banner=document.createElement('aside');banner.className='maintenance-inline';banner.hidden=true;
  banner.setAttribute('role','status');banner.setAttribute('aria-live','polite');
  if(viewport)viewport.prepend(banner);
@@ -38,7 +38,8 @@
   }
   if(!offline){
    window.SvitloPublicConfig={announcements:Array.isArray(data.announcements)?data.announcements:[],maintenance:active};
-   window.dispatchEvent(new CustomEvent('svitlo:public-config',{detail:window.SvitloPublicConfig}));
+   const hash=JSON.stringify(window.SvitloPublicConfig.announcements);
+   if(lastNoticeHash!==hash){lastNoticeHash=hash;window.dispatchEvent(new CustomEvent('svitlo:public-config',{detail:window.SvitloPublicConfig}))}
   }
  }
  async function refresh(){
@@ -58,7 +59,12 @@
    console.warn('App controls:',e.message);
   }finally{busy=false}
  }
- refresh();setInterval(()=>{if(!document.hidden)refresh()},60000);
+ refresh();setInterval(()=>{if(!document.hidden)refresh()},12000);
+ try{const channel=new BroadcastChannel('svitlo-content-v1');
+  channel.addEventListener('message',event=>{if(event.data?.type==='REFRESH_APP_CONFIG')refresh()});
+  window.addEventListener('pagehide',()=>channel.close(),{once:true});
+ }catch{}
+ window.addEventListener('svitlo:refresh-content',refresh);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
  window.addEventListener('online',refresh);
 })();
