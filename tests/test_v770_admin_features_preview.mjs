@@ -36,7 +36,7 @@ test('25 feature switches have real runtime effects and can be searched, saved a
  assert.match(admin,/api\('app-config'\)/);
  assert.match(admin,/method:'PUT'/);
  assert.match(admin,/const cfg=await api\('app-config'\)/);
- assert.match(read('admin-control.js'),/flags:\{\.\.\.latest\.site\?\.flags,\.\.\.getSite\(\)\.flags\}/);
+ assert.match(read('admin-control.js'),/next=\{\.\.\.latest,announcements:noticeChanges\}/);
 });
 
 test('feature flags are whitelisted on the server and stored with safe defaults',()=>{
