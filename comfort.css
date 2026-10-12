@@ -90,3 +90,9 @@ html.user-no-ambient .status-decor,html.user-no-ambient .settings-preview-glow{a
 }
 @media(prefers-reduced-motion:reduce){#settings.settings-enhanced [data-settings-section]:not([hidden]),.settings-preview-glow{animation:none!important}}
 @media(max-width:370px){.settings-nav{gap:2px;padding:3px}.settings-nav button{font-size:9px;padding:12px 1px}.settings-pick strong{font-size:11px}.settings-swatches{gap:6px}}
+
+
+#settings .settings-motion-status{display:flex;align-items:flex-start;gap:8px;margin:11px 3px 0;padding:11px 12px;border:1px solid #d4eadc;border-radius:12px;background:#ebf8f1;color:#24734d;font-size:11px;line-height:1.45}
+#settings .settings-motion-status:before{content:"✓";font-size:13px;font-weight:850;flex-shrink:0}
+#settings .settings-motion-status[data-kind="limited"]{background:#fff6e6;border-color:#f1e0bd;color:#93602b}
+#settings .settings-motion-status[data-kind="limited"]:before{content:"!"}
