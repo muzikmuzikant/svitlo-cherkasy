@@ -1,4 +1,6 @@
 /** Authenticated manual Web Push actions. No admin credentials or subscription URLs are exposed. */
+import {testCopy} from './notification-copy.js';
+
 const ALL_QUEUES = new Set(Array.from({ length: 6 }, (_, i) => [`${i + 1}.1`, `${i + 1}.2`]).flat());
 
 export function cleanMessage(input) {
@@ -82,10 +84,7 @@ export function createManualPush({ subscribers, webpush, appUrl, hash, save }) {
       const recipients = selectRecipients(subscribers, { target, endpoint: payload.endpoint });
       if (!recipients.length) return { ok: false, attempted: 0, accepted: 0, failed: 0, expired: 0, error: 'Цей пристрій не підписаний на Push. Якщо це PWA на iPhone, відкрийте адмінпанель із встановленого застосунку або виберіть тест для всіх.' };
       requireCooldown('test', 5, 10 * 60_000);
-      return deliver(recipients, {
-        title: 'Світло Черкаси · Тест Push',
-        body: 'Тестове повідомлення від адміністратора. Якщо ви його бачите, Push працює!'
-      });
+      return deliver(recipients, testCopy());
     },
     async broadcast(payload) {
       const msg = cleanMessage(payload);
