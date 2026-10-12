@@ -198,7 +198,6 @@ function renderHome(){
  setText('hoursOff',t&&t.unknown===0?minutesLabel(t.off):t&&t.off?`${minutesLabel(t.off)}+`:'—');
  // A genuine tomorrow preview, not a guessed network status.
  renderTomorrowPreview();
- renderQuickPlaces();
  updatePushInvite();
  const list=$('placeList');list.replaceChildren();
  for(const item of addresses){
@@ -229,23 +228,6 @@ function renderTomorrowPreview(){
  if(!st||st.unknown>0){summary.textContent='Частина годин ще уточнюється';details.textContent='Підчерга '+queue+' · Перевірте офіційний графік';return}
  summary.textContent=st.off===0?'Без планових відключень':'Планується без світла: '+formatDuration(st.off);
  details.textContent='Підчерга '+queue+' · '+formatDate(date,{day:'numeric',month:'long'});
-}
-function renderQuickPlaces(){
- const host=$('homeQuickPlaces');if(!host)return;
- host.replaceChildren();
- if(!addresses.length){host.append(el('span','quick-place-empty','Додайте адресу, щоб перемикатися одним дотиком'));return}
- [...addresses].sort((a,b)=>Number(!!b.favorite)-Number(!!a.favorite)).forEach(item=>{
-  const button=el('button','quick-place'+(primary()?.id===item.id?' selected':''),(item.favorite?'★  ':'')+label(item));
-  button.type='button';button.dataset.queue=item.queue||'';
-  button.setAttribute('aria-pressed',String(primary()?.id===item.id));
-  button.onclick=()=>{
-   if(primary()?.id===item.id)return;
-   prefs.primaryId=item.id;savePrefs();renderHome();
-   if(pushActive)updatePushSubscription().catch(e=>console.warn('Update Push queue:',e));
-   flash('Вибрано: '+label(item));
-  };
-  host.append(button);
- });
 }
 function outages(t){
  if(!t)return [];
@@ -765,8 +747,6 @@ window.addEventListener('svitlo:open-schedule',event=>{
 });
 for(const b of document.querySelectorAll('[data-go]'))b.addEventListener('click',()=>navigate(b.dataset.go));
  for(const key of ['tomorrowOpen','tomorrowCard'])$(key)?.addEventListener('click',()=>{if(!primary())return openAddressSheet();navigate('detail');showDay(shiftDay(today(),1))});
- $('shareToday')?.addEventListener('click',()=>shareSchedule(today()));
- $('copyToday')?.addEventListener('click',()=>shareSchedule(today(),{copy:true}));
  $('shareDetail')?.addEventListener('click',()=>shareSchedule(daySelected||today()));
  const quickSelect=$('quickQueueSelect');
  if(quickSelect){
@@ -781,7 +761,7 @@ $('weekPrev').onclick=()=>shiftDayStrip(-1);
 $('weekNext').onclick=()=>shiftDayStrip(1);
 $('dayToday').onclick=()=>showDay(today());
 $('dayTomorrow').onclick=()=>showDay(shiftDay(today(),1));
-$('syncNow').onclick=()=>refreshData(true);$('refreshTop').onclick=()=>refreshData(true);$('refreshDetail').onclick=()=>refreshData(true);$('manualRefresh').onclick=()=>refreshData(true);$('primaryPicker').onclick=()=>addresses.length?openPicker():openAddressSheet();$('addFromHome').onclick=()=>openAddressSheet();$('addFromSettings').onclick=()=>openAddressSheet();$('editActive').onclick=()=>openAddressSheet(primary());$('openDetail').onclick=()=>navigate('detail');
+$('refreshTop').onclick=()=>refreshData(true);$('refreshDetail').onclick=()=>refreshData(true);$('manualRefresh').onclick=()=>refreshData(true);$('primaryPicker').onclick=()=>addresses.length?openPicker():openAddressSheet();$('addFromHome').onclick=()=>openAddressSheet();$('addFromSettings').onclick=()=>openAddressSheet();$('editActive').onclick=()=>openAddressSheet(primary());$('openDetail').onclick=()=>navigate('detail');
 $('closeSheet').onclick=()=>closeSheet($('addressSheet'));$('closePlaces').onclick=()=>closeSheet($('placesSheet'));$('sheetAddPlace').onclick=()=>{closeSheet($('placesSheet'));openAddressSheet()};
 for(const dialog of [$('addressSheet'),$('placesSheet')])dialog.addEventListener('close',unlockSheet);
 $('settlement').onchange=()=>{$('manualQueue').value='';$('customSettlement').hidden=$('settlement').value!=='Інше';suggestion=null;suggestions();checkLookup()};$('customSettlement').oninput=()=>{$('manualQueue').value='';checkLookup()};$('street').oninput=()=>{$('manualQueue').value='';suggestion=null;suggestions();checkLookup()};$('house').onfocus=()=>{$('streetSuggestions').hidden=true};$('house').oninput=()=>{$('streetSuggestions').hidden=true;checkLookup()};$('manualQueue').onchange=checkLookup;$('addressForm').onsubmit=saveAddress;$('deleteAddress').onclick=deleteAddress;$('goOfficial').onclick=officialOpen;
