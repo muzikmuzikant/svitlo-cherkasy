@@ -274,7 +274,7 @@ async function shareSchedule(date,{copy=false}={}){
   return;
  }
  try{
-  const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1770;
+  const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1880;
   const ctx=canvas.getContext('2d');if(!ctx)throw Error('Canvas unavailable');
   const W=1080,H=1770,margin=64;
   const round=(x,y,w,h,r,color)=>{
