@@ -5,6 +5,7 @@ const TZ='Europe/Kyiv';
 const QUEUES=Array.from({length:6},(_,i)=>[`${i+1}.1`,`${i+1}.2`]).flat();
 const OFFICIAL='https://www.cherkasyoblenergo.com/off';
 const STORE='svitlo-addresses-v6', PREF='svitlo-prefs-v6', SEEN='svitlo-notifications-v6', PUSH_CONSENT='svitlo-push-consent-v6';
+const OFFLINE_SCHEDULE='svitlo-offline-schedule-v74',OFFLINE_ADDRESSES='svitlo-offline-address-v74';
 const ICON='<svg class="bolt" viewBox="0 0 20 24" aria-hidden="true"><path fill="currentColor" d="M11.8 1 2 13h7l-1.5 10L18 9.9h-7z"/></svg>';
 const PIN='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0z"/><circle cx="12" cy="10" r="2.4"/></svg>';
 const safeJSON=(k,fallback)=>{try{return JSON.parse(localStorage.getItem(k)??'null')??fallback}catch{return fallback}};
@@ -140,6 +141,7 @@ function scheduleQueueChanged(before, after, queue) {
    JSON.stringify(earlier.get(day.date) ?? null) !== JSON.stringify(day.queues?.[queue] ?? null));
 }
 function renderSyncStatus(){
+ const offlineChip=$('offlineChip');if(offlineChip){const noNetwork=navigator.onLine===false||lastSyncFailed;offlineChip.hidden=!hasCheckedOnce||!noNetwork;offlineChip.textContent='📶 '+(navigator.onLine===false?'Офлайн':'Не вдалося оновити')+'. Показуємо останні доступні дані.';}
  const box=$('syncStatus');if(!box)return;
  const checked=Date.parse(data.lastChecked||'');
  const checkKnown=Number.isFinite(checked)&&checked<=Date.now()+5*60_000;
@@ -421,7 +423,16 @@ async function refreshData(manual=false){
      if(!response.ok)throw Error('schedules HTTP '+response.status);
      const loaded=normalizeData(await response.json());
      data=loaded;schedulesOk=true;lastSyncFailed=false;lastDownloadAt=new Date().toISOString();
-   }catch(error){lastSyncFailed=true;console.warn('Schedule fetch:',error)}
+     // Additional local snapshot protects against service-worker cache eviction.
+     try{const serialized=JSON.stringify(loaded);if(serialized.length<1200000)localStorage.setItem(OFFLINE_SCHEDULE,serialized)}catch{}
+   }catch(error){
+     lastSyncFailed=true;console.warn('Schedule fetch:',error);
+     // Never replace an in-memory confirmed schedule with a failed response.
+     if(!data.days.length)try{
+       const saved=safeJSON(OFFLINE_SCHEDULE,null);
+       if(saved?.days?.length)data=normalizeData(saved);
+     }catch(e){console.warn('Offline schedule recovery:',e)}
+   }
    try{
      const [remote,seed]=await Promise.allSettled([
        fetch(`./data/addresses.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}),
@@ -431,8 +442,12 @@ async function refreshData(manual=false){
        const live=remote.status==='fulfilled'?remote.value:{};
        const backup=seed.status==='fulfilled'?seed.value:{};
        index=mergeIndexes(live,backup);
+       try{const snapshot=JSON.stringify(index);if(snapshot.length<1700000)localStorage.setItem(OFFLINE_ADDRESSES,snapshot)}catch{}
        populateSettlements();
        if($('addressSheet').open){suggestions();checkLookup()}
+     }else{
+       const stored=safeJSON(OFFLINE_ADDRESSES,null);
+       if(stored?.keys&&stored?.streets){index=stored;populateSettlements()}
      }
    }catch(error){console.warn('Address fetch:',error)}
    try{
