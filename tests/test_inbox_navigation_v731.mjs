@@ -6,6 +6,7 @@ import vm from 'node:vm';
 const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 class Element {
  constructor(tag='div'){this.tag=tag;this.children=[];this.textContent='';this.hidden=false;this.className='';this.open=false;this.dataset={};this.classList={toggle(){}}}
+ get childElementCount(){return this.children.filter(x=>x&&typeof x==='object'&&x.tag).length}
  append(...children){this.children.push(...children)}
  replaceChildren(...children){this.children=[...children]}
  setAttribute(name,value){this[name]=value}
