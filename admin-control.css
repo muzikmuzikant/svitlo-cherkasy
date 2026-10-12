@@ -225,3 +225,12 @@ body[data-admin-role="viewer"] [data-admin-panel="operations"] button:not(#opsHi
 .ops-release-item time{color:#7891af;font-size:10px}
 .ops-release-item small{grid-column:1/-1;font-size:11px;color:#6b82a0;line-height:1.5}
 @media(max-width:650px){.ops-release-item{grid-template-columns:1fr}}
+
+
+/* Phone-shaped live maintenance preview without hiding editor controls */
+.ops-editor-columns>.ops-preview{border:7px solid #1e2c42;border-radius:34px;width:min(100%,305px);
+ box-shadow:0 18px 45px #1a34552e;min-height:370px;padding:28px 18px;justify-self:center;
+ box-sizing:border-box;overflow:hidden}
+.ops-editor-columns>.ops-preview::before{content:'';position:absolute;left:50%;transform:translateX(-50%);
+ top:9px;width:83px;height:16px;background:#1e2c42;border-radius:0 0 13px 13px}
+.ops-preview strong,.ops-preview p{overflow-wrap:anywhere}
