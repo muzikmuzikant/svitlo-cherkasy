@@ -61,14 +61,6 @@ html{scrollbar-width:none;overflow-x:clip;overscroll-behavior-x:none;scroll-beha
 .freshness-warning strong{display:block;margin-bottom:3px;font-weight:750}.freshness-warning span{display:block}.freshness-warning a{display:inline-block;margin-top:5px;font-weight:700;color:inherit;text-decoration:underline;text-underline-offset:2px}
 
 /* Data auto-refresh status: honest about the difference between device download and operator checks. */
-.auto-sync-status{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:11px 12px;border:1px solid #e1eaf5;border-radius:15px;background:#fff;color:#405572;min-width:0;box-shadow:0 3px 12px #294e8308}
-.auto-sync-indicator{display:block;flex:0 0 9px;width:9px;height:9px;border-radius:99px;background:#4785ea;box-shadow:0 0 0 4px #e4edff}
-.auto-sync-status[data-state="fresh"] .auto-sync-indicator{background:#32b67e;box-shadow:0 0 0 4px #dff6ea}
-.auto-sync-status[data-state="stale"] .auto-sync-indicator{background:#e3a44a;box-shadow:0 0 0 4px #fff1d8}
-.auto-sync-status[data-state="error"] .auto-sync-indicator{background:#e66a6a;box-shadow:0 0 0 4px #ffeded}
-.auto-sync-copy{display:block;flex:1;min-width:0}.auto-sync-copy strong{display:block;font-size:12px;line-height:1.4;font-weight:780;color:#304a70}.auto-sync-copy small{display:block;font-size:10px;line-height:1.5;color:#8291a7;margin-top:2px;overflow-wrap:anywhere}
-.auto-sync-action{flex:0 0 33px;width:33px;height:33px;display:grid;place-items:center;background:#f0f5fd;border:1px solid #dfe8f5;border-radius:11px;color:#3371d5;font-weight:800;font-size:19px;cursor:pointer}
-.auto-sync-action:focus-visible{outline:2px solid #3371d5;outline-offset:2px}.auto-sync-action[disabled]{opacity:.6;cursor:wait}
 
 /* v7.1.3 – rolling calendar and direct access to tomorrow */
 .calendar-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 1px 12px}
@@ -209,7 +201,7 @@ html{scrollbar-width:none;overflow-x:clip;overscroll-behavior-x:none;scroll-beha
 /* v7.5: practical at-a-glance home screen */
 .tomorrow-preview{margin-top:23px}
 .tomorrow-card{width:100%;border:1px solid #dfebf8;padding:19px;display:flex;align-items:center;gap:15px;text-align:left;border-radius:21px;touch-action:manipulation;box-shadow:0 12px 34px #1c54830b}
-.tomorrow-card:focus-visible,.home-share-action:focus-visible,.quick-place:focus-visible{outline:3px solid #80aefe;outline-offset:2px}
+.tomorrow-card:focus-visible{outline:3px solid #80aefe;outline-offset:2px}
 .tomorrow-card:active{transform:scale(.99)}
 .tomorrow-symbol{flex:none;width:48px;height:48px;border-radius:17px;background:#e8f2ff;display:grid;place-items:center;font-size:23px}
 .tomorrow-copy{display:grid;gap:6px;min-width:0;flex:1}
@@ -217,22 +209,10 @@ html{scrollbar-width:none;overflow-x:clip;overscroll-behavior-x:none;scroll-beha
 .tomorrow-copy small{font-size:12px;color:#6c819b;line-height:1.45}
 .tomorrow-chevron{color:#7899bd;font-size:30px}
 .tomorrow-unknown .tomorrow-symbol{background:#f1f4f9}
-.home-shortcuts{margin-top:22px}
-.home-shortcuts .section-head{margin-bottom:12px}
-.home-shortcuts .small-source{font-size:11px}
-.home-quick-places{display:flex;align-items:center;gap:9px;overflow-x:auto;max-width:100%;padding:1px 2px 9px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-.home-quick-places::-webkit-scrollbar{display:none}
-.quick-place{flex:none;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid #dfe8f6;border-radius:999px;background:#fff;color:#607892;font-size:12px;font-weight:740;padding:11px 16px;touch-action:manipulation}
-.quick-place.selected{background:#347af3;color:#fff;border-color:#347af3;box-shadow:0 6px 13px #347af325}
-.quick-place-empty{font-size:12px;color:#879db2;padding:10px 4px}
-.home-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0 25px}
-.home-share-action{border:1px solid #d6e5fa;background:#eaf3ff;color:#356fae;border-radius:14px;font-size:12px;font-weight:770;padding:13px 9px;touch-action:manipulation}
-.home-share-action span{margin-right:6px}
-.home-refresh-action{background:#fff;color:#6c8097;border-color:#e1e8f2}
 .schedule-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:15px 0;color:#67819e;font-size:12px}
 .schedule-meta span{flex:1;line-height:1.45}
 .schedule-share{border:1px solid #d9e6f6;color:#2e78cb;background:#fff;border-radius:11px;padding:10px 12px;white-space:nowrap;font-size:12px;font-weight:750;touch-action:manipulation}
-@media(max-width:375px){.home-actions{grid-template-columns:1fr}.tomorrow-card{padding:14px}.home-shortcuts .small-source{display:none}}
+@media(max-width:375px){.tomorrow-card{padding:14px}}
 @media(prefers-reduced-motion:reduce){.tomorrow-card:active{transform:none}}
 
 
@@ -296,7 +276,6 @@ html.feature-off-addressSearch #addFromHome,html.feature-off-addressSearch #addF
 html.feature-off-pushPrompt #pushInvite{display:none!important}
 html.feature-off-pushSettings .settings-push-controls{display:none!important}
 html.feature-off-tomorrowPreview .tomorrow-preview{display:none!important}
-html.feature-off-quickAddresses .home-shortcuts{display:none!important}
 html.feature-off-homePlaces #placeList{display:none!important}
 html.feature-off-dailyStats #home .stats-row{display:none!important}
 html.feature-off-overviewTimeline #home .overview-card{display:none!important}
@@ -307,7 +286,6 @@ html.feature-off-scheduleLegend #detail .legend,html.feature-off-scheduleLegend 
 html.feature-off-offlineStatus #offlineChip{display:none!important}
 html.feature-off-scheduleSource #sourceStamp,html.feature-off-scheduleSource #detailUpdated{display:none!important}
 html.feature-off-manualRefresh #syncNow,html.feature-off-manualRefresh #refreshDetail,html.feature-off-manualRefresh #manualRefresh{display:none!important}
-html.feature-off-homeQuickActions .home-actions{display:none!important}
 html.feature-off-animations *,html.feature-off-animations *::before,html.feature-off-animations *::after{transition-duration:0ms!important;animation-duration:0ms!important}
 @media(max-width:420px){.push-invite{padding:16px;gap:12px}.push-invite-art{width:51px;height:51px;border-radius:16px}.push-invite-bell{font-size:25px}.share-preview-head{padding:19px 17px 14px}.share-preview-actions{padding:16px}}
 @media(prefers-reduced-motion:reduce){.push-invite-art{transform:none}}
