@@ -406,3 +406,9 @@ main{max-width:1840px!important;padding-inline:clamp(16px,2.5vw,46px)}
 .control-subcard button{margin-top:12px}
 #controlBackupRestore.danger{color:#ad3346}
 @media(max-width:640px){.control-panel-lead h2{font-size:23px}}
+
+
+.control-notice-filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:0}
+.control-notice-filters select{font-size:11px;padding:10px 6px;max-width:100%;width:100%;min-width:0}
+.control-notice-tools{display:flex;gap:8px;flex-wrap:wrap}
+.control-notice-tools button{flex:1;min-width:110px;padding:10px 11px;font-size:11px}
