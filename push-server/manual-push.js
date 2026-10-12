@@ -13,17 +13,21 @@ export function cleanMessage(input) {
   const queue = input.queue == null || input.queue === '' ? 'all' : String(input.queue);
   if (queue !== 'all' && !ALL_QUEUES.has(queue)) throw Error('Невідома підчерга');
   const notificationId=typeof input.notificationId==='string'&&/^notice:[A-Za-z0-9_-]{6,64}$/.test(input.notificationId)?input.notificationId:null;
-  return notificationId?{title,body,queue,notificationId,inbox:input.inbox!==false}:{title,body,queue};
+  const settlement=typeof input.settlement==='string'?input.settlement.normalize('NFKC').trim():''; 
+  if(settlement.length>70)throw Error('Завеликий населений пункт');
+  return notificationId?{title,body,queue,notificationId,inbox:input.inbox!==false,settlement}:{title,body,queue};
 }
 
-export function selectRecipients(subscribers, { queue = 'all', target = 'all', endpoint = '' } = {}) {
+const normArea=s=>String(s||'').normalize('NFKC').toLocaleLowerCase('uk-UA')
+ .replace(/^[мс]\.\s*/,'').replace(/[’ʼ`]/g,"'").replace(/\s+/g,' ').trim();
+export function selectRecipients(subscribers, { queue = 'all', target = 'all', endpoint = '',settlement='' } = {}) {
   const list = Object.values(subscribers);
   if (target === 'mine') {
     if (typeof endpoint !== 'string' || !endpoint.startsWith('https://') || endpoint.length > 2048) throw Error('Не знайдено Push-підписку цього пристрою');
     return list.filter(r => r.subscription?.endpoint === endpoint);
   }
   if (target !== 'all') throw Error('Невідомий одержувач');
-  return list.filter(r => queue === 'all' || r.queue === queue);
+  return list.filter(r => (queue === 'all' || r.queue === queue)&&(!settlement||normArea(r.settlement)===normArea(settlement)));
 }
 
 export function createManualPush({ subscribers, webpush, appUrl, hash, save }) {
@@ -99,7 +103,7 @@ export function createManualPush({ subscribers, webpush, appUrl, hash, save }) {
     async broadcast(payload) {
       const msg = cleanMessage(payload);
       if (payload.confirmSend !== true) throw Error('Потрібне підтвердження розсилки');
-      const recipients = selectRecipients(subscribers, { queue: msg.queue });
+      const recipients = selectRecipients(subscribers, { queue: msg.queue,settlement:msg.settlement });
       if (!recipients.length) return { ok: false, attempted: 0, accepted: 0, failed: 0, expired: 0, error: 'Немає підписаних пристроїв для вибраної підчерги.' };
       requireCooldown('broadcast', 6, 60 * 60_000);
       return deliver(recipients, msg);
