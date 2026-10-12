@@ -12,7 +12,8 @@ export function cleanMessage(input) {
   if (/[\x00-\x1f\x7f]/.test(title) || /[\x00-\x08\x0b-\x1f\x7f]/.test(body)) throw Error('Неприпустимі символи в повідомленні');
   const queue = input.queue == null || input.queue === '' ? 'all' : String(input.queue);
   if (queue !== 'all' && !ALL_QUEUES.has(queue)) throw Error('Невідома підчерга');
-  return { title, body, queue };
+  const notificationId=typeof input.notificationId==='string'&&/^notice:[A-Za-z0-9_-]{6,64}$/.test(input.notificationId)?input.notificationId:null;
+  return { title, body, queue, notificationId };
 }
 
 export function selectRecipients(subscribers, { queue = 'all', target = 'all', endpoint = '' } = {}) {
@@ -57,7 +58,8 @@ export function createManualPush({ subscribers, webpush, appUrl, hash, save }) {
         try {
           await webpush.sendNotification(record.subscription, JSON.stringify({
             title: msg.title, body: msg.body, url: appUrl,
-            tag: 'svitlo-admin-' + Date.now().toString(36)
+            tag: msg.notificationId||('svitlo-admin-'+Date.now().toString(36)),
+            notificationId:msg.notificationId||undefined,kind:msg.notificationId?'announcement':'push'
           }), { TTL: 3600, urgency: 'normal' });
           delivered++;
         } catch (e) {
