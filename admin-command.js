@@ -194,6 +194,37 @@
   }catch(e){$('controlMediaUploadStatus').textContent='Завантаження зупинено: '+e.message}
   finally{$('controlMediaUpload').disabled=false}
  }
+ let actionsLoading=false;
+ async function refreshActions(){
+  if(actionsLoading||!ensure())return;actionsLoading=true;
+  const root=$('controlActionsList');root.replaceChildren(make('p','Отримуємо фактичні запуски…','hint'));
+  $('controlActionsRefresh').disabled=true;
+  try{
+   const url='https://api.github.com/repos/muzikmuzikant/svitlo-cherkasy/actions/runs?per_page=12';
+   const response=await fetch(url,{cache:'no-store',headers:{Accept:'application/vnd.github+json'}});
+   if(!response.ok)throw Error('GitHub API: HTTP '+response.status);
+   const json=await response.json();
+   const workflows=Array.isArray(json.workflow_runs)?json.workflow_runs:[];
+   root.replaceChildren();
+   if(!workflows.length){root.append(make('p','Немає доступних запусків.','hint'));return}
+   for(const run of workflows){
+    const row=make('article',null,'control-action-row'),
+     state=run.status==='completed'?(run.conclusion==='success'?'Успішно':run.conclusion==='failure'?'Помилка':run.conclusion||'Завершено'):'Виконується';
+    row.classList.add(run.conclusion==='failure'?'is-failed':run.conclusion==='success'?'is-success':'is-pending');
+    const left=make('div',null,'control-action-description'),
+     title=make('strong',run.name||'Автоматична перевірка'),
+     meta=make('span',when(run.created_at)+' · '+state);
+    left.append(title,meta);
+    const id=Number(run.id);
+    const link=document.createElement('a');link.textContent='Переглянути ↗';
+    link.href=Number.isSafeInteger(id)&&id>0?'https://github.com/muzikmuzikant/svitlo-cherkasy/actions/runs/'+id:
+     'https://github.com/muzikmuzikant/svitlo-cherkasy/actions';
+    link.target='_blank';link.rel='noopener noreferrer';
+    row.append(left,link);root.append(row);
+   }
+  }catch(e){root.replaceChildren(make('p','GitHub API тимчасово недоступний: '+e.message+'. Спробуйте відкрити запуски на GitHub.','hint'))}
+  finally{actionsLoading=false;$('controlActionsRefresh').disabled=false}
+ }
  function access(){
   const roles={owner:'Власник',editor:'Редактор',operator:'Оператор',viewer:'Перегляд'},role=typeof adminRole==='string'?adminRole:'viewer';
   tiles('controlAccessCards',[['Поточна роль',roles[role]||role],['Підключення',ensure()?'Активне':'Відсутнє'],['Публікація файлів',typeof canPublish!=='undefined'&&canPublish?'Дозволена':'Обмежена']]);
@@ -247,6 +278,7 @@
  $('controlRunChecks').onclick=quality;
  $('controlInsightsReload').onclick=insights;
  $('controlMediaReload').onclick=media;
+ $('controlActionsRefresh').onclick=refreshActions;
  $('controlMediaUpload').onclick=uploadMedia;
  $('controlMediaSearch').addEventListener('input',()=>{media().catch(console.warn)});
  // Recovery is intentionally explicit: never send a campaign or enable
@@ -322,7 +354,8 @@
   if(!ensure())return;
   const tab=button.dataset.adminTab;
   try{sessionStorage.setItem('svitlo-admin-last-tab',tab)}catch{}
-  if(tab==='quality')quality();
+  if(tab==='sources')refreshActions();
+  else if(tab==='quality')quality();
   else if(tab==='insights')insights();
   else if(tab==='media')media();
   else if(tab==='design')loadDesign();
