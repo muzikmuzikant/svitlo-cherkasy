@@ -3,6 +3,7 @@
  */
 import crypto from 'node:crypto';
 import {originPolicy} from './origins.js';
+import {validateAppConfig} from './app-config.js';
 const PATHS={
  overrides:'data/manual_overrides.json',
  schedules:'data/schedules.json',
@@ -171,15 +172,13 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
      if(!siteControls){send(res,503,{error:'Керування застосунком недоступне'});return true}
      const body=await readJson(req,750000);
      if(role!=='owner'){
-      const old=siteControls.get(),newMaintenance=body.maintenance||{};
-      if(JSON.stringify(newMaintenance)!==JSON.stringify(old.maintenance)||
-        JSON.stringify(body.site)!==JSON.stringify(old.site))
+      const old=siteControls.get(),candidate=validateAppConfig(body),current=validateAppConfig(old);
+      if(JSON.stringify(candidate.maintenance)!==JSON.stringify(current.maintenance)||
+        JSON.stringify(candidate.site)!==JSON.stringify(current.site))
        throw Error('Лише власник може змінювати техроботи та загальні налаштування');
-      const previous=new Map(old.announcements.map(x=>[x.id,x]));
-      for(const item of body.announcements||[]){
-       const was=previous.get(item.id);
-       if(item.active&&item.delivery==='both'&&!item.pushSentAt
-        &&(!was||!was.active||was.delivery!=='both'))throw Error('Лише власник може запускати Push-розсилку');
+      for(const item of candidate.announcements){
+       if(item.active&&item.delivery==='both'&&!item.pushSentAt)
+        throw Error('Лише власник може запускати Push-розсилку');
       }
      }
      const value=siteControls.update(body);send(res,200,value);return true;
