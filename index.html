@@ -89,12 +89,26 @@
 <div class="section-head"><h2>Графік на сьогодні</h2><button class="inline-link" id="openDetail">Детальніше <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button></div>
 <div class="surface overview-card"><div class="overview-top"><span id="overviewDate">Сьогодні</span><span class="small-source" id="overviewLabel">—</span></div><div class="bar-track" id="overviewBar"></div><div class="bar-time"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div><div class="legend"><span><i class="dot dot-light"></i> Є світло</span><span><i class="dot dot-off"></i> Немає</span><span><i class="dot dot-unknown"></i> Без даних</span></div></div>
 <div class="stats-row"><div class="surface stat-card"><div class="stat-top"><span class="stat-icon sun-icon">☀</span> Зі світлом</div><div class="stat-val" id="hoursOn">—</div><div class="stat-caption">год за графіком</div></div><div class="surface stat-card"><div class="stat-top"><span class="stat-icon moon-icon">◕</span> Без світла</div><div class="stat-val" id="hoursOff">—</div><div class="stat-caption">год за графіком</div></div></div>
-<div class="section-head"><h2>Мої місця</h2><button class="inline-link" id="addFromHome"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Додати</button></div><div class="place-list" id="placeList"></div>
+<section class="tomorrow-preview" aria-labelledby="tomorrowHeading">
+ <div class="section-head"><h2 id="tomorrowHeading">Завтра</h2><button type="button" class="inline-link" id="tomorrowOpen">До графіка ↗</button></div>
+ <button class="surface tomorrow-card" type="button" id="tomorrowCard" aria-label="Відкрити графік на завтра">
+   <span class="tomorrow-symbol" aria-hidden="true">☀️</span>
+   <span class="tomorrow-copy"><strong id="tomorrowSummary">Перевіряємо графік…</strong><small id="tomorrowDetails">Години для вашої підчерги</small></span>
+   <span class="tomorrow-chevron" aria-hidden="true">›</span>
+ </button>
+ </section>
+ <section class="home-shortcuts" aria-label="Швидкий доступ до адрес">
+ <div class="section-head"><h2>Швидкий вибір</h2><span class="small-source">Натисніть, щоб змінити адресу</span></div>
+ <div id="homeQuickPlaces" class="home-quick-places" role="group" aria-label="Вибрані адреси"></div>
+ </section>
+ <div class="home-actions"><button type="button" class="home-share-action" id="shareToday"><span aria-hidden="true">↗</span> Поділитися графіком</button><button type="button" class="home-share-action home-refresh-action" id="copyToday">Скопіювати години</button></div>
+ <div class="section-head"><h2>Мої місця</h2><button class="inline-link" id="addFromHome"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Додати</button></div><div class="place-list" id="placeList"></div>
 <div class="notice-strip"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg><span>Статус показує <strong>прогноз за графіком</strong>, а не фактичну наявність електроенергії.</span></div>
 </section>
 <section id="detail" class="screen" hidden><div class="screen-header"><button class="back-btn" data-go="home" aria-label="Назад">‹</button><div><h1>Графік відключень</h1><p id="detailAddress">Моя адреса</p></div><button class="icon-btn" id="editActive" aria-label="Редагувати адресу"><svg viewBox="0 0 24 24"><path d="m16 5 3 3M4 20l4.5-1 11-11a2.12 2.12 0 0 0-3-3l-11 11L4 20z"/></svg></button></div>
 <div class="detail-status" id="detailStatus"></div>
 <div class="surface detail-surface"><div class="calendar-head"><div class="calendar-period" id="weekRange">Поточні дні</div><div class="calendar-arrows"><button type="button" id="weekPrev" aria-label="Попередні сім днів">‹</button><button type="button" id="weekNext" aria-label="Наступні сім днів">›</button></div></div><div class="calendar-shortcuts"><button type="button" id="dayToday">Сьогодні</button><button type="button" id="dayTomorrow">Завтра</button></div><div class="days-row" id="days"></div><div class="dayline"><span id="detailDayLabel">Сьогодні</span><span id="detailUpdated"></span></div><div class="hour-grid" id="hourGrid"></div><div class="legend"><span><i class="dot dot-light"></i> Є світло</span><span><i class="dot dot-off"></i> Відключення</span><span><i class="dot dot-mixed"></i> Частково</span><span><i class="dot dot-unknown"></i> Невідомо</span></div><p class="grid-note">Години з частковим відключенням поділено за тривалістю. Часи й стан — лише за опублікованим ГПВ.</p></div>
+<div class="schedule-meta"><span id="detailDayStat">Підраховуємо години…</span><button id="shareDetail" type="button" class="schedule-share">Поділитися ↗</button></div>
 <div class="surface info-card"><div class="tiny-label">НАЙБЛИЖЧА ЗМІНА</div><div class="big-number" id="nextTime">Перевіряємо</div><p id="nextDescription">Немає підтверджених даних</p></div>
 <div class="sources-row"><a id="articleLink" target="_blank" rel="noopener" href="https://www.cherkasyoblenergo.com/news">Джерело графіка ↗</a><button id="refreshDetail">Оновити ↻</button></div></section>
 <section id="updates" class="screen" hidden>
