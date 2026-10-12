@@ -356,3 +356,53 @@ html.feature-off-scheduleOpenShortcut #openDetail{display:none!important}
  .maintenance-screen[data-layout="split"] .maintenance-foot{grid-column:2}
  .maintenance-screen[data-layout="split"] .maintenance-content>p{max-width:600px}
 }
+
+
+/* Notification reader: full-screen iPhone reveal, smooth closing and reduced-motion support. */
+@media(prefers-reduced-motion:no-preference){
+ html:not(.feature-off-animations) .inbox-detail[open]:not(.is-leaving){
+  animation:inboxReaderReveal .44s cubic-bezier(.19,1,.26,1) both;
+  transform-origin:50% 100%;
+ }
+ html:not(.feature-off-animations) .inbox-detail[open]:not(.is-leaving)::backdrop{
+  animation:inboxBackdropReveal .34s ease-out both;
+ }
+ html:not(.feature-off-animations) .inbox-detail[open]:not(.is-leaving) .inbox-detail-content>*{
+  animation:inboxContentReveal .38s cubic-bezier(.2,.9,.3,1) both;
+ }
+ html:not(.feature-off-animations) .inbox-detail[open]:not(.is-leaving) .inbox-detail-content>*:nth-child(2){animation-delay:65ms}
+ html:not(.feature-off-animations) .inbox-detail[open]:not(.is-leaving) .inbox-detail-content>*:nth-child(3){animation-delay:95ms}
+ html:not(.feature-off-animations) .inbox-detail[open]:not(.is-leaving) .inbox-detail-content>*:nth-child(n+4){animation-delay:125ms}
+ html:not(.feature-off-animations) .inbox-detail[open]:not(.is-leaving) .inbox-detail-close{
+  animation:inboxCloseReveal .36s .1s cubic-bezier(.2,1,.25,1) both;
+ }
+ html:not(.feature-off-animations) .inbox-detail[open].is-leaving{
+  animation:inboxReaderDismiss .26s cubic-bezier(.4,0,1,1) both;
+ }
+ html:not(.feature-off-animations) .inbox-detail[open].is-leaving::backdrop{
+  animation:inboxBackdropDismiss .26s ease-in both;
+ }
+ @keyframes inboxReaderReveal{
+  from{opacity:0;transform:translate3d(0,34px,0) scale(.985)}
+  to{opacity:1;transform:translate3d(0,0,0) scale(1)}
+ }
+ @keyframes inboxReaderDismiss{
+  from{opacity:1;transform:translate3d(0,0,0) scale(1)}
+  to{opacity:0;transform:translate3d(0,22px,0) scale(.992)}
+ }
+ @keyframes inboxBackdropReveal{from{opacity:0}to{opacity:1}}
+ @keyframes inboxBackdropDismiss{from{opacity:1}to{opacity:0}}
+ @keyframes inboxContentReveal{
+  from{opacity:0;transform:translate3d(0,11px,0)}
+  to{opacity:1;transform:translate3d(0,0,0)}
+ }
+ @keyframes inboxCloseReveal{
+  from{opacity:.2;transform:scale(.88)}
+  to{opacity:1;transform:scale(1)}
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ .inbox-detail,.inbox-detail::backdrop,.inbox-detail-content>*,.inbox-detail-close{
+  animation:none!important;transition:none!important;
+ }
+}
