@@ -168,6 +168,14 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
      if(outcome.accepted>0)siteControls.markPushed(entry.id);
      extras?.record('push.notice',entry.id);send(res,200,outcome);return true;
    }
+   if(url.pathname==='/api/admin/app-config/history/restore'&&req.method==='POST'){
+     if(role!=='owner'){send(res,403,{error:'Відновлення доступне лише власнику'});return true}
+     if(!siteControls){send(res,503,{error:'Історія недоступна'});return true}
+     const body=await readJson(req,1100);
+     if(body.confirmRestore!==true){send(res,400,{error:'Потрібне явне підтвердження відновлення'});return true}
+     const result=siteControls.restoreHistory(body.id,body.expectedUpdatedAt);
+     send(res,200,result);return true;
+   }
    if(url.pathname==='/api/admin/app-config/history'&&req.method==='GET'){
      send(res,200,{items:siteControls?.historyView?.()||[]});return true;
    }
