@@ -1,0 +1,32 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+const root=new URL('../',import.meta.url);
+const read=path=>readFileSync(new URL(path,root),'utf8');
+test('Inbox starts despite missing optional module',()=>{
+ const script=read('install.js');
+ const callbacks={};const created=[];
+ const body={append(node){created.push(node);if(node.src&&node.onload&&!node.src.includes('notification-text.js'))node.onload();}};
+ const document={createElement(){return {src:'',onload:null,onerror:null}},body};
+ const context={document,matchMedia:()=>({matches:true}),navigator:{standalone:true},console,setTimeout(fn){callbacks.timeout=fn}};
+ vm.runInNewContext(script,context);
+ const hour=created.find(x=>x.src==='./hour-paint.js');assert.ok(hour);
+ hour.onload();created.find(x=>x.src==='./address-lookup.js').onload();
+ created.find(x=>x.src==='./data-merge.js').onload();
+ created.find(x=>x.src==='./notification-center.js').onload();
+ created.find(x=>x.src==='./app.js').onload();
+ const optional=created.find(x=>x.src==='./notification-text.js');
+ assert.ok(optional);
+ optional.onerror();
+ assert.equal(created.filter(x=>x.src==='./inbox-ui.js').length,1);
+ callbacks.timeout();
+ optional.onload();
+ assert.equal(created.filter(x=>x.src==='./inbox-ui.js').length,1);
+});
+test('Inbox has fallback descriptions and graceful migration',()=>{
+ const script=read('inbox-ui.js');
+ assert.match(script,/window\.SvitloNotificationText\|\|/);
+ assert.match(script,/typeof store\.reconcileAutomated==='function'/);
+ assert.match(script,/Inbox synchronization failed/);
+});
