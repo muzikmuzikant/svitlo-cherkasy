@@ -3,6 +3,7 @@
  */
 (function(root){'use strict';
  const NAME='svitlo-inbox-v1',STORE='messages',FALLBACK='svitlo-inbox-fallback-v1',MAX=180;
+ const LEGACY_ADMIN=/^push:svitlo-admin-/;
  const httpImage=u=>{try{const x=new URL(String(u));return x.protocol==='https:'&&x.href.length<=900?x.href:''}catch{return ''}};
  function normalize(item){
   if(!item||typeof item!=='object')return null;
@@ -87,8 +88,13 @@
  async function clearRead(){await mutate(x=>x.read,()=>null)}
  async function remove(id){await mutate(x=>x.id===id,()=>null)}
  async function reconcileAnnouncements(ids){
+  // Once Railway confirms the current publication list, remove deleted,
+  // unpublished, expired and out-of-audience admin announcements.
+  // Old manual broadcasts (pre-v7.4) used 'push:svitlo-admin-*'
+  // and otherwise could never be deleted from iPhone inbox history.
   const current=new Set(ids);
-  await mutate(x=>x.id.startsWith('notice:')&&!current.has(x.id),()=>null);
+  await mutate(x=>(x.id.startsWith('notice:')&&!current.has(x.id))||
+    LEGACY_ADMIN.test(x.id),()=>null);
  }
  root.SvitloInbox={normalize,all,add,mark,clearRead,remove,reconcileAnnouncements};
 })(typeof self!=='undefined'?self:globalThis);
