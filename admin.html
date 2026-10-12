@@ -159,6 +159,13 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  <div class="headline"><h2>Надійність графіків та джерел</h2><button type="button" class="secondary" id="sourceRefresh">Перевірити зараз</button></div>
  <p>Помилки дат (наприклад, липень замість жовтня) автоматично відправляються на перевірку, а не стають новим графіком. Попередні підтверджені дані зберігаються.</p>
  <div id="sourceOverview" class="push-state">Очікуємо перевірку…</div>
+ <section class="control-github-actions" aria-label="Стан автоматичних завдань GitHub">
+  <div class="headline"><div><h2>Автоматичні перевірки GitHub Actions</h2>
+  <p class="hint">Фактична історія імпорту графіків і публікації сайту з GitHub API.</p></div>
+  <button type="button" class="secondary" id="controlActionsRefresh">Оновити історію</button></div>
+  <div id="controlActionsList" class="control-action-list"><p class="hint">Відкрийте розділ для завантаження.</p></div>
+  <a class="control-actions-link" href="https://github.com/muzikmuzikant/svitlo-cherkasy/actions" target="_blank" rel="noopener">Відкрити всі запуски в GitHub ↗</a>
+ </section>
  <h2 style="margin-top:23px">Публікації, що потребують уваги</h2>
  <div id="sourceIssues" class="review-list"></div>
  <p class="hint">Перевірка не виправляє помилки офіційного сайту автоматично. Для ручного уточнення використовуйте тільки підтверджене джерело в редакторі.</p>
