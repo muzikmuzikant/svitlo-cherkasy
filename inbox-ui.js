@@ -14,6 +14,30 @@
   return (addrs.find(x=>x.id===p.primaryId)||addrs[0])?.queue||null
  }catch{return null}};
  function safeLink(s){try{const u=new URL(s,location.href);return u.protocol==='https:'&&(u.origin===location.origin||/(^|\.)cherkasyoblenergo\.com$/.test(u.hostname))?u.href:''}catch{return ''}}
+ // Messages about a schedule open the date inside the installed app.
+ // Older inbox entries already contain the relevant date in their stable ID.
+ function scheduleMessage(item){
+  return item.kind==='schedule'||item.kind==='push'&&/(графік|підчерг|відключення через|відновлення через|повернення світла)/i.test(item.title+' '+item.body);
+ }
+ function scheduleDate(item){
+  const match=String(item.id||'').match(/:(20\d{2}-\d{2}-\d{2})(?=:|$)/);
+  if(match){
+   const date=new Date(match[1]+'T12:00:00Z');
+   if(!Number.isNaN(date.getTime())&&date.toISOString().slice(0,10)===match[1])return match[1];
+  }
+  // Push messages without a date in the tag use the Kyiv day on which
+  // the notification arrived, not the date on which it was opened.
+  const stamp=Number.isFinite(Date.parse(item.at))?new Date(item.at):new Date();
+  const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{
+   timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit'
+  }).formatToParts(stamp).map(x=>[x.type,x.value]));
+  const kyivDay=parts.year+'-'+parts.month+'-'+parts.day;
+  if(/на завтра/i.test(item.title+' '+item.body)){
+   const d=new Date(kyivDay+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+1);
+   return d.toISOString().slice(0,10);
+  }
+  return kyivDay;
+ }
  async function refresh(){
   rows=await store.all();
   const unread=rows.filter(x=>!x.read).length;
@@ -32,7 +56,18 @@
    head.append(el('span',({schedule:'Графіки',push:'Push',emergency:'Важливе',announcement:'Оголошення'})[item.kind]||'Оновлення','inbox-kind'),el('time',time(item.at),'inbox-time'));
    card.append(head,el('strong',item.title),el('p',item.body));
    const actions=el('div','','inbox-actions'),href=safeLink(item.url);
-   if(href){const link=el('a','Переглянути ↗');link.href=href;link.rel='noopener noreferrer';link.target='_blank';actions.append(link)}
+   if(scheduleMessage(item)){
+    const view=el('button','Переглянути графік');view.type='button';
+    view.onclick=()=>{
+     window.dispatchEvent(new CustomEvent('svitlo:open-schedule',{detail:{date:scheduleDate(item)}}));
+     if(!item.read)store.mark([item.id]).then(refresh).catch(console.warn);
+    };
+    actions.append(view);
+    // The original publication remains available, but is no longer the primary action.
+    if(href){const source=el('a','Джерело ↗');source.href=href;source.rel='noopener noreferrer';source.target='_blank';actions.append(source)}
+   }else if(href){
+    const link=el('a','Офіційне джерело ↗');link.href=href;link.rel='noopener noreferrer';link.target='_blank';actions.append(link)
+   }
    if(!item.read){const b=el('button','Прочитано ✓');b.type='button';b.onclick=async()=>{await store.mark([item.id]);await refresh()};actions.append(b)}
    card.append(actions);list.append(card);
   }
