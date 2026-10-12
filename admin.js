@@ -1,7 +1,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const FILES={overrides:'manual_overrides.json',schedules:'schedules.json',addresses:'addresses.json',streets:'published_street_fallback.json',emergency:'emergency.json'};
-let server='',sessionToken='',sha='',current='',remote=false,canPublish=false,original=null,pushBusy=false;
+let server='',sessionToken='',sha='',current='',remote=false,canPublish=false,original=null,pushBusy=false,adminRole='owner';
 function message(s,good){$('result').textContent=s;$('result').style.background=good?'#e5f7ed':'#fff2db';$('result').style.color=good?'#15633e':'#825310'}
 function validate(kind,obj){
  if(!obj||typeof obj!=='object'||Array.isArray(obj))throw Error('Потрібен JSON-об’єкт');
@@ -46,7 +46,7 @@ async function diagnostics(){
 function signOut(revoke=true){
  const oldToken=sessionToken,oldServer=server;
  if(revoke&&oldToken&&oldServer){fetch(oldServer+'/api/admin/logout',{method:'POST',headers:{authorization:'Bearer '+oldToken,'content-type':'application/json'},body:'{}'}).catch(()=>{})}
- remote=false;canPublish=false;sessionToken='';sha='';
+ remote=false;canPublish=false;sessionToken='';sha='';adminRole='owner';document.body.dataset.adminRole='';
  $('adminDashboard').hidden=true;$('adminLoginScreen').hidden=false;
  $('connection').textContent='Авторизовано';$('publish').disabled=true;
  $('password').value='';setPushReady(false);
@@ -62,14 +62,14 @@ $('loginForm').onsubmit=async event=>{
    const response=await fetch(url+'/api/admin/login',{method:'POST',cache:'no-store',headers:{'content-type':'application/json'},body:JSON.stringify({password:enteredPassword})});
    const result=await response.json().catch(()=>({}));
    if(!response.ok||!result.token)throw Error(result.error||'Помилка входу: HTTP '+response.status);
-   server=url;sessionToken=result.token;
+   server=url;sessionToken=result.token;adminRole=result.role||'owner';document.body.dataset.adminRole=adminRole;
    // Verify session before revealing protected tools.
    const status=await api('status');
-   remote=true;canPublish=!!status.editingEnabled;
+   remote=true;canPublish=adminRole==='owner'&&!!status.editingEnabled;
    $('adminLoginScreen').hidden=true;$('adminDashboard').hidden=false;
-   $('connection').textContent='Увійшли · '+(canPublish?'Push + GitHub':'Push');$('connection').className='pill ok';
-   $('password').value='';setPushReady(true);
-   await Promise.all([load(),diagnostics(),refreshPushStatus(),refreshTickets()]);
+   $('connection').textContent='Увійшли · '+({owner:'Власник',editor:'Редактор',operator:'Оператор',viewer:'Перегляд'}[adminRole]||'Адміністратор');$('connection').className='pill ok';
+   $('password').value='';setPushReady(adminRole==='owner');
+   await Promise.allSettled([load(),diagnostics(),refreshPushStatus(),refreshTickets()]);
    document.dispatchEvent(new Event('svitlo:admin-ready'));
  }catch(e){sessionToken='';remote=false;canPublish=false;$('loginError').textContent=e.message;setPushReady(false)}
  finally{$('password').value='';$('connect').disabled=false;$('connect').textContent='Увійти до панелі →'}
