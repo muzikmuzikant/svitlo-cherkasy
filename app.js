@@ -521,6 +521,15 @@ async function disableNotifications(){
 }
 async function enableNotifications(){if(!('Notification' in window)){flash('Цей браузер не підтримує сповіщення');return}if(Notification.permission==='denied'){flash('Дозвольте сповіщення у налаштуваннях iPhone');return}const granted=await Notification.requestPermission();if(granted!=='granted'){flash('Дозвіл на сповіщення не надано');return}if(pushConfig){try{await updatePushSubscription();flash('Сповіщення увімкнено')}catch(e){console.warn(e);flash('Не вдалося ввімкнути сповіщення. Спробуйте пізніше')}}else flash('Нагадування увімкнено для відкритого застосунку');renderSettings()}
 // Event wiring
+// Inbox uses the existing screen and date picker; no external navigation.
+window.addEventListener('svitlo:open-schedule',event=>{
+ const wanted=event.detail?.date;
+ navigate('detail');
+ if(active==='detail'&&typeof wanted==='string'&&/^20\d{2}-\d{2}-\d{2}$/.test(wanted)){
+  const parsed=new Date(wanted+'T12:00:00Z');
+  if(!Number.isNaN(parsed.getTime())&&parsed.toISOString().slice(0,10)===wanted)showDay(wanted);
+ }
+});
 for(const b of document.querySelectorAll('[data-go]'))b.addEventListener('click',()=>navigate(b.dataset.go));
 $('weekPrev').onclick=()=>shiftDayStrip(-1);
 $('weekNext').onclick=()=>shiftDayStrip(1);
