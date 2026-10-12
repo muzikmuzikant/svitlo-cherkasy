@@ -18,14 +18,30 @@
           const app = document.createElement('script');
           app.src = './app.js';
           app.onload = () => {
-            const textScript = document.createElement('script');
-            textScript.src = './notification-text.js';
-            textScript.onload = () => {
+            // Inbox must never depend on the optional rich-copy file loading.
+            // Cached iPhone PWAs can temporarily have a mismatched script bundle.
+            let inboxStarted = false;
+            const startInbox = () => {
+              if (inboxStarted) return;
+              inboxStarted = true;
               const inboxUi = document.createElement('script');
               inboxUi.src = './inbox-ui.js';
+              inboxUi.onerror = () => {
+                const panel = document.getElementById('inboxList');
+                if (panel) panel.textContent = 'Не вдалося завантажити повідомлення. Перевірте інтернет і оновіть застосунок.';
+              };
               document.body.append(inboxUi);
             };
+            const textScript = document.createElement('script');
+            textScript.src = './notification-text.js';
+            textScript.onload = startInbox;
+            textScript.onerror = () => {
+              console.warn('Notification descriptions unavailable; starting Inbox with fallback.');
+              startInbox();
+            };
             document.body.append(textScript);
+            // Offline or stalled script requests must not leave Inbox loading forever.
+            setTimeout(startInbox, 4000);
             const updater = document.createElement('script');
             updater.src = './version-check.js';
             document.body.append(updater);

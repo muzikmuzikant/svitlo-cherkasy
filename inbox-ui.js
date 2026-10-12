@@ -1,6 +1,23 @@
 /* Full-screen inbox v7.4. Safe text rendering, deep links and offline history. */
 (()=>{'use strict';
- const $=id=>document.getElementById(id),store=window.SvitloInbox,copy=window.SvitloNotificationText;
+ const $=id=>document.getElementById(id),store=window.SvitloInbox;
+ // Keep the entire Inbox usable if an older service worker cannot load
+ // the independently published optional notification-text.js file yet.
+ const copy=window.SvitloNotificationText||(()=>{
+  const date=s=>new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(s+'T12:00:00Z'));
+  const firstPublishedAt=d=>String(d?.publications?.[0]?.publishedAt||d?.publishedAt||'');
+  const dayId=(q,d)=>'day:'+q+':'+d.date+':'+firstPublishedAt(d);
+  const changeId=(q,c)=>'change:'+q+':'+c.date+':'+(c.revisionId||c.publishedAt);
+  const hash=s=>{let h=2166136261;for(const char of String(s||'')){h^=char.charCodeAt(0);h=Math.imul(h,16777619)}return (h>>>0).toString(36)};
+  const emergencyId=e=>'emergency:'+hash(e.id||e.source)+':'+e.status+':'+e.publishedAt;
+  const hours=(d,q)=>!d||d.verified!==true?'Години уточнюються.':
+   !d.queues?.[q]?.off?.length?'Планові відключення для підчерги не зазначені.':
+   'Планові відключення: '+d.queues[q].off.map(r=>r.join('–')).join(', ')+'.';
+  return {firstPublishedAt,dayId,changeId,emergencyId,
+   tomorrowCopy:(q,d,plan)=>({content:'**Графік на '+date(d)+'**\\n\\nОператор опублікував розклад для підчерги '+q+'.\\n\\n'+hours(plan,q)+'\\n\\nПеревірте актуальні години у вкладці «Графік».'}),
+   changeCopy:(q,d,plan)=>({title:'🔄 Графік оновлено',body:'Підчерга '+q+' · Змінено години на '+date(d)+'.',content:'**Графік змінено**\\n\\nОператор оновив розклад для підчерги '+q+' на '+date(d)+'.\\n\\n'+hours(plan,q)}),
+   emergencyCopy:status=>({title:status==='ended'?'✅ Екстрені обмеження завершено':'⚠️ Екстрені відключення',body:status==='ended'?'Оператор повідомив про завершення обмежень.':'Оператор повідомив про екстрені обмеження.',content:'Перевірте офіційні повідомлення оператора, щоб дізнатися про актуальний стан.'})};
+ })();
  if(!store||!$('inboxList'))return;
  let selected='all',rows=[],notices=window.SvitloPublicConfig?.announcements||[],busy=false,lastSync=0,activeDetail=null,noticeFeedConfirmed=window.SvitloPublicConfig?.serverVerified===true,needsResync=false;
  const time=s=>new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Kyiv'}).format(new Date(s));
@@ -145,8 +162,16 @@
     incoming.push({id:'notice:'+a.id,kind:'announcement',title:(a.icon||({important:'📣',update:'✨',emergency:'⚠️',schedule:'🗓️'})[a.kind]||'💬')+' '+a.title,
      body:a.body,content:a.content,images:a.images,at:a.publishedAt,updatedAt:a.updatedAt,pinned:a.pinned,priority:a.priority,authoritative:true});
    }
-   if(incoming.length){await store.add(incoming);await store.reconcileAutomated(incoming)}
+   if(incoming.length){
+    await store.add(incoming);
+    // Older Inbox database scripts remain supported during iOS PWA updates.
+    if(typeof store.reconcileAutomated==='function')await store.reconcileAutomated(incoming);
+   }
    lastSync=Date.now();await refresh();
+  }catch(error){
+   // Partial network or migration failures must not block cached messages.
+   console.warn('Inbox synchronization failed:',error);
+   await refresh().catch(console.warn);
   }finally{busy=false;if(needsResync){needsResync=false;queueMicrotask(()=>sync().catch(console.warn))}}
  }
  function routePush(id){
