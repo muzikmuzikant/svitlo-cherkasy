@@ -24,6 +24,12 @@
  }
  function applySite(site){
   const flags=site?.flags||{},links=site?.links||{},banner=site?.banner||{};
+  const appearance=site?.appearance||{},validColor=x=>typeof x==='string'&&/^#[0-9a-fA-F]{6}$/.test(x);
+  for(const [css,key,defaultValue] of [['--blue','accent','#377dff'],['--bg','background','#f6f8fc'],['--surface','surface','#ffffff']]){
+   document.documentElement.style.setProperty(css,validColor(appearance[key])?appearance[key]:defaultValue);
+  }
+  document.documentElement.dataset.siteDensity=appearance.density==='compact'?'compact':'comfortable';
+  document.documentElement.dataset.siteRounded=appearance.rounded===false?'false':'true';
   const featureKeys=["inbox","inboxFilters","inboxHistory","sharing","sharePreview","copySchedule","help","feedback","addressSearch","pushPrompt","pushSettings","tomorrowPreview","quickAddresses","homePlaces","dailyStats","overviewTimeline","statusCountdown","weekNavigation","dayStats","scheduleLegend","offlineStatus","scheduleSource","manualRefresh","homeQuickActions","animations"];
   for(const key of featureKeys)document.documentElement.classList.toggle('feature-off-'+key,flags[key]===false);
   document.documentElement.dataset.featureConfigLoaded='true';
