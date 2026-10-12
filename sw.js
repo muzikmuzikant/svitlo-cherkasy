@@ -40,9 +40,10 @@ self.addEventListener('push',event=>{
  // iOS requires a visible notification for every push.
  const tag=String(msg.tag||msg.title).slice(0,70);
  const id=typeof msg.notificationId==='string'&&/^notice:[A-Za-z0-9_-]{6,64}$/.test(msg.notificationId)?msg.notificationId:'push:'+tag;
+ const inboxAllowed=msg.inbox!==false;
  event.waitUntil(Promise.all([
-  self.registration.showNotification(String(msg.title).slice(0,85),{body:String(msg.body).slice(0,220),icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',tag,data:{url:msg.url||self.registration.scope,inboxId:id}}),
-  self.SvitloInbox.add({id,title:msg.title,body:msg.body,kind:id.startsWith('notice:')?'announcement':'push',at:new Date().toISOString(),url:msg.url||self.registration.scope})
+  self.registration.showNotification(String(msg.title).slice(0,85),{body:String(msg.body).slice(0,220),icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',tag,data:{url:msg.url||self.registration.scope,inboxId:inboxAllowed?id:null,inbox:inboxAllowed}}),
+  (inboxAllowed?self.SvitloInbox.add({id,title:msg.title,body:msg.body,kind:id.startsWith('notice:')?'announcement':'push',at:new Date().toISOString(),url:msg.url||self.registration.scope}):Promise.resolve())
    .then(()=>self.clients.matchAll({type:'window',includeUncontrolled:true}))
    .then(clients=>clients.forEach(client=>client.postMessage({type:'SVITLO_INBOX_UPDATED'})))
    .catch(error=>console.warn('Inbox save:',error))
@@ -52,10 +53,11 @@ self.addEventListener('notificationclick',event=>{
  event.notification.close();
  event.waitUntil((async()=>{
   const id=String(event.notification.data?.inboxId||'').slice(0,150);
+  const inboxAllowed=event.notification.data?.inbox!==false;
   const tabs=await self.clients.matchAll({type:'window',includeUncontrolled:true});
   for(const tab of tabs){if(tab.url.startsWith(self.registration.scope)){
    await tab.focus();
-   tab.postMessage({type:'SVITLO_OPEN_INBOX',id});
+   if(inboxAllowed)tab.postMessage({type:'SVITLO_OPEN_INBOX',id});
    return;
   }}
   const link=new URL(self.registration.scope);
