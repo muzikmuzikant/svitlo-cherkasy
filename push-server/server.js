@@ -166,7 +166,7 @@ const server=http.createServer(async(req,res)=>{
  if(req.url==='/api/data/status'&&req.method==='GET'){
   response(res,200,officialSchedules.status());return;
  }
- if((req.url==='/api/data/schedules.json'||req.url==='/api/data/source_review.json')&&req.method==='GET'){
+ if((new URL(req.url,'http://localhost').pathname==='/api/data/schedules.json'||new URL(req.url,'http://localhost').pathname==='/api/data/source_review.json')&&req.method==='GET'){
   const doc=req.url.includes('source_review')?officialSchedules.review():officialSchedules.schedule();
   if(!doc){response(res,503,{error:'Railway schedule snapshot is not yet ready'});return}
   response(res,200,doc);return;
