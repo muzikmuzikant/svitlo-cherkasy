@@ -426,3 +426,18 @@ main{max-width:1840px!important;padding-inline:clamp(16px,2.5vw,46px)}
 .ops-preview[data-layout="split"] .ops-preview-mark{grid-column:1;grid-row:1/span 4;align-self:center}
 .ops-preview[data-layout="split"] strong,.ops-preview[data-layout="split"] p,.ops-preview[data-layout="split"] small{grid-column:2;min-width:0}
 @media(max-width:650px){.ops-preview[data-layout="split"]{grid-template-columns:65px minmax(0,1fr)}}
+
+/* v7.8.3: revision timeline is separate from the action audit. */
+.control-history-warning{border:1px solid #cddff9;background:#eff6ff;color:#37618b;
+ border-radius:14px;padding:13px 17px;margin:12px 0;font-size:12px;line-height:1.6}
+.control-revision{display:flex;align-items:center;justify-content:space-between;gap:16px;
+ border:1px solid #e5edf7;background:#fafcff;border-radius:17px;padding:17px 20px;
+ min-width:0}
+.control-revision-info{display:grid;gap:7px;min-width:0}
+.control-revision-info time{font-size:11px;color:#7292ba}
+.control-revision-info strong{font-size:13px;color:#28496d}
+.control-revision-info small{font-size:11px;color:#7f90aa}
+.control-revision-diff{font-size:11px!important;color:#4776a9;margin:3px 0!important;
+ overflow-wrap:anywhere;line-height:1.5}
+.control-restore-btn{flex:none;font-size:12px;min-height:41px}
+@media(max-width:600px){.control-revision{flex-wrap:wrap;padding:14px}.control-restore-btn{width:100%}}
