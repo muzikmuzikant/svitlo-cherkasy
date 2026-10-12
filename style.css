@@ -257,3 +257,57 @@ html{scrollbar-width:none;overflow-x:clip;overscroll-behavior-x:none;scroll-beha
 }
 .favorite-btn{font-size:18px!important;color:#7d97b5!important}
 .favorite-btn.selected{color:#e5a23f!important;background:#fff6df!important}
+
+
+/* v7.7: a clear, action-oriented Push invitation on the home screen. */
+.push-invite{display:flex;align-items:flex-start;gap:17px;margin:17px 0 18px;padding:20px;border:1px solid #bcd9ff;border-radius:23px;background:linear-gradient(118deg,#eff6ff 0%,#e0efff 76%,#d7e8ff);box-shadow:0 12px 31px #3679cf10}
+.push-invite[hidden]{display:none!important}
+.push-invite-art{position:relative;width:62px;height:62px;border-radius:21px;background:#fff;display:grid;place-items:center;flex:none;box-shadow:0 9px 19px #4d89ce1d;transform:rotate(-5deg)}
+.push-invite-bell{font-size:29px;line-height:1}
+.push-invite-spark{position:absolute;right:-7px;top:-8px;font-size:19px;color:#497ff5}
+.push-invite-copy{flex:1;min-width:0}
+.push-invite-copy strong{font-size:15px;line-height:1.4;color:#1d467f;font-weight:850;display:block}
+.push-invite-copy p{color:#5c779b;font-size:12px;line-height:1.55;margin:7px 0 13px}
+.push-invite-copy button{border:0;border-radius:13px;background:#317af6;color:#fff;font-size:12px;font-weight:790;padding:12px 15px;min-height:42px;touch-action:manipulation}
+.push-invite-copy button span{padding-left:9px}
+.share-preview-dialog{border:0;border-radius:27px;padding:0;background:#f5f8ff;color:#213c63;max-width:min(510px,calc(100vw - 20px));width:calc(100vw - 20px);max-height:93dvh;box-shadow:0 30px 110px #0c234f8c;overscroll-behavior:contain}
+.share-preview-dialog::backdrop{background:#091b34b8;backdrop-filter:blur(7px)}
+.share-preview-head{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;padding:24px 24px 15px}
+.share-preview-head h2{font-size:23px;letter-spacing:-.8px;margin:5px 0 4px}
+.share-preview-head p{font-size:12px;color:#7185a4;margin:0;line-height:1.5}
+.share-preview-eyebrow{font-size:10px;font-weight:800;letter-spacing:.17em;color:#397ac2}
+.share-preview-x{border:0;background:#e6eefc;border-radius:50%;width:36px;height:36px;min-width:36px;font-size:22px;color:#4f709a;display:grid;place-items:center}
+.share-preview-scroll{background:#e8effb;max-height:58dvh;overflow:auto;padding:17px 27px;display:flex;justify-content:center;align-items:flex-start;box-shadow:inset 0 1px 12px #13234f06}
+.share-preview-scroll img{width:100%;max-width:355px;max-height:none;border-radius:18px;object-fit:contain;box-shadow:0 10px 35px #12366120}
+.share-preview-actions{padding:19px 24px calc(18px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.share-preview-actions button{border:0;min-height:46px;border-radius:14px;font-size:13px;font-weight:830}
+.share-preview-save{background:#e2edfc;color:#356aaf}
+.share-preview-send{background:#347cff;color:#fff}
+.share-preview-actions button[hidden]{display:none!important}
+.share-preview-actions:has(.share-preview-send[hidden]){grid-template-columns:1fr}
+html.feature-off-inbox [data-go="updates"], html.feature-off-inbox #updates{display:none!important}
+html.feature-off-inboxFilters #updates .inbox-toolbar .inbox-filters{display:none!important}
+html.feature-off-inboxHistory #updates .inbox-history{display:none!important}
+html.feature-off-sharing #shareToday,html.feature-off-sharing #shareDetail{display:none!important}
+html.feature-off-copySchedule #copyToday{display:none!important}
+html.feature-off-help a[data-managed-link="help"]{display:none!important}
+html.feature-off-feedback a[data-managed-link="feedback"],html.feature-off-feedback a[href*="feedback.html"]{display:none!important}
+html.feature-off-addressSearch #addFromHome,html.feature-off-addressSearch #addFromSettings{display:none!important}
+html.feature-off-pushPrompt #pushInvite{display:none!important}
+html.feature-off-pushSettings .settings-push-controls{display:none!important}
+html.feature-off-tomorrowPreview .tomorrow-preview{display:none!important}
+html.feature-off-quickAddresses .home-shortcuts{display:none!important}
+html.feature-off-homePlaces #placeList{display:none!important}
+html.feature-off-dailyStats #home .stats-row{display:none!important}
+html.feature-off-overviewTimeline #home .overview-card{display:none!important}
+html.feature-off-statusCountdown #heroCountdown{display:none!important}
+html.feature-off-weekNavigation #detail .calendar-arrows,html.feature-off-weekNavigation #detail .calendar-shortcuts{display:none!important}
+html.feature-off-dayStats #detailDayStat{display:none!important}
+html.feature-off-scheduleLegend #detail .legend,html.feature-off-scheduleLegend #home .legend{display:none!important}
+html.feature-off-offlineStatus #offlineChip{display:none!important}
+html.feature-off-scheduleSource #sourceStamp,html.feature-off-scheduleSource #detailUpdated{display:none!important}
+html.feature-off-manualRefresh #syncNow,html.feature-off-manualRefresh #refreshDetail,html.feature-off-manualRefresh #manualRefresh{display:none!important}
+html.feature-off-homeQuickActions .home-actions{display:none!important}
+html.feature-off-animations *,html.feature-off-animations *::before,html.feature-off-animations *::after{transition-duration:0ms!important;animation-duration:0ms!important}
+@media(max-width:420px){.push-invite{padding:16px;gap:12px}.push-invite-art{width:51px;height:51px;border-radius:16px}.push-invite-bell{font-size:25px}.share-preview-head{padding:19px 17px 14px}.share-preview-actions{padding:16px}}
+@media(prefers-reduced-motion:reduce){.push-invite-art{transform:none}}
