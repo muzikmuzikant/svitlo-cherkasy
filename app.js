@@ -232,8 +232,8 @@ function renderQuickPlaces(){
  const host=$('homeQuickPlaces');if(!host)return;
  host.replaceChildren();
  if(!addresses.length){host.append(el('span','quick-place-empty','Додайте адресу, щоб перемикатися одним дотиком'));return}
- addresses.forEach(item=>{
-  const button=el('button','quick-place'+(primary()?.id===item.id?' selected':''),label(item));
+ [...addresses].sort((a,b)=>Number(!!b.favorite)-Number(!!a.favorite)).forEach(item=>{
+  const button=el('button','quick-place'+(primary()?.id===item.id?' selected':''),(item.favorite?'★  ':'')+label(item));
   button.type='button';button.dataset.queue=item.queue||'';
   button.setAttribute('aria-pressed',String(primary()?.id===item.id));
   button.onclick=()=>{
@@ -492,13 +492,19 @@ let sheetScroll=0;
 function showSheet(dialog){if(!document.body.classList.contains('sheet-open'))sheetScroll=window.scrollY;dialog.showModal();document.body.classList.add('sheet-open');document.body.style.position='fixed';document.body.style.top=`-${sheetScroll}px`;document.body.style.width='100%'}
 function unlockSheet(){if($('addressSheet').open||$('placesSheet').open)return;document.body.classList.remove('sheet-open');document.body.style.position='';document.body.style.top='';document.body.style.width='';window.scrollTo({top:sheetScroll,behavior:'instant'})}
 function closeSheet(dialog){if(dialog.open)dialog.close();unlockSheet()}
-function saveAddress(event){event.preventDefault();const r=checkLookup(),queue=['exact','street'].includes(r.status)?r.queue:$('manualQueue').value;if(!QUEUES.includes(queue)){flash('Укажіть підчергу для адреси');return}const a={id:editId||id(),nickname:$('nickname').value.trim(),street:$('street').value.trim(),house:$('house').value.trim(),settlement:normTown(town())==='слобода'?'Слобода':town(),queue,method:r.status==='exact'?'automatic':r.status==='street'?'street-auto':r.status==='possible'&&r.queues?.includes(queue)?'street-choice':'manual'};if(editId){const idx=addresses.findIndex(x=>x.id===editId);if(idx>=0)addresses[idx]=a}else addresses.push(a);if(!primary()||!editId)prefs.primaryId=a.id;saveAddresses();savePrefs();closeSheet($('addressSheet'));render();flash(['exact','street'].includes(r.status)?`Підчергу ${queue} знайдено`:'Адресу збережено');if(!editId)navigate('detail');updatePushSubscription().catch(()=>{});}
+function saveAddress(event){event.preventDefault();const r=checkLookup(),queue=['exact','street'].includes(r.status)?r.queue:$('manualQueue').value;if(!QUEUES.includes(queue)){flash('Укажіть підчергу для адреси');return}const a={id:editId||id(),nickname:$('nickname').value.trim(),street:$('street').value.trim(),house:$('house').value.trim(),settlement:normTown(town())==='слобода'?'Слобода':town(),queue,method:r.status==='exact'?'automatic':r.status==='street'?'street-auto':r.status==='possible'&&r.queues?.includes(queue)?'street-choice':'manual',favorite:editId?addresses.find(x=>x.id===editId)?.favorite===true:false};if(editId){const idx=addresses.findIndex(x=>x.id===editId);if(idx>=0)addresses[idx]=a}else addresses.push(a);if(!primary()||!editId)prefs.primaryId=a.id;saveAddresses();savePrefs();closeSheet($('addressSheet'));render();flash(['exact','street'].includes(r.status)?`Підчергу ${queue} знайдено`:'Адресу збережено');if(!editId)navigate('detail');updatePushSubscription().catch(()=>{});}
 function deleteAddress(){if(!editId||!confirm('Видалити цю адресу?'))return;addresses=addresses.filter(x=>x.id!==editId);if(prefs.primaryId===editId)prefs.primaryId=addresses[0]?.id||null;saveAddresses();savePrefs();closeSheet($('addressSheet'));navigate('home');flash('Адресу видалено');if(!primary())disableNotifications().catch(console.warn);else updatePushSubscription().catch(console.warn)}
 function movePlace(id,direction){const i=addresses.findIndex(x=>x.id===id);const j=i+direction;if(i<0||j<0||j>=addresses.length)return;[addresses[i],addresses[j]]=[addresses[j],addresses[i]];saveAddresses();openPickerContent();renderHome()}
 function openPickerContent(){const root=$('placesOptions');root.replaceChildren();for(const [i,a] of addresses.entries()){
  const row=el('div','place-option');row.draggable=true;row.dataset.id=a.id;
  const choose=el('button','place-choose');const txt=el('span');txt.append(el('strong','',label(a)),el('small','',fullAddress(a)));choose.append(txt,el('span','',a.id===primary()?.id?'✓':'›'));choose.onclick=()=>{prefs.primaryId=a.id;savePrefs();closeSheet($('placesSheet'));render();updatePushSubscription().catch(()=>{})};row.append(choose);
- const moves=el('span','place-moves');for(const [n,txtval] of [[-1,'↑'],[1,'↓']]){const b=el('button','move-btn',txtval);b.type='button';b.disabled=n===-1?i===0:i===addresses.length-1;b.setAttribute('aria-label',n<0?'Перемістити вище':'Перемістити нижче');b.onclick=()=>movePlace(a.id,n);moves.append(b)}row.append(moves);
+ const moves=el('span','place-moves');
+ const favorite=el('button','move-btn favorite-btn'+(a.favorite?' selected':''),a.favorite?'★':'☆');
+ favorite.type='button';favorite.title=a.favorite?'Прибрати з улюблених':'Додати до улюблених';
+ favorite.setAttribute('aria-label',favorite.title);
+ favorite.onclick=()=>{a.favorite=!a.favorite;saveAddresses();openPickerContent();renderHome()};
+ moves.append(favorite);
+ for(const [n,txtval] of [[-1,'↑'],[1,'↓']]){const b=el('button','move-btn',txtval);b.type='button';b.disabled=n===-1?i===0:i===addresses.length-1;b.setAttribute('aria-label',n<0?'Перемістити вище':'Перемістити нижче');b.onclick=()=>movePlace(a.id,n);moves.append(b)}row.append(moves);
  row.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',a.id);e.dataTransfer.effectAllowed='move'});row.addEventListener('dragover',e=>e.preventDefault());row.addEventListener('drop',e=>{e.preventDefault();const from=e.dataTransfer.getData('text/plain');const at=addresses.findIndex(x=>x.id===from),to=addresses.findIndex(x=>x.id===a.id);if(at<0||to<0||at===to)return;const [m]=addresses.splice(at,1);addresses.splice(to,0,m);saveAddresses();openPickerContent();renderHome()});root.append(row)}}
 function openPicker(){openPickerContent();showSheet($('placesSheet'))}
 
@@ -709,5 +715,9 @@ fillQueueSelect();
 setInterval(()=>{renderHome();if(active==='detail')renderDetail();checkNotifications()},30_000);
 setInterval(()=>{if(!document.hidden)refreshData()},5*60_000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();refreshData();checkNotifications()}});
-window.addEventListener('online',()=>{renderFreshness();refreshData(true)});window.addEventListener('offline',renderFreshness);
+window.addEventListener('online',()=>{
+  renderFreshness();flash('Зв’язок відновлено. Оновлюємо графіки та повідомлення…');
+  refreshData(true);
+  window.dispatchEvent(new Event('svitlo:refresh-content'));
+ });window.addEventListener('offline',renderFreshness);
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js',{scope:'./'}).then(reg=>{swRegistration=reg}).catch(console.warn);

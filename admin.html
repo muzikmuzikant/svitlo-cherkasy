@@ -84,6 +84,8 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
   <div class="ops-activity-chart" id="opsActivityChart" role="img" aria-label="Кількість адміністративних дій за останні сім днів"></div>
   <div class="ops-dash-section-header"><h3>Останні дії</h3><button type="button" class="secondary" data-ops-jump="audit">Увесь журнал ›</button></div>
   <div class="ops-activity-feed" id="opsActivityFeed"></div>
+  <div class="ops-dash-section-header"><h3>Історія версій застосунку</h3><span>Перевірені випуски</span></div>
+  <div class="ops-release-history" id="opsReleaseHistory"><p>Завантажуємо список версій…</p></div>
  </div>
 </section>
 <section class="card" data-admin-panel="sources" hidden>
@@ -121,7 +123,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
    <div class="ops-fields">
     <div class="two">
      <div class="field"><label for="opsMode">Режим</label><select id="opsMode"><option value="full">Повний екран</option><option value="limited">Часткові роботи (банер)</option><option value="incident">Термінове повідомлення</option></select></div>
-     <div class="field"><label for="opsTheme">Оформлення</label><select id="opsTheme"><option value="blue">Синя</option><option value="midnight">Темна</option><option value="light">Світла</option><option value="violet">Фіолетова</option></select></div>
+     <div class="field"><label for="opsTheme">Оформлення</label><select id="opsTheme"><option value="blue">Синя</option><option value="midnight">Темна</option><option value="light">Світла</option><option value="violet">Фіолетова</option><option value="custom">Своя палітра</option></select></div>
     </div>
     <div class="two">
      <div class="field"><label for="opsIcon">Іконка / емодзі</label><input id="opsIcon" maxlength="18" value="✨" placeholder="⚡"></div>
@@ -183,9 +185,54 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
      <div class="field"><label for="opsNoticeImageUrl">Або додати HTTPS-посилання</label><div class="flex"><input id="opsNoticeImageUrl" type="url" placeholder="https://..."><button type="button" class="secondary" id="opsAddImageUrl">+</button></div></div>
     </div><div id="opsPhotoGallery" class="ops-photo-grid"></div>
    </div>
-   <div class="ops-message-preview"><div class="panel-eyebrow">ПЕРЕГЛЯД У «ВХІДНИХ»</div><strong id="opsEditorPreviewTitle">Заголовок</strong><p id="opsEditorPreviewBody">Короткий текст повідомлення</p></div>
+   <div class="ops-message-preview"><div class="panel-eyebrow">ПЕРЕГЛЯД У «ВХІДНИХ»</div><strong id="opsEditorPreviewTitle">Заголовок</strong><p id="opsEditorPreviewBody">Короткий текст повідомлення</p>
+ <div class="ops-ios-push"><span>⚡ СВІТЛО ЧЕРКАСИ · ТЕПЕР</span><strong id="opsPreviewPushTitle">Назва сповіщення</strong><p id="opsPreviewPushBody">Текст Push для пристрою</p></div>
+ <div class="ops-rich-preview"><strong>Повний текст</strong><div id="opsRichContentPreview"></div></div>
+ <div class="flex ops-preview-actions"><button type="button" class="secondary" id="opsPreviewFull">Попередній перегляд на весь екран</button><button type="button" class="secondary" id="opsTestNotice">Тестовий Push собі</button></div>
+ </div>
   </div>
  </div>
+ <section class="ops-section ops-site-management" aria-labelledby="siteManagementTitle">
+ <div class="headline"><div><h2 id="siteManagementTitle">⚙️ Налаштування застосунку</h2><p class="hint">Зміни посилань, доступності розділів і банерів без редагування коду.</p></div></div>
+ <h3>Основні посилання</h3>
+ <div class="two">
+  <div class="field"><label for="opsLinkHelp">Центр допомоги</label><input id="opsLinkHelp" placeholder="./help.html"></div>
+  <div class="field"><label for="opsLinkFeedback">Зв'язок із нами</label><input id="opsLinkFeedback" placeholder="./feedback.html"></div>
+ </div>
+ <div class="field"><label for="opsLinkOfficial">Офіційний сайт оператора</label><input id="opsLinkOfficial" placeholder="https://..."></div>
+ <h3>Доступність модулів</h3>
+ <div class="ops-flags">
+  <label><input id="opsFlagInbox" type="checkbox" checked> 🔔 Центр повідомлень</label>
+  <label><input id="opsFlagSharing" type="checkbox" checked> 📤 Поширення графіків</label>
+  <label><input id="opsFlagHelp" type="checkbox" checked> ❔ Центр допомоги</label>
+ </div>
+ <h3>Інформаційний банер / нова версія</h3>
+ <label class="ops-toggle"><span><strong>Показувати банер у застосунку</strong><small>Може вести до довідки, опису оновлення або іншої сторінки.</small></span><input id="opsBannerActive" type="checkbox"></label>
+ <div class="two">
+  <div class="field"><label for="opsBannerTitle">Заголовок</label><input id="opsBannerTitle" maxlength="90"></div>
+  <div class="field"><label for="opsBannerButton">Текст кнопки</label><input id="opsBannerButton" maxlength="38"></div>
+ </div>
+ <div class="field"><label for="opsBannerBody">Опис</label><textarea id="opsBannerBody" rows="2" maxlength="260"></textarea></div>
+ <div class="field"><label for="opsBannerUrl">Посилання з кнопки (HTTPS або ./)</label><input id="opsBannerUrl" placeholder="./help.html"></div>
+ </section>
+ <section class="ops-section ops-maintenance-custom" aria-labelledby="opsVisualTitle">
+ <h2 id="opsVisualTitle">🎨 Оформлення та планування техробіт</h2>
+ <div class="two ops-colors">
+  <div class="field"><label for="opsColorBackground">Фон екрана</label><input id="opsColorBackground" type="color" value="#143463"></div>
+  <div class="field"><label for="opsColorForeground">Колір тексту</label><input id="opsColorForeground" type="color" value="#ffffff"></div>
+ </div>
+ <div class="field"><label for="opsColorAccent">Акцентний колір</label><input id="opsColorAccent" type="color" value="#78aaff"></div>
+ <label class="ops-toggle"><span><strong>Попереджати про заплановані роботи</strong><small>Якщо час початку в майбутньому, користувач побачить попереджувальний банер.</small></span><input id="opsMaintenanceWarn" type="checkbox" checked></label>
+ <div class="ops-flags">
+  <label><input id="opsDisableInbox" type="checkbox"> Призупинити «Вхідні»</label>
+  <label><input id="opsDisableSearch" type="checkbox"> Призупинити пошук адрес</label>
+  <label><input id="opsDisableHelp" type="checkbox"> Призупинити допомогу</label>
+ </div>
+ </section>
+ <section class="ops-section ops-revisions">
+ <div class="headline"><div><h2>🕘 Історія змін</h2><p class="hint">Останні серверні редакції оголошень і налаштувань. Історія зберігається у Railway.</p></div><button type="button" class="secondary" id="opsHistoryRefresh">Оновити</button></div>
+ <div id="opsHistoryList" class="ops-history-list"><p class="hint">Завантаження історії…</p></div>
+ </section>
  <div class="ops-bottom"><span class="push-state" id="opsMessageStatus" role="status">Завантаження налаштувань…</span><div class="flex"><button type="button" id="opsReload" class="secondary">Скасувати зміни</button><button type="button" id="opsSave">Зберегти налаштування</button></div></div>
 </section>
 <section class="card" data-admin-panel="audit" hidden><div class="headline"><h2>Журнал дій</h2><button type="button" class="secondary" id="auditRefresh">Оновити</button></div>

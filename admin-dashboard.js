@@ -60,6 +60,17 @@
   });
   if(!feed.childElementCount)feed.append(el('p','Останніх дій немає.','hint'));
  }
+ function showVersions(data){
+  const host=$('opsReleaseHistory');if(!host)return;host.replaceChildren();
+  const rows=Array.isArray(data?.versions)?data.versions:[];
+  if(!rows.length){host.append(el('p','Історія версій поки недоступна.'));return}
+  for(const v of rows.slice(0,14)){
+   const card=el('article','','ops-release-item');
+   card.append(el('strong','v'+v.version+' · '+v.title),el('time',v.date));
+   if(v.changes?.length)card.append(el('small',v.changes.join(' · ')));
+   host.append(card);
+  }
+ }
  async function refresh(){
   if(busy||typeof remote==='undefined'||!remote)return;
   busy=true;lastFetched=Date.now();
@@ -71,6 +82,9 @@
    const value=x=>x.status==='fulfilled'?x.value:null;
    showServices(value(monitor),value(release),value(config));
    showActivity(value(audit));
+   const versions=await fetch('./data/release_history.json?dashboard='+Date.now(),{cache:'no-store'})
+    .then(r=>r.ok?r.json():null).catch(()=>null);
+   showVersions(versions);
   }catch(error){console.warn('Admin dashboard:',error)}
   finally{busy=false}
  }

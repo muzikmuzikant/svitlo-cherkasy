@@ -234,3 +234,26 @@ html{scrollbar-width:none;overflow-x:clip;overscroll-behavior-x:none;scroll-beha
 .schedule-share{border:1px solid #d9e6f6;color:#2e78cb;background:#fff;border-radius:11px;padding:10px 12px;white-space:nowrap;font-size:12px;font-weight:750;touch-action:manipulation}
 @media(max-width:375px){.home-actions{grid-template-columns:1fr}.tomorrow-card{padding:14px}.home-shortcuts .small-source{display:none}}
 @media(prefers-reduced-motion:reduce){.tomorrow-card:active{transform:none}}
+
+
+/* Server-managed optional content, update banners and custom maintenance colors */
+.svitlo-managed-banner,.svitlo-modules-banner{display:flex;align-items:center;gap:12px;margin:12px 0;border:1px solid #cbdffd;border-radius:18px;background:#ecf5ff;padding:15px;color:#245488;box-shadow:0 8px 28px #3066a211}
+.svitlo-managed-banner .managed-banner-text{display:grid;gap:4px;min-width:0;flex:1}
+.svitlo-managed-banner strong{font-size:13px;font-weight:800}
+.svitlo-managed-banner small{font-size:11px;line-height:1.5;color:#6485a7}
+.svitlo-managed-banner>a{flex:none;padding:11px 13px;border-radius:11px;background:#397ced;color:#fff;font-size:12px;font-weight:750}
+.svitlo-modules-banner{font-size:12px;background:#fff3e2;border-color:#f0d9b1;color:#805f30}
+.maintenance-screen[data-theme="custom"]{background:var(--maintenance-bg,#143463)!important;color:var(--maintenance-fg,#fff)!important}
+.maintenance-screen[data-theme="custom"] h1,.maintenance-screen[data-theme="custom"] p,.maintenance-screen[data-theme="custom"] small{color:var(--maintenance-fg,#fff)!important}
+.maintenance-screen[data-theme="custom"] .maintenance-symbol{background:var(--maintenance-accent,#78aaff)}
+
+/* Full-screen rich notification reading on iPhone */
+@media(max-width:600px){
+ .inbox-detail{inset:0!important;margin:0!important;border-radius:0!important;
+  max-width:100vw!important;width:100vw!important;max-height:100dvh!important;height:100dvh!important;
+  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)!important}
+ .inbox-detail-content{padding:34px 22px 42px}
+ .inbox-detail-close{top:calc(12px + env(safe-area-inset-top))}
+}
+.favorite-btn{font-size:18px!important;color:#7d97b5!important}
+.favorite-btn.selected{color:#e5a23f!important;background:#fff6df!important}

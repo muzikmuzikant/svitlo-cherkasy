@@ -3,6 +3,7 @@
  */
 import crypto from 'node:crypto';
 import {originPolicy} from './origins.js';
+import {validateAppConfig} from './app-config.js';
 const PATHS={
  overrides:'data/manual_overrides.json',
  schedules:'data/schedules.json',
@@ -15,7 +16,7 @@ const SESSIONS=new Map();
 const SESSION_TTL=12*60*60*1000;
 const MAX_SESSIONS=100;
 const now=()=>Date.now();
-function expireSessions(){for(const [token,expires] of SESSIONS)if(expires<=now())SESSIONS.delete(token)}
+function expireSessions(){for(const [token,session] of SESSIONS)if(session.expires<=now())SESSIONS.delete(token)}
 const ADMIN_PASSWORD=process.env.ADMIN_PASSWORD||'';
 const GH_TOKEN=process.env.GITHUB_TOKEN||'';
 const REPO=process.env.GITHUB_REPOSITORY||'';
@@ -23,10 +24,15 @@ const BRANCH=process.env.GITHUB_BRANCH||'main';
 const origin=process.env.APP_ORIGIN||'';
 function send(res,status,body){const headers={'content-type':'application/json; charset=utf-8','cache-control':'no-store','vary':'Origin'};if(res._allowedAppOrigin)headers['access-control-allow-origin']=res._allowedAppOrigin;res.writeHead(status,headers);res.end(JSON.stringify(body))}
 function authCompare(received){
- if(!ADMIN_PASSWORD||ADMIN_PASSWORD.length<7)return false;
  const a=crypto.createHash('sha256').update(received).digest();
- const b=crypto.createHash('sha256').update(ADMIN_PASSWORD).digest();
- return crypto.timingSafeEqual(a,b);
+ const passwords=[['owner',ADMIN_PASSWORD],['editor',process.env.EDITOR_PASSWORD],
+  ['operator',process.env.OPERATOR_PASSWORD],['viewer',process.env.VIEWER_PASSWORD]];
+ for(const [role,password] of passwords){
+  if(typeof password!=='string'||password.length<(role==='owner'?7:12))continue;
+  const b=crypto.createHash('sha256').update(password).digest();
+  if(crypto.timingSafeEqual(a,b))return role;
+ }
+ return null;
 }
 const repoValid=()=>/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(REPO);
 const isOfficial=url=>typeof url==='string'&&/^https:\/\/(?:www\.)?cherkasyoblenergo\.com\//.test(url);
@@ -68,7 +74,8 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    if(!ADMIN_PASSWORD||ADMIN_PASSWORD.length<7){send(res,503,{error:'У Railway не задано ADMIN_PASSWORD (мінімум 7 символів).'});return true}
    try{
      const body=await readJson(req,1024);
-     if(!authCompare(String(body.password||''))){
+     const role=authCompare(String(body.password||''));
+     if(!role){
        track.count++;ATTEMPTS.set(ip,track);
        send(res,401,{error:'Неправильний пароль'});return true;
      }
@@ -78,23 +85,41 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
        if(oldest)SESSIONS.delete(oldest);
      }
      const token=crypto.randomBytes(32).toString('base64url');
-     SESSIONS.set(crypto.createHash('sha256').update(token).digest('hex'),now()+SESSION_TTL);
-     send(res,200,{ok:true,token,expiresIn:SESSION_TTL/1000});return true;
+     SESSIONS.set(crypto.createHash('sha256').update(token).digest('hex'),{expires:now()+SESSION_TTL,role});
+     send(res,200,{ok:true,token,role,expiresIn:SESSION_TTL/1000});return true;
    }catch(e){send(res,e.statusCode||400,{error:'Некоректний запит входу'});return true}
  }
  const bearer=/^Bearer ([A-Za-z0-9_-]+)$/.exec(String(req.headers.authorization||''));
  const tokenHash=bearer?crypto.createHash('sha256').update(bearer[1]).digest('hex'):'';
- const expiry=SESSIONS.get(tokenHash)||0;
- if(!expiry||expiry<=now()){
-   if(expiry)SESSIONS.delete(tokenHash);
+ const session=SESSIONS.get(tokenHash)||null;
+ if(!session||session.expires<=now()){
+   if(session)SESSIONS.delete(tokenHash);
    send(res,401,{error:'Сеанс завершився. Увійдіть знову.'});return true;
  }
+ const role=session.role;
  if(url.pathname==='/api/admin/logout'&&req.method==='POST'){
    SESSIONS.delete(tokenHash);extras?.record('auth.logout');send(res,200,{ok:true});return true;
  }
+ // Every privileged route is checked server-side. Hiding UI controls alone is not security.
+ const pathName=url.pathname,method=req.method;
+ const allowed=role==='owner'
+  ||role==='viewer'&&method==='GET'
+  ||role==='operator'&&(
+   method==='GET'&&(/\/api\/admin\/(?:monitor|audit|status|feedback|help)$/.test(pathName)
+    ||pathName==='/api/admin/push/status')
+   ||method==='PATCH'&&pathName.startsWith('/api/admin/feedback/'))
+  ||role==='editor'&&!(pathName==='/api/admin/push/send'
+   ||pathName==='/api/admin/notices/send'||pathName==='/api/admin/push/test'
+   ||(pathName==='/api/admin/file'&&method!=='GET')
+   ||(pathName.startsWith('/api/admin/feedback/')&&method==='DELETE'));
+ if(!allowed){send(res,403,{error:'Недостатньо прав для цієї дії'});return true}
  try{
    if(url.pathname==='/api/admin/push/status'&&req.method==='GET'){send(res,200,manualPush.stats());return true}
    if(url.pathname==='/api/admin/push/test'&&req.method==='POST'){const output=await manualPush.test(await readJson(req));extras?.record('push.test','test notification');send(res,200,output);return true}
+   if(url.pathname==='/api/admin/notices/test'&&req.method==='POST'){
+     const result=await manualPush.preview(await readJson(req,1200));
+     extras?.record('push.preview','test to current device');send(res,200,result);return true;
+   }
    if(url.pathname==='/api/admin/push/send'&&req.method==='POST'){
      const body=await readJson(req);
      if(body.confirmSend!==true)throw Error('Підтвердіть розсилку');
@@ -139,13 +164,27 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
      if(outcome.accepted>0)siteControls.markPushed(entry.id);
      extras?.record('push.notice',entry.id);send(res,200,outcome);return true;
    }
+   if(url.pathname==='/api/admin/app-config/history'&&req.method==='GET'){
+     send(res,200,{items:siteControls?.historyView?.()||[]});return true;
+   }
    if(url.pathname==='/api/admin/app-config'&&req.method==='GET'){
      if(!siteControls){send(res,503,{error:'Керування застосунком недоступне'});return true}
      send(res,200,siteControls.get());return true;
    }
    if(url.pathname==='/api/admin/app-config'&&req.method==='PUT'){
      if(!siteControls){send(res,503,{error:'Керування застосунком недоступне'});return true}
-     const value=siteControls.update(await readJson(req,750000));send(res,200,value);return true;
+     const body=await readJson(req,750000);
+     if(role!=='owner'){
+      const old=siteControls.get(),candidate=validateAppConfig(body),current=validateAppConfig(old);
+      if(JSON.stringify(candidate.maintenance)!==JSON.stringify(current.maintenance)||
+        JSON.stringify(candidate.site)!==JSON.stringify(current.site))
+       throw Error('Лише власник може змінювати техроботи та загальні налаштування');
+      for(const item of candidate.announcements){
+       if(item.active&&item.delivery==='both'&&!item.pushSentAt)
+        throw Error('Лише власник може запускати Push-розсилку');
+      }
+     }
+     const value=siteControls.update(body);send(res,200,value);return true;
    }
    if(url.pathname==='/api/admin/help'&&req.method==='GET'){send(res,200,extras.getHelp());return true}
    if(url.pathname==='/api/admin/help'&&req.method==='PUT'){const result=extras.updateHelp(await readJson(req,70000));send(res,200,result);return true}

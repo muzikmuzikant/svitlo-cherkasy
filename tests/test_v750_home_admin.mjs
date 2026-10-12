@@ -58,7 +58,7 @@ test('new files are present in public distribution and offline PWA shell',()=>{
  assert.match(admin,/src="\.\/admin-dashboard\.js"/);
  const release=JSON.parse(load('release.json'));
  assert.match(sw,new RegExp('svitlo-cherkasy-shell-v'+release.version.replaceAll('.','\\.')));
- assert.match(release.version,/^7\.5\./);
+ assert.match(release.version,/^7\.(?:[5-9]|[1-9]\d)\./);
 });
 
 test('audit includes all agreed item IDs rather than claiming full completion',()=>{

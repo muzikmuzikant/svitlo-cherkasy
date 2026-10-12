@@ -28,12 +28,25 @@
    images:incoming.images.length?incoming.images:previous.images||[],
    pinned:previous.pinned||false,updatedAt:incoming.updatedAt||previous.updatedAt||null};
  }
- function db(){return new Promise((resolve,reject)=>{
-  if(!root.indexedDB)return reject(Error('No IndexedDB'));
-  const req=root.indexedDB.open(NAME,1);
-  req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(STORE))req.result.createObjectStore(STORE,{keyPath:'id'})};
-  req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('Database unavailable'));
- })}
+ let databasePromise=null;
+ function db(){
+  if(!root.indexedDB)return Promise.reject(Error('No IndexedDB'));
+  if(databasePromise)return databasePromise;
+  databasePromise=new Promise((resolve,reject)=>{
+   const req=root.indexedDB.open(NAME,1);
+   req.onupgradeneeded=()=>{
+    if(!req.result.objectStoreNames.contains(STORE))req.result.createObjectStore(STORE,{keyPath:'id'});
+   };
+   req.onsuccess=()=>{
+    const database=req.result;
+    database.onversionchange=()=>{database.close();databasePromise=null};
+    resolve(database);
+   };
+   req.onerror=()=>{databasePromise=null;reject(req.error||Error('Database unavailable'))};
+   req.onblocked=()=>{databasePromise=null;reject(Error('Inbox blocked by old version'))};
+  });
+  return databasePromise;
+ }
  function fallback(){try{const v=JSON.parse(root.localStorage.getItem(FALLBACK)||'[]');return Array.isArray(v)?v:[]}catch{return []}}
  function saveFallback(v){try{root.localStorage.setItem(FALLBACK,JSON.stringify(v.slice(0,MAX)))}catch{}}
  const sorted=items=>items.sort((a,b)=>Number(!!b.pinned)-Number(!!a.pinned)||String(b.at).localeCompare(String(a.at)));
@@ -53,7 +66,7 @@
   if(rows.length>MAX){await new Promise((resolve,reject)=>{
    const tx=database.transaction(STORE,'readwrite'),store=tx.objectStore(STORE);
    // Keep unread items preferentially when pruning very old entries.
-   const oldest=[...rows].sort((a,b)=>Number(!!a.read)-Number(!!b.read)||String(a.at).localeCompare(String(b.at)));
+   const oldest=[...rows].sort((a,b)=>Number(!!b.read)-Number(!!a.read)||String(a.at).localeCompare(String(b.at)));
    oldest.slice(0,rows.length-MAX).forEach(x=>store.delete(x.id));
    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
   })}

@@ -67,9 +67,84 @@
    box.append(img,remove);gallery.append(box);
   });
  }
+
+ function fillSite(site={}){
+  options('opsLinkHelp',site.links?.help||'./help.html');
+  options('opsLinkFeedback',site.links?.feedback||'./feedback.html');
+  options('opsLinkOfficial',site.links?.official||'https://www.cherkasyoblenergo.com/news');
+  check('opsFlagInbox',site.flags?.inbox!==false);
+  check('opsFlagSharing',site.flags?.sharing!==false);
+  check('opsFlagHelp',site.flags?.help!==false);
+  check('opsBannerActive',site.banner?.enabled===true);
+  options('opsBannerTitle',site.banner?.title||'Нові можливості');
+  options('opsBannerBody',site.banner?.body||'Оновлення застосунку доступне.');
+  options('opsBannerButton',site.banner?.button||'Детальніше');
+  options('opsBannerUrl',site.banner?.url||'');
+ }
+ function getSite(){return {links:{help:read('opsLinkHelp'),feedback:read('opsLinkFeedback'),official:read('opsLinkOfficial')},
+  flags:{inbox:$('opsFlagInbox').checked,sharing:$('opsFlagSharing').checked,help:$('opsFlagHelp').checked},
+  banner:{enabled:$('opsBannerActive').checked,title:read('opsBannerTitle'),body:read('opsBannerBody'),
+   button:read('opsBannerButton'),url:read('opsBannerUrl')}}}
+ function fillVisual(m){
+  options('opsColorBackground',m.colors?.background||'#143463');
+  options('opsColorForeground',m.colors?.foreground||'#ffffff');
+  options('opsColorAccent',m.colors?.accent||'#78aaff');
+  check('opsMaintenanceWarn',m.noticeBefore!==false);
+  check('opsDisableInbox',m.disabledModules?.includes('inbox'));
+  check('opsDisableSearch',m.disabledModules?.includes('address-search'));
+  check('opsDisableHelp',m.disabledModules?.includes('help'));
+ }
+ function getVisual(){
+  const disabledModules=[['inbox','opsDisableInbox'],['address-search','opsDisableSearch'],['help','opsDisableHelp']]
+   .filter(([,id])=>$(id).checked).map(([name])=>name);
+  return {colors:{background:read('opsColorBackground'),foreground:read('opsColorForeground'),
+   accent:read('opsColorAccent')},noticeBefore:$('opsMaintenanceWarn').checked,disabledModules};
+ }
+ function renderFormatted(target,text){
+  target.replaceChildren();
+  for(const line of String(text||'').split('\n').slice(0,70)){
+   const trimmed=line.trim(),heading=/^#{1,3}\s+/.test(trimmed),bullet=/^[-*]\s+/.test(trimmed);
+   const p=document.createElement(heading?'h3':'p');
+   if(bullet)p.append(document.createTextNode('• '));
+   const body=trimmed.replace(/^#{1,3}\s+|^[-*]\s+/,'');
+   for(const piece of body.split(/(\*\*[^*]{1,160}\*\*)/g)){
+    if(piece.startsWith('**')&&piece.endsWith('**')){
+     const strong=document.createElement('strong');strong.textContent=piece.slice(2,-2);p.append(strong);
+    }else p.append(document.createTextNode(piece));
+   }
+   target.append(p);
+  }
+ }
+ const fullPreview=document.createElement('dialog');fullPreview.className='ops-full-message-preview';
+ fullPreview.id='opsFullMessagePreview';document.body.append(fullPreview);
+ $('opsPreviewFull').onclick=()=>{
+  const title=document.createElement('h2');title.textContent=read('opsNoticeTitle')||'Нове повідомлення';
+  const body=document.createElement('p');body.textContent=read('opsNoticeBody');
+  const rich=document.createElement('div');renderFormatted(rich,read('opsNoticeContent'));
+  const images=document.createElement('div');images.className='ops-preview-images';
+  photos.forEach(url=>{const img=document.createElement('img');img.src=url;img.alt='Фото до повідомлення';images.append(img)});
+  const close=document.createElement('button');close.type='button';close.textContent='Закрити';
+  close.onclick=()=>fullPreview.close();
+  fullPreview.replaceChildren(close,title,body,images,rich);fullPreview.showModal();
+ };
+ $('opsTestNotice').onclick=async()=>{
+  const title=read('opsNoticeTitle'),body=read('opsNoticeBody');
+  if(!title||!body)return status('Заповніть заголовок і короткий текст для тесту.',true);
+  try{
+   if(!('serviceWorker'in navigator))throw Error('Потрібен встановлений застосунок із Push');
+   const subscription=await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+   if(!subscription?.endpoint)throw Error('На цьому пристрої немає активної Push-підписки');
+   const outcome=await api('notices/test',{method:'POST',body:JSON.stringify({title,body,endpoint:subscription.endpoint})});
+   status(outcome.accepted?'Тестовий Push надіслано цьому пристрою.':'Не вдалося надіслати: '+(outcome.error||'невідома помилка'),!outcome.accepted);
+  }catch(e){status('Тест Push: '+e.message,true)}
+ };
+
  function previewMessage(){
   $('opsEditorPreviewTitle').textContent=read('opsNoticeTitle')||'Заголовок повідомлення';
   $('opsEditorPreviewBody').textContent=read('opsNoticeBody')||'Короткий текст для користувачів';
+  $('opsPreviewPushTitle').textContent=read('opsNoticeTitle')||'Назва сповіщення';
+  $('opsPreviewPushBody').textContent=read('opsNoticeBody')||'Текст Push';
+  renderFormatted($('opsRichContentPreview'),read('opsNoticeContent'));
  }
  function previewMaintenance(){
   $('opsPreviewTitle').textContent=read('opsTitle')||'Технічні роботи';
@@ -78,18 +153,35 @@
   if(/^https:\/\//.test(url)){const img=document.createElement('img');img.src=url;img.alt='Ілюстрація техробіт';graphic.append(img)}
   else graphic.textContent=read('opsIcon')||'✨';
   $('opsPreview').dataset.theme=read('opsTheme')||'blue';
+  $('opsPreview').style.backgroundColor=read('opsTheme')==='custom'?(read('opsColorBackground')||'#143463'):'';
+  $('opsPreview').style.color=read('opsTheme')==='custom'?(read('opsColorForeground')||'#ffffff'):'';
   $('opsStatusPill').textContent=$('opsMaintenance').checked?'Зміни до техробіт':'Режим неактивний';
  }
  function fillMaintenance(m){
   check('opsMaintenance',m.enabled);options('opsTitle',m.title);options('opsMessage',m.message);
   options('opsStartsAt',local(m.startsAt));options('opsUntil',local(m.until));
   options('opsMode',m.mode||'full');options('opsTheme',m.theme||'blue');options('opsIcon',m.icon||'✨');
-  options('opsImageUrl',m.imageUrl||'');previewMaintenance();
+  options('opsImageUrl',m.imageUrl||'');fillVisual(m);previewMaintenance();
  }
+ async function refreshHistory(){
+  const host=$('opsHistoryList');if(!host)return;
+  try{
+   const result=await api('app-config/history');host.replaceChildren();
+   if(!result.items?.length){const p=document.createElement('p');p.className='hint';p.textContent='Попередніх редакцій поки немає.';host.append(p);return}
+   for(const entry of result.items.slice(0,25)){
+    const line=document.createElement('div');line.className='ops-history-item';
+    const at=document.createElement('time');at.textContent=new Date(entry.at).toLocaleString('uk-UA',{timeZone:'Europe/Kyiv',dateStyle:'medium',timeStyle:'short'});
+    const stat=document.createElement('strong');stat.textContent=entry.active+' активних з '+entry.messages+' повідомлень';
+    const tech=document.createElement('small');tech.textContent=entry.maintenance?'Техроботи були ввімкнені':'Техроботи були вимкнені';
+    line.append(at,stat,tech);host.append(line);
+   }
+  }catch(e){const p=document.createElement('p');p.className='hint';p.textContent='Історія недоступна: '+e.message;host.replaceChildren(p)}
+ }
+ $('opsHistoryRefresh').onclick=()=>refreshHistory();
  async function reload(){
   if(!remote)return;
   try{const incoming=await api('app-config');state=incoming;serverState=structuredClone(incoming);selectedId=state.announcements.find(x=>x.id===selectedId)?.id||state.announcements[0]?.id||'';
-   fillMaintenance(state.maintenance);fill();drawList();status('Дані завантажено. Можна редагувати.');
+   fillMaintenance(state.maintenance);fillSite(state.site);fill();drawList();refreshHistory().catch(console.warn);status('Дані завантажено. Можна редагувати.');
   }catch(e){status('Не вдалося завантажити редактор: '+e.message,true)}
  }
  async function uploadPhoto(file){
@@ -126,7 +218,7 @@
    }
   });
  }
- for(const id of ['opsTitle','opsMessage','opsStartsAt','opsUntil','opsMode','opsTheme','opsIcon','opsImageUrl','opsMaintenance'])$(id).addEventListener('input',previewMaintenance);
+ for(const id of ['opsTitle','opsMessage','opsStartsAt','opsUntil','opsMode','opsTheme','opsIcon','opsImageUrl','opsMaintenance','opsColorBackground','opsColorForeground','opsColorAccent'])$(id).addEventListener('input',previewMaintenance);
  $('opsPhotoUpload').onchange=async()=>{
   const files=[...$('opsPhotoUpload').files||[]];$('opsPhotoUpload').value='';
   if(!target())return status('Спочатку створіть повідомлення',true);
@@ -172,13 +264,14 @@
   if(toPush.length&&!confirm('Надіслати Push для '+toPush.length+' повідомлень?'))throw Error('Розсилку не підтверджено');
   const next={...state,maintenance:{enabled:newOn,title:read('opsTitle'),message:read('opsMessage'),
    mode:read('opsMode'),theme:read('opsTheme'),icon:read('opsIcon'),
-   imageUrl:read('opsImageUrl'),startsAt:fromLocal($('opsStartsAt').value),until:fromLocal($('opsUntil').value)}};
+   imageUrl:read('opsImageUrl'),startsAt:fromLocal($('opsStartsAt').value),until:fromLocal($('opsUntil').value),...getVisual()},site:getSite()};
   busy=true;$('opsSave').disabled=true;
   try{
    state=await api('app-config',{method:'PUT',body:JSON.stringify(next)});
    serverState=structuredClone(state);
    fill();drawList();previewMaintenance();
    status(silent?'Збережено на сервері. Синхронізація запущена.':'Збережено. Зміни опубліковані.');
+   refreshHistory().catch(console.warn);
    try{const channel=new BroadcastChannel('svitlo-content-v1');
     channel.postMessage({type:'REFRESH_APP_CONFIG',at:Date.now()});channel.close()}catch{}
    return state;

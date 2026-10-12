@@ -88,7 +88,7 @@
    card.onclick=()=>open(item.id);card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open(item.id)}};
    const head=el('div','','inbox-item-head');head.append(el('span',item.pinned?'📌 Закріплено':({schedule:'Графіки',emergency:'Важливе',announcement:'Оголошення',push:'Push'})[item.kind],'inbox-kind'),el('time',time(item.at),'inbox-time'));
    card.append(head,el('strong',item.title),el('p',item.body));
-   if(item.updatedAt&&Date.parse(item.updatedAt)>Date.parse(item.at)+60000)card.append(el('span','Оновлено ✨','inbox-kind'));
+   if(item.updatedAt&&Date.parse(item.updatedAt)>Date.parse(item.at)+1000)card.append(el('span','Оновлено ✨','inbox-kind'));
    card.append(el('span','Переглянути детальніше  →','inbox-more'));
    if(item.images?.length){const img=document.createElement('img');img.src=item.images[0];img.alt='';img.loading='lazy';img.className='inbox-cover';card.append(img)}
    root.append(card);
