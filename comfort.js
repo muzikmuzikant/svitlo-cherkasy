@@ -15,6 +15,19 @@ function validate(input){
  for(const k of Object.keys(switches)){if(typeof input[k]==='boolean')state[k]=input[k]}
 }
 validate(stored);
+function updateMotionStatus(){
+ const el=document.getElementById('settingsMotionStatus');if(!el)return;
+ if(root.classList.contains('feature-off-animations')){
+  el.textContent='Анімації вимкнені в адмінці застосунку. Увімкніть функцію «Анімації» в адмінпанелі.';
+  el.dataset.kind='limited';
+ }else if(mq.matches){
+  el.textContent='iOS зараз використовує «Зменшення руху», тому інтенсивні переходи вимкнені.';
+  el.dataset.kind='limited';
+ }else{
+  el.textContent=state.motion==='calm'?'Вибрано мінімальний рух. Перейдіть на «Жваві», щоб побачити всі ефекти.':'Анімації працюють. Спробуйте перемкнути вкладку або натиснути годину графіка.';
+  el.dataset.kind='active';
+ }
+}
 function apply(){
  const motion=mq.matches?'calm':state.motion;
  root.dataset.comfortMotion=motion;
@@ -30,6 +43,7 @@ function apply(){
  root.classList.toggle('user-hide-swipe-hints',!state.showHints);
  root.classList.toggle('user-hide-legend',!state.showLegend);
  root.classList.toggle('user-no-ambient',!state.ambient);
+ updateMotionStatus();
  window.dispatchEvent(new CustomEvent('svitlo:comfort-change',{detail:{...state,effectiveMotion:motion}}));
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));localStorage.removeItem(LEGACY)}catch{}apply()}
@@ -70,6 +84,7 @@ function init(){
   });
  });
  screen.classList.add('settings-enhanced');
+ new MutationObserver(updateMotionStatus).observe(root,{attributes:true,attributeFilter:['class']});
  let last='appearance';try{last=sessionStorage.getItem('svitlo-settings-pane')||last}catch{}
  choose(last);
  document.querySelectorAll('[data-comfort-motion],[data-comfort-density],[data-comfort-accent]').forEach(button=>{
