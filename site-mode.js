@@ -29,6 +29,10 @@
   document.documentElement.dataset.featureConfigLoaded='true';
   const hideInbox=flags.inbox===false,hideShare=flags.sharing===false,hideHelp=flags.help===false;
   document.querySelectorAll('[data-go="updates"]').forEach(button=>{button.hidden=hideInbox});
+  // Disabling Inbox while it is open must return the user to an enabled tab.
+  if(hideInbox&&document.getElementById('updates')?.hidden===false){
+   document.querySelector('[data-go="home"]')?.click();
+  }
   ['shareToday','shareDetail'].forEach(id=>setVisible($(id),!hideShare));
   for(const anchor of document.querySelectorAll('a[href*="help.html"],a[data-managed-link="help"]')){
    anchor.dataset.managedLink='help';
