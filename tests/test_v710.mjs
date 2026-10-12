@@ -29,18 +29,18 @@ test('installed app visibly reports update timing and checks in the background',
  assert.match(app,/setInterval\(\(\)=>\{if\(!document\.hidden\)refreshData\(\)\},5\*60_000\)/);
  assert.match(app,/visibilitychange/);assert.match(app,/lastDownloadAt/);assert.match(app,/lastSyncFailed/);
 });
-test('GitHub schedule importer publishes independently from address refresh',()=>{
+test('Railway Cron owns schedule polling while addresses remain independent',()=>{
  const workflow=read('.github/workflows/update.yml');
  const addresses=read('.github/workflows/update-addresses.yml');
- assert.match(workflow,/schedule:/);
- assert.match(workflow,/Import official schedules/);
- assert.match(workflow,/--schedules-only/);
- assert.match(workflow,/steps\.schedule\.outcome == 'success'/);
- assert.doesNotMatch(workflow,/--addresses-only/);
+ const cron=read('scripts/railway_schedule_cron.py');
+ assert.match(workflow,/workflow_dispatch:/);
+ assert.doesNotMatch(workflow,/^  schedule:/m);
+ assert.doesNotMatch(workflow,/^  push:/m);
+ assert.match(cron,/--schedules-only/);
+ assert.match(cron,//api/internal/schedules/);
  assert.match(addresses,/--addresses-only/);
- assert.match(workflow,/svitlo-data-updated/);
  assert.match(addresses,/svitlo-data-updated/);
- assert.doesNotMatch(workflow,/if ! python scripts\/update_data\.py/);
+ assert.match(workflow,/svitlo-data-updated/);
 });
 
 test('installation is platform-aware and preserves iOS icon',()=>{
