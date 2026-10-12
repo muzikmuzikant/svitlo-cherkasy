@@ -16,15 +16,17 @@
    pinned:item.pinned===true,icon:String(item.icon||'').slice(0,18),
    updatedAt:typeof item.updatedAt==='string'?item.updatedAt:null,
    url:typeof item.url==='string'&&/^https:\/\//.test(item.url)?item.url:'',
-   read:item.read===true};
+   read:item.read===true,authoritative:item.authoritative===true};
  }
  function merge(previous,incoming){
   if(!previous)return incoming;
-  // Push only contains a short body; never erase rich content/images already cached.
+  // Public API snapshots are authoritative for edits/unpin/unpublish.
+  // A short Push must NOT erase a rich message already saved by the app.
+  if(incoming.authoritative)return {...previous,...incoming,read:previous.read||incoming.read};
   return {...previous,...incoming,read:previous.read||incoming.read,
    content:incoming.content||previous.content||'',
    images:incoming.images.length?incoming.images:previous.images||[],
-   pinned:incoming.content||incoming.updatedAt?incoming.pinned:previous.pinned||false};
+   pinned:previous.pinned||false,updatedAt:incoming.updatedAt||previous.updatedAt||null};
  }
  function db(){return new Promise((resolve,reject)=>{
   if(!root.indexedDB)return reject(Error('No IndexedDB'));
@@ -71,5 +73,9 @@
  async function mark(ids){const keys=new Set(ids);await mutate(x=>keys.has(x.id),x=>({...x,read:true}))}
  async function clearRead(){await mutate(x=>x.read,()=>null)}
  async function remove(id){await mutate(x=>x.id===id,()=>null)}
- root.SvitloInbox={normalize,all,add,mark,clearRead,remove};
+ async function reconcileAnnouncements(ids){
+  const current=new Set(ids);
+  await mutate(x=>x.id.startsWith('notice:')&&!current.has(x.id),()=>null);
+ }
+ root.SvitloInbox={normalize,all,add,mark,clearRead,remove,reconcileAnnouncements};
 })(typeof self!=='undefined'?self:globalThis);

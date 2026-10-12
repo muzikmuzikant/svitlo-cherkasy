@@ -18,7 +18,9 @@ export function validateAppConfig(input){
  const ids=new Set(),announcements=input.announcements.map(a=>{
   const id=String(a?.id||'');if(!/^[A-Za-z0-9_-]{6,64}$/.test(id)||ids.has(id))throw Error('Неправильний або повторний ID');ids.add(id);
   const title=str(a.title,90),body=str(a.body,280),content=str(a.content||body,6000);
-  if(title.length<5||title.length>90||body.length<10||body.length>280||content.length>6000)throw Error('Перевірте заголовок або текст повідомлення');
+  // Drafts may be empty. A published notice needs a meaningful body, but emoji are NEVER mandatory.
+  if(title.length>90||body.length>280||content.length>6000||(a.active===true&&(title.length<1||body.length<1)))
+   throw Error('Додайте заголовок і короткий текст перед публікацією');
   const kind=a.kind||'info',priority=a.priority||'normal',queue=a.queue||'all',delivery=a.delivery||'inbox';
   if(!['info','important','update','schedule','emergency'].includes(kind)||!['normal','important','urgent'].includes(priority)||!QUEUES.has(queue)||!['inbox','both'].includes(delivery))throw Error('Невірні налаштування доставки');
   const images=a.images??[];if(!Array.isArray(images)||images.length>6)throw Error('Максимум шість зображень');

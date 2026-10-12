@@ -10,7 +10,7 @@ test('tomorrow preview reads official verified schedule; absent data does not fa
  assert.match(app,/function renderTomorrowPreview\(\)/);
  assert.match(app,/const date=shiftDay\(today\(\),1\)/);
  assert.match(app,/currentDay\(date\)/);
- assert.match(app,/Графік ще не опубліковано/);
+ assert.match(app,/Немає опублікованого графіка/);
  assert.match(app,/Планується без світла/);
  assert.match(html,/id="tomorrowCard"/);
  assert.match(html,/id="tomorrowSummary"/);
@@ -28,7 +28,7 @@ test('address chips switch primary address locally and synchronize a pre-existin
 test('share image shows only confirmed schedules and identifies predictions',()=>{
  const app=load('app.js');
  assert.match(app,/function shareDescription\(date\)/);
- assert.match(app,/if\(!queue\|\|!t\|\|!day\)return null/);
+ assert.match(app,/if\(!queue\|\|!t\)return null/);
  assert.match(app,/function outages\(t\)/);
  assert.match(app,/async function shareSchedule\(date,/);
  assert.match(app,/canvas\.toBlob\(resolve,'image\/png'\)/);
@@ -56,8 +56,9 @@ test('new files are present in public distribution and offline PWA shell',()=>{
  assert.match(build,/admin-dashboard\.js/);
  assert.match(sw,/"\.\/admin-dashboard\.js"/);
  assert.match(admin,/src="\.\/admin-dashboard\.js"/);
- assert.match(sw,/svitlo-cherkasy-shell-v7\.5\.0/);
- assert.equal(JSON.parse(load('release.json')).version,'7.5.0');
+ const release=JSON.parse(load('release.json'));
+ assert.match(sw,new RegExp('svitlo-cherkasy-shell-v'+release.version.replaceAll('.','\\.')));
+ assert.match(release.version,/^7\.5\./);
 });
 
 test('audit includes all agreed item IDs rather than claiming full completion',()=>{

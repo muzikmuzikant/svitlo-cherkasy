@@ -6,7 +6,7 @@ const root=path.resolve(import.meta.dirname,'..');
 test('user support links, standalone page and form are present',()=>{
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
  const contact=fs.readFileSync(path.join(root,'feedback.html'),'utf8');
- assert.match(html,/Опції/);assert.match(html,/href="\.\/feedback\.html"/);
+ assert.match(html,/Опції/);assert.match(html,/href="\.\/feedback\.html(?:\?from=settings)?"/);
  for(const key of ['id="topic"','id="message"','id="email"','id="send"'])assert.ok(contact.includes(key));
 });
 test('pages publish contains feedback assets but no feedback records or server code',()=>{

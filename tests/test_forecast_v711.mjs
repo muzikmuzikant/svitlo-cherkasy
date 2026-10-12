@@ -33,14 +33,15 @@ test('single verified schedule does not count omitted subqueue as outage',()=>{
  const f=sample({days:[day('2026-10-11','2.1',[['05:00','06:00']])]});
  const v=f.timeline('2026-10-11','6.2');assert.equal(v[300],0);
 });
-test('missing schedule must remain UNKNOWN when importer stale or failed',()=>{
+test('user-selected no-schedule days show full light even with a stale importer (never official verification)',()=>{
  for(const opts of [{stale:true},{error:true}]){
-  const f=sample(opts);assert.equal(f.timeline('2026-10-11','2.1'),null);
-  assert.equal(f.stateAt(f.timeline('2026-10-11','2.1'),500),'unknown');
+  const f=sample(opts),arr=f.timeline('2026-10-11','2.1');
+  assert.equal(arr.length,1440);assert.equal(arr[0],0);assert.equal(arr[1439],0);
+  assert.equal(f.stateAt(arr,500),'on');
  }
 });
-test('we do not extrapolate absent schedules to day after tomorrow',()=>{
- const f=sample();assert.equal(f.timeline('2026-10-12','2.1'),null);
+test('the preferred light-all-day display extends to dates without any publication',()=>{
+ const f=sample();assert.equal(f.timeline('2026-10-12','2.1')[1439],0);
 });
 test('cross-midnight continuation of scheduled outage ends at midnight if tomorrow has no planned outages',()=>{
  const f=sample({days:[day('2026-10-10','2.1',[['22:00','24:00']])]});

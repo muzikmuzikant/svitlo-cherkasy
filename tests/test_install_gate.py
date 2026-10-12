@@ -12,7 +12,7 @@ def test_browser_gate_and_admin_link():
     assert '<script defer src="./app.js"' not in html
     assert 'hour.onload' in install
     assert 'beforeinstallprompt' in install
-    assert 'href="./feedback.html"' in html
+    assert 'href="./feedback.html?from=settings"' in html
     assert (ROOT/'admin.html').is_file()  # admin remains accessible by its direct URL
 
 def test_sessions_are_server_side():
