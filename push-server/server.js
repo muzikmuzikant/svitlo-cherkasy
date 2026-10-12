@@ -8,6 +8,7 @@ import path from 'node:path';
 import {createFeedbackStore,readFeedbackBody} from './feedback-store.js';
 import {createAdminExtras} from './admin-extras.js';
 import {createAppConfig} from './app-config.js';
+import {createMediaStore} from './media-store.js';
 import {originPolicy} from './origins.js';
 import webpush from 'web-push';
 import {adminRouter} from './admin.js';
@@ -34,6 +35,7 @@ function save(){
 const feedback=createFeedbackStore({filePath:process.env.FEEDBACK_FILE||path.join(path.dirname(DATA_FILE),'feedback.json')});
 const extras=createAdminExtras({directory:path.dirname(DATA_FILE)});
 const siteControls=createAppConfig({directory:path.dirname(DATA_FILE),record:extras.record});
+const mediaStore=createMediaStore(path.dirname(DATA_FILE));
 const appUrl=new URL('/',APP_ORIGIN).href; // Push opens PWA, never the GitHub raw JSON host.
 const manualPush=createManualPush({subscribers,webpush,appUrl,hash,save});
 const fmtKyiv=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
@@ -115,6 +117,14 @@ async function job(){
     await send(record,msg.title,msg.body,`${prefix}:change:${change.date}:${change.revisionId||change.publishedAt}`);
    }
   });
+  // Scheduled admin messages share a stable ID between Push and the public inbox.
+  for(const notice of siteControls.duePush().slice(0,6)){
+   try{
+    const result=await manualPush.broadcast({title:notice.title,body:notice.body,queue:notice.queue,
+      notificationId:'notice:'+notice.id,confirmSend:true});
+    if(result.accepted>0)siteControls.markPushed(notice.id);
+   }catch(e){console.warn('Scheduled notice Push:',e.message)}
+  }
   const cutoff=timestamp-14*86400_000;
   for(const [key,stamp] of Object.entries(sent))if(!Number.isFinite(Date.parse(stamp))||Date.parse(stamp)<cutoff)delete sent[key];
   save();lastSuccess=new Date().toISOString();lastError=scheduleIssue;
@@ -154,7 +164,14 @@ const server=http.createServer(async(req,res)=>{
     const tickets=feedback.list().items;
     result.feedback={total:tickets.length,new:tickets.filter(t=>t.status==='new').length,inProgress:tickets.filter(t=>t.status==='in_progress').length};
     return result;
-  },siteControls);return}
+  },siteControls,mediaStore);return}
+ if(req.url?.startsWith('/api/media/')&&req.method==='GET'){
+   const id=req.url.slice('/api/media/'.length).split('?')[0],file=mediaStore.read(id);
+   if(!file){response(res,404,{error:'Фото не знайдене'});return}
+   res.writeHead(200,{'content-type':file.mime,'content-length':file.data.length,'x-content-type-options':'nosniff',
+     'cache-control':'public, max-age=2592000, immutable','access-control-allow-origin':originPolicy.list[0]||APP_ORIGIN});
+   res.end(file.data);return;
+ }
  if(req.url==='/api/app-config'&&req.method==='GET'){
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   response(res,200,siteControls.publicState());return;
