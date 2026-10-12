@@ -4,91 +4,68 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 
 const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
-
 class Element {
- constructor(tag='div'){this.tag=tag;this.children=[];this.textContent='';this.hidden=false;this.className='';this.dataset={};this.classList={toggle(){}}}
+ constructor(tag='div'){this.tag=tag;this.children=[];this.textContent='';this.hidden=false;this.className='';this.open=false;this.dataset={};this.classList={toggle(){}}}
  append(...children){this.children.push(...children)}
  replaceChildren(...children){this.children=[...children]}
  setAttribute(name,value){this[name]=value}
  addEventListener(name,listener){this[name]=listener}
+ showModal(){this.open=true}
+ close(){this.open=false}
 }
-
+const allNodes=root=>{
+ const out=[];const scan=n=>{if(!n||typeof n!=='object')return;out.push(n);(n.children||[]).forEach(scan)};
+ scan(root);return out
+};
 async function mountInbox(item){
  const elements=Object.fromEntries(['inboxList','inboxUnread','navUnread','inboxMarkAll','inboxClear'].map(id=>[id,new Element()]));
- let markedRead=false;const events=[];
- const store={
-  async all(){return [{...item,read:markedRead}]},
-  async mark(){markedRead=true},
-  async clearRead(){},
-  async add(){}
- };
- const window={
-  SvitloInbox:store,
-  addEventListener(){},
-  dispatchEvent(event){events.push(event)}
- };
- const document={
-  getElementById(id){return elements[id]||null},
-  createElement(tag){return new Element(tag)},
-  querySelectorAll(){return []},
-  addEventListener(){}
- };
+ let markedRead=false;const events=[],page=new Element('body');
+ const store={async all(){return [{...item,read:markedRead}]},async mark(){markedRead=true},async clearRead(){},async add(){}};
+ const window={SvitloInbox:store,addEventListener(){},dispatchEvent(event){events.push(event)}};
+ const document={body:page,getElementById(id){return elements[id]||null},createElement:tag=>new Element(tag),createTextNode:text=>({textContent:text}),querySelectorAll:()=>[],querySelector:()=>null,addEventListener(){}};
  const context={window,document,location:{href:'https://svitlo-cherkasy.pp.ua/',origin:'https://svitlo-cherkasy.pp.ua'},
-  localStorage:{getItem(){return null}},
-  navigator:{serviceWorker:{addEventListener(){}}},
+  localStorage:{getItem(){return null}},navigator:{serviceWorker:{addEventListener(){}}},
   fetch:async()=>({ok:true,json:async()=>({days:[],changes:[],events:[]})}),
-  CustomEvent:class {constructor(type,config){this.type=type;this.detail=config.detail}},
-  Intl,Date,URL,console,setInterval(){}};
+  CustomEvent:class{constructor(type,config){this.type=type;this.detail=config.detail}},
+  Intl,Date,URL,console,setInterval(){},history:{replaceState(){}}};
  vm.runInNewContext(read('inbox-ui.js'),context);
- await new Promise(resolve=>setImmediate(resolve));
- await new Promise(resolve=>setImmediate(resolve));
- const cards=elements.inboxList.children;
- const buttons=[];
- const traverse=node=>{
-  if(!node||typeof node!=='object')return;
-  if(node.tag==='button')buttons.push(node);
-  (node.children||[]).forEach(traverse);
- };
- cards.forEach(traverse);
- return {buttons,events,elements,readState:()=>markedRead};
+ await new Promise(resolve=>setImmediate(resolve));await new Promise(resolve=>setImmediate(resolve));
+ return {elements,page,events,readState:()=>markedRead,card:()=>elements.inboxList.children.find(n=>n.tag==='article'),
+  dialog:()=>page.children.find(n=>n.tag==='dialog')};
 }
-
-test('schedule message opens the app graph on its publication date',async()=>{
- const view=await mountInbox({id:'day:2.1:2026-10-12:2026-10-12T09:55:00+03:00',
-  title:'🗓️ Графік на 12 жовтня',body:'Підчерга 2.1',
+test('a tap on the entire schedule card opens detail, then opens in-app graph',async()=>{
+ const view=await mountInbox({id:'day:2.1:2026-10-12:2026-10-12T09:55:00+03:00',title:'🗓️ Графік на 12 жовтня',body:'Підчерга 2.1',
   kind:'schedule',at:'2026-10-12T06:55:00Z',url:'https://www.cherkasyoblenergo.com/media/official'});
- const action=view.buttons.find(b=>b.textContent==='Переглянути графік');
- assert.ok(action,'internal graph button should exist');
+ assert.equal(view.card().getAttribute,undefined);
+ view.card().onclick();
+ assert.equal(view.dialog().open,true);
+ const action=allNodes(view.dialog()).find(n=>n.tag==='button'&&n.textContent.includes('Відкрити графік'));
+ assert.ok(action,'internal graph action exists in detail');
  action.onclick();
  assert.equal(view.events[0].type,'svitlo:open-schedule');
  assert.equal(view.events[0].detail.date,'2026-10-12');
- assert.ok(!view.buttons.some(b=>b.textContent==='Переглянути ↗'));
- await new Promise(resolve=>setImmediate(resolve));
- assert.equal(view.readState(),true);
+ await new Promise(resolve=>setImmediate(resolve));assert.equal(view.readState(),true);
 });
-
-test('tomorrow Push opens tomorrow based on original Kyiv notification time',async()=>{
- const view=await mountInbox({id:'push:tomorrow:queue_1:random',
-  title:'🗓️ Графік на завтра',body:'Для підчерги 1.1 опубліковано графік',
-  kind:'push',at:'2026-10-12T14:00:00Z'});
- const action=view.buttons.find(b=>b.textContent==='Переглянути графік');
- assert.ok(action);
- action.onclick();
- assert.equal(view.events[0].detail.date,'2026-10-13');
+test('tomorrow Push opens next Kyiv day from its original timestamp',async()=>{
+ const view=await mountInbox({id:'push:tomorrow:queue_1:random',title:'🗓️ Графік на завтра',body:'Підчерга 1.1',kind:'push',at:'2026-10-12T14:00:00Z'});
+ view.card().onclick();
+ const action=allNodes(view.dialog()).find(n=>n.tag==='button'&&n.textContent.includes('Відкрити графік'));
+ assert.ok(action);action.onclick();assert.equal(view.events[0].detail.date,'2026-10-13');
 });
-
-test('manual announcements do not pretend to be a schedule',async()=>{
- const view=await mountInbox({id:'notice:announcement1',title:'📣 Оголошення',
-  body:'Зверніть увагу на повідомлення сервісу',kind:'announcement',
-  at:'2026-10-12T10:00:00Z'});
- assert.ok(!view.buttons.some(b=>b.textContent==='Переглянути графік'));
+test('admin announcement opens a full detail, but has no false schedule shortcut',async()=>{
+ const view=await mountInbox({id:'notice:announcement1',title:'📣 Оголошення',body:'Є нові можливості',content:'## Деталі\n**Важливо**',
+  images:['https://svitlo-cherkasy-production.up.railway.app/api/media/safe.png'],
+  kind:'announcement',at:'2026-10-12T10:00:00Z'});
+ view.card().onclick();
+ assert.equal(view.dialog().open,true);
+ assert.ok(allNodes(view.dialog()).some(x=>x.tag==='img'));
+ assert.ok(!allNodes(view.dialog()).some(x=>x.tag==='button'&&x.textContent.includes('Відкрити графік')));
 });
-
-test('existing app navigation handles the event without reloading or leaving the app',()=>{
- const app=read('app.js'),ui=read('inbox-ui.js');
+test('schedule deep linking still calls the existing graph tab',()=>{
+ const app=read('app.js'),ui=read('inbox-ui.js'),sw=read('sw.js');
  assert.match(app,/addEventListener\('svitlo:open-schedule'/);
  assert.match(app,/navigate\('detail'\)/);
  assert.match(app,/showDay\(wanted\)/);
- assert.match(ui,/Джерело ↗/);
- assert.doesNotMatch(ui,/el\('a','Переглянути ↗'\)/);
+ assert.match(ui,/SVITLO_OPEN_INBOX/);
+ assert.match(sw,/SVITLO_OPEN_INBOX/);
 });
