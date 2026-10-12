@@ -329,3 +329,18 @@ html.feature-off-animations *,html.feature-off-animations *::before,html.feature
 @media(max-width:390px){.quick-queue-controls{grid-template-columns:1fr}.quick-queue-controls button{width:100%}}
 
 html.feature-off-addressSearch .quick-queue-lookup{display:none!important}
+
+/* Fine-grained admin-managed feature controls. */
+html.feature-off-quickQueueLookup .quick-queue-lookup{display:none!important}
+html.feature-off-nextChangeCard #detail .info-card{display:none!important}
+html.feature-off-dayShortcuts #detail .calendar-shortcuts{display:none!important}
+html.feature-off-detailSourceLink #articleLink{display:none!important}
+html.feature-off-hourlyLabels #home .bar-time{display:none!important}
+html.feature-off-inboxMarkAll #inboxMarkAll{display:none!important}
+html.feature-off-inboxClearRead #inboxClear{display:none!important}
+html.feature-off-appUpdateCheck #checkAppUpdate{display:none!important}
+html.feature-off-editAddressFromGraph #editActive{display:none!important}
+html.feature-off-syncStatus #syncStatus{display:none!important}
+html.feature-off-settingsFooter .settings-foot{display:none!important}
+html.feature-off-tomorrowOpenShortcut #tomorrowOpen{display:none!important}
+html.feature-off-scheduleOpenShortcut #openDetail{display:none!important}
