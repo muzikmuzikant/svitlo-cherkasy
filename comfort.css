@@ -33,8 +33,8 @@
 .settings-swatches button.selected{border-color:var(--blue);background:var(--bluewash);box-shadow:inset 0 0 0 1px var(--blue)}
 .settings-swatches i{width:30px;height:30px;border-radius:11px;display:block;box-shadow:0 3px 9px #132c4612}
 .swatch-blue{background:linear-gradient(135deg,#66b4ff,#326af5)}.swatch-mint{background:linear-gradient(135deg,#85efd1,#16a884)}.swatch-violet{background:linear-gradient(135deg,#c2a1ff,#7b54dd)}
-.settings-pick{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px}
-.settings-pick button{border:1px solid var(--line);border-radius:16px;background:var(--surface,#fff);min-width:0;display:grid;align-content:center;gap:6px;min-height:76px;padding:11px 7px;color:var(--ink);text-align:center}
+.settings-pick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.settings-pick:has([data-comfort-density]){grid-template-columns:repeat(2,minmax(0,1fr))}\n.settings-pick button{border:1px solid var(--line);border-radius:16px;background:var(--surface,#fff);min-width:0;display:grid;align-content:center;gap:6px;min-height:76px;padding:11px 7px;color:var(--ink);text-align:center}
 .settings-pick button.selected{border-color:var(--blue);background:var(--bluewash);box-shadow:inset 0 0 0 1px var(--blue)}
 .settings-pick strong{font-size:13px}.settings-pick small{font-size:10px;font-weight:500;color:var(--muted);line-height:1.35}
 #settings .settings-card-modern{overflow:hidden;border-radius:20px}
