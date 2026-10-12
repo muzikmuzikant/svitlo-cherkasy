@@ -7,7 +7,7 @@ const read=path=>readFileSync(new URL(path,root),'utf8');
 test('Inbox starts despite missing optional module',()=>{
  const script=read('install.js');
  const callbacks={};const created=[];
- const body={append(node){created.push(node);if(node.src&&node.onload&&!node.src.includes('notification-text.js'))node.onload();}};
+ const body={append(node){created.push(node);}};
  const document={createElement(){return {src:'',onload:null,onerror:null}},body};
  const context={document,matchMedia:()=>({matches:true}),navigator:{standalone:true},console,setTimeout(fn){callbacks.timeout=fn}};
  vm.runInNewContext(script,context);
