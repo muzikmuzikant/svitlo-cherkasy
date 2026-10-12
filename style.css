@@ -406,3 +406,6 @@ html.feature-off-scheduleOpenShortcut #openDetail{display:none!important}
   animation:none!important;transition:none!important;
  }
 }
+
+/* Invisible compatibility hooks keep cached pre-cleanup PWA scripts functional. */
+.home-legacy-compat,.home-legacy-compat *{display:none!important}
