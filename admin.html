@@ -121,6 +121,8 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
 <section class="card control-large-panel" data-admin-panel="media" hidden>
  <div class="control-panel-lead"><span>MEDIA LIBRARY</span><h2>Медіатека повідомлень</h2><p>Зображення, що використовуються в оголошеннях і техроботах. Пошук, копіювання посилання та перегляд використання.</p></div>
  <div class="control-quality-actions"><input type="search" id="controlMediaSearch" placeholder="Пошук за повідомленням або URL…"><button type="button" class="secondary" id="controlMediaReload">Оновити</button></div>
+ <div class="control-media-upload"><input type="file" id="controlMediaFiles" accept="image/png,image/jpeg,image/webp" multiple>
+ <button type="button" id="controlMediaUpload">Завантажити зображення</button><span id="controlMediaUploadStatus">PNG, JPG, WebP до 3 МБ за файл</span></div>
  <div id="controlMediaGrid" class="control-media-grid"></div><p id="controlMediaStatus" class="hint"></p>
 </section>
 <section class="card control-large-panel" data-admin-panel="backup" hidden>
