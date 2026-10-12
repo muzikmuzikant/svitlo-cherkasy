@@ -72,6 +72,15 @@
  function timed(m){
   const now=Date.now();return m?.enabled===true&&(!m.startsAt||Date.parse(m.startsAt)<=now)&&(!m.until||Date.parse(m.until)>now);
  }
+ function updateEta(m){
+  const el=$('maintenanceEta');if(!el)return;
+  const remaining=Date.parse(m?.until||'')-Date.now();
+  if(!(remaining>0)){el.textContent='';return}
+  const seconds=Math.ceil(remaining/1000),hours=Math.floor(seconds/3600),
+   minutes=Math.floor(seconds%3600/60),secs=seconds%60;
+  el.textContent='До орієнтовного завершення '+String(hours).padStart(2,'0')+':'+
+   String(minutes).padStart(2,'0')+':'+String(secs).padStart(2,'0');
+ }
  function display(data,{offline=false}={}){
   const m=data?.maintenance||{},active=!offline&&timed(m),full=active&&m.mode!=='limited';
   overlay.hidden=!full;banner.hidden=!(active&&!full);
@@ -90,12 +99,7 @@
     const img=document.createElement('img');img.src=m.imageUrl;img.alt='Ілюстрація техробіт';symbol.append(img);
    }else symbol.textContent=String(m.icon||'✨').slice(0,18);
   }
-  let remaining='';
-  if(m.until&&Number.isFinite(Date.parse(m.until))&&Date.parse(m.until)>Date.now()){
-   const minutes=Math.ceil((Date.parse(m.until)-Date.now())/60000);
-   remaining=minutes<60?'Орієнтовно ще '+minutes+' хв': 'Орієнтовно до '+new Date(m.until).toLocaleString('uk-UA',{dateStyle:'long',timeStyle:'short',timeZone:'Europe/Kyiv'});
-  }
-  $('maintenanceEta').textContent=remaining;
+  updateEta(m);
   const planned=m?.enabled===true&&m.noticeBefore!==false&&m.startsAt
    &&Number.isFinite(Date.parse(m.startsAt))&&Date.parse(m.startsAt)>Date.now();
   if((active&&!full)||planned){banner.hidden=false;
@@ -134,6 +138,7 @@
   }finally{busy=false}
  }
  refresh();setInterval(()=>{if(!document.hidden)refresh()},12000);
+ setInterval(()=>{if(!document.hidden&&lastConfig?.maintenance)updateEta(lastConfig.maintenance)},1000);
  try{const channel=new BroadcastChannel('svitlo-content-v1');
   channel.addEventListener('message',event=>{if(event.data?.type==='REFRESH_APP_CONFIG')refresh()});
   window.addEventListener('pagehide',()=>channel.close(),{once:true});
