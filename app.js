@@ -386,7 +386,7 @@ function renderEmergency(){
 function notifyEmergencyEvent(){
  const e=latestEmergency();if(!e||e.status!=='active')return;
  const age=Date.now()-new Date(e.publishedAt).getTime();if(age<0||age>60*60*1000)return;
- notify('🪫Графік не діє','Розпочинаються екстрені відключення світла поза графіком.',`emergency:${e.id||e.source}`);
+ notify('⚠️ Екстрені відключення','Оператор повідомив про позапланові обмеження. Звичайний графік може не діяти.',`emergency:${e.id||e.source}`);
 }
 function applyOverrides(){
  const days=overrides.schedules?.days;
@@ -453,8 +453,8 @@ async function refreshData(manual=false){
  })();
  try{return await refreshInFlight}finally{refreshInFlight=null;if(refreshButton)refreshButton.disabled=false}
 }
-function notify(title,body,key){if(pushActive||notified.has(key)||!('Notification' in window)||Notification.permission!=='granted')return;notified.add(key);localStorage.setItem(SEEN,JSON.stringify([...notified].slice(-400)));navigator.serviceWorker?.ready.then(r=>r.showNotification(title,{body,icon:'./assets/icon-192-v673.png',tag:key})).catch(()=>{try{new Notification(title,{body})}catch{}})}
-function announceChanges(previous,current){if(!prefs.changes||!previous?.lastChecked)return;const a=primary();if(!a?.queue)return;for(const c of current.changes||[])if(c.queues?.includes(a.queue)&&!previous.changes?.some(x=>x.date===c.date&&(x.revisionId||x.publishedAt)===(c.revisionId||c.publishedAt))){notify('Світло: графік змінено',`Оновлена підчерга ${a.queue} на ${formatDate(c.date)}.`, `change:${c.date}:${c.revisionId||c.publishedAt}:${a.queue}`)}}
+function notify(title,body,key){if(pushActive||notified.has(key)||!('Notification' in window)||Notification.permission!=='granted')return;notified.add(key);localStorage.setItem(SEEN,JSON.stringify([...notified].slice(-400)));navigator.serviceWorker?.ready.then(r=>r.showNotification(title,{body,icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',tag:key})).catch(()=>{try{new Notification(title,{body})}catch{}})}
+function announceChanges(previous,current){if(!prefs.changes||!previous?.lastChecked)return;const a=primary();if(!a?.queue)return;for(const c of current.changes||[])if(c.queues?.includes(a.queue)&&!previous.changes?.some(x=>x.date===c.date&&(x.revisionId||x.publishedAt)===(c.revisionId||c.publishedAt))){notify('🔄 Графік оновлено',`Підчерга ${a.queue} · Змінено години на ${formatDate(c.date)}. Перевірте розклад.`, `change:${c.date}:${c.revisionId||c.publishedAt}:${a.queue}`)}}
 function checkNotifications(){
  if(!('Notification' in window)||Notification.permission!=='granted')return;
  // Regional emergency notices are useful even when there is no known schedule.
@@ -462,17 +462,17 @@ function checkNotifications(){
  const a=primary();if(!a?.queue)return;
  const date=today(),m=nowMinutes(),arr=timeline(date,a.queue);
  if(arr&&arr[m]>=0){
-   for(const [type,offset,desired,txt] of [['off',30,1,'відключення'],['on',15,0,'повернення світла']]){
+   for(const [type,offset,desired] of [['off',30,1],['on',15,0]]){
      if(!prefs[type])continue;
      const future=m+offset;
      if(future>=1440)continue;
      if(arr[future]===desired&&arr[future-1]!==desired&&arr[future-1]!==-1){
-       notify(`Світло: скоро ${txt}`,`Через ${offset} хвилин за графіком: ${label(a)}, підчерга ${a.queue}.`,`${type}:${date}:${future}:${a.id}`);
+       notify(`${type==='off'?'🔴 Відключення':'🟢 Відновлення'} через ${offset} хв`,`Підчерга ${a.queue} · За графіком о ${clock(future)}. Час орієнтовний.`,`${type}:${date}:${future}:${a.id}`);
      }
    }
  }
  if(prefs.tomorrow){const tomorrow=shiftDay(date,1),published=currentDay(tomorrow);
-   if(published?.queues?.[a.queue]&&m>=19*60)notify('Світло: графік на завтра',`Для підчерги ${a.queue} опубліковано графік на ${formatDate(tomorrow)}.`,`tomorrow:${tomorrow}:${a.id}`);
+   if(published?.queues?.[a.queue]&&m>=19*60)notify('🗓️ Графік на завтра',`Підчерга ${a.queue} · На ${formatDate(tomorrow)}. Перегляньте години відключень.`,`tomorrow:${tomorrow}:${a.id}`);
  }
 }
 async function getPushConfig(){
