@@ -15,7 +15,7 @@ export function cleanMessage(input) {
   const notificationId=typeof input.notificationId==='string'&&/^notice:[A-Za-z0-9_-]{6,64}$/.test(input.notificationId)?input.notificationId:null;
   const settlement=typeof input.settlement==='string'?input.settlement.normalize('NFKC').trim():''; 
   if(settlement.length>70)throw Error('Завеликий населений пункт');
-  return notificationId?{title,body,queue,notificationId,inbox:input.inbox!==false,settlement}:{title,body,queue};
+  return notificationId?{title,body,queue,notificationId,inbox:input.inbox!==false,...(settlement?{settlement}:{})}:{title,body,queue};
 }
 
 const normArea=s=>String(s||'').normalize('NFKC').toLocaleLowerCase('uk-UA')
