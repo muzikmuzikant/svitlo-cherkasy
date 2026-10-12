@@ -142,7 +142,9 @@
  $('inboxMarkAll').onclick=async()=>{await store.mark(rows.map(x=>x.id));await refresh()};
  $('inboxClear').onclick=async()=>{await store.clearRead();await refresh()};
  document.querySelectorAll('[data-go="updates"]').forEach(b=>b.addEventListener('click',()=>refresh().catch(console.warn)));
- window.addEventListener('svitlo:public-config',event=>{notices=event.detail?.announcements||[];sync().catch(console.warn)});
+ window.addEventListener('svitlo:public-config',event=>{const next=event.detail?.announcements||[];
+  if(JSON.stringify(next)!==JSON.stringify(notices)){notices=next;sync().catch(console.warn)}
+ });
  navigator.serviceWorker?.addEventListener('message',event=>{
   if(event.data?.type==='SVITLO_INBOX_UPDATED')refresh().catch(console.warn);
   if(event.data?.type==='SVITLO_OPEN_INBOX')routePush(event.data.id);
