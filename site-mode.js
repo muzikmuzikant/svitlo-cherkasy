@@ -95,6 +95,9 @@
   $('maintenanceTitle').textContent=m.title||'Технічні роботи';
   $('maintenanceMessage').textContent=m.message||'Незабаром повернемося.';
   overlay.dataset.theme=['blue','midnight','light','violet','custom'].includes(m.theme)?m.theme:'blue';
+  overlay.dataset.mode=m.mode==='incident'?'incident':m.mode==='limited'?'limited':'full';
+  const eyebrow=overlay.querySelector('.maintenance-kicker');
+  if(eyebrow)eyebrow.textContent=m.mode==='incident'?'ВАЖЛИВЕ ПОВІДОМЛЕННЯ':'СВІТЛО ЧЕРКАСИ';
   if(m.theme==='custom'&&m.colors){
    for(const [prop,key] of [['--maintenance-bg','background'],['--maintenance-fg','foreground'],['--maintenance-accent','accent']]){
     const value=m.colors[key];if(typeof value==='string'&&/^#[0-9a-fA-F]{6}$/.test(value))overlay.style.setProperty(prop,value);

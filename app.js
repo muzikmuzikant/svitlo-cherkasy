@@ -12,6 +12,7 @@ const PIN='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="c
 const safeJSON=(k,fallback)=>{try{return JSON.parse(localStorage.getItem(k)??'null')??fallback}catch{return fallback}};
 const legacy=safeJSON('svitlo-addresses-v3',safeJSON('svitlo-addresses-v2',[]));
 let addresses=safeJSON(STORE,Array.isArray(legacy)?legacy:[]), prefs=Object.assign({primaryId:null,off:true,on:true,changes:true,tomorrow:true,emergency:true},safeJSON(PREF,{}));
+let previewQueue=null;
 let pushActive=false, emergency={events:[],lastChecked:null},overrides={schedules:{days:[]},addresses:{},emergency:{events:[]}},data={days:[],changes:[]},index={keys:{},streets:{},localities:{}},active='home',daySelected=null,dayStripStart=null,editId=null,suggestion=null,toastTimeout=null,lastPub=null,pushConfig=null,swRegistration=null,notified=new Set(safeJSON(SEEN,[])),lastRefresh=0,hasCheckedOnce=false,lastDownloadAt=null,lastSyncFailed=false,refreshInFlight=null;
 if(!Array.isArray(addresses))addresses=[];
 const byId=id=>addresses.find(x=>x.id===id);
@@ -257,7 +258,7 @@ function outages(t){
  return parts;
 }
 function shareDescription(date){
- const queue=primary()?.queue,t=queue?timeline(date,queue):null,day=currentDay(date);
+ const queue=previewQueue||primary()?.queue,t=queue?timeline(date,queue):null,day=currentDay(date);
  if(!queue||!t)return null;
  const summary=stats(t),ranges=outages(t);
  const lines=['Світло Черкаси · Прогноз за графіком',formatDate(date,{weekday:'long',day:'numeric',month:'long'}),'Підчерга '+queue,''];
@@ -364,9 +365,12 @@ async function shareSchedule(date,{copy=false}={}){
  }catch(error){if(error?.name==='AbortError')return;console.warn('Share schedule:',error);flash('Не вдалося поділитися графіком')}
 }
 function renderBar(a){const bar=$('overviewBar');bar.replaceChildren();if(!a){const b=el('span','bar-segment unknown');b.style.flex='1';bar.append(b);return}let start=0,v=a[0];for(let i=1;i<=1440;i++){if(i===1440||a[i]!==v){const seg=el('span','bar-segment '+(v===1?'off':v===0?'on':'unknown'));seg.style.flex=String(i-start);seg.title=`${clock(start)}–${clock(i)} · ${v===1?'відключення':v===0?'світло':'немає даних'}`;bar.append(seg);start=i;v=a[i]}}const line=el('span','bar-now');line.style.left=(nowMinutes()/1440*100)+'%';bar.append(line)}
-function navigate(name){if(!['home','detail','updates','settings'].includes(name))return;if(name==='detail'&&!primary()){openAddressSheet();return}active=name;try{sessionStorage.setItem(SCREEN_RETURN,name)}catch{}
+function navigate(name){if(!['home','detail','updates','settings'].includes(name))return;if(name==='detail'&&!primary()&&!previewQueue){openAddressSheet();return}if(name!=='detail')previewQueue=null;active=name;try{sessionStorage.setItem(SCREEN_RETURN,name)}catch{}
  for(const n of ['home','detail','updates','settings'])$(n).hidden=n!==name;document.querySelectorAll('[data-go]').forEach(x=>{if(x.classList.contains('nav-item'))x.classList.toggle('active',x.dataset.go===name)});if(name==='detail'){daySelected=today();dayStripStart=today();renderDetail()}else if(name==='updates')renderUpdates();else if(name==='settings')renderSettings();else renderHome();window.scrollTo({top:0,behavior:'instant'});}
-function renderDetail(){const a=primary();if(!a)return;setText('detailAddress',fullAddress(a));const tToday=timeline(today(),a.queue),st=stateAt(tToday,nowMinutes()),nxt=nextChange(today(),a.queue,nowMinutes());const status=$('detailStatus');status.className='detail-status '+st;status.textContent=statusCopy(st,nxt,a.queue,today()).title;
+function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Підчерга '+previewQueue,settlement:'Черкаси та район'}:primary();
+ if(!a)return;
+ $('editActive').hidden=!!previewQueue;
+ setText('detailAddress',previewQueue?'Підчерга '+previewQueue+' · тимчасовий перегляд':fullAddress(a));const tToday=timeline(today(),a.queue),st=stateAt(tToday,nowMinutes()),nxt=nextChange(today(),a.queue,nowMinutes());const status=$('detailStatus');status.className='detail-status '+st;status.textContent=statusCopy(st,nxt,a.queue,today()).title;
  const day=daySelected||today();const start=dayStripStart||today();
  setText('weekRange',stripRangeLabel(start));
  for(const [element,date] of [['dayToday',today()],['dayTomorrow',shiftDay(today(),1)]]){
@@ -381,6 +385,12 @@ function renderDetail(){const a=primary();if(!a)return;setText('detailAddress',f
   b.onclick=()=>showDay(d);root.append(b);
  }
  const pub=currentDay(day),t=timeline(day,a.queue);
+ const verified=$('detailVerified');
+ if(verified){
+  const official=!!pub;
+  verified.className='verified-source-badge '+(official?'is-verified':'is-unpublished');
+  verified.textContent=official?'✓ Опублікований графік оператора':'ℹ Графік не опубліковано · світло весь день за умовним відображенням';
+ }
  const dayStats=stats(t);
  setText('detailDayStat',dayStats?(pub?(dayStats.unknown?'Частина годин уточнюється':'Без світла '+formatDuration(dayStats.off)+' · Зі світлом '+formatDuration(dayStats.on)):'Світло весь день · графіка не опубліковано'):'Немає даних');
  setText('detailDayLabel',formatDate(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:'Графік не опубліковано · світло весь день за замовчуванням');const grid=$('hourGrid');grid.replaceChildren();
@@ -733,6 +743,15 @@ for(const b of document.querySelectorAll('[data-go]'))b.addEventListener('click'
  $('shareToday')?.addEventListener('click',()=>shareSchedule(today()));
  $('copyToday')?.addEventListener('click',()=>shareSchedule(today(),{copy:true}));
  $('shareDetail')?.addEventListener('click',()=>shareSchedule(daySelected||today()));
+ const quickSelect=$('quickQueueSelect');
+ if(quickSelect){
+  for(const queue of QUEUES){const option=document.createElement('option');option.value=queue;option.textContent='Підчерга '+queue;quickSelect.append(option)}
+  $('quickQueueOpen').onclick=()=>{
+   if(!QUEUES.includes(quickSelect.value)){flash('Оберіть підчергу');return}
+   previewQueue=quickSelect.value;
+   navigate('detail');
+  };
+ }
 $('weekPrev').onclick=()=>shiftDayStrip(-1);
 $('weekNext').onclick=()=>shiftDayStrip(1);
 $('dayToday').onclick=()=>showDay(today());
