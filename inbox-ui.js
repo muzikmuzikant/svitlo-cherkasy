@@ -45,9 +45,28 @@
  const dialog=document.createElement('dialog');dialog.className='inbox-detail';dialog.id='inboxDetail';
  const close=el('button','×','inbox-detail-close');close.type='button';close.setAttribute('aria-label','Закрити повідомлення');
  const content=el('div','','inbox-detail-content');dialog.append(close,content);document.body.append(dialog);
- close.onclick=()=>dialog.close();
- dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close()});
- dialog.addEventListener('close',()=>{activeDetail=null});
+ let detailCloseTimer=null,detailClosing=false,afterDetailClose=null;
+ const reducedDetailMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches||
+  document.documentElement.classList.contains('feature-off-animations');
+ function closeDetail(next){
+  if(typeof next==='function')afterDetailClose=next;
+  if(detailClosing)return;
+  if(!dialog.open){
+   const done=afterDetailClose;afterDetailClose=null;if(done)done();
+   return;
+  }
+  if(reducedDetailMotion()){dialog.close();return}
+  detailClosing=true;dialog.classList.add('is-leaving');
+  detailCloseTimer=setTimeout(()=>{detailCloseTimer=null;if(dialog.open)dialog.close()},260);
+ }
+ close.onclick=()=>closeDetail();
+ dialog.addEventListener('click',event=>{if(event.target===dialog)closeDetail()});
+ dialog.addEventListener('cancel',event=>{event.preventDefault();closeDetail()});
+ dialog.addEventListener('close',()=>{
+  clearTimeout(detailCloseTimer);detailCloseTimer=null;detailClosing=false;
+  dialog.classList.remove('is-leaving');activeDetail=null;
+  const next=afterDetailClose;afterDetailClose=null;if(next)next();
+ });
  function rich(target,raw){
   const text=String(raw||'');target.replaceChildren();
   for(const line of text.split('\n').slice(0,100)){
@@ -72,6 +91,7 @@
  }
  function open(id){
   const item=rows.find(x=>x.id===id);if(!item)return false;
+  if(detailClosing){clearTimeout(detailCloseTimer);detailCloseTimer=null;detailClosing=false;afterDetailClose=null;dialog.classList.remove('is-leaving')}
   activeDetail=id;content.replaceChildren();
   const top=el('div','','inbox-detail-top');
   top.append(el('span',({schedule:'Графіки',emergency:'Важливо',announcement:'Повідомлення',push:'Push'})[item.kind]||'Повідомлення','inbox-detail-category'),el('time',time(item.at)));
@@ -88,11 +108,11 @@
   if(item.content&&item.content!==item.body){const body=el('div','','inbox-rich');rich(body,item.content);content.append(body)}
   const buttons=el('div','','inbox-detail-actions');
   if(isGraph(item)){const graph=el('button','📅 Відкрити графік','inbox-detail-primary');graph.type='button';graph.onclick=()=>{
-   dialog.close();window.dispatchEvent(new CustomEvent('svitlo:open-schedule',{detail:{date:graphDate(item)}}));
+   closeDetail(()=>window.dispatchEvent(new CustomEvent('svitlo:open-schedule',{detail:{date:graphDate(item)}})));
   };buttons.append(graph)}
   if(validUrl(item.url)){const a=el('a','Офіційне джерело ↗');a.href=validUrl(item.url);a.target='_blank';a.rel='noopener noreferrer';buttons.append(a)}
   content.append(buttons);
-  try{dialog.showModal()}catch{dialog.setAttribute('open','')}
+  if(!dialog.open)try{dialog.showModal()}catch{dialog.setAttribute('open','')}
   if(!item.read)store.mark([id]).then(refresh).catch(console.warn);
   return true;
  }
