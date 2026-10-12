@@ -1,7 +1,7 @@
 importScripts('./notification-center.js');
-const VERSION='svitlo-cherkasy-shell-v7.10.0';
+const VERSION='svitlo-cherkasy-shell-v7.10.1';
 // Final UX bundle: force the service worker lifecycle after all v7.10.0 assets are committed.
-const UX_BUNDLE_REV='7.10.0-final-3';
+const UX_BUNDLE_REV='7.10.1-layout-cleanup';
 const SHELL=["./","./index.html","./app.js","./comfort.js","./comfort.css","./schedule-experience.js","./schedule-experience.css","./experience-polish.js","./experience-polish.css","./address-lookup.js","./notification-center.js","./notification-text.js","./inbox-ui.js","./site-mode.js","./admin-control.js","./admin-richtext.js","./admin-help-richtext.js","./admin-control.css","./admin-dashboard.js","./admin-features.js","./admin-command.js","./data-merge.js","./hour-paint.js","./admin.html","./admin.js","./style.css","./install.css","./install.js","./version-check.js","./release.json","./manifest.webmanifest","./privacy.html","./about.html","./feedback.html","./feedback.js","./help.html","./help.css","./help.js","./admin-extra.js","./admin-planner.js","./schedule-planner.js","./favicon.ico","./favicon-16.png","./favicon-32.png","./favicon-48.png","./assets/icon.svg","./assets/icon-192-v692.png","./assets/icon-512-v692.png","./assets/icon-512-maskable-v692.png","./apple-touch-icon-v692.png","./apple-touch-icon.png"];
 const CACHE_DATA='svitlo-cherkasy-data-v6.7';
 const CACHE_IMAGES='svitlo-cherkasy-media-v74';
