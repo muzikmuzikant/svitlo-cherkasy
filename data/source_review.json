@@ -1,18 +1,12 @@
 {
   "schemaVersion": 1,
-  "lastChecked": "2026-10-12T19:42:22+03:00",
+  "lastChecked": "2026-10-12T19:52:07+03:00",
   "rejectedCount": 0,
-  "warningCount": 2,
+  "warningCount": 1,
   "items": [
     {
       "code": "UNREADABLE_ARTICLE",
       "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-9-zhovtnya-2?lang=uk",
-      "targetDate": "2026-10-09",
-      "reason": "Графік у новині не вдалося розпізнати."
-    },
-    {
-      "code": "UNREADABLE_ARTICLE",
-      "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-9-zhovtnya-1?lang=uk",
       "targetDate": "2026-10-09",
       "reason": "Графік у новині не вдалося розпізнати."
     }
