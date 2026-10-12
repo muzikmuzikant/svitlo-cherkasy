@@ -2,6 +2,12 @@
 (() => {
   'use strict';
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  // Installed iPhone PWAs must update their own Service Worker, not only the browser installer.
+  if (navigator.serviceWorker?.register) {
+    navigator.serviceWorker.register('./sw.js', {scope:'./',updateViaCache:'none'})
+      .then(reg=>reg.update?.().catch(error=>console.warn('SW update:',error)))
+      .catch(error=>console.warn('SW registration:',error));
+  }
   if (standalone) {
     const hour = document.createElement('script');
     hour.src = './hour-paint.js';
@@ -124,5 +130,5 @@
     instructions.hidden = false;
     instructions.textContent = 'Готово! Тепер відкрийте «Світло Черкаси» з іконки на головному екрані.';
   });
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(console.warn);
+
 })();
