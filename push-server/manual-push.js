@@ -13,7 +13,7 @@ export function cleanMessage(input) {
   const queue = input.queue == null || input.queue === '' ? 'all' : String(input.queue);
   if (queue !== 'all' && !ALL_QUEUES.has(queue)) throw Error('Невідома підчерга');
   const notificationId=typeof input.notificationId==='string'&&/^notice:[A-Za-z0-9_-]{6,64}$/.test(input.notificationId)?input.notificationId:null;
-  return { title, body, queue, notificationId };
+  return notificationId?{title,body,queue,notificationId}:{title,body,queue};
 }
 
 export function selectRecipients(subscribers, { queue = 'all', target = 'all', endpoint = '' } = {}) {
