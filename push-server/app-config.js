@@ -50,7 +50,7 @@ export function validateAppConfig(input){
   if(title.length>90||body.length>280||content.length>6000||(a.active===true&&(title.length<1||body.length<1)))
    throw Error('Додайте заголовок і короткий текст перед публікацією');
   const kind=a.kind||'info',priority=a.priority||'normal',queue=a.queue||'all',delivery=a.delivery||'inbox';
-  if(!['info','important','update','schedule','emergency'].includes(kind)||!['normal','important','urgent'].includes(priority)||!QUEUES.has(queue)||!['inbox','both'].includes(delivery))throw Error('Невірні налаштування доставки');
+  if(!['info','important','update','schedule','emergency'].includes(kind)||!['normal','important','urgent'].includes(priority)||!QUEUES.has(queue)||!['inbox','both','push'].includes(delivery))throw Error('Невірні налаштування доставки');
   const images=a.images??[];if(!Array.isArray(images)||images.length>6)throw Error('Максимум шість зображень');
   const scheduledAt=date(a.scheduledAt),expiresAt=date(a.expiresAt);
   if(scheduledAt&&expiresAt&&scheduledAt>=expiresAt)throw Error('Термін дії раніше публікації');
@@ -77,7 +77,7 @@ export function createAppConfig({directory,record=()=>{}}){
   maintenance:x.config?.maintenance?.enabled===true}));
 
  const persist=value=>{fs.mkdirSync(path.dirname(file),{recursive:true});const tmp=file+'.tmp';fs.writeFileSync(tmp,JSON.stringify(value,null,2)+'\n',{mode:0o600});fs.renameSync(tmp,file);state=value};
- const publicState=()=>{const t=Date.now();return {schemaVersion:1,updatedAt:state.updatedAt,maintenance:{...state.maintenance},site:state.site||defaultSite(),announcements:state.announcements.filter(x=>x.active&&(!x.scheduledAt||Date.parse(x.scheduledAt)<=t)&&(!x.expiresAt||Date.parse(x.expiresAt)>t)).map(({pushSentAt,...visible})=>visible)}};
+ const publicState=()=>{const t=Date.now();return {schemaVersion:1,updatedAt:state.updatedAt,maintenance:{...state.maintenance},site:state.site||defaultSite(),announcements:state.announcements.filter(x=>x.active&&x.delivery!=='push'&&(!x.scheduledAt||Date.parse(x.scheduledAt)<=t)&&(!x.expiresAt||Date.parse(x.expiresAt)>t)).map(({pushSentAt,...visible})=>visible)}};
  const update=value=>{
   const next=validateAppConfig(value),previous=copy(),changed=JSON.stringify({...previous,updatedAt:null})!==JSON.stringify({...next,updatedAt:null});
   persist(next);
@@ -89,7 +89,7 @@ export function createAppConfig({directory,record=()=>{}}){
   }
   record('app.settings',next.maintenance.enabled?'maintenance:on':'maintenance:off');return copy();
  };
- const duePush=()=>{const t=Date.now();return state.announcements.filter(x=>x.active&&x.delivery==='both'&&!x.pushSentAt&&(!x.scheduledAt||Date.parse(x.scheduledAt)<=t)&&(!x.expiresAt||Date.parse(x.expiresAt)>t)).map(x=>({...x}))};
+ const duePush=()=>{const t=Date.now();return state.announcements.filter(x=>x.active&&['both','push'].includes(x.delivery)&&!x.pushSentAt&&(!x.scheduledAt||Date.parse(x.scheduledAt)<=t)&&(!x.expiresAt||Date.parse(x.expiresAt)>t)).map(x=>({...x}))};
  const markPushed=id=>{if(!state.announcements.some(x=>x.id===id&&!x.pushSentAt))return false;const next=copy();next.announcements.find(x=>x.id===id).pushSentAt=new Date().toISOString();persist(next);record('push.announcement',id);return true};
  return {get:copy,publicState,update,duePush,markPushed,historyView};
 }
