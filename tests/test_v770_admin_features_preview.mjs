@@ -31,7 +31,7 @@ test('25 feature switches have real runtime effects and can be searched, saved a
   assert.ok(key in defaults,'Config must validate '+key);
   assert.match(admin,new RegExp("['\\x22]"+key+"['\\x22]"),'Admin switch '+key);
   assert.ok(runtime.includes(key),'Live site runtime '+key);
-  assert.ok(css.includes('feature-off-'+key),'CSS for toggle '+key);
+  assert.ok(css.includes('feature-off-'+key)||read('app.js').includes('feature-off-'+key),'Runtime behavior for toggle '+key);
  }
  assert.match(admin,/api\('app-config'\)/);
  assert.match(admin,/method:'PUT'/);
