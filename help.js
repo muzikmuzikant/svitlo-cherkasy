@@ -11,13 +11,44 @@ const fallback=[
 ].map(([category,question,answer],i)=>({id:'local-'+i,category,question,answer}));
 let articles=fallback,category='Усі';const $=id=>document.getElementById(id);
 const norm=s=>String(s||'').toLocaleLowerCase('uk-UA').normalize('NFKC');
+/* Allow only the same safe Markdown subset available in the admin's visual editor. */
+function renderHelpAnswer(node,markdown){
+ node.replaceChildren();let list=null;
+ const inline=(target,text)=>{
+  for(const piece of String(text).split(/(\*\*[^*]{1,160}\*\*|\[[^\]]{1,160}\]\(https:\/\/[^)\s]+\))/g)){
+   if(!piece)continue;
+   if(piece.startsWith('**')&&piece.endsWith('**')){
+    const strong=document.createElement('strong');strong.textContent=piece.slice(2,-2);target.append(strong);continue;
+   }
+   const match=piece.match(/^\[([^\]]+)\]\((https:\/\/[^)\s]+)\)$/);
+   if(match){
+    try{const url=new URL(match[2]);if(url.protocol==='https:'&&!url.username&&!url.password){
+     const anchor=document.createElement('a');anchor.href=url.href;anchor.rel='noopener noreferrer';
+     anchor.target='_blank';anchor.textContent=match[1];target.append(anchor);continue;
+    }}catch{}
+   }
+   target.append(document.createTextNode(piece));
+  }
+ };
+ for(const original of String(markdown||'').split('\n').slice(0,80)){
+  const line=original.trim();
+  if(/^[-*]\s+/.test(line)){
+   if(!list){list=document.createElement('ul');node.append(list)}
+   const item=document.createElement('li');inline(item,line.replace(/^[-*]\s+/,''));list.append(item);continue;
+  }
+  list=null;
+  if(!line)continue;
+  const heading=/^#{1,3}\s+/.test(line),block=document.createElement(heading?'h3':'p');
+  inline(block,heading?line.replace(/^#{1,3}\s+/,''):line);node.append(block);
+ }
+}
 function render(){
  const categories=['Усі',...new Set(articles.map(x=>x.category))];if(!categories.includes(category))category='Усі';
  const wrap=$('helpFilters');wrap.replaceChildren();
  categories.forEach(c=>{const b=document.createElement('button');b.type='button';b.textContent=c;b.setAttribute('aria-pressed',String(category===c));b.addEventListener('click',()=>{category=c;render()});wrap.append(b)});
  const text=norm($('helpSearch').value.trim());const filtered=articles.filter(x=>(category==='Усі'||x.category===category)&&(!text||norm([x.category,x.question,x.answer].join(' ')).includes(text)));
  const list=$('helpArticles');list.replaceChildren();filtered.forEach(x=>{
-  const d=document.createElement('details'),s=document.createElement('summary'),a=document.createElement('div');s.textContent=x.question;a.className='answer';a.textContent=x.answer;d.append(s,a);list.append(d)
+  const d=document.createElement('details'),s=document.createElement('summary'),a=document.createElement('div');s.textContent=x.question;a.className='answer';renderHelpAnswer(a,x.answer);d.append(s,a);list.append(d)
  });$('articleCount').textContent=filtered.length+' відповідей';$('helpEmpty').hidden=filtered.length>0;
 }
 $('helpSearch').addEventListener('input',render);

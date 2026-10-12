@@ -3,3 +3,12 @@
 
 .ticket-status{margin-top:30px;padding:27px 31px;border:1px solid #e2eaf7;background:#fff;border-radius:24px;display:grid;grid-template-columns:1fr 1fr;gap:27px;align-items:center}
 .ticket-status h2{margin:8px 0;font-size:21px;letter-spacing:-.3px}.ticket-status p{font-size:13px;color:#71849f;line-height:1.65}.ticket-status label{font-size:12px;color:#5d7392;font-weight:750;display:block;margin-bottom:9px}.ticket-form{display:flex;gap:8px}.ticket-form input{min-width:0;flex:1;width:100%;border:1px solid #dce6f4;border-radius:12px;padding:12px 10px;font-size:14px;outline:none;text-transform:uppercase}.ticket-form button{background:#e8f1ff;color:#2869c4;border:0;border-radius:12px;padding:11px 13px;font-size:12px;font-weight:800}#ticketCheckResult{min-height:20px;margin:12px 0 0}@media(max-width:720px){.ticket-status{grid-template-columns:1fr;padding:22px;gap:14px}}
+
+
+/* Safe Markdown presentation shared with the admin FAQ editor. */
+.answer p{margin:0 0 11px;white-space:pre-wrap;line-height:1.65}
+.answer h3{font-size:15px;letter-spacing:-.2px;color:var(--ink,#244267);margin:17px 0 11px;font-weight:820}
+.answer ul{margin:7px 0 14px;padding-left:23px}
+.answer li{margin:0 0 8px;line-height:1.65}
+.answer a{color:#347af0;font-weight:750;text-decoration:underline;text-underline-offset:3px}
+.answer strong{font-weight:830}

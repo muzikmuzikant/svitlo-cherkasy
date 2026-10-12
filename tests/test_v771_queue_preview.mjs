@@ -33,6 +33,6 @@ test('maintenance incident mode has its own readable look',()=>{
  assert.match(mode,/ВАЖЛИВЕ ПОВІДОМЛЕННЯ/);
  assert.match(css,/\.maintenance-screen\[data-mode="incident"\]/);
  const version=JSON.parse(read('release.json')).version;
- assert.equal(version,'7.7.1');
- assert.match(read('sw.js'),/svitlo-cherkasy-shell-v7\.7\.1/);
+ assert.match(version,/^7\.(?:7|[89]|[1-9]\d)\./);
+ assert.match(read('sw.js'),new RegExp('svitlo-cherkasy-shell-v'+version.replaceAll('.','\\.')));
 });
