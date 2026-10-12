@@ -81,6 +81,17 @@ test('CMS and maintenance have independent save scopes',()=>{
  assert.match(source,/next=\{\.\.\.latest,announcements:noticeChanges\}/);
  assert.match(source,/saveConfig\(\{scope:'maintenance'\}\)/);
 });
+test('maintenance layout presets persist securely and render live previews',()=>{
+ const m=validateAppConfig({...base(),maintenance:{...base().maintenance,layout:'split'}});
+ assert.equal(m.maintenance.layout,'split');
+ const bad=validateAppConfig({...base(),maintenance:{...base().maintenance,layout:'compact'}});
+ assert.equal(bad.maintenance.layout,'compact');
+ assert.throws(()=>validateAppConfig({...base(),maintenance:{...base().maintenance,layout:'javascript'}}));
+ assert.match(read('site-mode.js'),/overlay\.dataset\.layout=/);
+ assert.match(read('admin.html'),/id="opsLayout"/);
+ assert.match(read('admin-control.js'),/layout:read\('opsLayout'\)/);
+ assert.match(read('style.css'),/maintenance-screen\[data-layout="split"\]/);
+});
 test('new admin script and source files ship in Pages and SW shell',()=>{
  const release=JSON.parse(read('release.json'));
  assert.equal(release.version,'7.8.0');
