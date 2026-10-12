@@ -192,6 +192,14 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
    <div class="headline"><h2>📣 Повідомлення</h2><span class="pill" id="opsNoticeCount">0</span></div>
    <button type="button" id="opsNewNotice" class="ops-new-button">+ Створити повідомлення</button>
    <input type="search" id="opsNoticeSearch" placeholder="Знайти оголошення..." aria-label="Пошук повідомлень">
+   <div class="control-notice-filters"><select id="opsNoticeStatusFilter" aria-label="Статус повідомлень">
+    <option value="all">Усі статуси</option><option value="active">Опубліковані</option>
+    <option value="draft">Чернетки</option><option value="scheduled">Заплановані</option>
+    <option value="expired">Прострочені</option></select>
+    <select id="opsNoticeSort" aria-label="Сортування"><option value="new">Нові спочатку</option>
+    <option value="old">Старі спочатку</option><option value="title">За назвою</option></select></div>
+   <div class="control-notice-tools"><button type="button" class="secondary" id="opsNoticesExport">Експорт JSON</button>
+   <button type="button" class="secondary" id="opsExpireNotices">Зняти прострочені</button></div>
    <div id="opsNoticeList" class="ops-notices"></div>
   </aside>
   <div class="ops-editor-main">
