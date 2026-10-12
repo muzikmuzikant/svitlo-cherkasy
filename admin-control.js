@@ -22,7 +22,7 @@
   const n=target();if(!n)return;
   Object.assign(n,{title:read('opsNoticeTitle'),body:read('opsNoticeBody'),content:read('opsNoticeContent'),
    kind:read('opsNoticeKind'),priority:read('opsNoticePriority'),queue:read('opsNoticeQueue'),
-   delivery:read('opsNoticeDelivery'),icon:read('opsNoticeIcon'),pinned:$('opsNoticePinned').checked,
+   delivery:read('opsNoticeDelivery'),icon:read('opsNoticeIcon'),updatedAt:now(),pinned:$('opsNoticePinned').checked,
    active:$('opsNoticeActive').checked,scheduledAt:fromLocal($('opsNoticeSchedule').value),
    expiresAt:fromLocal($('opsNoticeExpires').value),images:[...photos]});
  }
