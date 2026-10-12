@@ -163,10 +163,25 @@
   options('opsMode',m.mode||'full');options('opsTheme',m.theme||'blue');options('opsIcon',m.icon||'✨');
   options('opsImageUrl',m.imageUrl||'');fillVisual(m);previewMaintenance();
  }
+ async function refreshHistory(){
+  const host=$('opsHistoryList');if(!host)return;
+  try{
+   const result=await api('app-config/history');host.replaceChildren();
+   if(!result.items?.length){const p=document.createElement('p');p.className='hint';p.textContent='Попередніх редакцій поки немає.';host.append(p);return}
+   for(const entry of result.items.slice(0,25)){
+    const line=document.createElement('div');line.className='ops-history-item';
+    const at=document.createElement('time');at.textContent=new Date(entry.at).toLocaleString('uk-UA',{timeZone:'Europe/Kyiv',dateStyle:'medium',timeStyle:'short'});
+    const stat=document.createElement('strong');stat.textContent=entry.active+' активних з '+entry.messages+' повідомлень';
+    const tech=document.createElement('small');tech.textContent=entry.maintenance?'Техроботи були ввімкнені':'Техроботи були вимкнені';
+    line.append(at,stat,tech);host.append(line);
+   }
+  }catch(e){const p=document.createElement('p');p.className='hint';p.textContent='Історія недоступна: '+e.message;host.replaceChildren(p)}
+ }
+ $('opsHistoryRefresh').onclick=()=>refreshHistory();
  async function reload(){
   if(!remote)return;
   try{const incoming=await api('app-config');state=incoming;serverState=structuredClone(incoming);selectedId=state.announcements.find(x=>x.id===selectedId)?.id||state.announcements[0]?.id||'';
-   fillMaintenance(state.maintenance);fillSite(state.site);fill();drawList();status('Дані завантажено. Можна редагувати.');
+   fillMaintenance(state.maintenance);fillSite(state.site);fill();drawList();refreshHistory().catch(console.warn);status('Дані завантажено. Можна редагувати.');
   }catch(e){status('Не вдалося завантажити редактор: '+e.message,true)}
  }
  async function uploadPhoto(file){
@@ -256,6 +271,7 @@
    serverState=structuredClone(state);
    fill();drawList();previewMaintenance();
    status(silent?'Збережено на сервері. Синхронізація запущена.':'Збережено. Зміни опубліковані.');
+   refreshHistory().catch(console.warn);
    try{const channel=new BroadcastChannel('svitlo-content-v1');
     channel.postMessage({type:'REFRESH_APP_CONFIG',at:Date.now()});channel.close()}catch{}
    return state;
