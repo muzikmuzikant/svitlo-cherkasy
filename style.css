@@ -344,3 +344,15 @@ html.feature-off-syncStatus #syncStatus{display:none!important}
 html.feature-off-settingsFooter .settings-foot{display:none!important}
 html.feature-off-tomorrowOpenShortcut #tomorrowOpen{display:none!important}
 html.feature-off-scheduleOpenShortcut #openDetail{display:none!important}
+
+/* Dynamic appearance settings, validated and served by Railway */
+:root[data-site-density="compact"] .viewport{padding-left:14px;padding-right:14px}
+:root[data-site-density="compact"] .surface{padding:12px 13px}
+:root[data-site-density="compact"] .section-head{margin-top:19px;margin-bottom:10px}
+:root[data-site-density="compact"] .place-card{padding-block:10px}
+:root[data-site-density="compact"] .status-panel{min-height:180px;padding:19px}
+:root[data-site-density="compact"] .hour-grid{gap:7px}
+:root[data-site-rounded="false"] .surface,:root[data-site-rounded="false"] .status-panel,
+:root[data-site-rounded="false"] .picker-btn,:root[data-site-rounded="false"] .tomorrow-card,
+:root[data-site-rounded="false"] .place-card{border-radius:8px!important}
+.surface,.picker-btn,.overview-card,.tomorrow-card{background:var(--surface,#fff)}
