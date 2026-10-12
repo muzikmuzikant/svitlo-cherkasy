@@ -36,9 +36,14 @@ const minute=s=>s==='24:00'?1440:/^([01]\d|2[0-3]):[0-5]\d$/.test(s||'')?Number(
 const clock=n=>`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;
 // A successful recent check with no published plan means no *planned* outages.
 // An unavailable/stale operator source is different: do not invent a forecast.
-function sourceFresh(){
+function reviewAffects(date){
+ // Warnings about another publication date do not invalidate this date.
+ if(Array.isArray(data.unresolvedDates))return data.unresolvedDates.includes(date);
+ return data.reviewPending===true; // Legacy data until next importer run.
+}
+function sourceFresh(date=today()){
  const checked=Date.parse(data.lastChecked||'');
- return !lastSyncFailed && !data.reviewPending && Number.isFinite(checked) &&
+ return !lastSyncFailed && !reviewAffects(date) && Number.isFinite(checked) &&
    checked<=Date.now()+5*60_000 && Date.now()-checked<=55*60_000;
 }
 function withinPublishedHorizon(date){
@@ -55,13 +60,13 @@ function timeline(date,queue){
  if(!day){
    // The operator does not publish a graph when planned outages are absent.
    // Do not extend this assumption beyond today/tomorrow or a fresh check.
-   return sourceFresh()&&withinPublishedHorizon(date)?new Int8Array(1440):null;
+   return sourceFresh(date)&&withinPublishedHorizon(date)?new Int8Array(1440):null;
  }
  if(!q){return new Int8Array(1440)} // Omitted subqueue in verified publication.
  const start=minute(q.knownFrom||'00:00');if(start<0)return null;
  // Historical importers used knownFrom=24:00 for omitted subqueues. A fresh
  // verified check confirms the omission means no declared planned outages.
- if(start===1440&&!(q.off||[]).length&&sourceFresh())return new Int8Array(1440);
+ if(start===1440&&!(q.off||[]).length&&sourceFresh(date))return new Int8Array(1440);
  const a=new Int8Array(1440);a.fill(-1);a.fill(0,start,1440);
  let last=0;for(const [s,e] of q.off||[]){
   const f=minute(s),t=minute(e);if(f<last||f>=t||t>1440)return null;
@@ -139,9 +144,9 @@ function renderSyncStatus(){
  const checked=Date.parse(data.lastChecked||'');
  const checkKnown=Number.isFinite(checked)&&checked<=Date.now()+5*60_000;
  const sourceStale=!checkKnown||(Date.now()-checked>55*60_000);
- const offline=navigator.onLine===false,review=data.reviewPending===true;
+ const offline=navigator.onLine===false,review=reviewAffects(today());
  box.dataset.state=!hasCheckedOnce?'pending':offline||lastSyncFailed?'error':sourceStale||review?'stale':'fresh';
- const title=!hasCheckedOnce?'Завантажуємо графіки…':offline?'Немає інтернету':lastSyncFailed?'Не вдалося отримати графіки':review?'Є публікація, яка потребує перевірки':sourceStale?'Перевірка оператора затримується':'Автооновлення графіків активне';
+ const title=!hasCheckedOnce?'Завантажуємо графіки…':offline?'Немає інтернету':lastSyncFailed?'Не вдалося отримати графіки':review?'Не вдалося зчитати оновлення графіка':sourceStale?'Перевірка оператора затримується':'Автооновлення графіків активне';
  const details=!hasCheckedOnce?'При відкритті й кожні 5 хвилин, поки застосунок відкритий':
    `Джерело: ${checkKnown?fmtStamp(data.lastChecked):'час невідомий'} · На телефоні: ${lastDownloadAt?fmtStamp(lastDownloadAt):'немає нових даних'}`;
  setText('syncStatusTitle',title);setText('syncStatusDetails',details);
@@ -154,15 +159,15 @@ function renderFreshness(){
  const age=Date.now()-checked;
  const hasTime=Number.isFinite(checked)&&age>=0;
  const stale=!hasTime||age>55*60_000;
- const offline=navigator.onLine===false,review=data.reviewPending===true;
+ const offline=navigator.onLine===false,review=reviewAffects(today());
  // Avoid alarming users while the initial network request is still in flight.
  node.hidden=!hasCheckedOnce||(!stale&&!offline&&!review);
  if(node.hidden)return;
  node.replaceChildren();
- const title=el('strong','',offline?'Немає інтернету':review?'Є неперевірена публікація':hasTime?'Можливо, графік застарів':'Актуальність графіка не підтверджена');
+ const title=el('strong','',offline?'Немає інтернету':review?'Офіційне оновлення потребує повторного зчитування':hasTime?'Можливо, графік застарів':'Актуальність графіка не підтверджена');
  const message=el('span','',offline
    ?' Показуємо останні доступні дані. Вони могли змінитися.'
-   :review?' Знайдено публікацію з підозрілою датою. До її перевірки відсутність графіка не означає відсутність обмежень.'
+   :review?' Не вдалося автоматично прочитати всі години нового офіційного повідомлення. Показаний раніше отриманий графік може бути застарілим; звірте його з оператором.'
    :hasTime
      ?` Публікації оператора востаннє перевіряли ${fmtStamp(data.lastChecked)}. Новіші зміни можуть бути відсутні.`
      :' Не вдалося визначити час останньої перевірки публікацій.');
@@ -398,7 +403,7 @@ function applyOverrides(){
  }
  index=mergeIndexes(index,overrides.addresses||{},{manual:true});
 }
-function normalizeData(obj){if(!obj||!Array.isArray(obj.days))throw Error('Bad JSON');return {days:obj.days.filter(x=>/^20\d\d-\d\d-\d\d$/.test(x.date)&&x.verified===true),changes:Array.isArray(obj.changes)?obj.changes:[],lastChecked:obj.lastChecked||null,confirmedNoScheduleDates:Array.isArray(obj.confirmedNoScheduleDates)?obj.confirmedNoScheduleDates:undefined,reviewPending:obj.reviewPending===true}}
+function normalizeData(obj){if(!obj||!Array.isArray(obj.days))throw Error('Bad JSON');return {days:obj.days.filter(x=>/^20\d\d-\d\d-\d\d$/.test(x.date)&&x.verified===true),changes:Array.isArray(obj.changes)?obj.changes:[],lastChecked:obj.lastChecked||null,confirmedNoScheduleDates:Array.isArray(obj.confirmedNoScheduleDates)?obj.confirmedNoScheduleDates:undefined,reviewPending:obj.reviewPending===true,unresolvedDates:Array.isArray(obj.unresolvedDates)?obj.unresolvedDates.filter(x=>/^20\d\d-\d\d-\d\d$/.test(x)):undefined}}
 function mergeIndexes(live,backup,options={}){
  return SvitloDataMerge.mergeIndexes(live,backup,options);
 }
