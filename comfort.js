@@ -35,7 +35,7 @@ function init(){
  const settingsScreen=document.getElementById('settings');
  if(!settingsScreen)return;
  const push=settingsScreen.querySelector('.settings-push-controls');
- (push||settingsScreen.querySelector('.subsection-title'))?.before(section);
+ if(!document.getElementById('comfortMotion'))(push||settingsScreen.querySelector('.subsection-title'))?.before(section);
  for(const [key,id] of [['motion','comfortMotion'],['density','comfortDensity'],['contrast','comfortContrast'],['haptics','comfortHaptics'],['ambient','comfortAmbient']]){
   const el=document.getElementById(id);if(!el)continue;
   if(el.type==='checkbox')el.checked=settings[key];else el.value=settings[key];
