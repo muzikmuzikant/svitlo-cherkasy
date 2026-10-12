@@ -82,7 +82,7 @@
   options('opsBannerUrl',site.banner?.url||'');
  }
  function getSite(){return {links:{help:read('opsLinkHelp'),feedback:read('opsLinkFeedback'),official:read('opsLinkOfficial')},
-  flags:{...(state?.site?.flags||{}),inbox:$('opsFlagInbox').checked,sharing:$('opsFlagSharing').checked,help:$('opsFlagHelp').checked},
+  flags:{inbox:$('opsFlagInbox').checked,sharing:$('opsFlagSharing').checked,help:$('opsFlagHelp').checked},
   banner:{enabled:$('opsBannerActive').checked,title:read('opsBannerTitle'),body:read('opsBannerBody'),
    button:read('opsBannerButton'),url:read('opsBannerUrl')}}}
  function fillVisual(m){
