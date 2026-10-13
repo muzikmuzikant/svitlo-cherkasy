@@ -272,23 +272,46 @@ async function openSharePreview(blob,filename,date,queue){
  if(!dialog||!preview)throw Error('Попередній перегляд недоступний');
  const url=URL.createObjectURL(blob);
  const file=new File([blob],filename,{type:'image/png'});
+ const heading=$('sharePreviewHeading'),share=$('sharePreviewShare'),close=$('sharePreviewClose');
+ let closing=false,closeTimer=null;
+ const reduceMotion=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true||
+   document.documentElement.classList.contains('feature-off-animations');
+ const finish=()=>{
+   clearTimeout(closeTimer);closeTimer=null;closing=false;
+   dialog.classList.remove('is-closing');
+   preview.removeAttribute('src');
+   URL.revokeObjectURL(url);
+   dialog.removeEventListener('close',finish);
+   dialog.removeEventListener('cancel',onCancel);
+   dialog.removeEventListener('click',onBackdrop);
+ };
+ const dismiss=()=>{
+   if(!dialog.open||closing)return;
+   if(reduceMotion()){dialog.close();return}
+   closing=true;
+   dialog.classList.add('is-closing');
+   closeTimer=setTimeout(()=>{if(dialog.open)dialog.close()},280);
+ };
+ const onCancel=event=>{event.preventDefault();dismiss()};
+ const onBackdrop=event=>{if(event.target===dialog)dismiss()};
  preview.src=url;
- $('sharePreviewHeading').textContent='Графік · '+formatDate(date,{day:'numeric',month:'long'})+' · '+queue;
+ heading.textContent='Графік · '+formatDate(date,{day:'numeric',month:'long'})+' · '+queue;
  const canNativeShare=!!(navigator.share&&navigator.canShare?.({files:[file]}));
- $('sharePreviewShare').hidden=!canNativeShare;
- $('sharePreviewClose').onclick=()=>dialog.close();
+ share.hidden=!canNativeShare;
+ close.onclick=dismiss;
  $('sharePreviewSave').onclick=()=>{
-  const a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();
-  flash('Картинку графіка збережено');
+   const a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();
+   flash('Картинку графіка збережено');
  };
- $('sharePreviewShare').onclick=async()=>{
-  try{await navigator.share({files:[file],title:'Графік відключень · Світло Черкаси'});dialog.close()}
-  catch(e){if(e.name!=='AbortError'){console.warn('Share:',e);flash('Не вдалося поділитися. Спробуйте зберегти PNG.')}}
+ share.onclick=async()=>{
+   try{await navigator.share({files:[file],title:'Графік відключень · Світло Черкаси'});dismiss()}
+   catch(e){if(e.name!=='AbortError'){console.warn('Share:',e);flash('Не вдалося поділитися. Спробуйте зберегти PNG.')}}
  };
- const closed=()=>{preview.removeAttribute('src');URL.revokeObjectURL(url);dialog.removeEventListener('close',closed)};
- dialog.addEventListener('close',closed);
- dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close()},{once:true});
- dialog.showModal();
+ dialog.addEventListener('close',finish);
+ dialog.addEventListener('cancel',onCancel);
+ dialog.addEventListener('click',onBackdrop);
+ try{dialog.showModal()}
+ catch(error){finish();throw error}
 }
 async function shareSchedule(date,{copy=false}={}){
  const info=shareDescription(date);
