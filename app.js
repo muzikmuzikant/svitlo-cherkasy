@@ -709,23 +709,52 @@ async function refreshData(manual=false){
 function notify(title,body,key){if(pushActive||notified.has(key)||!('Notification' in window)||Notification.permission!=='granted')return;notified.add(key);localStorage.setItem(SEEN,JSON.stringify([...notified].slice(-400)));navigator.serviceWorker?.ready.then(r=>r.showNotification(title,{body,icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',tag:key})).catch(()=>{try{new Notification(title,{body})}catch{}})}
 function announceChanges(previous,current){if(!prefs.changes||!previous?.lastChecked)return;const a=primary();if(!a?.queue)return;for(const c of current.changes||[])if(c.queues?.includes(a.queue)&&!previous.changes?.some(x=>x.date===c.date&&(x.revisionId||x.publishedAt)===(c.revisionId||c.publishedAt))){notify('🔄 Графік оновлено',`Підчерга ${a.queue} · Змінено години на ${formatDate(c.date)}. Перевірте розклад.`, `change:${c.date}:${c.revisionId||c.publishedAt}:${a.queue}`)}}
 function checkNotifications(){
- if(!('Notification' in window)||Notification.permission!=='granted')return;
- // Regional emergency notices are useful even when there is no known schedule.
- if(prefs.emergency)notifyEmergencyEvent();
- const a=primary();if(!a?.queue)return;
- const date=today(),m=nowMinutes(),arr=timeline(date,a.queue);
- if(arr&&arr[m]>=0){
-   for(const [type,offset,desired] of [['off',30,1],['on',15,0]]){
-     if(!prefs[type])continue;
-     const future=m+offset;
-     if(future>=1440)continue;
-     if(arr[future]===desired&&arr[future-1]!==desired&&arr[future-1]!==-1){
-       notify(`${type==='off'?'🔴 Відключення':'🟢 Відновлення'} через ${offset} хв`,`Підчерга ${a.queue} · За графіком о ${clock(future)}. Час орієнтовний.`,`${type}:${date}:${future}:${a.id}`);
-     }
+ // In-app reminders must work even when Web Push is denied, disabled or delayed.
+ // Only verified, recently checked schedules can produce a new reminder.
+ const nativeAllowed='Notification' in window&&Notification.permission==='granted';
+ if(nativeAllowed&&prefs.emergency)notifyEmergencyEvent();
+ const a=primary();
+ if(!a?.queue)return;
+ const date=today(),m=nowMinutes(),verifiedAt=Date.parse(data.lastChecked||'');
+ const fresh=Number.isFinite(verifiedAt)&&verifiedAt<=Date.now()+5*60_000&&
+   Date.now()-verifiedAt<=55*60_000&&data.reviewPending!==true;
+ if(fresh){
+  const current=timeline(date,a.queue),nextDate=shiftDay(date,1),tomorrow=timeline(nextDate,a.queue);
+  for(const [type,offset,desired] of [['off',30,1],['on',15,0]]){
+   if(!prefs[type])continue;
+   // Opened PWAs can recover a delayed reminder before the actual event.
+   // Never show a reminder after the published transition has happened.
+   for(let eta=offset;eta>=1;eta--){
+    const boundary=m+eta,following=boundary>=1440?tomorrow?.[boundary-1440]:current?.[boundary];
+    const previous=boundary-1>=1440?tomorrow?.[boundary-1441]:current?.[boundary-1];
+    if(following!==desired||previous===undefined||previous<0||previous===desired)continue;
+    const key='transition:'+a.queue+':'+date+':'+boundary+':'+type;
+    if(notified.has('inbox:'+key))break;
+    const eventDate=boundary>=1440?nextDate:date,stamp=new Date().toISOString();
+    const title=(type==='off'?'🔴 Відключення':'🟢 Відновлення')+' через '+eta+' хв';
+    const body='Підчерга '+a.queue+' · За плановим графіком о '+clock(boundary%1440)+'.';
+    const content='**Нагадування за графіком**\n\nДля підчерги '+a.queue+
+      ' '+(type==='off'?'заплановано відключення':'заплановано повернення світла')+
+      ' о '+clock(boundary%1440)+' ('+formatDate(eventDate)+'). До цієї події приблизно '+
+      eta+' хв.\n\nЧас орієнтовний, можливі зміни офіційного розкладу.';
+    const inbox=window.SvitloInbox;
+    if(inbox?.add){
+     notified.add('inbox:'+key);
+     localStorage.setItem(SEEN,JSON.stringify([...notified].slice(-400)));
+     inbox.add({id:key,kind:'schedule',title,body,content,at:stamp})
+      .then(()=>window.SvitloInboxUI?.refresh?.())
+      .catch(error=>{notified.delete('inbox:'+key);console.warn('In-app reminder:',error)});
+    }
+    // The server owns Push for registered subscribers; no duplicate local Push.
+    if(nativeAllowed&&!pushActive)notify(title,body,'local:'+key);
+    break;
    }
+  }
  }
- if(prefs.tomorrow){const tomorrow=shiftDay(date,1),published=currentDay(tomorrow);
-   if(published?.queues?.[a.queue]&&m>=19*60)notify('🗓️ Графік на завтра',`Підчерга ${a.queue} · На ${formatDate(tomorrow)}. Перегляньте години відключень.`,`tomorrow:${tomorrow}:${a.id}`);
+ if(nativeAllowed&&prefs.tomorrow){
+  const nextDate=shiftDay(date,1),published=currentDay(nextDate);
+  if(published?.queues?.[a.queue]&&m>=19*60)
+   notify('🗓️ Графік на завтра',`Підчерга ${a.queue} · На ${formatDate(nextDate)}. Перегляньте години відключень.`,`tomorrow:${nextDate}:${a.id}`);
  }
 }
 async function getPushConfig(){
