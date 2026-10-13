@@ -183,6 +183,7 @@ async function readPayload(req,limit=12000){
  return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 const statusAttempts=new Map();
+const deviceTests=new Map();
 const server=http.createServer(async(req,res)=>{
  // Routing must ignore cache-busting query strings, e.g. ?t=timestamp from the PWA.
  const requestPath=new URL(req.url,'http://localhost').pathname;
@@ -279,6 +280,25 @@ const server=http.createServer(async(req,res)=>{
     preferences:rec?{off:!!rec.preferences?.off,on:!!rec.preferences?.on}:null,
     lastPushCheck:lastSuccess,checkError:lastError});
   }catch{response(res,400,{error:'Invalid Push subscription'})}
+  return;
+ }
+ if(requestPath==='/api/push/test-device'&&req.method==='POST'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  try{
+   const data=await readPayload(req,4096),endpoint=data?.subscription?.endpoint;
+   if(!validEndpoint(endpoint))throw Error('Invalid endpoint');
+   const endpointId=hash(endpoint),now=Date.now();
+   for(const [key,until] of deviceTests)if(until<now)deviceTests.delete(key);
+   if(deviceTests.has(endpointId)){response(res,429,{error:'Повторна перевірка доступна трохи пізніше.'});return}
+   const rec=subscribers[endpointId];
+   if(!rec){response(res,409,{error:'Push-підписку не знайдено на сервері.'});return}
+   deviceTests.set(endpointId,now+10*60_000);
+   const result=await send(rec,{title:'🔔 Перевірка Push',body:'Це тестове системне сповіщення «Світло Черкаси». Якщо воно з’явилося на iPhone, доставка Push працює.'},
+      endpointId+':device-test:'+now,{notificationId:'test:'+now,kind:'push',urgency:'high',ttl:600});
+   save();
+   response(res,result==='accepted'?200:502,{ok:result==='accepted',accepted:result==='accepted',
+      message:result==='accepted'?'Push прийнято сервісом доставки. Перевірте системні сповіщення iPhone.':'Сервіс Push відхилив відправлення. Перевірте підписку.'});
+  }catch(e){response(res,400,{error:'Не вдалося виконати тест Push.'})}
   return;
  }
  if(!['/api/subscribe','/api/unsubscribe'].includes(req.url)||req.method!=='POST'){response(res,404,{error:'Not found'});return}
