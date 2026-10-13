@@ -467,3 +467,8 @@ html.feature-off-scheduleOpenShortcut #openDetail{display:none!important}
   animation:none!important;transition:none!important;
  }
 }
+
+/* Push connection diagnostics live inside the existing settings card. */
+.push-delivery-status{margin:12px 0 9px;padding:11px 12px;border:1px solid #dce7f7;border-radius:12px;background:#f5f9ff;color:#4c6484;font-size:11px;line-height:1.55;overflow-wrap:anywhere}
+.push-test-device{width:100%;min-height:42px;margin-top:2px;line-height:1.35;white-space:normal}
+.push-test-device[disabled]{opacity:.55;cursor:default}
