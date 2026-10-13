@@ -697,7 +697,7 @@ async function refreshData(manual=false){
      if(overrideRes.status==='fulfilled'&&overrideRes.value.ok){const parsed=await overrideRes.value.json();if(parsed.schemaVersion===1)overrides=parsed}
      applyOverrides();
    }catch(error){console.warn('Bulletin or admin overrides:',error)}
-   hasCheckedOnce=true;render();
+   hasCheckedOnce=true;render();checkNotifications();
    if(manual)flash(schedulesOk?'Графіки оновлено':'Немає з’єднання. Показуємо збережений графік.');
    if(schedulesOk){
      if(hadChecked&&scheduleQueueChanged(before,data,primary()?.queue))flash('Графік для вашої підчерги оновлено');
@@ -806,7 +806,7 @@ async function disableNotifications(){
 async function enableNotifications(){if(!('Notification' in window)){flash('Цей браузер не підтримує сповіщення');return}if(Notification.permission==='denied'){flash('Дозвольте сповіщення у налаштуваннях iPhone');return}const granted=await Notification.requestPermission();if(granted!=='granted'){flash('Дозвіл на сповіщення не надано');return}if(pushConfig){try{await updatePushSubscription();flash('Сповіщення увімкнено')}catch(e){console.warn(e);flash('Не вдалося ввімкнути сповіщення. Спробуйте пізніше')}}else flash('Нагадування увімкнено для відкритого застосунку');renderSettings();updatePushInvite()}
 // An iOS permission change can happen in system Settings while the PWA is suspended.
 window.addEventListener('focus',updatePushInvite);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)updatePushInvite()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){updatePushInvite();checkNotifications()}});
 // Event wiring
 // Inbox uses the existing screen and date picker; no external navigation.
 window.addEventListener('svitlo:open-schedule',event=>{
