@@ -807,7 +807,11 @@ async function checkPushDelivery(force=false){
     pushHealthMessage('Push-підписку оновлено для підчерги '+primary().queue+'. Можна перевірити тестовим Push.');
    }else{
     pushActive=true;
-    pushHealthMessage('Push-підписка є на сервері · підчерга '+remote.queue+
+    if(remote.checkError){
+     pushHealthMessage('Push-підписка підтверджена, але сервер має проблему з перевіркою графіка. Нагадування можуть запізнюватися.');
+    }else if(!remote.lastPushCheck){
+     pushHealthMessage('Push-підписка підтверджена. Очікуємо першої перевірки нагадувань сервером.');
+    }else pushHealthMessage('Push-підписка є на сервері · підчерга '+remote.queue+
       ' · відключення: '+(remote.preferences.off?'увімкнено':'вимкнено')+
       ' · відновлення: '+(remote.preferences.on?'увімкнено':'вимкнено')+
       '. Це не гарантує доставку iOS, для цього є тест нижче.');
