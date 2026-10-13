@@ -740,9 +740,11 @@ function checkNotifications(){
     const inbox=window.SvitloInbox;
     if(inbox?.add){
      notified.add('inbox:'+key);
-     localStorage.setItem(SEEN,JSON.stringify([...notified].slice(-400)));
      inbox.add({id:key,kind:'schedule',title,body,content,at:stamp})
-      .then(()=>window.SvitloInboxUI?.refresh?.())
+      .then(()=>{
+       try{localStorage.setItem(SEEN,JSON.stringify([...notified].slice(-400)))}catch{}
+       window.SvitloInboxUI?.refresh?.();
+      })
       .catch(error=>{notified.delete('inbox:'+key);console.warn('In-app reminder:',error)});
     }
     // The server owns Push for registered subscribers; no duplicate local Push.
