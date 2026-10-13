@@ -100,7 +100,9 @@ async function job(){
    const valuesTomorrow=schedulesSafe?timeline(tomorrow,q):null;
    for(const [type,offset,target] of [['off',30,1],['on',15,0]]){
     if(!pref[type])continue;
-    const boundary=dueTransitionAcrossDays(values,valuesTomorrow,minutes,offset,target,4);
+    // Recover reminders delayed by Railway restarts or temporarily slow schedule imports.
+    // The helper never returns transitions that have already started.
+    const boundary=dueTransitionAcrossDays(values,valuesTomorrow,minutes,offset,target,12);
     if(boundary!==null){const eta=boundary-minutes;
      const msg=transitionCopy(type,q,boundary,eta,boundary>=1440?nextDate:now.date);
      await send(record,msg,`${prefix}:${type}:${now.date}:${boundary}`,{
