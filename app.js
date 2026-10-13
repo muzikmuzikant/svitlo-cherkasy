@@ -13,6 +13,7 @@ const safeJSON=(k,fallback)=>{try{return JSON.parse(localStorage.getItem(k)??'nu
 const legacy=safeJSON('svitlo-addresses-v3',safeJSON('svitlo-addresses-v2',[]));
 let addresses=safeJSON(STORE,Array.isArray(legacy)?legacy:[]), prefs=Object.assign({primaryId:null,off:true,on:true,changes:true,tomorrow:true,emergency:true},safeJSON(PREF,{}));
 let previewQueue=null;
+let pushHealthLast=0,pushHealthBusy=null;
 let pushActive=false, emergency={events:[],lastChecked:null},overrides={schedules:{days:[]},addresses:{},emergency:{events:[]}},data={days:[],changes:[]},index={keys:{},streets:{},localities:{}},active='home',daySelected=null,dayStripStart=null,editId=null,suggestion=null,toastTimeout=null,lastPub=null,pushConfig=null,swRegistration=null,notified=new Set(safeJSON(SEEN,[])),lastRefresh=0,hasCheckedOnce=false,lastDownloadAt=null,lastSyncFailed=false,refreshInFlight=null;
 if(!Array.isArray(addresses))addresses=[];
 const byId=id=>addresses.find(x=>x.id===id);
@@ -448,7 +449,7 @@ function updatePushInvite(){
  action.firstChild.textContent=denied?'Відкрити налаштування сповіщень ':'Увімкнути сповіщення ';
  action.onclick=denied?()=>navigate('settings'):()=>enableNotifications();
 }
-function renderSettings(){for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).checked=!!prefs[key];const connected=!!pushConfig?.apiBase&&!!pushConfig?.publicKey;setText('pushHeadline','Сповіщення');setText('pushDescription',connected?'Отримуйте нагадування про відключення та зміни графіків, навіть коли застосунок закритий.':'Наразі нагадування доступні тільки під час використання застосунку.');setText('enableNotifications',connected?'Увімкнути сповіщення':'Дозволити нагадування');$('disableNotifications').hidden=!connected}
+function renderSettings(){for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).checked=!!prefs[key];const connected=!!pushConfig?.apiBase&&!!pushConfig?.publicKey;setText('pushHeadline','Сповіщення');setText('pushDescription',connected?'Отримуйте нагадування про відключення та зміни графіків, навіть коли застосунок закритий.':'Наразі нагадування доступні тільки під час використання застосунку.');setText('enableNotifications',connected?'Увімкнути сповіщення':'Дозволити нагадування');$('disableNotifications').hidden=!connected;const test=$('pushTestDevice');if(test){test.hidden=!connected;test.disabled=!connected||!('Notification' in window)||Notification.permission!=='granted'}}
 function fillQueueSelect(){const root=$('manualQueue');root.replaceChildren(new Option('Оберіть підчергу',''),...QUEUES.map(q=>new Option(q,q)))}
 function town(){return $('settlement').value==='Інше'?$('customSettlement').value.trim():$('settlement').value}
 function localIndex(){const k=normTown(town());return k===normTown('Черкаси')?{keys:index.keys||{},streets:index.streets||{},streetQueues:index.streetQueues||{}}:index.localities?.[k]||{keys:{},streets:{},streetQueues:{}}}
@@ -759,6 +760,88 @@ function checkNotifications(){
    notify('🗓️ Графік на завтра',`Підчерга ${a.queue} · На ${formatDate(nextDate)}. Перегляньте години відключень.`,`tomorrow:${nextDate}:${a.id}`);
  }
 }
+
+function pushHealthMessage(message){
+ const node=$('pushDeliveryStatus');
+ if(node)node.textContent=message;
+}
+async function checkPushDelivery(force=false){
+ if(pushHealthBusy)return pushHealthBusy;
+ if(!force&&Date.now()-pushHealthLast<2*60_000)return;
+ pushHealthLast=Date.now();
+ pushHealthBusy=(async()=>{
+  if(!pushConfig?.apiBase){pushHealthMessage('Сервер Push недоступний.');return}
+  if(!('Notification' in window)||Notification.permission!=='granted'){
+   pushActive=false;
+   pushHealthMessage('Системні Push не дозволені. Увімкніть їх у налаштуваннях iPhone.');
+   return;
+  }
+  if(localStorage.getItem(PUSH_CONSENT)==='no'){
+   pushActive=false;
+   pushHealthMessage('Push вимкнено для цього застосунку.');
+   return;
+  }
+  if(!primary()?.queue){pushHealthMessage('Оберіть адресу та підчергу для Push.');return}
+  try{
+   const registration=await navigator.serviceWorker.ready;
+   let subscription=await registration.pushManager.getSubscription();
+   if(!subscription){
+    pushActive=false;
+    if(localStorage.getItem(PUSH_CONSENT)!=='yes'){
+     pushHealthMessage('Push ще не підключено. Натисніть «Увімкнути сповіщення».');return
+    }
+    await updatePushSubscription();
+    subscription=await registration.pushManager.getSubscription();
+   }
+   if(!subscription){pushHealthMessage('Push-підписка iPhone відсутня.');return}
+   const response=await fetch(pushConfig.apiBase.replace(/\/$/,'')+'/api/push/subscription-status',{
+    method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({subscription:{endpoint:subscription.endpoint}}),cache:'no-store'
+   });
+   if(!response.ok)throw Error('Push diagnostic HTTP '+response.status);
+   const remote=await response.json();
+   const sameQueue=remote.queue===primary().queue;
+   const samePrefs=remote.preferences?.off===!!prefs.off&&remote.preferences?.on===!!prefs.on;
+   if(!remote.registered||!sameQueue||!samePrefs){
+    await updatePushSubscription();
+    pushHealthMessage('Push-підписку оновлено для підчерги '+primary().queue+'. Можна перевірити тестовим Push.');
+   }else{
+    pushActive=true;
+    pushHealthMessage('Push-підписка є на сервері · підчерга '+remote.queue+
+      ' · відключення: '+(remote.preferences.off?'увімкнено':'вимкнено')+
+      ' · відновлення: '+(remote.preferences.on?'увімкнено':'вимкнено')+
+      '. Це не гарантує доставку iOS, для цього є тест нижче.');
+   }
+  }catch(error){
+   console.warn('Push delivery check:',error);
+   pushHealthMessage('Не вдалося перевірити Push на сервері. Перевірте інтернет і спробуйте ще раз.');
+  }
+ })();
+ try{return await pushHealthBusy}finally{pushHealthBusy=null}
+}
+async function testDevicePush(){
+ const button=$('pushTestDevice');
+ if(button)button.disabled=true;
+ pushHealthMessage('Надсилаємо системний Push на цей пристрій…');
+ try{
+  await checkPushDelivery(true);
+  if(!pushConfig?.apiBase||!('Notification' in window)||Notification.permission!=='granted')throw Error('Увімкніть системні Push на iPhone.');
+  const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();
+  if(!sub)throw Error('Немає Push-підписки на цьому пристрої.');
+  const response=await fetch(pushConfig.apiBase.replace(/\/$/,'')+'/api/push/test-device',{
+   method:'POST',headers:{'content-type':'application/json'},
+   body:JSON.stringify({subscription:{endpoint:sub.endpoint}}),cache:'no-store'
+  });
+  const answer=await response.json().catch(()=>({}));
+  if(!response.ok||!answer.accepted)throw Error(answer.error||answer.message||'Push-сервіс не прийняв тест');
+  pushHealthMessage('Тестовий Push прийнято сервісом доставки. Перевірте системні сповіщення iPhone.');
+  flash('Тестовий Push відправлено. Перевірте сповіщення iPhone.');
+ }catch(error){
+  console.warn('Push device test:',error);
+  pushHealthMessage('Помилка тесту: '+String(error.message||error).slice(0,130));
+  flash('Не вдалося надіслати тестовий Push.');
+ }finally{if(button)button.disabled=false}
+}
 async function getPushConfig(){
  try{
   const r=await fetch('./push-config.json',{cache:'no-store'});
@@ -768,7 +851,7 @@ async function getPushConfig(){
    const existing=await (await navigator.serviceWorker.ready).pushManager.getSubscription();
    if(existing||localStorage.getItem(PUSH_CONSENT)==='yes')await updatePushSubscription();
   }
- }catch(e){console.warn('Push config:',e.message)}renderSettings();updatePushInvite();
+ }catch(e){console.warn('Push config:',e.message)}renderSettings();updatePushInvite();checkPushDelivery(true).catch(console.warn);
 }
 function urlsafe(value){const str=(value+'='.repeat((4-value.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/');return Uint8Array.from(atob(str),x=>x.charCodeAt(0))}
 async function updatePushSubscription(){
@@ -805,8 +888,8 @@ async function disableNotifications(){
 }
 async function enableNotifications(){if(!('Notification' in window)){flash('Цей браузер не підтримує сповіщення');return}if(Notification.permission==='denied'){flash('Дозвольте сповіщення у налаштуваннях iPhone');return}const granted=await Notification.requestPermission();if(granted!=='granted'){flash('Дозвіл на сповіщення не надано');return}if(pushConfig){try{await updatePushSubscription();flash('Сповіщення увімкнено')}catch(e){console.warn(e);flash('Не вдалося ввімкнути сповіщення. Спробуйте пізніше')}}else flash('Нагадування увімкнено для відкритого застосунку');renderSettings();updatePushInvite()}
 // An iOS permission change can happen in system Settings while the PWA is suspended.
-window.addEventListener('focus',updatePushInvite);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){updatePushInvite();checkNotifications()}});
+window.addEventListener('focus',()=>{updatePushInvite();checkPushDelivery().catch(console.warn)});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){updatePushInvite();checkNotifications();checkPushDelivery().catch(console.warn)}});
 // Event wiring
 // Inbox uses the existing screen and date picker; no external navigation.
 window.addEventListener('svitlo:open-schedule',event=>{
@@ -840,7 +923,7 @@ $('closeSheet').onclick=()=>closeSheet($('addressSheet'));$('closePlaces').oncli
 for(const dialog of [$('addressSheet'),$('placesSheet')])dialog.addEventListener('close',unlockSheet);
 $('settlement').onchange=()=>{$('manualQueue').value='';$('customSettlement').hidden=$('settlement').value!=='Інше';suggestion=null;suggestions();checkLookup()};$('customSettlement').oninput=()=>{$('manualQueue').value='';checkLookup()};$('street').oninput=()=>{$('manualQueue').value='';suggestion=null;suggestions();checkLookup()};$('house').onfocus=()=>{$('streetSuggestions').hidden=true};$('house').oninput=()=>{$('streetSuggestions').hidden=true;checkLookup()};$('manualQueue').onchange=checkLookup;$('addressForm').onsubmit=saveAddress;$('deleteAddress').onclick=deleteAddress;$('goOfficial').onclick=officialOpen;
 for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).onchange=e=>{prefs[key]=e.target.checked;savePrefs();updatePushSubscription().catch(console.warn)};
-$('enableNotifications').onclick=enableNotifications;$('disableNotifications').onclick=disableNotifications;
+$('enableNotifications').onclick=enableNotifications;$('disableNotifications').onclick=disableNotifications;$('pushTestDevice').onclick=testDevicePush;
 fillQueueSelect();
  const requestedScreen=new URL(location.href).searchParams.get('screen');
  let restore=null;
