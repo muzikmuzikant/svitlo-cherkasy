@@ -55,3 +55,11 @@ test('30 minute reminder sees tomorrow midnight without inventing power state',(
  assert.equal(dueTransitionAcrossDays(today,tomorrow,1410,30,1),1440);
  assert.equal(dueTransitionAcrossDays(today,null,1410,30,1),null);
 });
+
+test('late Railway dispatch recovers a published OFF reminder without sending after start',()=>{
+ const day=timeline(mk('00:00',[['10:00','12:00']]),'2.1');
+ assert.equal(dueTransitionAcrossDays(day,null,9*60+30,30,1,12),10*60);
+ assert.equal(dueTransitionAcrossDays(day,null,9*60+40,30,1,12),10*60);
+ assert.equal(dueTransitionAcrossDays(day,null,9*60+43,30,1,12),null);
+ assert.equal(dueTransitionAcrossDays(day,null,10*60,30,1,12),null);
+});
