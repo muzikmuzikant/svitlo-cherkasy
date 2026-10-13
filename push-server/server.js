@@ -54,13 +54,31 @@ async function loadJson(url){
  if(!r.ok)throw Error(`HTTP ${r.status}`);
  return r.json();
 }
+const deliveryStats={
+ lastAttempt:null,lastAccepted:null,lastFailure:null,
+ lastCycle:null,totalAcceptedSinceBoot:0,totalFailedSinceBoot:0
+};
 async function send(rec,message,key,options={}){
- if(sent[key])return;
+ if(sent[key])return 'already-sent';
+ const category=String(options.notificationId||'').split(':')[0]||'automatic';
  const payload=JSON.stringify({title:message.title,body:message.body,content:message.content||'',
-  url:options.source||appUrl,notificationId:options.notificationId,kind:options.kind||'schedule',
+  url:appUrl,notificationId:options.notificationId,kind:options.kind||'schedule',
   at:options.at||new Date().toISOString(),tag:options.notificationId||key.slice(-90)});
- try{await webpush.sendNotification(rec.subscription,payload,{TTL:options.ttl||1200,urgency:options.urgency||'normal'});sent[key]=new Date().toISOString()}
- catch(e){if([404,410].includes(e?.statusCode))delete subscribers[hash(rec.subscription.endpoint)];else console.warn('Auto Push failed:',e?.statusCode||e?.message)}
+ deliveryStats.lastAttempt=new Date().toISOString();
+ try{
+  await webpush.sendNotification(rec.subscription,payload,{TTL:options.ttl||1200,urgency:options.urgency||'normal'});
+  sent[key]=new Date().toISOString();
+  deliveryStats.totalAcceptedSinceBoot++;
+  deliveryStats.lastAccepted={at:sent[key],category};
+  if(category==='transition')console.info('[auto-push] transition accepted by Web Push provider');
+  return 'accepted';
+ }catch(e){
+  deliveryStats.totalFailedSinceBoot++;
+  deliveryStats.lastFailure={at:new Date().toISOString(),category,status:e?.statusCode||'network'};
+  if([404,410].includes(e?.statusCode))delete subscribers[hash(rec.subscription.endpoint)];
+  else console.warn('Auto Push failed:',e?.statusCode||e?.message);
+  return 'failed';
+ }
 }
 async function forEachLimited(items,limit,fn){
  let next=0;
@@ -92,6 +110,9 @@ async function job(){
   // The freshest verified bulletin determines whether an emergency is active or ended.
   const event=latestOfficialEvent(bulletin,timestamp);
   const all=Object.values(subscribers);
+  const cycle={at:new Date().toISOString(),subscribers:all.length,offEnabled:all.filter(x=>x?.preferences?.off).length,
+   onEnabled:all.filter(x=>x?.preferences?.on).length,scheduleFresh:schedulesSafe,
+   todayVerified:!!current,tomorrowVerified:!!tomorrow,transitionDue:0,transitionAccepted:0,transitionFailed:0};
   await forEachLimited(all,12,async record=>{
    const q=record?.queue,endpoint=record?.subscription?.endpoint;
    if(!QUEUES.has(q)||!endpoint)return;
@@ -105,9 +126,12 @@ async function job(){
     const boundary=dueTransitionAcrossDays(values,valuesTomorrow,minutes,offset,target,12);
     if(boundary!==null){const eta=boundary-minutes;
      const msg=transitionCopy(type,q,boundary,eta,boundary>=1440?nextDate:now.date);
-     await send(record,msg,`${prefix}:${type}:${now.date}:${boundary}`,{
+     cycle.transitionDue++;
+     const outcome=await send(record,msg,`${prefix}:${type}:${now.date}:${boundary}`,{
       notificationId:'transition:'+q+':'+now.date+':'+boundary+':'+type,
-      source:(boundary>=1440?tomorrow:current)?.source});
+      ttl:900,urgency:'high'});
+     if(outcome==='accepted')cycle.transitionAccepted++;
+     if(outcome==='failed')cycle.transitionFailed++;
     }
    }
    const freshChanges=(source.changes||[]).slice(-30).filter(change=>{
@@ -143,6 +167,7 @@ async function job(){
   const cutoff=timestamp-14*86400_000;
   for(const [key,stamp] of Object.entries(sent))if(!Number.isFinite(Date.parse(stamp))||Date.parse(stamp)<cutoff)delete sent[key];
   save();lastSuccess=new Date().toISOString();lastError=scheduleIssue;
+  deliveryStats.lastCycle=cycle;
  }catch(e){lastError=e.message;console.error('Push cycle failed:',e.message)}
  finally{running=false}
 }
@@ -241,7 +266,20 @@ const server=http.createServer(async(req,res)=>{
   return;
  }
  if(req.url==='/health'&&req.method==='GET'){
-  response(res,200,{ok:true,subscriberCount:Object.keys(subscribers).length,lastPushCheck:lastSuccess,pushCheckError:lastError,schedulePublisher:officialSchedules.status()});return;
+  response(res,200,{ok:true,subscriberCount:Object.keys(subscribers).length,lastPushCheck:lastSuccess,
+   pushCheckError:lastError,schedulePublisher:officialSchedules.status(),delivery:deliveryStats});return;
+ }
+ if(requestPath==='/api/push/subscription-status'&&req.method==='POST'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  try{
+   const data=await readPayload(req,4096),endpoint=data?.subscription?.endpoint;
+   if(!validEndpoint(endpoint))throw Error('Invalid endpoint');
+   const rec=subscribers[hash(endpoint)];
+   response(res,200,{ok:true,registered:!!rec,queue:rec?.queue||null,
+    preferences:rec?{off:!!rec.preferences?.off,on:!!rec.preferences?.on}:null,
+    lastPushCheck:lastSuccess,checkError:lastError});
+  }catch{response(res,400,{error:'Invalid Push subscription'})}
+  return;
  }
  if(!['/api/subscribe','/api/unsubscribe'].includes(req.url)||req.method!=='POST'){response(res,404,{error:'Not found'});return}
  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
