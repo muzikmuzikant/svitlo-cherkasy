@@ -10,6 +10,7 @@ on:
       - 'tests/test_push_delivery_health.mjs'
       - 'tests/test_schedule_engine.mjs'
       - 'tests/test_transition_server_dispatch.mjs'
+      - 'tests/test_transition_dispatcher.mjs'
       - 'tests/test_transition_inbox.mjs'
       - '.github/workflows/push-checks.yml'
   workflow_dispatch:
@@ -26,4 +27,4 @@ jobs:
       - name: Check server and client syntax
         run: node --check push-server/server.js && node --check app.js && node --check sw.js
       - name: Run real Push regression checks
-        run: node --test tests/test_push_delivery_health.mjs tests/test_schedule_engine.mjs tests/test_transition_inbox.mjs tests/test_auto_notifications.mjs tests/test_transition_server_dispatch.mjs
+        run: node --test tests/test_push_delivery_health.mjs tests/test_schedule_engine.mjs tests/test_transition_inbox.mjs tests/test_auto_notifications.mjs tests/test_transition_server_dispatch.mjs tests/test_transition_dispatcher.mjs
