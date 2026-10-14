@@ -449,7 +449,7 @@ function updatePushInvite(){
  action.firstChild.textContent=denied?'Відкрити налаштування сповіщень ':'Увімкнути сповіщення ';
  action.onclick=denied?()=>navigate('settings'):()=>enableNotifications();
 }
-function renderSettings(){for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).checked=!!prefs[key];const connected=!!pushConfig?.apiBase&&!!pushConfig?.publicKey;setText('pushHeadline','Сповіщення');setText('pushDescription',connected?'Отримуйте нагадування про відключення та зміни графіків, навіть коли застосунок закритий.':'Наразі нагадування доступні тільки під час використання застосунку.');setText('enableNotifications',connected?'Увімкнути сповіщення':'Дозволити нагадування');$('disableNotifications').hidden=!connected;const test=$('pushTestDevice');if(test){test.hidden=!connected;test.disabled=!connected||!('Notification' in window)||Notification.permission!=='granted'}}
+function renderSettings(){for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).checked=!!prefs[key];const connected=!!pushConfig?.apiBase&&!!pushConfig?.publicKey;setText('pushHeadline','Сповіщення');setText('pushDescription',connected?'Отримуйте нагадування про відключення та зміни графіків, навіть коли застосунок закритий.':'Наразі нагадування доступні тільки під час використання застосунку.');setText('enableNotifications',connected?'Увімкнути сповіщення':'Дозволити нагадування');$('disableNotifications').hidden=!connected;}
 function fillQueueSelect(){const root=$('manualQueue');root.replaceChildren(new Option('Оберіть підчергу',''),...QUEUES.map(q=>new Option(q,q)))}
 function town(){return $('settlement').value==='Інше'?$('customSettlement').value.trim():$('settlement').value}
 function localIndex(){const k=normTown(town());return k===normTown('Черкаси')?{keys:index.keys||{},streets:index.streets||{},streetQueues:index.streetQueues||{}}:index.localities?.[k]||{keys:{},streets:{},streetQueues:{}}}
@@ -811,10 +811,20 @@ async function checkPushDelivery(force=false){
      pushHealthMessage('Push-підписка підтверджена, але сервер має проблему з перевіркою графіка. Нагадування можуть запізнюватися.');
     }else if(!remote.lastPushCheck){
      pushHealthMessage('Push-підписка підтверджена. Очікуємо першої перевірки нагадувань сервером.');
-    }else pushHealthMessage('Push-підписка є на сервері · підчерга '+remote.queue+
-      ' · відключення: '+(remote.preferences.off?'увімкнено':'вимкнено')+
-      ' · відновлення: '+(remote.preferences.on?'увімкнено':'вимкнено')+
-      '. Це не гарантує доставку iOS, для цього є тест нижче.');
+    }else{
+     const recent=remote.latestAutomatic||{},upcoming=remote.upcoming||{};
+     const eventText=(e,label)=>e?label+' '+formatDate(e.date)+' о '+e.time+'. ':'';
+     const upcomingText=upcoming.off||upcoming.on?
+      ' Найближчі події: '+eventText(upcoming.off,'відключення')+
+       eventText(upcoming.on,'відновлення'):
+      ' Найближчих підтверджених змін немає.';
+     const lastDelivery=recent.lastAccepted?' Останній автоматичний Push: '+fmtStamp(recent.lastAccepted)+'.':'';
+     const error=recent.lastError?' Остання спроба мала помилку доставки.':'';
+     pushHealthMessage('Push підключено · підчерга '+remote.queue+
+      ' · нагадування за 30 хв до відключення: '+(remote.preferences.off?'увімкнено':'вимкнено')+
+      ' · за 15 хв до повернення: '+(remote.preferences.on?'увімкнено':'вимкнено')+
+      '.'+upcomingText+lastDelivery+error);
+    }
    }
   }catch(error){
    console.warn('Push delivery check:',error);
@@ -822,29 +832,6 @@ async function checkPushDelivery(force=false){
   }
  })();
  try{return await pushHealthBusy}finally{pushHealthBusy=null}
-}
-async function testDevicePush(){
- const button=$('pushTestDevice');
- if(button)button.disabled=true;
- pushHealthMessage('Надсилаємо системний Push на цей пристрій…');
- try{
-  await checkPushDelivery(true);
-  if(!pushConfig?.apiBase||!('Notification' in window)||Notification.permission!=='granted')throw Error('Увімкніть системні Push на iPhone.');
-  const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();
-  if(!sub)throw Error('Немає Push-підписки на цьому пристрої.');
-  const response=await fetch(pushConfig.apiBase.replace(/\/$/,'')+'/api/push/test-device',{
-   method:'POST',headers:{'content-type':'application/json'},
-   body:JSON.stringify({subscription:{endpoint:sub.endpoint}}),cache:'no-store'
-  });
-  const answer=await response.json().catch(()=>({}));
-  if(!response.ok||!answer.accepted)throw Error(answer.error||answer.message||'Push-сервіс не прийняв тест');
-  pushHealthMessage('Тестовий Push прийнято сервісом доставки. Перевірте системні сповіщення iPhone.');
-  flash('Тестовий Push відправлено. Перевірте сповіщення iPhone.');
- }catch(error){
-  console.warn('Push device test:',error);
-  pushHealthMessage('Помилка тесту: '+String(error.message||error).slice(0,130));
-  flash('Не вдалося надіслати тестовий Push.');
- }finally{if(button)button.disabled=false}
 }
 async function getPushConfig(){
  try{
@@ -927,7 +914,7 @@ $('closeSheet').onclick=()=>closeSheet($('addressSheet'));$('closePlaces').oncli
 for(const dialog of [$('addressSheet'),$('placesSheet')])dialog.addEventListener('close',unlockSheet);
 $('settlement').onchange=()=>{$('manualQueue').value='';$('customSettlement').hidden=$('settlement').value!=='Інше';suggestion=null;suggestions();checkLookup()};$('customSettlement').oninput=()=>{$('manualQueue').value='';checkLookup()};$('street').oninput=()=>{$('manualQueue').value='';suggestion=null;suggestions();checkLookup()};$('house').onfocus=()=>{$('streetSuggestions').hidden=true};$('house').oninput=()=>{$('streetSuggestions').hidden=true;checkLookup()};$('manualQueue').onchange=checkLookup;$('addressForm').onsubmit=saveAddress;$('deleteAddress').onclick=deleteAddress;$('goOfficial').onclick=officialOpen;
 for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).onchange=e=>{prefs[key]=e.target.checked;savePrefs();updatePushSubscription().catch(console.warn)};
-$('enableNotifications').onclick=enableNotifications;$('disableNotifications').onclick=disableNotifications;$('pushTestDevice').onclick=testDevicePush;
+$('enableNotifications').onclick=enableNotifications;$('disableNotifications').onclick=disableNotifications;
 fillQueueSelect();
  const requestedScreen=new URL(location.href).searchParams.get('screen');
  let restore=null;
