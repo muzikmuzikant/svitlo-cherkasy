@@ -66,7 +66,7 @@ test('independent 20-second OFF and ON dispatcher tracks results and has priorit
  assert.match(server,/async function transitionJob\(\)/);
  assert.match(server,/setInterval\(\(\)=>transitionJob\(\)\.catch\(console\.error\),20_000\)/);
  assert.match(server,/dueTransitionAcrossDays\(values,valuesTomorrow,minutes,offset,target,offset-2\)/);
- assert.match(server,/ttl:900,urgency:'high'/);
+ assert.match(server,/ttl:Math\.max\(60,Math\.floor\(eta\*60\)\),urgency:'high'/);
  assert.match(server,/record\.automatic\.lastAccepted/);
  assert.match(server,/deliveryStats\.lastCycle=cycle/);
  assert.match(server,/automatic:subscribers\[key\]\?\.automatic\|\|\{\}/);
