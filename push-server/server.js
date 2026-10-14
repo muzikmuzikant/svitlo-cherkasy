@@ -86,7 +86,71 @@ async function forEachLimited(items,limit,fn){
   while(next<items.length){const i=next++;try{await fn(items[i])}catch(e){console.warn('Delivery worker:',e.message)}}
  }));
 }
-let lastSuccess=null,lastError=null,running=false;
+let lastSuccess=null,lastError=null,running=false,lastLoadedSchedule=null,transitionRunning=false;
+// Dedicated short ticker: external bulletin requests must never delay a planned
+// outage/restoration reminder. No browser or opened PWA is required.
+async function transitionJob(){
+ if(transitionRunning)return;
+ transitionRunning=true;
+ try{
+  const source=officialSchedules.schedule()||lastLoadedSchedule;
+  const now=dayInKyiv(),timestamp=Date.now(),schedulesSafe=freshSchedule(source,timestamp);
+  const current=schedulesSafe?source.days.find(d=>d.date===now.date&&d.verified===true):null;
+  const nextDate=shiftDay(now.date,1);
+  const tomorrow=schedulesSafe?source.days.find(d=>d.date===nextDate&&d.verified===true):null;
+  const all=Object.values(subscribers);
+  const cycle={at:new Date().toISOString(),subscribers:all.length,
+   offEnabled:all.filter(x=>x?.preferences?.off).length,
+   onEnabled:all.filter(x=>x?.preferences?.on).length,
+   scheduleFresh:schedulesSafe,todayVerified:!!current,tomorrowVerified:!!tomorrow,
+   transitionDue:0,transitionAccepted:0,transitionFailed:0,transitionAlreadySent:0};
+  if(schedulesSafe)await forEachLimited(all,12,async record=>{
+   const q=record?.queue,endpoint=record?.subscription?.endpoint;
+   if(!QUEUES.has(q)||!endpoint)return;
+   const pref=record.preferences||{},prefix=hash(endpoint),minutes=now.m;
+   const values=schedulesSafe?timeline(current,q):null;
+   const valuesTomorrow=schedulesSafe?timeline(tomorrow,q):null;
+   for(const [type,offset,target] of [['off',30,1],['on',15,0]]){
+    if(!pref[type])continue;
+    // Recover reminders delayed by Railway restarts or temporarily slow schedule imports.
+    // The helper never returns transitions that have already started.
+    const boundary=dueTransitionAcrossDays(values,valuesTomorrow,minutes,offset,target,offset-2);
+    if(boundary!==null){const eta=boundary-minutes;
+     const msg=transitionCopy(type,q,boundary,eta,boundary>=1440?nextDate:now.date);
+     const key=`${prefix}:${type}:${now.date}:${boundary}`;
+     if(sent[key]){cycle.transitionAlreadySent++;continue}
+     cycle.transitionDue++;
+     const outcome=await send(record,msg,key,{
+      notificationId:'transition:'+q+':'+now.date+':'+boundary+':'+type,ttl:900,urgency:'high'});
+     record.automatic=record.automatic||{};
+     record.automatic.lastAttempt=new Date().toISOString();
+     record.automatic.lastEvent={type,time:(boundary>=1440?nextDate:now.date)+'T'+
+       String(Math.floor((boundary%1440)/60)).padStart(2,'0')+':'+String(boundary%60).padStart(2,'0'),
+       minutesRemaining:eta};
+     if(outcome==='accepted'){
+      cycle.transitionAccepted++;record.automatic.lastAccepted=record.automatic.lastAttempt;
+      record.automatic.lastError=null;
+      console.info('[auto-push] accepted '+type+' queue='+q+' eta='+eta);
+     }else if(outcome==='failed'){
+      cycle.transitionFailed++;record.automatic.lastError=deliveryStats.lastFailure?.status||'failed';
+      console.warn('[auto-push] rejected '+type+' queue='+q);
+     }
+    }
+   }
+  });
+  deliveryStats.lastCycle=cycle;
+  if(cycle.transitionDue||(!schedulesSafe&&now.m%5===0&&new Date().getSeconds()<25))
+   console.info('[auto-push] cycle fresh='+schedulesSafe+' day='+now.date+
+    ' subscribers='+cycle.subscribers+' off='+cycle.offEnabled+' on='+cycle.onEnabled+
+    ' due='+cycle.transitionDue+' accepted='+cycle.transitionAccepted+
+    ' failed='+cycle.transitionFailed);
+  if(cycle.transitionDue)save();
+ }catch(e){
+  console.error('[auto-push] transition dispatcher failed:',e.message);
+  deliveryStats.lastFailure={at:new Date().toISOString(),category:'transition',status:'cycle-error'};
+ }finally{transitionRunning=false}
+}
+
 async function job(){
  if(running)return;
  running=true;
@@ -94,6 +158,7 @@ async function job(){
   let source,scheduleIssue=null;
   try{source=officialSchedules.schedule()||await loadJson(SCHEDULE_URL);if(!Array.isArray(source.days))throw Error('Invalid schedule structure')}
   catch(e){scheduleIssue='Schedule fetch: '+e.message;console.warn(scheduleIssue);source={days:[],changes:[]}}
+  lastLoadedSchedule=source;
   const now=dayInKyiv(),timestamp=Date.now();
   const schedulesSafe=freshSchedule(source,timestamp);
   if(!schedulesSafe)scheduleIssue=scheduleIssue||'Schedule data stale, unconfirmed or awaiting review';
@@ -110,30 +175,10 @@ async function job(){
   // The freshest verified bulletin determines whether an emergency is active or ended.
   const event=latestOfficialEvent(bulletin,timestamp);
   const all=Object.values(subscribers);
-  const cycle={at:new Date().toISOString(),subscribers:all.length,offEnabled:all.filter(x=>x?.preferences?.off).length,
-   onEnabled:all.filter(x=>x?.preferences?.on).length,scheduleFresh:schedulesSafe,
-   todayVerified:!!current,tomorrowVerified:!!tomorrow,transitionDue:0,transitionAccepted:0,transitionFailed:0};
   await forEachLimited(all,12,async record=>{
    const q=record?.queue,endpoint=record?.subscription?.endpoint;
    if(!QUEUES.has(q)||!endpoint)return;
    const pref=record.preferences||{},prefix=hash(endpoint),minutes=now.m;
-   const values=schedulesSafe?timeline(current,q):null;
-   const valuesTomorrow=schedulesSafe?timeline(tomorrow,q):null;
-   for(const [type,offset,target] of [['off',30,1],['on',15,0]]){
-    if(!pref[type])continue;
-    // Recover reminders delayed by Railway restarts or temporarily slow schedule imports.
-    // The helper never returns transitions that have already started.
-    const boundary=dueTransitionAcrossDays(values,valuesTomorrow,minutes,offset,target,12);
-    if(boundary!==null){const eta=boundary-minutes;
-     const msg=transitionCopy(type,q,boundary,eta,boundary>=1440?nextDate:now.date);
-     cycle.transitionDue++;
-     const outcome=await send(record,msg,`${prefix}:${type}:${now.date}:${boundary}`,{
-      notificationId:'transition:'+q+':'+now.date+':'+boundary+':'+type,
-      ttl:900,urgency:'high'});
-     if(outcome==='accepted')cycle.transitionAccepted++;
-     if(outcome==='failed')cycle.transitionFailed++;
-    }
-   }
    const freshChanges=(source.changes||[]).slice(-30).filter(change=>{
     const when=Date.parse(change.detectedAt||change.publishedAt||''),age=timestamp-when;
     return Array.isArray(change.queues)&&change.queues.includes(q)&&change.date>=now.date&&
@@ -167,7 +212,6 @@ async function job(){
   const cutoff=timestamp-14*86400_000;
   for(const [key,stamp] of Object.entries(sent))if(!Number.isFinite(Date.parse(stamp))||Date.parse(stamp)<cutoff)delete sent[key];
   save();lastSuccess=new Date().toISOString();lastError=scheduleIssue;
-  deliveryStats.lastCycle=cycle;
  }catch(e){lastError=e.message;console.error('Push cycle failed:',e.message)}
  finally{running=false}
 }
@@ -320,4 +364,7 @@ const server=http.createServer(async(req,res)=>{
  }catch(e){response(res,e.message?.includes('save failed')?500:400,{error:'Invalid subscription request'})}
 });
 server.listen(Number(PORT),()=>console.log('Push companion listening on port '+PORT));
-job().catch(console.error);setInterval(()=>job().catch(console.error),60_000);
+job().catch(console.error);
+transitionJob().catch(console.error);
+setInterval(()=>job().catch(console.error),60_000);
+setInterval(()=>transitionJob().catch(console.error),20_000);
