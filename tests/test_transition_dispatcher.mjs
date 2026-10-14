@@ -41,6 +41,7 @@ test('server sends OFF reminder 30 minutes before scheduled outage, with no app 
  assert.equal(x.calls[0].msg.title,'off 30');
  assert.equal(x.calls[0].options.notificationId,'transition:1.1:2026-10-14:600:off');
  assert.equal(x.calls[0].options.urgency,'high');
+ assert.equal(x.calls[0].options.ttl,1800,'OFF delivery remains valid until its 30-minute boundary');
  assert.equal(x.record.automatic.lastError,null);
  assert.equal(x.ctx.deliveryStats.lastCycle.offEnabled,1);
  assert.equal(x.ctx.deliveryStats.lastCycle.onEnabled,1);
@@ -51,6 +52,7 @@ test('server sends ON reminder 15 minutes before planned return, without a brows
  assert.deepEqual(x.errors,[]);
  assert.equal(x.calls.length,1);
  assert.equal(x.calls[0].msg.title,'on 15');
+ assert.equal(x.calls[0].options.ttl,900,'ON delivery remains valid until its 15-minute boundary');
  assert.equal(x.calls[0].options.notificationId,'transition:1.1:2026-10-14:720:on');
 });
 test('server honors explicit OFF or ON preference instead of ignoring it',async()=>{
@@ -66,6 +68,7 @@ test('server recovers late checks, still correctly labels the remaining minutes'
  const x=await dispatch({minute:577});
  assert.equal(x.calls.length,1);
  assert.equal(x.calls[0].msg.title,'off 23');
+ assert.equal(x.calls[0].options.ttl,23*60);
 });
 test('server finds an OFF transition across Kyiv midnight',async()=>{
  const x=await dispatch({minute:1410,periods:[],tomorrowPeriods:[['00:00','02:00']]});
