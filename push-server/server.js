@@ -121,7 +121,10 @@ async function transitionJob(){
      if(sent[key]){cycle.transitionAlreadySent++;continue}
      cycle.transitionDue++;
      const outcome=await send(record,msg,key,{
-      notificationId:'transition:'+q+':'+now.date+':'+boundary+':'+type,ttl:900,urgency:'high'});
+      notificationId:'transition:'+q+':'+now.date+':'+boundary+':'+type,
+      // Keep OFF reminders queued while Apple devices are temporarily offline,
+      // but stop retrying at the planned transition instead of delivering stale alerts.
+      ttl:Math.max(60,Math.floor(eta*60)),urgency:'high'});
      record.automatic=record.automatic||{};
      record.automatic.lastAttempt=new Date().toISOString();
      record.automatic.lastEvent={type,time:(boundary>=1440?nextDate:now.date)+'T'+
