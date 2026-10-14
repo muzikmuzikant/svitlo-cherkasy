@@ -57,6 +57,10 @@ test('freshness problem is surfaced instead of reporting healthy reminders',asyn
  const h=harness({checkError:'Schedule data stale'});await h.check();
  assert.match(h.status.textContent,/проблему з перевіркою графіка/);
 });
+test('technical Push status box is removed while registration checks still run',()=>{
+ assert.doesNotMatch(html,/id="pushDeliveryStatus"/);
+ assert.match(client,/async function checkPushDelivery\(/);
+});
 test('test Push is fully removed from settings, app logic, and public API',()=>{
  assert.doesNotMatch(html,/pushTestDevice|Надіслати тестовий Push/);
  assert.doesNotMatch(client,/testDevicePush|\/api\/push\/test-device/);
