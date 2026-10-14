@@ -804,7 +804,7 @@ async function checkPushDelivery(force=false){
    const samePrefs=remote.preferences?.off===!!prefs.off&&remote.preferences?.on===!!prefs.on;
    if(!remote.registered||!sameQueue||!samePrefs){
     await updatePushSubscription();
-    pushHealthMessage('Push-підписку оновлено для підчерги '+primary().queue+'. Можна перевірити тестовим Push.');
+    pushHealthMessage('Push-підписку оновлено для підчерги '+primary().queue+'. Перевіряємо майбутні нагадування автоматично.');
    }else{
     pushActive=true;
     if(remote.checkError){
