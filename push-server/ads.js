@@ -9,6 +9,7 @@ const isObj=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
 const text=(v,n=200)=>String(v??'').trim().slice(0,n);
 const clamp=(v,min,max,def)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):def;
 const url=v=>{const s=text(v,500);try{const u=new URL(s);return u.protocol==='https:'&&!u.username&&!u.password&&u.hostname.includes('.')?u.href:''}catch{return ''}};
+const contactUrl=v=>{const s=text(v,500);if(/^mailto:[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(s)||/^tel:\+?[0-9][0-9 -]{5,15}$/.test(s))return s;return url(s)};
 const color=(v,def)=>/^#[0-9a-f]{6}$/i.test(String(v||''))?String(v):def;
 const when=v=>{const s=text(v,35);return !s?'':Number.isFinite(Date.parse(s))?new Date(s).toISOString():''};
 const kinds=['iPhone','iPad','Android','Windows','macOS','Linux','Інше'];
@@ -35,7 +36,7 @@ function normalize(raw){
  promoTitle:text(s.promoTitle||defaults.promoTitle,100),promoText:text(s.promoText||defaults.promoText,240),
  contactLabel:text(s.contactLabel||defaults.contactLabel,70),pageTitle:text(s.pageTitle||defaults.pageTitle,120),
  pageIntro:text(s.pageIntro||defaults.pageIntro,750),pageTerms:text(s.pageTerms||defaults.pageTerms,1200),
- contacts:contacts.map(c=>({id:text(c.id,50)||crypto.randomUUID(),label:text(c.label,70),url:url(c.url),enabled:c.enabled!==false})).filter(c=>c.label),
+ contacts:contacts.map(c=>({id:text(c.id,50)||crypto.randomUUID(),label:text(c.label,70),url:contactUrl(c.url),enabled:c.enabled!==false})).filter(c=>c.label),
  packages:packages.map(p=>({id:text(p.id,50)||crypto.randomUUID(),title:text(p.title,100),description:text(p.description,350),price:clamp(p.price,0,100000000,0),durationDays:clamp(p.durationDays,1,3650,30),visible:p.visible!==false})).filter(p=>p.title),
  campaigns:campaigns.map(c=>{
   const start=when(c.start),end=when(c.end),days=Array.isArray(c.days)?c.days.map(Number).filter(n=>Number.isInteger(n)&&n>=0&&n<=6):[];
@@ -88,7 +89,7 @@ export function createAdsStore({directory,clock=()=>Date.now()}){
    if(key.endsWith('|'+day))today=Number(v.impressions)||0;
   }return {all,today,clicks}}
  function publicState(){
-  const now=new Date(clock()).toISOString(),day=now.slice(0,10),weekday=new Date(clock()).getUTCDay();
+  const now=new Date(clock()).toISOString(),day=now.slice(0,10),weekday=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Kyiv',weekday:'short'}).format(new Date(clock())));
   return {enabled:state.enabled,rotationSeconds:state.rotationSeconds,promoEvery:state.promoEvery,
    showPromo:state.showPromo,manualSwipe:state.manualSwipe,animation:state.animation,
    promoTitle:state.promoTitle,promoText:state.promoText,contactLabel:state.contactLabel,

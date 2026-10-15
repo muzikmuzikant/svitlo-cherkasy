@@ -257,16 +257,16 @@ function renderTicketDetail(){
  const meta=supportNode('div',undefined,'support-detail-meta');
  meta.append(supportNode('span','Створено '+supportDate(ticket.createdAt)),supportNode('span',TICKET_TOPICS[ticket.topic]||'Інше'));
  if(ticket.queue)meta.append(supportNode('span','Підчерга '+ticket.queue));
- if(true){
-  const d=ticket.diagnostics||null;
-  const panel=supportNode('div',undefined,'support-device-info');
-  panel.append(supportNode('strong','Інформація про пристрій'));
-  panel.append(supportNode('p',d?[d.platform,d.os,d.browser,d.appVersion?('Світло v'+d.appVersion):'Версія не визначена'].filter(Boolean).join(' · '):'Технічні дані не надано або недоступні.'));
-  meta.append(panel);
- }
+ const deviceInfo=supportNode('section',undefined,'support-device-info');
+ deviceInfo.append(supportNode('h4','Інформація про пристрій'));
+ if(ticket.diagnostics){
+  const d=ticket.diagnostics;
+  const labels=[['Пристрій',d.platform],['Система',d.os],['Браузер',d.browser],['Версія застосунку',d.appVersion||'Не визначена']];
+  for(const [label,value] of labels){const line=supportNode('div',undefined,'support-device-row');line.append(supportNode('span',label),supportNode('strong',value||'Немає даних'));deviceInfo.append(line)}
+ }else deviceInfo.append(supportNode('p','Технічні дані не надано. Користувач не підтвердив їх передавання або дані недоступні.'));
 
  if(ticket.email){const email=document.createElement('a');email.textContent=ticket.email;email.href='mailto:'+encodeURIComponent(ticket.email).replace(/%40/g,'@');meta.append(email)}
- root.append(meta);
+ root.append(meta,deviceInfo);
  const control=supportNode('div',undefined,'support-detail-controls');
  for(const [field,label,values] of [['status','Статус',TICKET_STATES],['priority','Пріоритет',TICKET_PRIORITY]]){
   const wrap=supportNode('label',label);const select=document.createElement('select');

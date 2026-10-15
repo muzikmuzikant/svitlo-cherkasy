@@ -54,6 +54,27 @@
    card('Запуски застосунку',pretty(totals.appOpen),'Запуски PWA, не встановлення','▣'),
    card('З реклами «Черкаси головне»',pretty(own.landing),'Відкриття за спеціальним посиланням','◈')
   );
+
+  const pwa=state.betaPwa||{},advertising=state.betaAdvertising||{};
+  const pwaBox=$('betaPwaMetrics');
+  if(pwaBox){pwaBox.replaceChildren(
+    card('Зараз у встановленому PWA',pretty(pwa.online),'Активні за останні 45 секунд, зі згодою','●'),
+    card('Відомі інсталяції PWA',pretty(pwa.known),'Не точна кількість встановлень або людей','▣'),
+    card('Активні PWA за 24 год',pretty(pwa.active24h),'Унікальні інсталяції зі згодою','◉'),
+    card('Активні PWA за 7 днів',pretty(pwa.active7d),'За псевдонімними ідентифікаторами','↗'),
+    card('Активні PWA за 30 днів',pretty(pwa.active30d),'За псевдонімними ідентифікаторами','▤'),
+    card('Нові інсталяції PWA за 7 днів',pretty(pwa.new7d),'Вперше зафіксовані інсталяції','＋')
+  )}
+  const adBox=$('betaAdsMetrics');
+  if(adBox){
+   const raw=advertising.stats||{};
+   const value=Object.values(raw).reduce((s,v)=>({impressions:s.impressions+(Number(v.impressions)||0),clicks:s.clicks+(Number(v.clicks)||0)}),{impressions:0,clicks:0});
+   adBox.replaceChildren(
+    card('Покази рекламних карток',pretty(value.impressions),'Облік видимих карток','▣'),
+    card('Переходи по рекламі',pretty(value.clicks),'Натискання користувачів','↗'),
+    card('Рекламний CTR',pct(value.clicks,value.impressions),'Частка кліків від показів','%')
+   )
+  }
   const popular=state['popularity'+period]||{};
   for(const [dimension,id] of [['queue_sample','analyticsTopQueues'],['locality_sample','analyticsTopLocalities'],['platform_sample','analyticsTopPlatforms'],['version_sample','analyticsTopVersions']]){
    const holder=$(id);if(!holder)continue;holder.replaceChildren();
@@ -127,6 +148,6 @@
  });
  document.querySelector('[data-admin-tab="insights"]')?.addEventListener('click',refresh);
  document.addEventListener('svitlo:admin-ready',refresh);
- document.addEventListener('svitlo:admin-logout',()=>{state=null;root.replaceChildren();$('analyticsTrendChart').replaceChildren();$('analyticsHourlyChart').replaceChildren();$('analyticsCampaignMetrics').replaceChildren();$('analyticsFunnel').replaceChildren()});
+ document.addEventListener('svitlo:admin-logout',()=>{state=null;root.replaceChildren();$('betaPwaMetrics')?.replaceChildren();$('betaAdsMetrics')?.replaceChildren();$('analyticsTrendChart').replaceChildren();$('analyticsHourlyChart').replaceChildren();$('analyticsCampaignMetrics').replaceChildren();$('analyticsFunnel').replaceChildren()});
  window.SvitloAdminAnalytics={refresh};
 })();
