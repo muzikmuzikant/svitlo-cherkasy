@@ -10,7 +10,7 @@ test('All four tabs use a short page reveal without cascading block animations',
  for(const name of ['home','detail','updates','settings']){
   assert.match(html,new RegExp('<section id="'+name+'" class="screen"'));
  }
- assert.match(css,/\.screen\.tab-enter:not\(\[hidden\]\)\{animation:tabSettle \.42s/);
+ assert.match(css,/\.screen\.tab-enter:not\(\[hidden\]\)\{animation:tabSettle \.28s/);
  assert.match(css,/\.screen\.tab-enter:not\(\[hidden\]\) > :not\(\[hidden\]\)\{animation:none\}/);
  assert.doesNotMatch(css,/\.screen:not\(\[hidden\]\) > :nth-child\(n\+4\)/);
  assert.doesNotMatch(css,/animation:rise \.52s/);
@@ -23,7 +23,7 @@ test('All four tabs use a short page reveal without cascading block animations',
  assert.match(css,/::view-transition-new\(root\)/);
  assert.match(css,/\.bottom-nav\{view-transition-name:svitlo-navigation\}/);
  assert.doesNotMatch(css,/view-transition-name:svitlo-screen/);
- assert.match(css,/@keyframes tabSettle\{from\{opacity:0;transform:translate3d\(0,30px,0\)/);
+ assert.match(css,/@keyframes tabSettle\{from\{opacity:\.25;transform:translate3d\(28px,0,0\)/);
 });
 
 test('Reduced motion and admin animation-off apply to all tab entrance effects',()=>{
