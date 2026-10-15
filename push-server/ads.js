@@ -136,6 +136,10 @@ export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed
    if(key.endsWith('|'+day))today=Number(v.impressions)||0;
   }return {all,today,clicks}}
  function publicState(){
+  // Fail closed on Production. Do not expose saved advertiser contact data,
+  // payment instructions, pricing or partner content through a public endpoint.
+  if(!commercialAllowed)return {enabled:false,campaigns:[],contacts:[],packages:[],
+   support:{enabled:false,methods:[],expenses:[],paymentUrl:''}};
   const now=new Date(clock()).toISOString(),day=now.slice(0,10),weekday=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Kyiv',weekday:'short'}).format(new Date(clock())));
   return {enabled:commercialAllowed&&state.enabled,rotationSeconds:state.rotationSeconds,promoEvery:state.promoEvery,
    showPromo:state.showPromo,manualSwipe:state.manualSwipe,animation:state.animation,
