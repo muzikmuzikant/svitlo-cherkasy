@@ -27,7 +27,7 @@ export function createAnalyticsStore({filePath,clock=()=>Date.now()}={}){
    since=typeof previous.since==='string'?previous.since:null;
    lastUpdated=typeof previous.lastUpdated==='string'?previous.lastUpdated:null;
    for(const [key,raw] of Object.entries(previous.buckets).slice(-1800)){
-    if(!/^20\\d{2}-\\d{2}-\\d{2}T(?:[01]\\d|2[0-3])$/.test(key)||!raw||typeof raw!=='object')continue;
+    if(!/^20\d{2}-\d{2}-\d{2}T(?:[01]\d|2[0-3])$/.test(key)||!raw||typeof raw!=='object')continue;
     buckets[key]={};
     for(const event of EVENTS){
      buckets[key][event]={};
