@@ -1,62 +1,119 @@
-/* Aggregate-only private admin analytics. Counts are not unique visitors. */
+/* Svitlo Insights 7.9.7. Aggregated events only; no visitor or installation claims. */
 (()=>{'use strict';
  const $=id=>document.getElementById(id),root=$('analyticsSummary');
  if(!root)return;
- const el=(tag,text,cls='')=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(cls)n.className=cls;return n};
+ const make=(tag,text,cls='')=>{const e=document.createElement(tag);if(text!==undefined&&text!==null)e.textContent=String(text);if(cls)e.className=cls;return e};
  const pretty=n=>new Intl.NumberFormat('uk-UA').format(Number(n)||0);
+ const pct=(a,b)=>b>0?(a/b*100).toLocaleString('uk-UA',{maximumFractionDigits:1})+'%':'немає бази';
+ const campaignURL='https://svitlo-cherkasy.pp.ua/?src=telegram-cherkasy-golovne';
+ const sourceNames={
+  'telegram-cherkasy-golovne':'Черкаси головне',
+  'telegram-echerkasy':'єЧеркаси Світло',
+  telegram:'Інші Telegram-переходи',
+  direct:'Без мітки джерела',
+  other:'Інші джерела'
+ };
  let state=null,busy=false;
+ const totalsSource=(channels,key)=>channels?.[key]||{landing:0,appOpen:0,installGuide:0};
+ function card(label,value,description,sign){
+  const e=make('div',null,'analytics-kpi');
+  e.append(make('span',sign,'analytics-kpi-icon'),make('small',label),
+   make('strong',value),make('span',description,'analytics-kpi-foot'));return e;
+ }
+ function plot(host,items,keys,labels,limit){
+  host.replaceChildren();
+  const max=Math.max(1,...items.map(i=>keys.reduce((n,k)=>Math.max(n,Number(i[k])||0),0)));
+  items.forEach((item,index)=>{
+   const cell=make('div',null,'analytics-day');
+   const group=make('div',null,'analytics-day-bars');
+   for(const [k,cls] of keys.map((k,i)=>[k,i?'installed':'landing'])){
+    const bar=make('div',null,'analytics-bar '+cls);
+    bar.style.height=Math.max(2,(Number(item[k])||0)/max*100)+'%';
+    bar.title=(item.date||item.hour)+': '+pretty(item[k])+' '+(k==='landing'?'відкриттів':'запусків PWA');
+    group.append(bar);
+   }
+   let label='';
+   if(limit==='48')label=index%6===0?item.hour.slice(11):'';
+   else if(limit==='30')label=index%5===0?item.date.slice(8):'';
+   else label=new Date(item.date+'T12:00:00Z').toLocaleDateString('uk-UA',{weekday:'short',timeZone:'UTC'});
+   cell.append(group,make('small',label));
+   cell.setAttribute('aria-label',(item.date||item.hour)+': відкриття '+item.landing+', запуски '+item.appOpen);
+   host.append(cell);
+  });
+ }
  function render(){
   if(!state)return;
-  const n=$('analyticsRange').value==='30'?30:7,days=state.days.slice(-n),totals=n===30?state.totals30:state.totals7;
-  $('analyticsPeriod').textContent=n+' днів';root.replaceChildren();
-  const cards=[
-   {label:'Відкриття сторінки',value:totals.landing,desc:'Сторінка встановлення',sign:'↗'},
-   {label:'Запуски PWA',value:totals.appOpen,desc:'Не унікальні користувачі',sign:'▣'},
-   {label:'Намір встановити',value:totals.installGuide,desc:'Натискання інструкції',sign:'↓'},
-   {label:'Із реклами єЧеркаси',value:totals.telegram,desc:'Події з міткою каналу',sign:'◈'}
+  const range=$('analyticsRange').value,period=range==='48'?'48':'7'===range?'7':'30';
+  const sources=state['sources'+period]||{},totals=state['totals'+period]||{landing:0,appOpen:0,installGuide:0};
+  const own=totalsSource(sources,'telegram-cherkasy-golovne');
+  const days=period==='48'?(state.hours48||state.hours||[]):(state.days||[]).slice(-Number(period));
+  $('analyticsPeriod').textContent=period==='48'?'48 годин':period+' днів';
+  root.replaceChildren(
+   card('Відкриття сторінки',pretty(totals.landing),'Один підрахунок на вкладку за день','↗'),
+   card('Намір встановити',pretty(totals.installGuide),'Натискання кнопки встановлення','↓'),
+   card('Запуски застосунку',pretty(totals.appOpen),'Запуски PWA, не встановлення','▣'),
+   card('З реклами «Черкаси головне»',pretty(own.landing),'Відкриття за спеціальним посиланням','◈')
+  );
+  const campaign=$('analyticsCampaignMetrics');campaign.replaceChildren();
+  const stats=[
+   ['Переходи за міткою',pretty(own.landing),'Відкриття сторінки'],
+   ['Натискання встановлення',pretty(own.installGuide),'Дії з інструкцією'],
+   ['Співвідношення дій',pct(own.installGuide,own.landing),'Не конверсія в інсталяції'],
+   ['Вартість за зафіксоване відкриття',own.landing?(700/own.landing).toLocaleString('uk-UA',{maximumFractionDigits:2})+' грн':'немає даних','700 грн / події переходів']
   ];
-  for(const c of cards){const card=el('div',null,'analytics-kpi');
-   card.append(el('span',c.sign,'analytics-kpi-icon'),el('small',c.label),el('strong',pretty(c.value)),el('span',c.desc,'analytics-kpi-foot'));root.append(card)}
-  const chart=$('analyticsTrendChart');chart.replaceChildren();
-  const top=Math.max(1,...days.map(x=>Math.max(x.landing,x.appOpen)));
-  for(const item of days){
-   const col=el('div',null,'analytics-day'),bars=el('div',null,'analytics-day-bars');
-   for(const [key,cls] of [['landing','landing'],['appOpen','installed']]){
-    const b=el('div',null,'analytics-bar '+cls);b.style.height=Math.max(2,item[key]/top*100)+'%';
-    b.title=item.date+': '+pretty(item[key])+(key==='landing'?' відкриттів':' запусків PWA');
-    bars.append(b);
-   }
-   const day=new Date(item.date+'T12:00:00Z');
-   const label=n===7?day.toLocaleDateString('uk-UA',{weekday:'short',timeZone:'UTC'}):day.getUTCDate().toString();
-   col.append(bars,el('small',label));col.setAttribute('aria-label',item.date+' відкриття '+item.landing+', запуски '+item.appOpen);
-   chart.append(col);
+  for(const [name,value,desc] of stats){
+   const c=make('div',null,'analytics-campaign-stat');
+   c.append(make('small',name),make('strong',value),make('span',desc));campaign.append(c);
   }
+  const funnel=$('analyticsFunnel');funnel.replaceChildren();
+  const stages=[
+   ['Відкрито сторінку',totals.landing],
+   ['Натиснуто встановлення',totals.installGuide],
+   ['Запущено PWA',totals.appOpen]
+  ],max=Math.max(1,...stages.map(x=>x[1]));
+  for(const [label,n] of stages){
+   const e=make('div',null,'analytics-funnel-row'),line=make('div',null,'analytics-funnel-label');
+   line.append(make('span',label),make('strong',pretty(n)));
+   const track=make('div',null,'analytics-funnel-track'),fill=make('div',null,'analytics-funnel-fill');
+   fill.style.width=(n?Math.max(2,n/max*100):0)+'%';track.append(fill);e.append(line,track);funnel.append(e);
+  }
+  const chart=$('analyticsTrendChart');
+  if(period==='48'&&days.length){plot(chart,days,['landing','appOpen'],null,'48')}
+  else plot(chart,days,['landing','appOpen'],null,period);
+  const hours=period==='48'?(state.hours48||[]):(state.hours||[]);
+  $('analyticsHourlyTitle').textContent=period==='48'?'48 годин, погодинно':'Останні 24 години';
   const hourly=$('analyticsHourlyChart');hourly.replaceChildren();
-  const hourTop=Math.max(1,...state.hours.map(h=>h.landing+h.appOpen));
-  for(const hour of state.hours){
-   const entry=el('div',null,'analytics-hour-col'),bar=el('div',null,'analytics-hour-bar');
-   bar.style.height=Math.max(2,(hour.landing+hour.appOpen)/hourTop*100)+'%';
-   bar.title=hour.hour+': '+pretty(hour.landing+hour.appOpen)+' подій';
-   entry.append(bar,el('small',hour.hour.slice(-2)));hourly.append(entry);
+  const top=Math.max(1,...hours.map(h=>(Number(h.landing)||0)+(Number(h.appOpen)||0)));
+  hours.forEach((h,i)=>{
+   const e=make('div',null,'analytics-hour-col'),bar=make('div',null,'analytics-hour-bar');
+   bar.style.height=Math.max(2,((h.landing||0)+(h.appOpen||0))/top*100)+'%';
+   bar.title=h.hour+': '+pretty((h.landing||0)+(h.appOpen||0))+' подій';
+   e.append(bar,make('small',i%Math.max(1,Math.round(hours.length/8))===0?h.hour.slice(11):''));hourly.append(e);
+  });
+  const list=$('analyticsReferrals');list.replaceChildren();
+  for(const key of ['telegram-cherkasy-golovne','telegram-echerkasy','telegram','direct','other']){
+   const record=totalsSource(sources,key),line=make('div',null,'analytics-ref-row');
+   line.append(make('span',sourceNames[key]),make('strong',pretty(record.landing)));list.append(line);
   }
-  const sum=(key)=>days.reduce((x,y)=>x+y[key],0),referrals=$('analyticsReferrals');referrals.replaceChildren();
-  for(const [label,v] of [['Переходи на сторінку з усіх джерел',sum('landing')],['Події з міткою Telegram єЧеркаси',sum('telegram')]]){
-   const line=el('div',null,'analytics-ref-row');line.append(el('span',label),el('strong',pretty(v)));referrals.append(line);
-  }
-  $('analyticsSince').textContent=state.since?'Збір даних із '+new Date(state.since).toLocaleString('uk-UA',{timeZone:'Europe/Kyiv',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'}):'Поки немає зафіксованих подій';
-  $('analyticsStatus').textContent='Числа не є унікальними відвідувачами або встановленнями. Дані збираються з моменту ввімкнення лічильника.';
+  $('analyticsSince').textContent=state.since?'Дані з '+new Date(state.since).toLocaleString('uk-UA',{timeZone:'Europe/Kyiv',dateStyle:'short',timeStyle:'short'}):'Поки немає зафіксованих подій';
+  $('analyticsUpdated').textContent=state.lastUpdated?'Остання подія '+new Date(state.lastUpdated).toLocaleString('uk-UA',{timeZone:'Europe/Kyiv',dateStyle:'short',timeStyle:'short'}):'';
+  $('analyticsStatus').textContent='Метрики анонімні. Дані не означають унікальних відвідувачів чи підтверджених встановлень. Облік починається лише після ввімкнення лічильника.';
  }
  async function refresh(){
   if(busy||typeof remote==='undefined'||!remote)return;busy=true;
-  $('analyticsStatus').textContent='Оновлюємо статистику…';
+  $('analyticsStatus').textContent='Завантажуємо статистику з Railway…';
   try{state=await api('analytics');render()}
-  catch(e){$('analyticsStatus').textContent='Аналітику поки недоступно: '+e.message}
+  catch(e){$('analyticsStatus').textContent='Аналітика недоступна: '+e.message}
   finally{busy=false}
  }
- $('analyticsRange').addEventListener('change',render);
- $('analyticsReload').addEventListener('click',refresh);
+ $('analyticsRange')?.addEventListener('change',render);
+ $('analyticsReload')?.addEventListener('click',refresh);
+ $('analyticsCopyLink')?.addEventListener('click',async()=>{
+  try{await navigator.clipboard.writeText(campaignURL);$('analyticsCopyLink').textContent='Скопійовано ✓'}
+  catch{$('analyticsCopyLink').textContent='Скопіюйте адресу поруч'}
+ });
  document.querySelector('[data-admin-tab="insights"]')?.addEventListener('click',refresh);
  document.addEventListener('svitlo:admin-ready',refresh);
- document.addEventListener('svitlo:admin-logout',()=>{state=null;root.replaceChildren();$('analyticsTrendChart').replaceChildren();$('analyticsHourlyChart').replaceChildren()});
+ document.addEventListener('svitlo:admin-logout',()=>{state=null;root.replaceChildren();$('analyticsTrendChart').replaceChildren();$('analyticsHourlyChart').replaceChildren();$('analyticsCampaignMetrics').replaceChildren();$('analyticsFunnel').replaceChildren()});
  window.SvitloAdminAnalytics={refresh};
 })();
