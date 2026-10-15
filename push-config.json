@@ -1,5 +1,4 @@
-
 {
-  "apiBase": "https://svitlo-cherkasy-production.up.railway.app",
-  "publicKey": "BKOZF_fXUtopmrdOdRWZXnw9Od1fQ8uDVVfkNXtMKRTdGNx-s9rpbm8zGdknUWg5C97gCaBDlfrAqUkITiwuFLM"
+  "apiBase": "https://staging-api.invalid",
+  "publicKey": ""
 }
