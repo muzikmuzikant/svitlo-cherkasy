@@ -50,7 +50,7 @@
           app.src = './app.js';
           app.onerror = reportLaunchFailure;
           app.onload = () => {
-            clearTimeout(bootTimeout);
+            if (typeof clearTimeout === 'function') clearTimeout(bootTimeout);
             // Inbox must never depend on the optional rich-copy file loading.
             // Cached iPhone PWAs can temporarily have a mismatched script bundle.
             let inboxStarted = false;
