@@ -525,7 +525,16 @@ def extract_sections(pdf):
                 continue
             # Split a long PDF row containing several villages; only text
             # after the explicit village marker is allocated to that village.
-            markers=list(LOCALITY_IN_ROW.finditer(line))
+            # The personal initial "М." in "вул.М.Залізняка" is NOT
+            # the town prefix "м.". Previously this created fake towns and
+            # silently moved entire groups of Sloboda streets into them.
+            markers=[
+                m for m in LOCALITY_IN_ROW.finditer(line)
+                if not re.search(
+                    r'(?:вул(?:иця)?|пров(?:улок)?|прв|просп(?:ект)?|пр-т|б-р|бульвар)\.?\s*$',
+                    line[:m.start()], re.I
+                )
+            ]
             if markers:
                 if locality and line[:markers[0].start()].strip():
                     sections[locality].append(line[:markers[0].start()])
@@ -592,7 +601,13 @@ def preserve_street_catalogue(result, previous, historical):
     seed_places = seed.get('localities', {})
     previous_places = previous_places if isinstance(previous_places, dict) else {}
     seed_places = seed_places if isinstance(seed_places, dict) else {}
+    # Remove fake localities produced by older "М." abbreviation parsing.
+    invalid_towns={'леонтовича','залізняка'}
+    for fake in invalid_towns:
+        places.pop(fake, None)
     for town in sorted(set(places) | set(previous_places) | set(seed_places)):
+        if town in invalid_towns:
+            continue
         current = places.setdefault(town, {'keys': {}, 'streets': {}, 'streetQueues': {}})
         older_town = previous_places.get(town, {})
         seeded_town = seed_places.get(town, {})
