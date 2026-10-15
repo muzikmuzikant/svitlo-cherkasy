@@ -69,6 +69,10 @@
     if(matches.length===0)return {status:'nostreet'};
     if(matches.length>1)return {status:'ambiguous'};
     const [key,display]=matches[0];
+    // Archived entries are searchable but cannot automatically confirm a queue.
+    if(Array.isArray(idx.archiveOnlyStreets)&&idx.archiveOnlyStreets.includes(key))
+      return {status:'possible',reason:'archived-only',street:display,streetKey:key,
+        queues:validQueues(idx.archivedStreetQueues?.[key]),knownHouses:[],hasHouseData:false};
     const streetOnly=validQueues(idx.streetQueues?.[key]);
     const houses=knownHouses(idx,key);
     const houseQueues=validQueues(houses.flatMap(x=>x.queues));
