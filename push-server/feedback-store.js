@@ -65,7 +65,7 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   entry.times.push(t);entry.expire=t+interval;attempts.set(k,entry);
   return {ok:true,id:newItem.id,token};
  }
- function list(){if(cleanup())save();return {items:items.slice().reverse(),count:items.length}}
+ function list(){if(cleanup())save();return {items:items.slice().reverse().map(({accessHash,...item})=>item),count:items.length}}
  function change(id,patch){
   const found=find(id),data=typeof patch==='string'?{status:patch}:patch;
   if(!data||typeof data!=='object'||Array.isArray(data))throw bad('Некоректні зміни звернення.');

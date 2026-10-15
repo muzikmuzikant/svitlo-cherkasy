@@ -8,7 +8,7 @@ import re
 
 ROOT=Path(__file__).resolve().parent.parent
 DEST=ROOT/'_site'
-FILES=['index.html','admin.html','app.js','notification-center.js','notification-text.js','inbox-ui.js','site-mode.js','admin-control.js','admin-richtext.js','admin-help-richtext.js','admin-control.css','admin-dashboard.js','admin-features.js','admin-command.js','address-lookup.js','data-merge.js','admin.js','hour-paint.js','install.js','version-check.js','release.json','style.css','install.css','sw.js','manifest.webmanifest','privacy.html','about.html','feedback.html','feedback.js','feedback.css','help.html','help.css','help.js','admin-extra.js','admin-planner.js','schedule-planner.js','robots.txt']
+FILES=['index.html','admin.html','app.js','notification-center.js','notification-text.js','inbox-ui.js','site-mode.js','admin-control.js','admin-richtext.js','admin-help-richtext.js','admin-control.css','admin-feedback.css','admin-dashboard.js','admin-features.js','admin-command.js','address-lookup.js','data-merge.js','admin.js','hour-paint.js','install.js','version-check.js','release.json','style.css','install.css','sw.js','manifest.webmanifest','privacy.html','about.html','feedback.html','feedback.js','feedback.css','help.html','help.css','help.js','admin-extra.js','admin-planner.js','schedule-planner.js','robots.txt']
 if DEST.exists():shutil.rmtree(DEST)
 DEST.mkdir()
 for filename in FILES:

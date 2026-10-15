@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f6f8fc"><meta name="robots" content="noindex,nofollow"><title>Керування · Світло Черкаси</title><link rel="stylesheet" href="./admin-control.css">
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f6f8fc"><meta name="robots" content="noindex,nofollow"><title>Керування · Світло Черкаси</title><link rel="stylesheet" href="./admin-control.css"><link rel="stylesheet" href="./admin-feedback.css">
 
 
 
@@ -380,11 +380,17 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
   <div class="push-actions" style="margin-top:14px"><button type="button" id="sendPush" disabled>Надіслати власне повідомлення</button></div>
   <div id="pushResult" class="push-state" role="status" aria-live="polite" style="margin-top:12px">Авторизуйтеся, щоб надіслати Push.</div>
 </section>
-<section class="card" data-admin-panel="feedback" hidden aria-labelledby="ticketsHeading">
- <div class="headline"><h2 id="ticketsHeading">Звернення користувачів</h2><button type="button" id="refreshTickets" class="secondary">Оновити список</button></div>
- <p>Повідомлення про помилки, адреси та побажання надходять сюди напряму. Вони не публікуються на сайті.</p>
- <div class="two" style="margin:13px 0"><div class="field"><label for="ticketSearch">Пошук за зверненнями</label><input type="search" id="ticketSearch" placeholder="Текст, номер або пошта"></div><div class="field"><label for="ticketFilter">Статус</label><select id="ticketFilter"><option value="all">Усі</option><option value="new">Нові</option><option value="in_progress">У роботі</option><option value="resolved">Вирішені</option></select></div></div><button id="ticketExport" type="button" class="secondary" style="margin-bottom:12px">Експортувати звернення (JSON)</button><div id="ticketsSummary" class="hint" role="status" aria-live="polite">Завантаження звернень…</div>
- <div id="ticketsList" class="tickets-list"></div>
+<section class="card support-admin" data-admin-panel="feedback" hidden aria-labelledby="ticketsHeading">
+ <div class="headline"><div><small class="support-overline">SUPPORT DESK</small><h2 id="ticketsHeading">Центр звернень</h2><p>Опрацьовуйте заявки, відповідайте користувачам та відстежуйте результат.</p></div><button type="button" id="refreshTickets" class="secondary">Оновити ↻</button></div>
+ <div id="ticketCounts" class="ticket-counts"></div>
+ <div class="support-filters">
+  <div class="field"><label for="ticketSearch">Пошук</label><input type="search" id="ticketSearch" placeholder="Номер, текст, підчерга, email"></div>
+  <div class="field"><label for="ticketFilter">Статус</label><select id="ticketFilter"><option value="all">Усі</option><option value="new">Нові</option><option value="in_progress">У роботі</option><option value="resolved">Вирішені</option></select></div>
+  <div class="field"><label for="ticketTopicFilter">Тема</label><select id="ticketTopicFilter"><option value="all">Усі теми</option><option value="bug">Помилки</option><option value="address">Адреси</option><option value="schedule">Графіки</option><option value="push">Сповіщення</option><option value="idea">Ідеї</option><option value="other">Інше</option></select></div>
+  <div class="field"><label for="ticketPriorityFilter">Пріоритет</label><select id="ticketPriorityFilter"><option value="all">Усі</option><option value="high">Високий</option><option value="normal">Звичайний</option><option value="low">Низький</option></select></div>
+ </div>
+ <div class="support-toolbar"><span id="ticketsSummary" role="status" aria-live="polite">Завантаження звернень…</span><button id="ticketExport" type="button" class="secondary">Експорт JSON ↗</button></div>
+ <div class="support-workspace"><div id="ticketsList" class="support-list" aria-label="Список звернень"></div><section id="ticketDetail" class="support-detail" aria-label="Звернення та відповіді"><div class="support-empty">Оберіть звернення у списку.</div></section></div>
 </section>
 <div class="two" data-admin-panel="overview"><div class="metric"><strong id="scheduleStat">—</strong><span>Опубліковані дні</span></div><div class="metric"><strong id="addressStat">—</strong><span>Розпізнані адреси + довідник</span></div><div class="metric"><strong id="townStat">—</strong><span>Населені пункти</span></div><div class="metric"><strong id="emergencyStat">—</strong><span>Екстрені бюлетені</span></div></div>
 

@@ -123,11 +123,10 @@ async function refreshAudit(){
  }catch(e){list.replaceChildren(extraText('p','Не вдалося прочитати журнал: '+e.message))}
 }
 extraGet('auditRefresh').addEventListener('click',refreshAudit);
-function filterTickets(){
- const q=extraGet('ticketSearch').value.toLocaleLowerCase('uk-UA').trim(),status=extraGet('ticketFilter').value;
- document.querySelectorAll('#ticketsList .ticket').forEach(card=>{card.hidden=!!q&&!card.textContent.toLocaleLowerCase('uk-UA').includes(q)||(status!=='all'&&card.querySelector('select')?.value!==status)})
+function filterTickets(){if(typeof renderTicketList==='function')renderTicketList()}
+for(const id of ['ticketSearch','ticketFilter','ticketTopicFilter','ticketPriorityFilter']){
+ extraGet(id).addEventListener(id==='ticketSearch'?'input':'change',filterTickets);
 }
-extraGet('ticketSearch').addEventListener('input',filterTickets);extraGet('ticketFilter').addEventListener('change',filterTickets);
 document.addEventListener('svitlo:tickets-loaded',filterTickets);
 extraGet('ticketExport').addEventListener('click',async()=>{
  try{
