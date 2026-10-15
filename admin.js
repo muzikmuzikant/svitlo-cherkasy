@@ -49,17 +49,18 @@ function signOut(revoke=true){
  remote=false;canPublish=false;sessionToken='';sha='';adminRole='owner';document.body.dataset.adminRole='';
  $('adminDashboard').hidden=true;$('adminLoginScreen').hidden=false;
  $('connection').textContent='Авторизовано';$('publish').disabled=true;
- $('password').value='';setPushReady(false);
+ $('password').value='';if($('otp'))$('otp').value='';setPushReady(false);
  $('loginError').textContent='';$('password').focus();document.dispatchEvent(new Event('svitlo:admin-logout'));
 }
 $('loginForm').onsubmit=async event=>{
  event.preventDefault();
  const url=$('server').value.trim().replace(/\/$/,'');
- if(!/^https:\/\/[^\s/]+/.test(url)){$('loginError').textContent='Укажіть HTTPS-адресу Railway у налаштуваннях нижче.';return}
+ if(!/^https:\/\/[^\s/]+$/.test(url)){$('loginError').textContent='Не вдалося визначити захищену адресу Railway. Оновіть сторінку.';return}
  const enteredPassword=$('password').value;
+ const enteredCode=$('otp')?.value.trim()||'';
  $('connect').disabled=true;$('connect').textContent='Перевіряємо пароль…';$('loginError').textContent='';
  try{
-   const response=await fetch(url+'/api/admin/login',{method:'POST',cache:'no-store',headers:{'content-type':'application/json'},body:JSON.stringify({password:enteredPassword})});
+   const response=await fetch(url+'/api/admin/login',{method:'POST',cache:'no-store',headers:{'content-type':'application/json'},body:JSON.stringify({password:enteredPassword,code:enteredCode})});
    const result=await response.json().catch(()=>({}));
    if(!response.ok||!result.token)throw Error(result.error||'Помилка входу: HTTP '+response.status);
    server=url;sessionToken=result.token;adminRole=result.role||'owner';document.body.dataset.adminRole=adminRole;
@@ -72,7 +73,7 @@ $('loginForm').onsubmit=async event=>{
    await Promise.allSettled([load(),diagnostics(),refreshPushStatus(),refreshTickets()]);
    document.dispatchEvent(new Event('svitlo:admin-ready'));
  }catch(e){sessionToken='';remote=false;canPublish=false;$('loginError').textContent=e.message;setPushReady(false)}
- finally{$('password').value='';$('connect').disabled=false;$('connect').textContent='Увійти до панелі →'}
+ finally{$('password').value='';if($('otp'))$('otp').value='';$('connect').disabled=false;$('connect').textContent='Увійти до панелі →'}
 };
 $('disconnect').onclick=()=>signOut(true);
 $('kind').onchange=load;
@@ -86,7 +87,7 @@ $('publish').onclick=async()=>{
    $('publish').disabled=true;const r=await api('file?kind='+kind,{method:'PUT',body:JSON.stringify({sha,contents:obj})});message('Опубліковано. Коміт: '+r.commit+'. Дані на GitHub Pages оновляться після розгортання.',true);await load();
  }catch(e){message('Публікація не вдалася: '+e.message,false);$('publish').disabled=false}
 };
-(async()=>{try{const r=await fetch('./push-config.json',{cache:'no-store'});if(r.ok){const c=await r.json();if(c.apiBase)$('server').value=c.apiBase}}catch{} })();
+(async()=>{try{const r=await fetch('./push-config.json',{cache:'no-store'});if(r.ok){const c=await r.json();if(/^https:\/\/[^\s]+$/.test(c.apiBase||''))$('server').value=new URL(c.apiBase).origin}}catch{ $('loginError').textContent='Не вдалося визначити сервер. Оновіть сторінку.' } })();
 
 // Guided editor: never directly changes public data. Edits the JSON staging area.
 const queues=Array.from({length:6},(_,i)=>[`${i+1}.1`,`${i+1}.2`]).flat();
