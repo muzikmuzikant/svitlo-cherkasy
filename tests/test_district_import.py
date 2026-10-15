@@ -75,7 +75,7 @@ def test_split_official_district_heading_does_not_erase_sloboda_streets(monkeypa
     assert 'Хрещатик' not in sections['Слобода']
     assert 'Хрещатик' in sections['Черкаси']
     names={x[1] for x in importer.street_only_entries(sections['Слобода'])}
-    assert {'різдвяна','ллукраїнки','святотроїцька','козацька','пилипаорлика'} <= names
+    assert {'різдвяна','лукраїнки','святотроїцька','козацька','пилипаорлика'} <= names
 
 
 def test_three_line_city_and_district_branch_markers():
