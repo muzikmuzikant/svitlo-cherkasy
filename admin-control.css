@@ -583,3 +583,19 @@ main{max-width:1840px!important;padding-inline:clamp(16px,2.5vw,46px)}
 .analytics-popularity-track i{display:block;background:linear-gradient(90deg,#3f85f6,#7bb5ff);border-radius:99px;height:100%}
 .analytics-no-data,.analytics-privacy-small{font-size:10px;line-height:1.5;color:#8797ad}
 @media(max-width:700px){.analytics-popularity{padding:13px}.analytics-popularity-grid{grid-template-columns:1fr}}
+
+/* 7.9.10: keep existing editor save actions reachable during scrolling. */
+[data-admin-panel="operations"] .ops-bottom,
+[data-admin-panel="features"] .ops-panel-footer,
+[data-admin-panel="maintenance"] .ops-panel-footer,
+[data-admin-panel="design"] .control-panel-actions {
+ position:sticky;bottom:7px;z-index:12;padding:13px 15px!important;background:#ffffffef;
+ border-radius:16px;border:1px solid #dbe5f3;box-shadow:0 8px 27px #1834541c;
+ backdrop-filter:blur(12px)
+}
+@media(max-width:720px){
+ [data-admin-panel="operations"] .ops-bottom,
+ [data-admin-panel="features"] .ops-panel-footer,
+ [data-admin-panel="maintenance"] .ops-panel-footer,
+ [data-admin-panel="design"] .control-panel-actions{bottom:5px;gap:8px}
+}
