@@ -390,81 +390,40 @@ async function shareSchedule(date,{copy=false}={}){
 }
 function renderBar(a){const bar=$('overviewBar');bar.replaceChildren();if(!a){const b=el('span','bar-segment unknown');b.style.flex='1';bar.append(b);return}let start=0,v=a[0];for(let i=1;i<=1440;i++){if(i===1440||a[i]!==v){const seg=el('span','bar-segment '+(v===1?'off':v===0?'on':'unknown'));seg.style.flex=String(i-start);seg.title=`${clock(start)}–${clock(i)} · ${v===1?'відключення':v===0?'світло':'немає даних'}`;bar.append(seg);start=i;v=a[i]}}const line=el('span','bar-now');line.style.left=(nowMinutes()/1440*100)+'%';bar.append(line)}
 function navigate(name){
+ // Each tab tap commits immediately; only the visual sideways animation lasts.
+ // An already active tab never restarts or replays its entrance.
  if(!['home','detail','updates','settings'].includes(name))return;
  if(name==='detail'&&!primary()&&!previewQueue){openAddressSheet();return}
- // Do not interrupt an active View Transition: on iOS the interrupted
- // snapshot can fall back to the vertical section animation.
- // A repeat tap cancels an older queued destination; a different tab wins.
- if(navigate.runningTransition){
-  navigate.queuedName=name===navigate.pendingName?null:name;
-  return;
- }
- if(name===active){
-  if(name==='detail')renderDetail();
-  else if(name==='updates')renderUpdates();
-  else if(name==='settings')renderSettings();
-  else renderHome();
-  return;
- }
+ if(name===active)return;
+ const names=['home','detail','updates','settings'],previous=active;
  if(name!=='detail')previewQueue=null;
  try{sessionStorage.setItem(SCREEN_RETURN,name)}catch{}
- // Prepare content before capturing the entering screen.
+ // Prepare the next screen before it becomes visible.
  if(name==='detail'){daySelected=today();dayStripStart=today();renderDetail()}
  else if(name==='updates')renderUpdates();
  else if(name==='settings')renderSettings();
  else renderHome();
- const allowMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches!==true &&
-  !document.documentElement.classList.contains('feature-off-animations');
- const screenNames=['home','detail','updates','settings'];
- const previous=active;
- const token=(navigate.transitionSerial||0)+1;
- navigate.transitionSerial=token;
- const update=useFallback=>{
-  if(token!==navigate.transitionSerial)return; // Older asynchronous callback.
-  // iOS must NOT perform smooth document scrolling while screenshots move.
-  // A smooth scroll can continue after the transition and create an end snap.
-  const scrollStyle=document.documentElement.style;
-  const previousBehavior=scrollStyle?.scrollBehavior;
-  if(scrollStyle)scrollStyle.scrollBehavior='auto';
-  try{window.scrollTo(0,0)}
-  finally{if(scrollStyle)scrollStyle.scrollBehavior=previousBehavior||''}
-  active=name;
-  for(const n of screenNames){
-   const section=$(n);
-   section.classList.remove('tab-enter');
-   if(n===name&&useFallback)section.classList.add('tab-enter');
-   section.hidden=n!==name;
-  }
-  document.querySelectorAll('[data-go]').forEach(x=>{
-   if(x.classList.contains('nav-item'))x.classList.toggle('active',x.dataset.go===name);
-  });
- };
- // Match fallback slide direction to the native horizontal transition.
  document.documentElement.dataset.tabDirection=
-  screenNames.indexOf(name)>=screenNames.indexOf(previous)?'forward':'backward';
- if(allowMotion&&typeof document.startViewTransition==='function'){
-  // Root screenshots always share the same VIEWPORT dimensions.
-  // Section snapshots have different heights and previously resized at the end.
-  try{
-   const transition=document.startViewTransition(()=>update(false));
-   navigate.runningTransition=transition;
-   navigate.pendingName=name;
-   Promise.resolve(transition.finished).catch(()=>{}).then(()=>{
-    if(navigate.runningTransition!==transition)return;
-    navigate.runningTransition=null;
-    navigate.pendingName=null;
-    // Queue at most one destination; never interrupt screenshot interpolation.
-    const next=navigate.queuedName;
-    navigate.queuedName=null;
-    if(next&&next!==active)navigate(next);
-   });
-  }catch(error){
-   console.warn('Tab transition unavailable:',error);
-   navigate.runningTransition=null;
-   navigate.pendingName=null;
-   update(true);
-  }
- }else{navigate.pendingName=null;update(allowMotion)}
+  names.indexOf(name)>=names.indexOf(previous)?'forward':'backward';
+ const scrollStyle=document.documentElement.style;
+ const previousBehavior=scrollStyle?.scrollBehavior;
+ if(scrollStyle)scrollStyle.scrollBehavior='auto';
+ try{window.scrollTo(0,0)}
+ finally{if(scrollStyle)scrollStyle.scrollBehavior=previousBehavior||''}
+ active=name;
+ const animate=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches!==true &&
+  !document.documentElement.classList.contains('feature-off-animations');
+ for(const id of names){
+  const section=$(id);
+  // Remove old animation classes before changing visibility; never use
+  // ViewTransition snapshots or a queued, delayed destination.
+  section.classList.remove('tab-enter');
+  section.hidden=id!==name;
+ }
+ if(animate)$(name).classList.add('tab-enter');
+ document.querySelectorAll('[data-go]').forEach(item=>{
+  if(item.classList.contains('nav-item'))item.classList.toggle('active',item.dataset.go===name);
+ });
 }
 function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Підчерга '+previewQueue,settlement:'Черкаси та район'}:primary();
  if(!a)return;
