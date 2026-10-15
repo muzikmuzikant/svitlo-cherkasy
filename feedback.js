@@ -133,11 +133,11 @@ function coarseDiagnostics(){
  const ua=navigator.userAgent||'';
  const platform=/iPad/i.test(ua)?'iPad':/iPhone|iPod/i.test(ua)?'iPhone':/Android/i.test(ua)?'Android':/Windows/i.test(ua)?'Windows':/Macintosh/i.test(ua)?'macOS':/Linux/i.test(ua)?'Linux':'Інше';
  const osName=platform==='iPhone'?'iOS':platform==='iPad'?'iPadOS':platform==='Android'?'Android':platform==='Windows'?'Windows':platform==='macOS'?'macOS':platform==='Linux'?'Linux':'Інше';
- const osMatch=ua.match(platform==='iPhone'||platform==='iPad'?/OS (\\d{1,2})[_\\d]*/:platform==='Android'?/Android (\\d{1,2})/:platform==='Windows'?/Windows NT (\\d+)\\./:platform==='macOS'?/Mac OS X (\\d{1,2})[_\\d]*/:/$^/);
+ const osMatch=ua.match(platform==='iPhone'||platform==='iPad'?/OS (\d{1,2})[_\d]*/:platform==='Android'?/Android (\d{1,2})/:platform==='Windows'?/Windows NT (\d+)\./:platform==='macOS'?/Mac OS X (\d{1,2})[_\d]*/:/$^/);
  const os=osName+(osMatch?' '+osMatch[1]:'');
- const browser=/Edg\\//.test(ua)?'Edge':/SamsungBrowser\\//.test(ua)?'Samsung Internet':/Firefox|FxiOS/.test(ua)?'Firefox':/CriOS|Chrome\\//.test(ua)?'Chrome':/Safari|AppleWebKit/.test(ua)?'Safari':'Інше';
+ const browser=/Edg\//.test(ua)?'Edge':/SamsungBrowser\//.test(ua)?'Samsung Internet':/Firefox|FxiOS/.test(ua)?'Firefox':/CriOS|Chrome\//.test(ua)?'Chrome':/Safari|AppleWebKit/.test(ua)?'Safari':'Інше';
  const appVersion=document.querySelector('meta[name="svitlo-version"]')?.content||'';
- return {platform,os,browser,appVersion:/^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$/.test(appVersion)?appVersion:''};
+ return {platform,os,browser,appVersion:/^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(appVersion)?appVersion:''};
 }
 function updateDiagnosticsPreview(){
  const checked=$('includeDiagnostics')?.checked===true;
