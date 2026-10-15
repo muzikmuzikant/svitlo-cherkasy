@@ -62,8 +62,8 @@ function timeline(date,queue){
  if(!QUEUES.includes(queue))return null;
  const day=currentDay(date),q=day?.queues?.[queue];
  if(!day){
-   // The operator does not publish a graph when planned outages are absent.
-   // Do not extend this assumption beyond today/tomorrow or a fresh check.
+   // Product display rule: no published graph means 24h green, for any date.
+   // This is a schedule convention, not a live electricity measurement.
    return new Int8Array(1440);
  }
  if(!q){return new Int8Array(1440)} // Omitted subqueue in verified publication.
