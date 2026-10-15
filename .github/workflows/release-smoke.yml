@@ -16,3 +16,5 @@ jobs:
           node-version: '22'
       - name: Validate current Production public endpoints (never send Push or admin mutation)
         run: node --test smoke/live_release.mjs
+      - name: Validate isolated Beta API, schedule publication and admin CORS without writes
+        run: node --test smoke/beta_preflight.mjs
