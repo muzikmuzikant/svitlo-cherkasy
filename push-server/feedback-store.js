@@ -82,7 +82,7 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   if(Object.keys(input).some(key=>!category?.fields?.some(field=>field.id===key)))throw bad('Невідоме додаткове поле звернення');
   for(const field of category?.fields||[]){
    const v=input[field.id];const str=typeof v==='boolean'?(v?'Так':'Ні'):String(v??'').trim();
-   if(field.required&&!str)throw bad('Заповніть поле «'+field.label+'»');
+   if(field.required&&(field.type==='checkbox'?v!==true:!str))throw bad('Заповніть поле «'+field.label+'»');
    if(str.length>200)throw bad('Занадто довге значення поля «'+field.label+'»');
    if(field.type==='select'&&str&&!field.options.includes(str))throw bad('Невірний варіант поля «'+field.label+'»');
    if(str)extra[field.id]={label:field.label,value:str}
@@ -127,7 +127,7 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   const basic={id:found.id,status:found.status,createdAt:found.createdAt,updatedAt:found.updatedAt};
   if(token===undefined||token===null||token==='')return basic; // Old receipts remain status-only.
   validateToken(found,token);
-  return {...basic,topic:found.topic,subject:found.subject||'',queue:found.queue||'',message:found.message,messages:(found.messages||[]).filter(x=>x.from==='admin'||x.from==='user').map(({id,from,text,at})=>({id,from,text,at})),canReply:true};
+  return {...basic,topic:found.topic,subject:found.subject||'',queue:found.queue||'',message:found.message,extra:found.extra||{},messages:(found.messages||[]).filter(x=>x.from==='admin'||x.from==='user').map(({id,from,text,at})=>({id,from,text,at})),canReply:true};
  }
  function reply(id,token,value,ip){
   const found=find(id);validateToken(found,token);

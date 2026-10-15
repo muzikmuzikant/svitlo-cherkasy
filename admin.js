@@ -262,6 +262,12 @@ function renderTicketDetail(){
  const meta=supportNode('div',undefined,'support-detail-meta');
  meta.append(supportNode('span','Створено '+supportDate(ticket.createdAt)),supportNode('span',TICKET_TOPICS[ticket.topic]||'Інше'));
  if(ticket.queue)meta.append(supportNode('span','Підчерга '+ticket.queue));
+ if(ticket.extra&&typeof ticket.extra==='object'){
+  const extra=supportNode('section',undefined,'support-device-info');extra.append(supportNode('h4','Додаткові дані звернення'));
+  for(const field of Object.values(ticket.extra)){if(!field||typeof field!=='object')continue;const row=supportNode('div',undefined,'support-device-row');
+   row.append(supportNode('span',field.label||'Поле'),supportNode('strong',field.value||'Не зазначено'));extra.append(row)}
+  root.append(extra)
+ }
  const deviceInfo=supportNode('section',undefined,'support-device-info');
  deviceInfo.append(supportNode('h4','Інформація про пристрій'));
  if(ticket.diagnostics){
