@@ -4,21 +4,18 @@ import {readFileSync} from 'node:fs';
 
 const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 
-test('All four tabs use the same entrance animation, easing and stagger',()=>{
+test('All four tabs use a short page reveal without cascading block animations',()=>{
  const css=read('style.css');
- const html=read('index.html');
+ const html=read('index.html'),app=read('app.js');
  for(const name of ['home','detail','updates','settings']){
-   assert.match(html,new RegExp('<section id="'+name+'" class="screen"'));
+  assert.match(html,new RegExp('<section id="'+name+'" class="screen"'));
  }
- assert.match(css,/\.screen:not\(\[hidden\]\)\{animation:screenIn \.38s var\(--ease\) both\}/);
- assert.match(css,/\.screen:not\(\[hidden\]\) > :not\(\[hidden\]\)\{animation:rise \.52s var\(--ease\) both\}/);
- for(const rule of [
-   '.screen:not([hidden]) > :nth-child(2):not([hidden]){animation-delay:55ms}',
-   '.screen:not([hidden]) > :nth-child(3):not([hidden]){animation-delay:105ms}',
-   '.screen:not([hidden]) > :nth-child(n+4):not([hidden]){animation-delay:150ms}'
- ])assert.ok(css.includes(rule), 'Missing shared reveal rule: '+rule);
- assert.doesNotMatch(css,/\.status-panel,\.primary-picker,\.overview-card,\.stats-row,\.place-card,\.detail-surface\{animation:rise/);
- assert.doesNotMatch(css,/\.place-card\{animation-delay:170ms\}/);
+ assert.match(css,/\.screen:not\(\[hidden\]\)\{animation:tabSettle \.19s/);
+ assert.match(css,/\.screen:not\(\[hidden\]\) > :not\(\[hidden\]\)\{animation:none\}/);
+ assert.doesNotMatch(css,/\.screen:not\(\[hidden\]\) > :nth-child\(n\+4\)/);
+ assert.doesNotMatch(css,/animation:rise \.52s/);
+ assert.match(app,/if\(name===active\)\{/);
+ assert.match(app,/Prepare content before reveal/);
 });
 
 test('Reduced motion and admin animation-off apply to all tab entrance effects',()=>{
