@@ -50,3 +50,17 @@ jobs:
           test -f _site/advertising.html && test -f _site/support-project.html
       - name: Run Beta advertising contract tests
         run: node --test tests/test_beta_monetization.mjs
+      - name: Verify published beta API read-only route
+        run: |
+          python - <<'PY'
+          import json, urllib.request
+          url='https://svitlo-beta-api-staging.up.railway.app/api/ads'
+          request=urllib.request.Request(url,headers={'Origin':'https://svitlo-cherkasy.pages.dev','Accept':'application/json'})
+          with urllib.request.urlopen(request,timeout=15) as response:
+              data=json.loads(response.read().decode('utf-8'))
+              assert response.status==200
+          assert isinstance(data.get('campaigns'),list), 'Campaigns API unavailable'
+          assert isinstance(data.get('contacts'),list), 'Contact configuration unavailable'
+          assert isinstance(data.get('support'),dict), 'Donation config unavailable'
+          print('Beta API ready, no mutation or production request')
+          PY
