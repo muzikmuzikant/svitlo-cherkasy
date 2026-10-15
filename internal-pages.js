@@ -44,12 +44,13 @@
  document.addEventListener('click',event=>{
   if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
   const a=event.target.closest?.('a[href]');if(!a||a.hasAttribute('download'))return;
+  // Keep legal links inside a modal accessible as separate pages, not behind the top-layer dialog.
+  if(a.closest('dialog[open]'))return;
   const u=internal(a.href);if(!u)return;
   event.preventDefault();display(u.href);
  },true);
  frame.addEventListener('load',()=>{
   try{
-   browser.classList.remove('svitlo-internal-loading');
    const doc=frame.contentDocument;
    if(!doc||frame.contentWindow.location.origin!==location.origin)return;
    // Child page navigation stays inside this container; returning to app closes it.
@@ -71,6 +72,7 @@
    doc.head.append(style);
    // Legal information and the support brand remain available when the page is opened standalone.
   }catch(error){console.warn('Internal page shell:',error.message)}
+  finally{browser.classList.remove('svitlo-internal-loading')}
  });
  window.SvitloInternalPages={open:url=>display(url),close:dismiss};
 })();
