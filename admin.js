@@ -221,7 +221,7 @@ function renderTicketCounts(){
 function renderTicketList(){
  const root=$('ticketsList');root.replaceChildren();
  const q=$('ticketSearch').value.trim().toLocaleLowerCase('uk-UA'),status=$('ticketFilter').value,topic=$('ticketTopicFilter').value,priority=$('ticketPriorityFilter').value;
- const visible=supportTickets.filter(t=>(status==='all'||t.status===status)&&(topic==='all'||t.topic===topic)&&(priority==='all'||(t.priority||'normal')===priority)&&(!q||[t.id,t.subject,t.message,t.queue,t.email,TICKET_TOPICS[t.topic],...(t.messages||[]).map(m=>m.text)].join(' ').toLocaleLowerCase('uk-UA').includes(q)));
+ const visible=supportTickets.filter(t=>(status==='all'||t.status===status)&&(topic==='all'||t.topic===topic)&&(priority==='all'||(t.priority||'normal')===priority)&&(!q||[t.id,t.subject,t.message,t.queue,t.email,(t.tags||[]).join(' '),TICKET_TOPICS[t.topic],...(t.messages||[]).map(m=>m.text)].join(' ').toLocaleLowerCase('uk-UA').includes(q)));
  visible.sort((a,b)=>({new:0,in_progress:1,resolved:2}[a.status]??9)-({new:0,in_progress:1,resolved:2}[b.status]??9) || Number(b.priority==='high')-Number(a.priority==='high')||Date.parse(b.updatedAt||b.createdAt)-Date.parse(a.updatedAt||a.createdAt));
  $('ticketsSummary').textContent='Показано '+visible.length+' із '+supportTickets.length+' звернень';
  if(!visible.length){root.append(supportNode('div',supportTickets.length?'Немає звернень за цими фільтрами.':'Поки немає звернень.','support-empty'));return}
@@ -289,7 +289,7 @@ function renderTicketDetail(){
   const compose=supportNode('section',undefined,'support-compose');compose.append(supportNode('h4','Відповідь користувачу'));
   const reply=document.createElement('textarea');reply.rows=4;reply.maxLength=1600;reply.placeholder='Напишіть відповідь. Користувач побачить її у «Мої звернення»…';reply.setAttribute('aria-label','Відповідь користувачу');
   const templates=supportNode('div',undefined,'support-templates');
-  for(const sample of ['Дякуємо! Перевіряємо цю інформацію та повідомимо про результат.','Уточніть, будь ласка, підчергу та дату, коли виникла проблема.','Проблему виправлено. Оновіть застосунок та перевірте ще раз.']){
+  for(const sample of supportTemplates){
    const button=supportNode('button',sample,'support-template');button.type='button';button.addEventListener('click',()=>{reply.value=sample;reply.focus()});templates.append(button);
   }
   const send=supportNode('button','Надіслати відповідь →','support-send');send.type='button';
@@ -303,7 +303,12 @@ function renderTicketDetail(){
   const note=document.createElement('textarea');note.rows=3;note.maxLength=1600;note.value=ticket.internalNote||'';note.placeholder='Що вже перевірено, наступні кроки…';note.setAttribute('aria-label','Приватна нотатка');
   const save=supportNode('button','Зберегти нотатку','secondary');save.type='button';
   save.addEventListener('click',async()=>{save.disabled=true;if(!await saveSupport(ticket.id,{internalNote:note.value},'Нотатку збережено.'))save.disabled=false});
-  notes.append(note,save);compose.append(notes);root.append(compose);
+  notes.append(note,save);compose.append(notes);
+  const tags=supportNode('div',undefined,'support-internal');tags.append(supportNode('h4','Теги звернення'));
+  const tagInput=document.createElement('input');tagInput.type='text';tagInput.maxLength=500;tagInput.placeholder='потребує перевірки, адреса, терміново';tagInput.value=(ticket.tags||[]).join(', ');
+  tagInput.setAttribute('aria-label','Теги через кому');
+  const saveTags=supportNode('button','Зберегти теги','secondary');saveTags.type='button';saveTags.onclick=()=>saveSupport(ticket.id,{tags:tagInput.value.split(',').map(v=>v.trim()).filter(Boolean).slice(0,12)},'Теги оновлено.');
+  tags.append(tagInput,saveTags);compose.append(tags);root.append(compose);
  }
  if(adminRole==='owner'||adminRole==='editor'){
   const remove=supportNode('button','Видалити назавжди','danger');remove.type='button';remove.className+=' support-delete';
@@ -321,11 +326,28 @@ window.betaAdminUploadAdPhoto=async(file)=>{
  const result=await api('media',{method:'POST',body:JSON.stringify({mime:file.type,data})});
  return server.replace(/\/$/,'')+'/api/media/'+result.id;
 };
+let supportTemplates=['Дякуємо! Перевіряємо цю інформацію та повідомимо про результат.'];
+function renderSupportTemplateEditor(){
+ const box=$('adminReplyTemplates');if(!box)return;
+ box.replaceChildren();if(adminRole==='viewer')return;
+ box.append(supportNode('h4','Шаблони відповідей'));
+ const list=supportNode('div',undefined,'reply-template-list');
+ for(const [i,t] of supportTemplates.entries()){
+  const row=supportNode('div',undefined,'reply-template-row');const input=document.createElement('textarea');input.rows=2;input.maxLength=1600;input.value=t;
+  input.oninput=()=>{supportTemplates[i]=input.value};row.append(input);
+  const del=supportNode('button','Видалити','secondary');del.type='button';del.onclick=()=>{supportTemplates.splice(i,1);renderSupportTemplateEditor()};row.append(del);list.append(row)
+ }
+ box.append(list);
+ const add=supportNode('button','+ Додати шаблон','secondary');add.type='button';add.onclick=()=>{supportTemplates.push('Новий шаблон відповіді');renderSupportTemplateEditor()};
+ const save=supportNode('button','Зберегти шаблони','support-send');save.type='button';
+ save.onclick=async()=>{save.disabled=true;try{const result=await api('feedback/templates',{method:'PUT',body:JSON.stringify({templates:supportTemplates.filter(Boolean)})});supportTemplates=result.templates;renderSupportTemplateEditor()}catch(e){alert(e.message);save.disabled=false}};
+ box.append(add,save)
+}
 async function refreshTickets(){
  if(!remote)return;
  $('ticketsSummary').textContent='Оновлюємо звернення…';
  try{
-  const result=await api('feedback');supportTickets=Array.isArray(result.items)?result.items:[];
+  const [result,templ]=await Promise.all([api('feedback'),api('feedback/templates')]);supportTickets=Array.isArray(result.items)?result.items:[];supportTemplates=Array.isArray(templ.templates)?templ.templates:[];renderSupportTemplateEditor();
   if(!supportTickets.some(t=>t.id===supportSelected))supportSelected=supportTickets[0]?.id||'';
   renderTicketCounts();renderTicketList();renderTicketDetail();
   document.dispatchEvent(new Event('svitlo:tickets-loaded'));

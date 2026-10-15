@@ -209,7 +209,12 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
      if(noticeId&&output.accepted>0)siteControls.markPushed(noticeId);
      extras?.record('push.broadcast',String(body.queue||'all'));send(res,200,output);return true;
    }
-   if(url.pathname==='/api/admin/feedback'&&req.method==='GET'){send(res,200,feedback.list());return true}
+   if(url.pathname==='/api/admin/feedback/templates'&&req.method==='GET'){send(res,200,{templates:feedback.getTemplates()});return true}
+   if(url.pathname==='/api/admin/feedback/templates'&&req.method==='PUT'){
+    const data=await readJson(req,50000);const result=feedback.setTemplates(data.templates);
+    extras?.record('feedback.templates.update');send(res,200,result);return true
+   }
+    if(url.pathname==='/api/admin/feedback'&&req.method==='GET'){send(res,200,feedback.list());return true}
    if(url.pathname.startsWith('/api/admin/feedback/')&&['PATCH','DELETE'].includes(req.method)){
      const id=decodeURIComponent(url.pathname.slice('/api/admin/feedback/'.length));
      if(!/^SC-[0-9A-F]{10}$/.test(id)){send(res,400,{error:'Неправильний номер звернення'});return true}
