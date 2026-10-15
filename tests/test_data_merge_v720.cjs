@@ -35,7 +35,7 @@ test('real Sloboda keeps every archived street name when the live district impor
  const merged=mergeIndexes(live,backup).localities['слобода'];
  for(const key of Object.keys(old.streets))assert.ok(merged.streets[key],'Missing historical street: '+key);
  assert.ok(Object.keys(merged.streets).length>=Object.keys(old.streets).length);
- if(fresh.archiveOnlyStreets.includes('вулиця|різдвяна')){
+ if((fresh.archiveOnlyStreets||[]).includes('вулиця|різдвяна')){
   assert.ok(merged.archiveOnlyStreets.includes('вулиця|різдвяна'));
   assert.equal(merged.streetQueues['вулиця|різдвяна'],undefined,'Obsolete queues must not become confirmed');
   assert.deepEqual(merged.archivedStreetQueues['вулиця|різдвяна'],old.streetQueues['вулиця|різдвяна']);
