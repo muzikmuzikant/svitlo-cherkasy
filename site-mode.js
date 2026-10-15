@@ -4,7 +4,7 @@
 (()=>{'use strict';
  const overlay=document.getElementById('maintenanceScreen');if(!overlay)return;
  const $=id=>document.getElementById(id),viewport=document.querySelector('.viewport');
- let apiBase='',busy=false,lastConfig=null;
+ let apiBase='',busy=false,lastConfig=null,maintenanceExitTimer=null,maintenanceFocus=null;
  const banner=document.createElement('aside');banner.className='maintenance-inline';banner.hidden=true;
  banner.setAttribute('role','status');banner.setAttribute('aria-live','polite');
  if(viewport)viewport.prepend(banner);
@@ -105,18 +105,83 @@
   const now=Date.now();return m?.enabled===true&&(!m.startsAt||Date.parse(m.startsAt)<=now)&&(!m.until||Date.parse(m.until)>now);
  }
  function updateEta(m){
-  const el=$('maintenanceEta');if(!el)return;
-  const remaining=Date.parse(m?.until||'')-Date.now();
-  if(!(remaining>0)){el.textContent='';return}
-  const seconds=Math.ceil(remaining/1000),hours=Math.floor(seconds/3600),
-   minutes=Math.floor(seconds%3600/60),secs=seconds%60;
-  el.textContent='До орієнтовного завершення '+String(hours).padStart(2,'0')+':'+
-   String(minutes).padStart(2,'0')+':'+String(secs).padStart(2,'0');
+  const label=$('maintenanceTimeLabel'),value=$('maintenanceEta');
+  if(!label||!value)return;
+  const when=Date.parse(m?.until||'');
+  if(!Number.isFinite(when)||when<=Date.now()){
+   label.textContent='Час завершення';
+   value.textContent='Поки невідомий';
+   return;
+  }
+  label.textContent='Орієнтовне завершення';
+  value.textContent=new Intl.DateTimeFormat('uk-UA',{
+   day:'numeric',month:'long',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Kyiv'
+  }).format(new Date(when));
+ }
+ function finishMaintenanceClose(){
+  clearTimeout(maintenanceExitTimer);maintenanceExitTimer=null;
+  overlay.hidden=true;overlay.classList.remove('maintenance-leaving');
+  document.body.classList.remove('svitlo-maintenance-active');
+  if(maintenanceFocus?.isConnected){
+   try{maintenanceFocus.focus({preventScroll:true})}catch{}
+  }
+  maintenanceFocus=null;
+ }
+ function setMaintenanceVisible(visible){
+  if(visible){
+   if(maintenanceExitTimer){clearTimeout(maintenanceExitTimer);maintenanceExitTimer=null}
+   overlay.classList.remove('maintenance-leaving');
+   if(overlay.hidden){
+    maintenanceFocus=document.activeElement;
+    overlay.hidden=false;
+    document.body.classList.add('svitlo-maintenance-active');
+    // Announce the screen without scrolling the page behind it.
+    $('maintenanceRefresh')?.focus({preventScroll:true});
+   }
+  }else if(!overlay.hidden){
+   const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches||
+    document.documentElement.classList.contains('feature-off-animations');
+   if(reduce){finishMaintenanceClose();return}
+   if(!maintenanceExitTimer){
+    overlay.classList.add('maintenance-leaving');
+    maintenanceExitTimer=setTimeout(finishMaintenanceClose,380);
+   }
+  }
+ }
+ const defaultSymbol=()=> {
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('fill','none');
+  svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','1.7');
+  svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');
+  const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+  path.setAttribute('d','M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-3 3-3-3 3-3Z');
+  svg.append(path);return svg;
+ };
+ function paintMaintenanceSymbol(m){
+  if(!symbol)return;
+  const image=typeof m.imageUrl==='string'&&/^https:\/\//.test(m.imageUrl)?m.imageUrl:'';
+  const icon=String(m.icon||'').slice(0,18);
+  const key=image?'url:'+image:icon&&icon!=='✨'?'icon:'+icon:'default-svg';
+  if(symbol.dataset.graphic===key)return;
+  symbol.dataset.graphic=key;symbol.replaceChildren();
+  if(image){
+   const img=document.createElement('img');img.src=image;img.alt='';img.decoding='async';
+   img.onerror=()=>{if(symbol.dataset.graphic===key){symbol.dataset.graphic='fallback';symbol.replaceChildren(defaultSymbol())}};
+   symbol.append(img);
+  }else if(icon&&icon!=='✨')symbol.textContent=icon;
+  else symbol.append(defaultSymbol());
  }
  function display(data,{offline=false}={}){
   const m=data?.maintenance||{},active=!offline&&timed(m),full=active&&m.mode!=='limited';
-  overlay.hidden=!full;banner.hidden=!(active&&!full);
+  if(offline)finishMaintenanceClose();else setMaintenanceVisible(full);
+  banner.hidden=!(active&&!full);
   for(const part of [document.getElementById('installLanding'),viewport])if(part)part.inert=full;
+  const modeLabel=$('maintenanceModeLabel');
+  if(modeLabel)modeLabel.textContent=m.mode==='incident'?'Термінове повідомлення':'Тимчасово недоступно';
+  const activity=$('maintenanceActivityText');
+  if(activity)activity.textContent=m.mode==='incident'?'Працюємо над вирішенням ситуації':'Працюємо над відновленням доступу';
+  const official=overlay.querySelector('.maintenance-official');
+  if(official)official.href=safePublicLink(data?.site?.links?.official,'https://www.cherkasyoblenergo.com/off');
   $('maintenanceTitle').textContent=m.title||'Технічні роботи';
   $('maintenanceMessage').textContent=m.message||'Незабаром повернемося.';
   overlay.dataset.theme=['blue','midnight','light','violet','custom'].includes(m.theme)?m.theme:'blue';
@@ -130,11 +195,7 @@
    }
   }
   if(!offline){applySite(data.site);applyLimitedModules(m,active)}
-  if(symbol){symbol.replaceChildren();
-   if(typeof m.imageUrl==='string'&&/^https:\/\//.test(m.imageUrl)){
-    const img=document.createElement('img');img.src=m.imageUrl;img.alt='Ілюстрація техробіт';symbol.append(img);
-   }else symbol.textContent=String(m.icon||'✨').slice(0,18);
-  }
+  paintMaintenanceSymbol(m);
   updateEta(m);
   const planned=m?.enabled===true&&m.noticeBefore!==false&&m.startsAt
    &&Number.isFinite(Date.parse(m.startsAt))&&Date.parse(m.startsAt)>Date.now();
@@ -156,8 +217,14 @@
    window.dispatchEvent(new CustomEvent('svitlo:public-config',{detail:window.SvitloPublicConfig}));
   }
  }
- async function refresh(){
-  if(busy)return;busy=true;
+ async function refresh({manual=false}={}){
+  if(busy)return false;busy=true;
+  const button=$('maintenanceRefresh'),status=$('maintenanceCheckStatus');
+  if(manual){
+   button.disabled=true;button.classList.add('is-checking');
+   status.textContent='Перевіряємо доступність сервісу…';
+  }
+  let success=false;
   try{
    if(!apiBase){const res=await fetch('./push-config.json',{cache:'no-store'});if(!res.ok)throw Error('Config unavailable');
     const cfg=await res.json();if(!/^https:\/\//.test(cfg.apiBase||''))throw Error('Server unavailable');
@@ -166,13 +233,21 @@
    const response=await fetch(apiBase+'/api/app-config',{cache:'no-store',signal:AbortSignal.timeout(9000)});
    if(!response.ok)throw Error('Public config HTTP '+response.status);
    const data=await response.json();lastConfig=data;display(data);
+   success=true;
+   if(manual&&status)status.textContent=overlay.hidden?'Роботу відновлено.':'Роботи ще тривають. Перевірка успішна.';
   }catch(e){
    // A temporary network outage must never trap users behind stale maintenance.
    if(lastConfig)display(lastConfig,{offline:true});
-   else{overlay.hidden=true;banner.hidden=true}
+   else{finishMaintenanceClose();banner.hidden=true}
+   if(manual&&status)status.textContent='Не вдалося отримати статус. Перевірте з’єднання та спробуйте ще раз.';
    console.warn('App controls:',e.message);
-  }finally{busy=false}
+  }finally{
+   busy=false;
+   if(manual){button.disabled=false;button.classList.remove('is-checking')}
+  }
+  return success;
  }
+ $('maintenanceRefresh').addEventListener('click',()=>refresh({manual:true}));
  refresh();setInterval(()=>{if(!document.hidden)refresh()},12000);
  setInterval(()=>{if(!document.hidden&&lastConfig?.maintenance)updateEta(lastConfig.maintenance)},1000);
  try{const channel=new BroadcastChannel('svitlo-content-v1');
