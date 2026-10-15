@@ -82,7 +82,7 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
      const username=String(body.username||'owner').trim().toLowerCase();
      const account=adminUsers?.login(username,String(body.password||''))||null;
      const legacy=['owner','editor','operator','viewer'].includes(username)?authCompare(String(body.password||'')):null;
-     const role=account?.role||legacy===username?legacy:account?.role||null;
+     const role=account?account.role:(legacy===username?legacy:null);
      const otpRequired=role==='owner'&&!!ADMIN_TOTP_SECRET;
      if(!role||(otpRequired&&!verifyTotp(ADMIN_TOTP_SECRET,body.code,now()))){
        track.count++;ATTEMPTS.set(ip,track);
@@ -99,7 +99,7 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
       username:account?.username||username,managed:!!account,revision:account?adminUsers.get(account.username)?.revision:0,
       permissions:account?.permissions||null
      });
-     send(res,200,{ok:true,token,role,expiresIn:SESSION_TTL/1000});return true;
+     send(res,200,{ok:true,token,role,username:account?.username||username,permissions:account?.permissions||null,expiresIn:SESSION_TTL/1000});return true;
    }catch(e){send(res,e.statusCode||400,{error:'Некоректний запит входу'});return true}
  }
  const bearer=/^Bearer ([A-Za-z0-9_-]+)$/.exec(String(req.headers.authorization||''));
@@ -129,7 +129,7 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
   pathName.startsWith('/api/admin/notices')?'notices':
   pathName.startsWith('/api/admin/file')||pathName.startsWith('/api/admin/schedule')?'schedules':
   pathName.startsWith('/api/admin/media')?'media':'settings';
- const allowed=custom?(method==='GET'?(session.permissions.includes('view')||session.permissions.includes(permission)):session.permissions.includes(permission))
+ const allowed=custom?(method==='GET'?(pathName==='/api/admin/status'||pathName==='/api/admin/security'||session.permissions.includes('view')||session.permissions.includes(permission)):session.permissions.includes(permission))
   :role==='owner'
   ||role==='viewer'&&method==='GET'
   ||role==='operator'&&(
@@ -160,7 +160,7 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
     send(res,200,result);return true
    }
    if(url.pathname==='/api/admin/ads'&&req.method==='GET'){send(res,200,ads.dashboard());return true}
-   if(url.pathname==='/api/admin/ads'&&req.method==='PUT'){if(role!=='owner'){send(res,403,{error:'Лише для власника'});return true}send(res,200,ads.update(await readJson(req,140000)));return true}
+   if(url.pathname==='/api/admin/ads'&&req.method==='PUT'){if(role!=='owner'&&!(session.managed&&session.permissions.includes('ads'))){send(res,403,{error:'Недостатньо прав на рекламу'});return true}send(res,200,ads.update(await readJson(req,140000)));return true}
    if(url.pathname==='/api/admin/analytics'&&req.method==='GET'){
      if(!analytics){send(res,503,{error:'Аналітика поки недоступна'});return true}
      send(res,200,{...analytics.report(),betaPwa:ads.dashboard().pwa,betaAdvertising:{stats:ads.dashboard().stats,daily:ads.dashboard().daily}});return true;
