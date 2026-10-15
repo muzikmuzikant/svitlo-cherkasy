@@ -93,7 +93,7 @@
    ['Переходи за міткою',pretty(own.landing),'Відкриття сторінки'],
    ['Натискання встановлення',pretty(own.installGuide),'Дії з інструкцією'],
    ['Співвідношення дій',pct(own.installGuide,own.landing),'Не конверсія в інсталяції'],
-   ['Вартість за зафіксоване відкриття',own.landing?(700/own.landing).toLocaleString('uk-UA',{maximumFractionDigits:2})+' грн':'немає даних','700 грн / події переходів']
+   ['Відкриття за 48 годин',pretty((state.sources48||{})['telegram-cherkasy-golovne']?.landing||0),'Фіксація за параметром src']
   ];
   for(const [name,value,desc] of stats){
    const c=make('div',null,'analytics-campaign-stat');
