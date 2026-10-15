@@ -82,3 +82,35 @@ def test_three_line_city_and_district_branch_markers():
     src=['ВСП','Черкаські','районні ЕМ','с.Слобода: вул.Різдвяна,','ВСП','Черкаські','міські ЕМ']
     joined=importer.join_wrapped_branch_headings(src)
     assert joined==['ВСП Черкаські районні ЕМ','с.Слобода: вул.Різдвяна,','ВСП Черкаські міські ЕМ']
+
+
+def test_street_initials_do_not_become_fictitious_villages(monkeypatch):
+    import fitz
+    source='''ВСП Черкаські
+районні ЕМ
+с.Слобода: вул.Соборна, вул.М.Залізняка, вул.Київська,
+пров.М.Леонтовича, вул.Олени Теліги, вул.Благодатна,
+вул.М.Симоненка, вул.Сагайдачного.
+с.Хацьки: вул.Шкільна, вул.Молодіжна
+ВСП Черкаські
+міські ЕМ
+вул. Шевченка 7'''
+    monkeypatch.setattr(fitz,'open',lambda **kwargs:[FakePDFPage(source)])
+    sections=importer.extract_sections(b'%PDF-realistic')
+    assert set(sections)=={'Слобода','Хацьки','Черкаси'}
+    names={street for _,street,_ in importer.street_only_entries(sections['Слобода'])}
+    assert {'соборна','мзалізняка','київська','млеонтовича','оленителіги',
+            'благодатна','мсимоненка','сагайдачного'} <= names
+    assert 'Київська' in sections['Слобода']
+    assert 'Молодіжна' not in sections['Слобода']
+
+
+def test_street_initials_without_whitespace_are_not_city_markers(monkeypatch):
+    import fitz
+    source='''ВСП Черкаські ЕМ
+с.Слобода: вул.М.Залізняка, пров.М.Леонтовича, вул.Шевченка,
+с.Хацьки: вул.Шкільна,'''
+    monkeypatch.setattr(fitz,'open',lambda **kwargs:[FakePDFPage(source)])
+    result=importer.extract_sections(b'%PDF-realistic')
+    assert set(result)=={'Слобода','Хацьки'}
+    assert 'Леонтовича' in result['Слобода']
