@@ -9,6 +9,7 @@ test('legal documents: revision metadata persists and is versioned',()=>{
  try{
   let s=createLegalStore({directory:dir});
   assert.equal(s.publicState().termsVersion,'1');
+  assert.equal(s.publicState().requireAcknowledgement,false,'Unapproved legal revision must not force consent in production');
   s.update({termsVersion:'2',privacyVersion:'4',summary:'Пояснення оновлень',requireAcknowledgement:true});
   s=createLegalStore({directory:dir});
   assert.equal(s.publicState().termsVersion,'2');
