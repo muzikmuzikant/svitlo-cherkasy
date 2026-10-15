@@ -210,7 +210,14 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
      if(noticeId&&output.accepted>0)siteControls.markPushed(noticeId);
      extras?.record('push.broadcast',String(body.queue||'all'));send(res,200,output);return true;
    }
-   if(url.pathname==='/api/admin/feedback/templates'&&req.method==='GET'){send(res,200,{templates:feedback.getTemplates()});return true}
+   if(url.pathname==='/api/admin/feedback/categories'&&req.method==='GET'){
+    send(res,200,{categories:feedback.getCategories()});return true
+   }
+   if(url.pathname==='/api/admin/feedback/categories'&&req.method==='PUT'){
+    const result=feedback.setCategories((await readJson(req,45000)).categories);extras?.record('feedback.categories.update');
+    send(res,200,result);return true
+   }
+    if(url.pathname==='/api/admin/feedback/templates'&&req.method==='GET'){send(res,200,{templates:feedback.getTemplates()});return true}
    if(url.pathname==='/api/admin/feedback/templates'&&req.method==='PUT'){
     const data=await readJson(req,50000);const result=feedback.setTemplates(data.templates);
     extras?.record('feedback.templates.update');send(res,200,result);return true

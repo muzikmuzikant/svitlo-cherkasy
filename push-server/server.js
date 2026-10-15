@@ -352,7 +352,11 @@ const server=http.createServer(async(req,res)=>{
    }catch(e){response(res,e.statusCode||500,{error:e.statusCode?e.message:'Не вдалося надіслати відповідь.'})}
    return;
  }
- if(req.url==='/api/feedback'){
+ if(requestPath==='/api/feedback/categories'&&req.method==='GET'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  response(res,200,{categories:feedback.getCategories().filter(c=>c.enabled)});return
+ }
+  if(req.url==='/api/feedback'){
   if(req.method!=='POST'){response(res,405,{error:'Method not allowed'});return}
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   try{

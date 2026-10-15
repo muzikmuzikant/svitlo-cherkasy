@@ -9,10 +9,10 @@ export const PRIORITIES=['low','normal','high'];
 const KEEP_MS=90*24*3600*1000,MAX_ITEMS=750,MAX_BODY=24000;
 function bad(message,statusCode=400){const error=new Error(message);error.statusCode=statusCode;return error}
 const tidy=(value,max)=>String(value??'').trim().slice(0,max+1);
-export function validateFeedback(value){
+export function validateFeedback(value,availableTopics=TOPICS){
  if(!value||typeof value!=='object'||Array.isArray(value))throw bad('Заповніть форму звернення.');
  const topic=String(value.topic||''),message=tidy(value.message,2000),email=tidy(value.email,254);
- if(!TOPICS.includes(topic))throw bad('Оберіть тему звернення.');
+ if(!availableTopics.includes(topic))throw bad('Оберіть тему звернення.');
  if(message.length<12||message.length>2000)throw bad('Опис має містити від 12 до 2000 символів.');
  if(email&&(email.length>254||!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email)))throw bad('Перевірте адресу електронної пошти.');
  if(value.website)throw bad('Некоректний запит.');
@@ -46,15 +46,23 @@ export async function readFeedbackBody(req){
 }
 export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
  if(!filePath)throw Error('Feedback store path is required');
+ let categories=[
+ {id:'bug',title:'Помилка застосунку',hint:'Опишіть, що саме не працює.',enabled:true,fields:[]},
+ {id:'address',title:'Адреса або підчерга',hint:'Укажіть населений пункт і підчергу, якщо її знаєте.',enabled:true,fields:[]},
+ {id:'schedule',title:'Графік відключень',hint:'Укажіть дату, підчергу та відхилення.',enabled:true,fields:[]},
+ {id:'push',title:'Сповіщення',hint:'Коли очікували сповіщення?',enabled:true,fields:[]},
+ {id:'idea',title:'Ідея або побажання',hint:'Розкажіть, що можна покращити.',enabled:true,fields:[]},
+ {id:'other',title:'Інше',hint:'Напишіть ваше питання.',enabled:true,fields:[]}
+ ];
  let items=[],templates=['Дякуємо! Перевіряємо цю інформацію та повідомимо про результат.','Уточніть, будь ласка, підчергу та дату, коли виникла проблема.','Проблему виправлено. Оновіть застосунок і перевірте ще раз.'];
- try{const raw=JSON.parse(fs.readFileSync(filePath,'utf8'));if(Array.isArray(raw.items))items=raw.items.filter(x=>x&&typeof x==='object');if(Array.isArray(raw.templates))templates=raw.templates}catch(e){if(e.code!=='ENOENT')throw Error('Cannot load feedback store: '+e.message)}
+ try{const raw=JSON.parse(fs.readFileSync(filePath,'utf8'));if(Array.isArray(raw.items))items=raw.items.filter(x=>x&&typeof x==='object');if(Array.isArray(raw.templates))templates=raw.templates;if(Array.isArray(raw.categories))categories=raw.categories}catch(e){if(e.code!=='ENOENT')throw Error('Cannot load feedback store: '+e.message)}
  const salt=crypto.randomBytes(16).toString('hex'),attempts=new Map(),replyAttempts=new Map();
  const key=(value)=>crypto.createHash('sha256').update(salt+String(value||'unknown')).digest('hex');
  const hash=(value)=>crypto.createHash('sha256').update(String(value)).digest('hex');
  function cleanup(){const t=clock(),count=items.length;items=items.filter(x=>typeof x.id==='string'&&Number.isFinite(Date.parse(x.createdAt))&&Date.parse(x.createdAt)>t-KEEP_MS);return items.length!==count}
  function save(){
   cleanup();fs.mkdirSync(path.dirname(filePath),{recursive:true});
-  const tmp=filePath+'.tmp';fs.writeFileSync(tmp,JSON.stringify({items,templates},null,2),{mode:0o600});fs.renameSync(tmp,filePath);
+  const tmp=filePath+'.tmp';fs.writeFileSync(tmp,JSON.stringify({items,templates,categories},null,2),{mode:0o600});fs.renameSync(tmp,filePath);
  }
  function find(id){const item=items.find(x=>x.id===id);if(!item)throw bad('Звернення не знайдено.',404);return item}
  function validateToken(item,token){
@@ -63,11 +71,23 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   if(wanted.length!==actual.length||!crypto.timingSafeEqual(wanted,actual))throw bad('Неправильний код доступу.',403);
  }
  function submit(value,ip){
-  const data=validateFeedback(value),t=clock(),k=key(ip),interval=15*60*1000;
+  const data=validateFeedback(value,categories.filter(c=>c.enabled).map(c=>c.id)),t=clock(),k=key(ip),interval=15*60*1000;
   for(const [old,v] of attempts)if(v.expire<t)attempts.delete(old);
   const entry=attempts.get(k)||{times:[],expire:t+interval};
   entry.times=entry.times.filter(time=>t-time<interval);
   if(entry.times.length>=3)throw bad('Забагато звернень. Спробуйте через 15 хвилин.',429);
+  const category=categories.find(c=>c.id===data.topic);
+  const input=value.extra&&typeof value.extra==='object'&&!Array.isArray(value.extra)?value.extra:{};
+  const extra={};
+  if(Object.keys(input).some(key=>!category?.fields?.some(field=>field.id===key)))throw bad('Невідоме додаткове поле звернення');
+  for(const field of category?.fields||[]){
+   const v=input[field.id];const str=typeof v==='boolean'?(v?'Так':'Ні'):String(v??'').trim();
+   if(field.required&&!str)throw bad('Заповніть поле «'+field.label+'»');
+   if(str.length>200)throw bad('Занадто довге значення поля «'+field.label+'»');
+   if(field.type==='select'&&str&&!field.options.includes(str))throw bad('Невірний варіант поля «'+field.label+'»');
+   if(str)extra[field.id]={label:field.label,value:str}
+  }
+  if(Object.keys(extra).length)data.extra=extra;
   cleanup();if(items.length>=MAX_ITEMS)throw bad('Наразі не можемо прийняти звернення. Спробуйте пізніше.',503);
   const token=crypto.randomBytes(24).toString('base64url');
   const newItem={id:'SC-'+crypto.randomBytes(5).toString('hex').toUpperCase(),...data,status:'new',priority:'normal',internalNote:'',tags:[],messages:[],accessHash:hash(token),createdAt:new Date(t).toISOString(),updatedAt:new Date(t).toISOString()};
@@ -131,6 +151,27 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   const item=items.splice(index,1)[0];try{save()}catch{items.splice(index,0,item);throw bad('Помилка збереження.',503)}
   return {ok:true};
  }
+ function getCategories(){return categories.map(c=>({...c,fields:c.fields.map(f=>({...f}))}))}
+ function setCategories(value){
+  if(!Array.isArray(value)||!value.length||value.length>16)throw bad('Кількість категорій: від 1 до 16');
+  const norm=value.map(c=>{
+   const id=String(c?.id||'').trim().toLowerCase(),title=tidy(c?.title,70),hint=tidy(c?.hint,250);
+   if(!/^[a-z][a-z0-9_-]{1,27}$/.test(id)||!title||title.length>70)throw bad('Некоректна категорія звернення');
+   if(!Array.isArray(c.fields)||c.fields.length>8)throw bad('Максимум 8 полів для категорії');
+   const fields=c.fields.map(f=>{
+    const key=String(f.id||'').trim().toLowerCase(),label=tidy(f.label,90),type=String(f.type||'text');
+    if(!/^[a-z][a-z0-9_-]{1,27}$/.test(key)||!label||!['text','select','checkbox'].includes(type))throw bad('Некоректне додаткове поле');
+    const options=type==='select'?(Array.isArray(f.options)?f.options.slice(0,12).map(x=>tidy(x,70)).filter(Boolean):[]):[];
+    if(type==='select'&&!options.length)throw bad('Додайте варіанти вибору');
+    return {id:key,label,type,options,required:f.required===true}
+   });
+   if(new Set(fields.map(f=>f.id)).size!==fields.length)throw bad('Повторення назв полів');
+   return {id,title,hint,enabled:c.enabled!==false,fields}
+  });
+  if(new Set(norm.map(c=>c.id)).size!==norm.length)throw bad('Дубль категорії');
+  if(!norm.some(c=>c.enabled))throw bad('Має залишитися принаймні одна активна категорія');
+  categories=norm;save();return {categories:getCategories()}
+ }
  function getTemplates(){return [...templates]}
  function setTemplates(value){
   if(!Array.isArray(value)||value.length>30||value.some(x=>typeof x!=='string'||x.trim().length<2||x.length>1600))throw bad('Некоректні шаблони відповідей');
@@ -139,5 +180,5 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
  if(cleanup())save();
  const timer=setInterval(()=>{try{if(cleanup())save()}catch(e){console.warn('Feedback cleanup failed:',e.message)}},24*60*60*1000);
  timer.unref?.();
- return {submit,list,change,remove,getStatus,reply,getTemplates,setTemplates};
+ return {submit,list,change,remove,getStatus,reply,getTemplates,setTemplates,getCategories,setCategories};
 }

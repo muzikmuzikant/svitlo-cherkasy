@@ -22,3 +22,4 @@ label{display:block;margin:19px 0 9px;font-size:12px;font-weight:780;color:#344d
 .support-diagnostics strong{font-size:12px;color:#285480}
 .support-diagnostics small{font-size:11px;color:#647c98;line-height:1.5;margin-top:5px}
 .support-diagnostics-preview{font-size:10px;color:#6c84a4;margin:0 2px 12px}
+.extra-ticket-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:12px 0}.extra-ticket-field{display:grid;gap:7px}.extra-ticket-field input:not([type=checkbox]),.extra-ticket-field select{width:100%;min-height:45px;padding:10px;border:1px solid #dce5f3;border-radius:11px;background:#fff;color:#203957}.extra-ticket-field input[type=checkbox]{width:22px;height:22px}

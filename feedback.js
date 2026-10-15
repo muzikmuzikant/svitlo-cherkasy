@@ -4,6 +4,32 @@ const SAVED='svitlo-support-tickets-v1',DRAFT='svitlo-support-draft-v1';
 const TOPICS={bug:'Помилка застосунку',address:'Адреса або підчерга',schedule:'Графік відключень',push:'Сповіщення',idea:'Пропозиція',other:'Інше'};
 const HINTS={bug:'На якому екрані виникла помилка? Що саме не працює?',address:'Вкажіть населений пункт, назву вулиці та правильну підчергу, якщо знаєте її. Номер будинку необов’язковий.',schedule:'Вкажіть дату та підчергу. Якщо можливо, порівняйте з офіційним графіком.',push:'Уточніть, яке сповіщення не надійшло або прийшло двічі, та модель пристрою.',idea:'Розкажіть, як ця функція спростить використання застосунку.',other:'Опишіть ваше питання якомога конкретніше.'};
 const STATUSES={new:'Нове',in_progress:'У роботі',resolved:'Вирішено'};
+let customCategories=null;
+function selectedCategory(){return customCategories?.find(c=>c.id===$('topic').value)||null}
+function renderExtraFields(){
+ const root=$('extraTicketFields');if(!root)return;root.replaceChildren();
+ const cat=selectedCategory();if(!cat)return;
+ for(const field of cat.fields||[]){
+  const wrap=document.createElement('label');wrap.className='extra-ticket-field';
+  const label=document.createElement('span');label.textContent=field.label+(field.required?' *':'');wrap.append(label);
+  const inp=field.type==='select'?document.createElement('select'):document.createElement('input');
+  inp.dataset.key=field.id;inp.dataset.type=field.type;
+  if(field.type==='select'){inp.append(new Option('Оберіть варіант',''));for(const option of field.options||[])inp.append(new Option(option,option))}
+  else if(field.type==='checkbox')inp.type='checkbox';else{inp.type='text';inp.maxLength=200}
+  inp.required=field.required;wrap.append(inp);root.append(wrap);
+ }
+}
+async function loadTicketCategories(){
+ try{
+  const base=await service();const r=await fetch(base+'/api/feedback/categories',{cache:'no-store'});
+  if(!r.ok)return;const data=await r.json();if(!data.categories?.length)return;
+  customCategories=data.categories;const previous=$('topic').value;$('topic').replaceChildren();
+  for(const c of customCategories){TOPICS[c.id]=c.title;HINTS[c.id]=c.hint||c.title;$('topic').append(new Option(c.title,c.id))}
+  if(customCategories.some(c=>c.id===previous))$('topic').value=previous;
+  setTopic();
+ }catch(e){console.warn('Feedback categories:',e.message)}
+}
+
 const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||'null')??fallback}catch{return fallback}};
 let saved=Array.isArray(read(SAVED,[]))?read(SAVED,[]):[];
 let selectedTicket=null,lastSent=null,basePromise=null;
@@ -42,6 +68,7 @@ function setTopic(){
  const topic=$('topic').value;
  $('topicHint').textContent=HINTS[topic]||HINTS.other;
  $('message').placeholder=HINTS[topic]||HINTS.other;
+ renderExtraFields();
 }
 function saveDraft(){
  const draft={topic:$('topic').value,subject:$('subject').value,queue:$('queue').value,email:$('email').value,message:$('message').value};
@@ -146,6 +173,7 @@ function updateDiagnosticsPreview(){
  p.textContent=checked?'Буде передано: '+[d.platform,d.os,d.browser,d.appVersion&&('версія '+d.appVersion)].filter(Boolean).join(' · '):'Технічна інформація не надсилається без вашої згоди.';
 }
 $('includeDiagnostics')?.addEventListener('change',updateDiagnosticsPreview);
+loadTicketCategories();
 updateDiagnosticsPreview();
 $('feedbackForm').addEventListener('submit',async event=>{
  event.preventDefault();
@@ -154,6 +182,8 @@ $('feedbackForm').addEventListener('submit',async event=>{
  const button=$('send');button.disabled=true;button.textContent='Надсилаємо…';$('formMessage').hidden=true;
  try{
   const payload={topic:$('topic').value,subject:$('subject').value.trim(),queue:$('queue').value,message,email:$('email').value.trim(),website:$('website').value};
+  const extraFields=[...document.querySelectorAll('#extraTicketFields [data-key]')];
+  if(extraFields.length){payload.extra={};for(const inp of extraFields){payload.extra[inp.dataset.key]=inp.dataset.type==='checkbox'?inp.checked:inp.value.trim()}}
   if($('includeDiagnostics')?.checked){payload.includeDiagnostics=true;payload.diagnostics=coarseDiagnostics()}
   const result=await post('/api/feedback',payload);
   remember({...result,topic:payload.topic,subject:payload.subject});
