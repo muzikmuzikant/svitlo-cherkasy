@@ -407,19 +407,32 @@ function navigate(name){
  else if(name==='updates')renderUpdates();
  else if(name==='settings')renderSettings();
  else renderHome();
- window.scrollTo({top:0,behavior:'instant'});
- active=name;
- // One reveal for the whole screen; never animate all cards separately.
- // Respect iOS Reduce Motion and the admin animation preference.
+ // Animate the departing and arriving screens together on modern iOS Safari.
+ // Fall back to a prominent whole-screen reveal when View Transitions are absent.
  const allowMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches!==true &&
   !document.documentElement.classList.contains('feature-off-animations');
- for(const n of ['home','detail','updates','settings']){
-  const section=$(n);
-  section.classList.remove('tab-enter');
-  if(n===name&&allowMotion)section.classList.add('tab-enter');
-  section.hidden=n!==name;
- }
- document.querySelectorAll('[data-go]').forEach(x=>{if(x.classList.contains('nav-item'))x.classList.toggle('active',x.dataset.go===name)});
+ const screenNames=['home','detail','updates','settings'];
+ const previous=active;
+ const update=useFallback=>{
+  window.scrollTo({top:0,behavior:'instant'});
+  active=name;
+  for(const n of screenNames){
+   const section=$(n);
+   section.classList.remove('tab-enter');
+   if(n===name&&useFallback)section.classList.add('tab-enter');
+   section.hidden=n!==name;
+  }
+  document.querySelectorAll('[data-go]').forEach(x=>{
+   if(x.classList.contains('nav-item'))x.classList.toggle('active',x.dataset.go===name);
+  });
+ };
+ if(allowMotion&&typeof document.startViewTransition==='function'){
+  document.documentElement.dataset.tabDirection=screenNames.indexOf(name)>=screenNames.indexOf(previous)?'forward':'backward';
+  const transition=document.startViewTransition(()=>update(false));
+  transition.finished.catch(()=>{}).finally(()=>{
+   delete document.documentElement.dataset.tabDirection;
+  });
+ }else update(allowMotion);
 }
 function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Підчерга '+previewQueue,settlement:'Черкаси та район'}:primary();
  if(!a)return;
