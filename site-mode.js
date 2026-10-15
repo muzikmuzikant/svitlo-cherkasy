@@ -234,7 +234,7 @@
    if(!response.ok)throw Error('Public config HTTP '+response.status);
    const data=await response.json();lastConfig=data;display(data);
    success=true;
-   if(manual&&status)status.textContent=overlay.hidden?'Роботу відновлено.':'Роботи ще тривають. Перевірка успішна.';
+   if(manual&&status)status.textContent=!timed(data.maintenance)||data.maintenance?.mode==='limited'?'Доступ до застосунку відновлюється.':'Роботи ще тривають. Перевірка успішна.';
   }catch(e){
    // A temporary network outage must never trap users behind stale maintenance.
    if(lastConfig)display(lastConfig,{offline:true});

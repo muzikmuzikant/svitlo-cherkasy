@@ -198,3 +198,13 @@
 }
 
 body.svitlo-maintenance-active{overflow:hidden}
+
+/* Body stays fixed behind the service screen, the screen itself remains scrollable. */
+body.svitlo-maintenance-active{overscroll-behavior:none}
+.maintenance-screen[data-theme="light"] .maintenance-state-dot,
+.maintenance-screen[data-theme="light"] .maintenance-caption-indicator{box-shadow:0 0 0 4px #3372d817}
+@media(prefers-contrast:more){
+ .maintenance-screen{--maint-outline:rgba(255,255,255,.42);--maint-muted:#e8f2ff}
+ .maintenance-screen[data-theme="light"]{--maint-outline:#7695b5;--maint-muted:#365779}
+ .maintenance-actions>*{outline:1px solid currentColor}
+}
