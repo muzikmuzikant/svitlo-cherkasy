@@ -74,6 +74,12 @@
   field(fields,'Примітки адміністратора',c,'note','long');
   const stats=report.stats?.[c.id]||{},impr=stats.impressions||0,clicks=stats.clicks||0;
   body.append(el('p','Покази: '+fmt(impr)+' · Кліки: '+fmt(clicks)+' · CTR: '+(impr?(100*clicks/impr).toFixed(2):'0')+'%','ad-muted'));
+  const adDays=Object.entries(report.statsByCampaignDay||{}).filter(([key])=>key.startsWith(c.id+'|')).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,21);
+  if(adDays.length){const recent=el('details',undefined,'ad-daily');recent.append(el('summary','Детальна статистика за днями ('+adDays.length+')'));
+   const table=el('div',undefined,'ad-daily-table');
+   for(const [key,entry] of adDays){const line=el('div');line.append(el('span',key.split('|').at(-1)),el('strong',fmt(entry.impressions||0)+' показів'),el('span',fmt(entry.clicks||0)+' кліків'));table.append(line)}
+   recent.append(table);body.append(recent)}
+
   const tools=el('div',undefined,'ad-toolbar');
   button(tools,'Дублювати',()=>{draft.campaigns.splice(index+1,0,{...structuredClone(c),id:uuid(),title:(c.title||'Реклама')+' (копія)',enabled:false,paid:false});mark();render()});
   button(tools,'Видалити',()=>{if(confirm('Видалити рекламну кампанію?')){draft.campaigns.splice(index,1);mark();render()}},'danger');

@@ -3,9 +3,9 @@
  const host=document.getElementById('betaAd'),home=document.getElementById('home');
  if(!host||!home)return;
  const consent=document.getElementById('betaAnalyticsConsent');
- const STATS_OPT='svitlo-beta-analytics-opt-in',INSTALL_ID='svitlo-beta-install-id';
+ const STATS_OPT='svitlo-beta-analytics-opt-in',INSTALL_ID='svitlo-beta-install-id',PENDING='svitlo-beta-analytics-delete-pending';
  let api='',config=null,items=[],index=0,timer=null,impressionTimer=null,refreshAt=0;
- let lastInteraction=Date.now(),observed=false,visible=false,swipeStart=null;
+ let lastInteraction=Date.now(),swipeStart=null,counted=false;
  const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
  const enabled=()=>{try{return localStorage.getItem(STATS_OPT)==='yes'}catch{return false}};
  const key=()=>{try{let id=localStorage.getItem(INSTALL_ID);if(!id){id=crypto.randomUUID();localStorage.setItem(INSTALL_ID,id)}return id}catch{return ''}};
@@ -15,6 +15,12 @@
  const active=()=>canDisplay()&&host.getBoundingClientRect().bottom>0&&host.getBoundingClientRect().top<innerHeight;
  const send=(id,type)=>{if(!api)return;fetch(api+'/api/ads/event',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,type}),keepalive:true}).catch(()=>{})};
  const stop=()=>{clearTimeout(timer);clearTimeout(impressionTimer);timer=null;impressionTimer=null};
+ function maybeCount(){if(counted||!items[index]||!active())return;const id=items[index].id;clearTimeout(impressionTimer);
+  impressionTimer=setTimeout(()=>{if(!counted&&active()&&items[index]?.id===id){counted=true;send(id,'impression')}},1000)
+ }
+ async function deletePending(){let id='';try{id=localStorage.getItem(PENDING)||''}catch{}if(!id)return;
+  try{if(!api){const c=await fetch('./push-config.json',{cache:'no-store'}).then(r=>r.json());api=String(c.apiBase||'')}const response=await fetch(api+'/api/pwa/forget',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id})});if(response.ok)localStorage.removeItem(PENDING)}catch{}
+ }
  async function load(force=false){
   if(!force&&config&&Date.now()-refreshAt<120000)return;
   const pc=await fetch('./push-config.json',{cache:'no-store'}).then(r=>r.json());
@@ -43,7 +49,7 @@
   timer=setTimeout(()=>{index=(index+1)%items.length;render();schedule()},duration*1000);
  }
  function render(){
-  clearTimeout(impressionTimer);
+  clearTimeout(impressionTimer);counted=false;
   if(!items.length)return;
   const item=items[index];
   host.replaceChildren();host.hidden=false;
@@ -67,9 +73,11 @@
   if(config.animation==='slide')host.dataset.animation='slide';
   else if(config.animation==='none')host.dataset.animation='none';
   else host.dataset.animation='fade';
-  if(canDisplay())impressionTimer=setTimeout(()=>{if(active()&&items[index]?.id===item.id)send(item.id,'impression')},1000);
+  if(canDisplay())maybeCount();
  }
  function move(delta){if(!items.length)return;index=(index+delta+items.length)%items.length;render();schedule()}
+ document.addEventListener('scroll',()=>{if(canDisplay())maybeCount()},{passive:true});
+ window.addEventListener('resize',()=>{if(canDisplay())maybeCount()},{passive:true});
  host.addEventListener('touchstart',e=>{if(config?.manualSwipe)swipeStart=e.touches[0]?.clientX??null},{passive:true});
  host.addEventListener('touchend',e=>{if(swipeStart==null)return;const dx=(e.changedTouches[0]?.clientX??swipeStart)-swipeStart;swipeStart=null;if(Math.abs(dx)>45)move(dx>0?-1:1)},{passive:true});
  function onVisible(){if(document.hidden){stop();return}if(items.length){render();schedule()}if(Date.now()-refreshAt>120000)load(true).catch(console.warn);heartbeat()}
@@ -78,10 +86,10 @@
  if(consent){
   consent.checked=enabled();consent.addEventListener('change',async()=>{
    try{localStorage.setItem(STATS_OPT,consent.checked?'yes':'no')}catch{}
-   if(!consent.checked){const id=(()=>{try{return localStorage.getItem(INSTALL_ID)}catch{return null}})();
-    if(id&&api)fetch(api+'/api/pwa/forget',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id})}).catch(()=>{});
-    try{localStorage.removeItem(INSTALL_ID)}catch{}
-   }else heartbeat();
+   if(!consent.checked){
+    try{const id=localStorage.getItem(INSTALL_ID);if(id)localStorage.setItem(PENDING,id);localStorage.removeItem(INSTALL_ID)}catch{}
+    deletePending();
+   }else{await deletePending();heartbeat()}
   });
  }
  for(const name of ['pointerdown','touchstart','keydown','scroll'])document.addEventListener(name,()=>{lastInteraction=Date.now()},{passive:true});
@@ -94,5 +102,7 @@
   }catch{}
  }
  setInterval(heartbeat,15000);setTimeout(heartbeat,1200);
+ setInterval(()=>{if(document.visibilityState==='visible')load(true).catch(()=>{})},120000);
+ setTimeout(deletePending,1800);
  load().catch(e=>console.warn('[beta-ads]',e.message));
 })();

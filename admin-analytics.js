@@ -147,6 +147,8 @@
   catch{$('analyticsCopyLink').textContent='Скопіюйте адресу поруч'}
  });
  document.querySelector('[data-admin-tab="insights"]')?.addEventListener('click',refresh);
+ // The 15-second live refresh runs only while the Insights panel is visible.
+ setInterval(()=>{const panel=document.querySelector('[data-admin-panel="insights"]');if(panel&&!panel.hidden&&!document.hidden)refresh()},15000);
  document.addEventListener('svitlo:admin-ready',refresh);
  document.addEventListener('svitlo:admin-logout',()=>{state=null;root.replaceChildren();$('betaPwaMetrics')?.replaceChildren();$('betaAdsMetrics')?.replaceChildren();$('analyticsTrendChart').replaceChildren();$('analyticsHourlyChart').replaceChildren();$('analyticsCampaignMetrics').replaceChildren();$('analyticsFunnel').replaceChildren()});
  window.SvitloAdminAnalytics={refresh};
