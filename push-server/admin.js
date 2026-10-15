@@ -142,7 +142,7 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    if(url.pathname.startsWith('/api/admin/feedback/')&&['PATCH','DELETE'].includes(req.method)){
      const id=decodeURIComponent(url.pathname.slice('/api/admin/feedback/'.length));
      if(!/^SC-[0-9A-F]{10}$/.test(id)){send(res,400,{error:'Неправильний номер звернення'});return true}
-     const result=req.method==='DELETE'?feedback.remove(id):feedback.change(id,(await readJson(req,1000)).status);
+     const result=req.method==='DELETE'?feedback.remove(id):feedback.change(id,await readJson(req,6000));
      extras?.record('feedback.'+(req.method==='DELETE'?'delete':'update'),id);send(res,200,result);return true;
    }
    if(url.pathname==='/api/admin/monitor'&&req.method==='GET'){send(res,200,await monitor());return true}

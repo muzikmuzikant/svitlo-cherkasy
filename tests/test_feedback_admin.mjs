@@ -9,7 +9,7 @@ function mockRequest(method,url,body={},headers={}){
  return r;
 }
 function mockResponse(){return {status:0,payload:null,writeHead(status){this.status=status},end(data){this.payload=JSON.parse(data)}}}
-const inbox={list:()=>({count:1,items:[{id:'SC-AABBCCDD11',message:'test'}]}),change:(id,status)=>({ok:true,id,status}),remove:id=>({ok:true,id})};
+const inbox={list:()=>({count:1,items:[{id:'SC-AABBCCDD11',message:'test'}]}),change:(id,patch)=>({ok:true,id,patch}),remove:id=>({ok:true,id})};
 const push={stats:()=>({subscribers:0})};
 process.env.APP_ORIGIN='https://svitlo.test';
 process.env.ADMIN_PASSWORD='strong-test-password';
@@ -27,7 +27,9 @@ test('login allows feedback listing; logout revokes bearer session',async()=>{
  const res=mockResponse();await adminRouter(mockRequest('GET','/api/admin/feedback',{},hdr),res,push,inbox);
  assert.equal(res.status,200);assert.equal(res.payload.items.length,1);
  const edit=mockResponse();await adminRouter(mockRequest('PATCH','/api/admin/feedback/SC-AABBCCDD11',{status:'resolved'},hdr),edit,push,inbox);
- assert.equal(edit.status,200);assert.equal(edit.payload.status,'resolved');
+ assert.equal(edit.status,200);assert.equal(edit.payload.patch.status,'resolved');
+ const reply=mockResponse();await adminRouter(mockRequest('PATCH','/api/admin/feedback/SC-AABBCCDD11',{status:'in_progress',priority:'high',internalNote:'Перевірити публікацію',reply:'Звернення в роботі'},hdr),reply,push,inbox);
+ assert.equal(reply.status,200);assert.equal(reply.payload.patch.reply,'Звернення в роботі');
  const remove=mockResponse();await adminRouter(mockRequest('DELETE','/api/admin/feedback/SC-AABBCCDD11',{},hdr),remove,push,inbox);
  assert.equal(remove.status,200);
  const logout=mockResponse();await adminRouter(mockRequest('POST','/api/admin/logout',{},hdr),logout,push,inbox);
