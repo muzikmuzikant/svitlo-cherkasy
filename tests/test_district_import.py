@@ -56,3 +56,29 @@ def test_twelve_pdf_import_populates_district_keys_and_hints(monkeypatch,tmp_pat
     assert 'вулиця|лісова|12' not in result['localities']['слобода']['keys']
     assert result['keys']['вулиця|благовісна|244']==importer.QUEUE
     assert (tmp_path/'addresses.json').exists()
+
+
+def test_split_official_district_heading_does_not_erase_sloboda_streets(monkeypatch):
+    """Real 4.1 PDF splits the district branch's name on separate lines."""
+    import fitz
+    source='''ВСП Черкаські
+районні ЕМ
+с.Слобода: вул.Різдвяна, вул.Кузнеця, вул.Л.Українки,
+вул.Святотроїцька, вул.Козацька, вул.Пилипа Орлика.
+ВСП Черкаські
+міські ЕМ
+вул. Хрещатик 12, вул. Шевченка 7'''
+    monkeypatch.setattr(fitz,'open',lambda **kwargs:[FakePDFPage(source)])
+    sections=importer.extract_sections(b'%PDF-realistic')
+    assert set(sections)=={'Слобода','Черкаси'}
+    assert 'Святотроїцька' in sections['Слобода']
+    assert 'Хрещатик' not in sections['Слобода']
+    assert 'Хрещатик' in sections['Черкаси']
+    names={x[1] for x in importer.street_only_entries(sections['Слобода'])}
+    assert {'різдвяна','ллукраїнки','святотроїцька','козацька','пилипаорлика'} <= names
+
+
+def test_three_line_city_and_district_branch_markers():
+    src=['ВСП','Черкаські','районні ЕМ','с.Слобода: вул.Різдвяна,','ВСП','Черкаські','міські ЕМ']
+    joined=importer.join_wrapped_branch_headings(src)
+    assert joined==['ВСП Черкаські районні ЕМ','с.Слобода: вул.Різдвяна,','ВСП Черкаські міські ЕМ']

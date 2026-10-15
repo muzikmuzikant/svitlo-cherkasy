@@ -1,6 +1,10 @@
 name: Refresh official address queues
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/update_data.py'
   schedule:
     # Daily address source check. Only verified changes are committed.
     - cron: '17 3 * * *'

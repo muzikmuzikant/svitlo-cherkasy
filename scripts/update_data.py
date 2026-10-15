@@ -464,6 +464,33 @@ def street_only_entries(text):
 def extract_city_streets(text):return street_entries(text)
 
 
+
+def join_wrapped_branch_headings(lines):
+    """PDF table cells may wrap the branch's name across 2-3 lines.
+
+    Without joining them, the district branch is never activated, so the
+    importer silently loses entire villages while the city still looks valid.
+    """
+    output=[]
+    i=0
+    while i<len(lines):
+        line=lines[i].strip()
+        for width in (3,2):
+            if i+width>len(lines):
+                continue
+            parts=[s.strip() for s in lines[i:i+width]]
+            if not all(parts):
+                continue
+            combined=' '.join(parts)
+            if BRANCH_CITY.fullmatch(combined) or BRANCH_DISTRICT.fullmatch(combined):
+                line=combined
+                i+=width-1
+                break
+        output.append(line)
+        i+=1
+    return output
+
+
 def extract_sections(pdf):
     """Read rows in PDF table order, separated by utility branch and village.
 
@@ -478,7 +505,7 @@ def extract_sections(pdf):
     branch=None
     locality=None
     for page in doc:
-        for raw in page.get_text('text',sort=True).splitlines():
+        for raw in join_wrapped_branch_headings(page.get_text('text',sort=True).splitlines()):
             line=raw.strip()
             if not line:continue
             # A branch marker is a table-cell heading, not a company in a row.
