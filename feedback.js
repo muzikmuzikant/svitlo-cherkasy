@@ -50,7 +50,7 @@ function saveDraft(){
 }
 function restoreDraft(){
  const draft=(()=>{try{return JSON.parse(sessionStorage.getItem(DRAFT)||'null')}catch{return null}})();
- if(draft){for(const id of ['topic','subject','queue','email','message'])if(typeof draft[id]==='string'&&$(id).tagName==='INPUT'||typeof draft?.[id]==='string'&&$(id).tagName==='TEXTAREA')$(id).value=draft[id];if(TOPICS[draft.topic])$('topic').value=draft.topic;if(/^[1-6]\.[12]$/.test(draft.queue||''))$('queue').value=draft.queue}
+ if(draft){for(const id of ['subject','email','message'])if(typeof draft[id]==='string')$(id).value=draft[id];if(TOPICS[draft.topic])$('topic').value=draft.topic;if(/^[1-6]\.[12]$/.test(draft.queue||''))$('queue').value=draft.queue}
  else{
   try{
    const addresses=read('svitlo-addresses-v6',[]),prefs=read('svitlo-prefs-v6',{});
