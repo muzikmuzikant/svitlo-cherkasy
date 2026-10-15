@@ -232,7 +232,11 @@ function renderTicketList(){
   card.append(top,supportNode('strong',item.subject||TICKET_TOPICS[item.topic]||'Звернення'),supportNode('p',item.message));
   const meta=supportNode('div',undefined,'ticket-row-meta');meta.append(supportNode('span',supportDate(item.createdAt)));
   if(item.queue)meta.append(supportNode('span','Підчерга '+item.queue));
-  if(item.priority==='high')meta.append(supportNode('b','● Важливе'));
+  const age=Date.now()-Date.parse(item.createdAt||'');
+  const deadline=item.status==='new'?24*3600000:item.status==='in_progress'?72*3600000:Infinity;
+  if(Number.isFinite(age)&&age>deadline){const hours=Math.floor(age/3600000);
+   meta.append(supportNode('b','Прострочено · '+hours+' год','support-overdue'));card.classList.add('is-overdue')}
+    if(item.priority==='high')meta.append(supportNode('b','● Важливе'));
   if(item.messages?.length)meta.append(supportNode('span','↩ '+item.messages.length));
   card.append(meta);card.addEventListener('click',()=>{supportSelected=item.id;renderTicketList();renderTicketDetail()});root.append(card);
  }
