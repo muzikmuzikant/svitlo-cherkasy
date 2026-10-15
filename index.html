@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="uk"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="svitlo-version" content="7.8.8"><meta name="theme-color" content="#f6f8fc"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="svitlo-version" content="7.8.9"><meta name="theme-color" content="#f6f8fc"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Світло"><meta name="description" content="Світло Черкаси — графіки відключень за адресою, актуальні дані та сповіщення">
 
 
@@ -67,6 +67,16 @@
     <footer class="install-footer"><span>© Світло Черкаси · Неофіційний застосунок</span><nav aria-label="Посилання"><a href="./privacy.html">Конфіденційність</a><a href="./about.html">Джерела</a><a href="./help.html?from=settings">Допомога</a><a href="./feedback.html?from=settings">Зв’язок із нами</a></nav></footer>
   </div>
 </section>
+<div id="appBootScreen" class="app-boot-screen" role="status" aria-live="polite" aria-label="Завантаження Світло Черкаси">
+  <div class="app-boot-content">
+    <span class="app-boot-logo" aria-hidden="true"><svg viewBox="0 0 48 48"><rect width="48" height="48" rx="15" fill="#377dff"/><path d="M27 7 14.5 26h9l-1.8 15L35 20h-9Z" fill="#fff"/></svg></span>
+    <strong class="app-boot-brand">світло<span>.</span></strong>
+    <p id="appBootMessage">Завантажуємо актуальні графіки</p>
+    <div class="app-boot-progress" aria-hidden="true"><i></i></div>
+    <small>Черкаси та район</small>
+    <button type="button" id="appBootRetry" class="app-boot-retry" hidden>Спробувати ще раз</button>
+  </div>
+</div>
 <div class="viewport"><div class="ambient" aria-hidden="true"></div>
 <header class="topbar"><div class="brand"><span class="brand-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><rect width="48" height="48" rx="15" fill="url(#bgrad)"/><defs><linearGradient id="bgrad" x2="1" y2="1"><stop stop-color="#76baff"/><stop offset="1" stop-color="#3475f6"/></linearGradient></defs><path d="M27 7 14.5 26h9l-1.8 15L35 20h-9Z" fill="white"/></svg></span><span>світло<span class="brand-period">.</span><small>Черкаси та район</small></span></div><button class="icon-btn" id="refreshTop" aria-label="Оновити графіки"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.35 6M20 4v7h-7"/></svg></button></header>
 <div id="appUpdateBanner" class="app-update-banner" role="status" aria-live="polite" hidden>
