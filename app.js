@@ -392,16 +392,14 @@ function renderBar(a){const bar=$('overviewBar');bar.replaceChildren();if(!a){co
 function navigate(name){
  if(!['home','detail','updates','settings'].includes(name))return;
  if(name==='detail'&&!primary()&&!previewQueue){openAddressSheet();return}
- if(name===navigate.pendingName)return;
- // A second tap on the active tab keeps its scroll, but cancels any
- // previous transition that has not committed its DOM update yet.
+ // Do not interrupt an active View Transition: on iOS the interrupted
+ // snapshot can fall back to the vertical section animation.
+ // A repeat tap cancels an older queued destination; a different tab wins.
+ if(navigate.runningTransition){
+  navigate.queuedName=name===navigate.pendingName?null:name;
+  return;
+ }
  if(name===active){
-  if(navigate.runningTransition){
-   navigate.transitionSerial=(navigate.transitionSerial||0)+1;
-   navigate.runningTransition.skipTransition?.();
-   navigate.runningTransition=null;
-   navigate.pendingName=null;
-  }
   if(name==='detail')renderDetail();
   else if(name==='updates')renderUpdates();
   else if(name==='settings')renderSettings();
@@ -421,11 +419,6 @@ function navigate(name){
  const previous=active;
  const token=(navigate.transitionSerial||0)+1;
  navigate.transitionSerial=token;
- if(navigate.runningTransition){
-  navigate.runningTransition.skipTransition?.();
-  navigate.runningTransition=null;
-  navigate.pendingName=null;
- }
  const update=useFallback=>{
   if(token!==navigate.transitionSerial)return; // Older asynchronous callback.
   // iOS must NOT perform smooth document scrolling while screenshots move.
@@ -446,20 +439,24 @@ function navigate(name){
    if(x.classList.contains('nav-item'))x.classList.toggle('active',x.dataset.go===name);
   });
  };
+ // Match fallback slide direction to the native horizontal transition.
+ document.documentElement.dataset.tabDirection=
+  screenNames.indexOf(name)>=screenNames.indexOf(previous)?'forward':'backward';
  if(allowMotion&&typeof document.startViewTransition==='function'){
   // Root screenshots always share the same VIEWPORT dimensions.
   // Section snapshots have different heights and previously resized at the end.
-  document.documentElement.dataset.tabDirection=
-   screenNames.indexOf(name)>=screenNames.indexOf(previous)?'forward':'backward';
   try{
    const transition=document.startViewTransition(()=>update(false));
    navigate.runningTransition=transition;
    navigate.pendingName=name;
    Promise.resolve(transition.finished).catch(()=>{}).then(()=>{
-    if(navigate.runningTransition===transition){
-     navigate.runningTransition=null;
-     navigate.pendingName=null;
-    }
+    if(navigate.runningTransition!==transition)return;
+    navigate.runningTransition=null;
+    navigate.pendingName=null;
+    // Queue at most one destination; never interrupt screenshot interpolation.
+    const next=navigate.queuedName;
+    navigate.queuedName=null;
+    if(next&&next!==active)navigate(next);
    });
   }catch(error){
    console.warn('Tab transition unavailable:',error);
