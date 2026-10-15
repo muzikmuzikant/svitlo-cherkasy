@@ -103,3 +103,17 @@ test('configurable support categories enforce custom text and select fields',()=
   assert.equal(config.list().items[0].extra.date.value,'15.10.2026');
  }finally{fs.rmSync(temp,{recursive:true,force:true})}
 });
+
+test('resolved ticket accepts one voluntary rating using private token',()=>{
+ const {store,cleanup}=makeStore();
+ try{
+  const receipt=store.submit(sample,'198.51.100.41');
+  assert.throws(()=>store.rate(receipt.id,receipt.token,5),/після закриття/);
+  store.change(receipt.id,{status:'resolved'});
+  assert.throws(()=>store.rate(receipt.id,'invalid-private-token',4));
+  assert.throws(()=>store.rate(receipt.id,receipt.token,6),/від 1 до 5/);
+  assert.deepEqual(store.rate(receipt.id,receipt.token,5),{ok:true,rating:5});
+  assert.equal(store.getStatus(receipt.id,receipt.token).rating,5);
+  assert.throws(()=>store.rate(receipt.id,receipt.token,2),/вже збережено/);
+ }finally{cleanup()}
+});

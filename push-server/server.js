@@ -342,7 +342,15 @@ const server=http.createServer(async(req,res)=>{
   }catch(e){response(res,e.statusCode||400,{error:e.statusCode?e.message:'Не вдалося перевірити номер.'})}
   return;
  }
- if(req.url==='/api/ticket/reply'&&req.method==='POST'){
+ if(requestPath==='/api/ticket/rate'&&req.method==='POST'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  try{const data=await readPayload(req,1200),id=String(data.id||'').trim().toUpperCase();
+   if(!/^SC-[0-9A-F]{10}$/.test(id)){response(res,400,{error:'Некоректний номер звернення'});return}
+   response(res,200,feedback.rate(id,data.token,data.rating))}
+  catch(e){response(res,e.statusCode||400,{error:e.message||'Помилка збереження оцінки'})}
+  return
+ }
+  if(req.url==='/api/ticket/reply'&&req.method==='POST'){
    if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
    try{
     const data=await readPayload(req,3500);

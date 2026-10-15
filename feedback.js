@@ -138,10 +138,23 @@ function showConversation(ticket){
   root.append(bubble('user',ticket.message,ticket.createdAt));
   for(const entry of ticket.messages||[])root.append(bubble(entry.from,entry.text,entry.at));
  }else root.append(text('p','Для старого звернення доступний лише статус. Для листування потрібен приватний код доступу.','support-alert'));
+ $('ticketRating').hidden=ticket.canReply!==true||ticket.status!=='resolved';
+ $('ticketRatingOptions').hidden=!!ticket.rating;
+ $('ratingNotice').textContent=ticket.rating?'Ваша оцінка: '+ticket.rating+' із 5. Дякуємо!':'';
  $('replyForm').hidden=ticket.canReply!==true;
  $('conversationMessage').hidden=true;
  $('ticketConversation').scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
 }
+$('ticketRatingOptions')?.addEventListener('click',async event=>{
+ const button=event.target.closest('button[data-rating]');if(!button||!selectedTicket?.token)return;
+ const rating=Number(button.dataset.rating);
+ if(!Number.isInteger(rating)||rating<1||rating>5)return;
+ button.disabled=true;$('ratingNotice').textContent='Зберігаємо оцінку…';
+ try{const id=selectedTicket.id;await post('/api/ticket/rate',{id,token:selectedTicket.token,rating});
+  await openTicket(id);$('ratingNotice').textContent='Дякуємо за оцінку!'
+ }catch(error){$('ratingNotice').textContent=friendlyError(error)}
+ finally{button.disabled=false}
+});
 async function openTicket(id){
  const item=saved.find(x=>x.id===id);if(!item)return;
  $('ticketConversation').hidden=false;$('conversationId').textContent=id;

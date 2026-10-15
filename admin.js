@@ -263,6 +263,8 @@ function renderTicketDetail(){
  const meta=supportNode('div',undefined,'support-detail-meta');
  meta.append(supportNode('span','Створено '+supportDate(ticket.createdAt)),supportNode('span',TICKET_TOPICS[ticket.topic]||'Інше'));
  if(ticket.queue)meta.append(supportNode('span','Підчерга '+ticket.queue));
+ if(Number.isInteger(ticket.rating))meta.append(supportNode('strong','Оцінка підтримки: '+ticket.rating+' / 5'));
+
  if(ticket.extra&&typeof ticket.extra==='object'){
   const extra=supportNode('section',undefined,'support-device-info');extra.append(supportNode('h4','Додаткові дані звернення'));
   for(const field of Object.values(ticket.extra)){if(!field||typeof field!=='object')continue;const row=supportNode('div',undefined,'support-device-row');

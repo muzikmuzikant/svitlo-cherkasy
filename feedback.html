@@ -85,7 +85,13 @@
    <div class="conversation-head"><div><small id="conversationId"></small><h2 id="conversationHeading">Ваше звернення</h2><span id="conversationStatus" class="support-status"></span></div><button type="button" id="closeConversation" class="support-secondary">Закрити</button></div>
    <div id="conversationMeta" class="conversation-meta"></div><div id="conversationMessages" class="conversation-messages"></div>
    <form id="replyForm" class="reply-form" hidden><label for="replyMessage">Додати інформацію</label><textarea id="replyMessage" required minlength="3" maxlength="1200" placeholder="Напишіть уточнення або відповідь адміністратору…"></textarea><div class="reply-actions"><span>До 1200 символів</span><button type="submit" id="sendReply" class="support-primary">Надіслати →</button></div></form>
-   <p id="conversationMessage" class="support-alert" role="status" hidden></p>
+   <div id="ticketRating" class="ticket-rating" hidden><h3>Оцініть допомогу</h3><p>Оцінка добровільна й не впливає на можливість звернутися знову.</p>
+    <div id="ticketRatingOptions" class="rating-options">
+     <button type="button" data-rating="1" aria-label="1 із 5">1</button><button type="button" data-rating="2" aria-label="2 із 5">2</button>
+     <button type="button" data-rating="3" aria-label="3 із 5">3</button><button type="button" data-rating="4" aria-label="4 із 5">4</button>
+     <button type="button" data-rating="5" aria-label="5 із 5">5</button>
+    </div><p id="ratingNotice" role="status"></p></div>
+    <p id="conversationMessage" class="support-alert" role="status" hidden></p>
   </section>
  </section>
 </main>

@@ -127,7 +127,7 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   const basic={id:found.id,status:found.status,createdAt:found.createdAt,updatedAt:found.updatedAt};
   if(token===undefined||token===null||token==='')return basic; // Old receipts remain status-only.
   validateToken(found,token);
-  return {...basic,topic:found.topic,subject:found.subject||'',queue:found.queue||'',message:found.message,extra:found.extra||{},messages:(found.messages||[]).filter(x=>x.from==='admin'||x.from==='user').map(({id,from,text,at})=>({id,from,text,at})),canReply:true};
+  return {...basic,topic:found.topic,subject:found.subject||'',queue:found.queue||'',message:found.message,extra:found.extra||{},messages:(found.messages||[]).filter(x=>x.from==='admin'||x.from==='user').map(({id,from,text,at})=>({id,from,text,at})),rating:found.rating??null,canReply:true};
  }
  function reply(id,token,value,ip){
   const found=find(id);validateToken(found,token);
@@ -146,7 +146,17 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   attempt.times.push(t);attempt.expire=t+interval;replyAttempts.set(k,attempt);
   return {ok:true,id};
  }
- function remove(id){
+ function rate(id,token,stars){
+  const found=find(id);validateToken(found,token);
+  const value=Number(stars);
+  if(found.status!=='resolved')throw bad('Оцінювання доступне після закриття звернення.',409);
+  if(!Number.isInteger(value)||value<1||value>5)throw bad('Оберіть оцінку від 1 до 5.');
+  if(found.rating!=null)throw bad('Оцінку цього звернення вже збережено.',409);
+  const updated={...found,rating:value,ratedAt:new Date(clock()).toISOString()},index=items.indexOf(found);items[index]=updated;
+  try{save()}catch{items[index]=found;throw bad('Помилка збереження оцінки.',503)}
+  return {ok:true,rating:value}
+ }
+  function remove(id){
   const index=items.findIndex(x=>x.id===id);if(index===-1)throw bad('Звернення не знайдено.',404);
   const item=items.splice(index,1)[0];try{save()}catch{items.splice(index,0,item);throw bad('Помилка збереження.',503)}
   return {ok:true};
@@ -180,5 +190,5 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
  if(cleanup())save();
  const timer=setInterval(()=>{try{if(cleanup())save()}catch(e){console.warn('Feedback cleanup failed:',e.message)}},24*60*60*1000);
  timer.unref?.();
- return {submit,list,change,remove,getStatus,reply,getTemplates,setTemplates,getCategories,setCategories};
+ return {submit,list,change,remove,getStatus,reply,rate,getTemplates,setTemplates,getCategories,setCategories};
 }
