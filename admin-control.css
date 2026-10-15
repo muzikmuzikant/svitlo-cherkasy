@@ -568,3 +568,18 @@ main{max-width:1840px!important;padding-inline:clamp(16px,2.5vw,46px)}
 @media(max-width:1100px){.analytics-campaign-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.analytics-campaign-card{padding:16px}.analytics-campaign-heading h3{font-size:19px}.analytics-campaign-foot>div{flex-wrap:wrap}.analytics-campaign-foot button{width:100%}.analytics-funnel-grid{grid-template-columns:1fr;gap:14px}.analytics-funnel-label{margin-bottom:5px}}
 @media(max-width:420px){.analytics-campaign-grid{gap:7px}.analytics-campaign-stat{padding:10px}.analytics-campaign-stat strong{font-size:19px}.analytics-source-pill{padding:5px 8px}}
+
+/* Private aggregated audience insights. */
+.analytics-popularity{margin:15px 0;padding:20px;background:#f8fbff;border:1px solid #e1eaf7;border-radius:21px}
+.analytics-popularity-heading h3{font-size:16px;margin:0 0 4px}
+.analytics-popularity-heading p{font-size:11px;color:#7589a7;margin:0 0 16px}
+.analytics-popularity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.analytics-popularity-panel{min-width:0;background:#fff;border:1px solid #e1eaf6;border-radius:17px;padding:17px}
+.analytics-popularity-panel h4{font-size:13px;color:#27486f;margin:0 0 12px}
+.analytics-popularity-row{margin-bottom:12px}
+.analytics-popularity-row-head{display:flex;justify-content:space-between;gap:10px;font-size:11px;color:#5b7396;margin-bottom:5px}
+.analytics-popularity-row-head strong{font-size:12px;color:#254e83;font-variant-numeric:tabular-nums}
+.analytics-popularity-track{background:#edf3fc;height:6px;border-radius:99px;overflow:hidden}
+.analytics-popularity-track i{display:block;background:linear-gradient(90deg,#3f85f6,#7bb5ff);border-radius:99px;height:100%}
+.analytics-no-data,.analytics-privacy-small{font-size:10px;line-height:1.5;color:#8797ad}
+@media(max-width:700px){.analytics-popularity{padding:13px}.analytics-popularity-grid{grid-template-columns:1fr}}

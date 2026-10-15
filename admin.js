@@ -257,6 +257,14 @@ function renderTicketDetail(){
  const meta=supportNode('div',undefined,'support-detail-meta');
  meta.append(supportNode('span','Створено '+supportDate(ticket.createdAt)),supportNode('span',TICKET_TOPICS[ticket.topic]||'Інше'));
  if(ticket.queue)meta.append(supportNode('span','Підчерга '+ticket.queue));
+ if(ticket.diagnostics){
+  const d=ticket.diagnostics;
+  const panel=supportNode('div',undefined,'support-device-info');
+  panel.append(supportNode('strong','Технічні дані, надані користувачем'));
+  panel.append(supportNode('p',[d.platform,d.os,d.browser,d.appVersion?('Світло v'+d.appVersion):'Версія не визначена'].filter(Boolean).join(' · ')));
+  meta.append(panel);
+ }
+
  if(ticket.email){const email=document.createElement('a');email.textContent=ticket.email;email.href='mailto:'+encodeURIComponent(ticket.email).replace(/%40/g,'@');meta.append(email)}
  root.append(meta);
  const control=supportNode('div',undefined,'support-detail-controls');

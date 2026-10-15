@@ -264,8 +264,8 @@ const server=http.createServer(async(req,res)=>{
  if(requestPath==='/api/telemetry'&&req.method==='POST'){
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   try{
-   const body=await readPayload(req,256);
-   if(!analytics.record(body?.event,body?.source)){response(res,400,{error:'Unknown aggregate event'});return}
+   const body=await readPayload(req,320);
+   if(!analytics.record(body?.event,body?.source,body?.value)){response(res,400,{error:'Unknown aggregate event'});return}
    response(res,202,{ok:true});
   }catch{response(res,400,{error:'Invalid aggregate event'})}
   return;

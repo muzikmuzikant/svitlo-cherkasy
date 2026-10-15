@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="uk"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta charset="utf-8"><meta name="svitlo-version" content="7.9.8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f6f8fc"><meta name="color-scheme" content="light">
 <meta name="description" content="Центр підтримки «Світло Черкаси»: звернення, відповіді адміністратора та відстеження статусу без реєстрації.">
 <title>Центр підтримки · Світло Черкаси</title>
@@ -50,6 +50,8 @@
      <label for="message">Деталі звернення <span class="required">*</span></label>
      <textarea id="message" required minlength="12" maxlength="2000" placeholder="Що саме не працює? Коли це трапляється?"></textarea>
      <div class="form-help"><span>Потрібно щонайменше 12 символів.</span><span id="count" aria-live="polite">0 / 2000</span></div>
+     <label class="support-diagnostics"><input type="checkbox" id="includeDiagnostics"><span><strong>Додати технічну інформацію про пристрій</strong><small>Необов’язково. Тип пристрою, система, браузер і версія застосунку допоможуть відтворити помилку. Точна модель, IP-адреса, вулиця, будинок і повний User-Agent не додаються.</small></span></label>
+     <p class="support-diagnostics-preview" id="diagnosticsPreview">Технічна інформація не надсилається без вашої згоди.</p>
      <div class="support-privacy"><span aria-hidden="true">🔒</span><p>Не надсилайте паролі, документи чи приватні дані. Відповіді можна прочитати тут, навіть якщо не вказувати email.</p></div>
      <div class="trap" aria-hidden="true"><label for="website">Сайт</label><input id="website" autocomplete="off" tabindex="-1"></div>
      <button class="support-primary" id="send" type="submit">Надіслати звернення <span aria-hidden="true">→</span></button>
@@ -86,6 +88,6 @@
   </section>
  </section>
 </main>
-<footer class="support-footer"><span>© Світло Черкаси · Незалежний інформаційний сервіс</span><nav><a href="./help.html">Допомога</a><a href="./privacy.html">Приватність</a><a href="./index.html?screen=settings">Застосунок</a></nav></footer>
+<footer class="support-footer"><span>© Світло Черкаси · Незалежний інформаційний сервіс</span><nav><a href="./help.html">Допомога</a><a href="./privacy.html">Приватність</a><a href="./terms.html">Умови</a><a href="./index.html?screen=settings">Застосунок</a></nav></footer>
 </div>
 <script defer src="./feedback.js"></script></body></html>
