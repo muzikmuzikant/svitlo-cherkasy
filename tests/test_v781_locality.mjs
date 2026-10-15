@@ -51,7 +51,7 @@ test('Admin editor, subscription flow and Inbox all enforce locality targeting',
  assert.match(admin,/options\('opsNoticeSettlement',n\?\.settlement\|\|''\)/);
  assert.match(app,/settlement:primary\(\)\.settlement\|\|''/);
  assert.match(server,/settlement:notice\.settlement\|\|''/);
- assert.match(server,/subscribers\[key\]=\{subscription:data\.subscription,queue:data\.queue,preferences,settlement\}/);
+ assert.match(server,/subscribers\[key\]=\{subscription:data\.subscription,queue:data\.queue,preferences,settlement,\s*automatic:subscribers\[key\]\?\.automatic\|\|\{\}\}/);
  assert.match(inbox,/const targeted=a=>!a\.settlement/);
  assert.match(inbox,/&&targeted\(a\)/);
  assert.match(inbox,/!targeted\(a\)/);

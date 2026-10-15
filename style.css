@@ -467,3 +467,6 @@ html.feature-off-scheduleOpenShortcut #openDetail{display:none!important}
   animation:none!important;transition:none!important;
  }
 }
+
+/* Feature management: quick switching is distinct from the full saved-address list. */
+html.feature-off-quickAddresses #homeQuickPlaces{display:none!important}
