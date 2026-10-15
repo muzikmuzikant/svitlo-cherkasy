@@ -514,6 +514,69 @@ def extract_sections(pdf):
 def extract_city_section(pdf):return extract_sections(pdf).get('Черкаси','')
 
 
+
+def preserve_street_catalogue(result, previous, historical):
+    """A partial PDF parse must never erase known street *names*.
+
+    Earlier documents can suggest a street exists, not certify its queue today.
+    Keep such entries visible in the current import with explicit archival
+    provenance. Only this run's fully parsed official PDFs may set live queues.
+    """
+    def valid_hints(values):
+        return sorted({x for x in values if isinstance(x, str) and x in QUEUE}) if isinstance(values, list) else []
+
+    def preserve(target, *sources):
+        target_streets = target.setdefault('streets', {})
+        confirmed = set(target_streets)
+        assigned = target.setdefault('streetQueues', {})
+        archived = set()
+        archive_hints = {}
+        for source in sources:
+            if not isinstance(source, dict):
+                continue
+            past_streets = source.get('streets', {})
+            if not isinstance(past_streets, dict):
+                continue
+            for street, label in past_streets.items():
+                if not isinstance(street, str) or not isinstance(label, str):
+                    continue
+                if street in confirmed:
+                    continue
+                if street not in target_streets:
+                    target_streets[street] = label
+                archived.add(street)
+                hints = valid_hints(source.get('archivedStreetQueues', {}).get(street, []))
+                if not hints:
+                    hints = valid_hints(source.get('streetQueues', {}).get(street, []))
+                if hints:
+                    archive_hints.setdefault(street, set()).update(hints)
+        if archived:
+            target['archiveOnlyStreets'] = sorted(archived)
+            target['archivedStreetQueues'] = {
+                key: sorted(archive_hints[key]) for key in sorted(archive_hints)
+            }
+        return len(archived)
+
+    older = previous if isinstance(previous, dict) else {}
+    seed = historical if isinstance(historical, dict) else {}
+    archived_count = preserve(result, older, seed)
+    places = result.setdefault('localities', {})
+    previous_places = older.get('localities', {})
+    seed_places = seed.get('localities', {})
+    previous_places = previous_places if isinstance(previous_places, dict) else {}
+    seed_places = seed_places if isinstance(seed_places, dict) else {}
+    for town in sorted(set(places) | set(previous_places) | set(seed_places)):
+        current = places.setdefault(town, {'keys': {}, 'streets': {}, 'streetQueues': {}})
+        older_town = previous_places.get(town, {})
+        seeded_town = seed_places.get(town, {})
+        if not current.get('label'):
+            current['label'] = (older_town.get('label') if isinstance(older_town, dict) else None) or (
+                seeded_town.get('label') if isinstance(seeded_town, dict) else None) or town
+        archived_count += preserve(current, older_town, seeded_town)
+    result['stats']['archivedStreetOnly'] = archived_count
+    return result
+
+
 def update_addresses(session,now=None):
     now=now or datetime.now(TZ)
     html=fetch(session,BASE+'/perelik-gpv?lang=uk')
@@ -567,6 +630,14 @@ def update_addresses(session,now=None):
         raise RuntimeError(f'Address import quarantine: city house records dropped from {previous_city} to {len(city)}')
     if previous_towns >= 10 and len(towns) < previous_towns * .55:
         raise RuntimeError(f'Address import quarantine: localities dropped from {previous_towns} to {len(towns)}')
+    try:
+        historical = json.loads((DATA / 'published_street_fallback.json').read_text(encoding='utf-8'))
+    except (FileNotFoundError, ValueError):
+        historical = {}
+    preserve_street_catalogue(result, previous, historical)
+    LOG.info('Address catalogue: %d current streets and %d archived-only labels',
+             sum(len(loc.get('streetQueues', {})) for loc in result['localities'].values()),
+             result['stats']['archivedStreetOnly'])
     atomic_write(current_file,result)
     return result
 
