@@ -30,7 +30,7 @@ test('full redesigned advertising and support pages retain dynamic API integrati
   assert.match(source,/\/api\/ads/,'Page '+name+' still uses public ad configuration');
   assert.match(source,/viewport-fit=cover/);
   assert.match(source,/prefers-reduced-motion/);
-  assert.match(source,/\.back.*href="\.\/index\.html"|href="\.\/index\.html".*class="back"/);
+  assert.match(source,/class="back" href="\.\/index\.html"/);
  }
  for(const x of ['id="packages"','id="benefits"','id="contacts"','id="faq"'])assert.ok(ads.includes(x),x);
  for(const x of ['id="methodList"','id="goals"','id="expenses"','id="thanks"'])assert.ok(support.includes(x),x);
