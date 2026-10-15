@@ -95,7 +95,7 @@ def import_official() -> None:
     # Reuse exactly the verified importer used by GitHub Actions, without
     # a second parser or any speculative outage schedule synthesis.
     subprocess.run([sys.executable, str(ROOT / "scripts" / "update_data.py"), "--schedules-only"],
-                   cwd=ROOT, timeout=220, check=True)
+                   cwd=ROOT, timeout=220, check=True, stderr=subprocess.STDOUT)
 
 
 def publish(session: requests.Session, base: str, secret: str) -> dict:
@@ -147,7 +147,7 @@ def publish(session: requests.Session, base: str, secret: str) -> dict:
 
 
 def main() -> int:
-    logging.basicConfig(level=logging.INFO, format="[railway-cron] %(levelname)s %(message)s")
+    logging.basicConfig(level=logging.INFO, format="[railway-cron] %(levelname)s %(message)s", stream=sys.stdout)
     base = endpoint()
     secret = os.environ.get("SCHEDULE_INGEST_SECRET", "")
     if len(secret) < 32:

@@ -1,5 +1,5 @@
 importScripts('./notification-center.js');
-const VERSION='svitlo-cherkasy-shell-v7.8.6-settings-cleanup';
+const VERSION='svitlo-cherkasy-shell-v7.8.7-reliability-polish';
 const SHELL=["./","./index.html","./app.js","./address-lookup.js","./notification-center.js","./notification-text.js","./inbox-ui.js","./site-mode.js","./admin-control.js","./admin-richtext.js","./admin-help-richtext.js","./admin-control.css","./admin-dashboard.js","./admin-features.js","./admin-command.js","./data-merge.js","./hour-paint.js","./admin.html","./admin.js","./style.css","./install.css","./install.js","./version-check.js","./release.json","./manifest.webmanifest","./privacy.html","./about.html","./feedback.html","./feedback.js","./help.html","./help.css","./help.js","./admin-extra.js","./admin-planner.js","./schedule-planner.js","./favicon.ico","./favicon-16.png","./favicon-32.png","./favicon-48.png","./assets/icon.svg","./assets/icon-192-v692.png","./assets/icon-512-v692.png","./assets/icon-512-maskable-v692.png","./apple-touch-icon-v692.png","./apple-touch-icon.png"];
 const CACHE_DATA='svitlo-cherkasy-data-v6.7';
 const CACHE_IMAGES='svitlo-cherkasy-media-v74';
@@ -42,7 +42,7 @@ self.addEventListener('fetch',event=>{
      try{const fresh=await fetch(req);if(fresh.ok){await cache.put(key,fresh.clone());return fresh}const old=await cache.match(key);return old||fresh}catch{const old=await cache.match(key);return old||new Response('Offline, no cache',{status:503,headers:{'Content-Type':'text/plain'}})}
    })());return;
  }
- event.respondWith((async()=>{try{const fresh=await fetch(req);if(fresh.ok&&u.pathname.match(/(?:\.js|\.css|\.html|\.png|\.svg|\.webmanifest)$/)){const c=await caches.open(VERSION);c.put(req,fresh.clone())}return fresh}catch{const cached=await caches.match(req);if(cached)return cached;return req.mode==='navigate'?(await caches.match('./index.html'))||Response.error():Response.error()}})());
+ event.respondWith((async()=>{try{const fresh=await fetch(req);if(fresh.ok&&u.pathname.match(/(?:\.js|\.css|\.html|\.png|\.svg|\.webmanifest)$/)){const c=await caches.open(VERSION);await c.put(req,fresh.clone()).catch(()=>{})}return fresh}catch{const cached=await caches.match(req);if(cached)return cached;return req.mode==='navigate'?(await caches.match('./index.html'))||Response.error():Response.error()}})());
 });
 self.addEventListener('push',event=>{
  let msg={title:'💡 Світло Черкаси',body:'Є нове повідомлення про графік.'};

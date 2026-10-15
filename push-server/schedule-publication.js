@@ -7,7 +7,9 @@ import crypto from 'node:crypto';
 
 const QUEUES=Array.from({length:6},(_,i)=>[String(i+1)+'.1',String(i+1)+'.2']).flat();
 const MAX_BYTES=1_300_000;
-const validDate=x=>typeof x==='string'&&/^20\d{2}-\d{2}-\d{2}$/.test(x);
+const validDate=x=>typeof x==='string'&&/^20\d{2}-\d{2}-\d{2}$/.test(x)&&
+ Number.isFinite(Date.parse(x+'T00:00:00Z'))&&new Date(x+'T00:00:00Z').toISOString().slice(0,10)===x;
+const minute=x=>x==='24:00'?1440:typeof x==='string'&&/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(x)?Number(x.slice(0,2))*60+Number(x.slice(3)):-1;
 const stamp=x=>typeof x==='string'&&Number.isFinite(Date.parse(x))?Date.parse(x):null;
 
 function validate(schedule,review){
@@ -15,15 +17,25 @@ function validate(schedule,review){
  if(!stamp(schedule.lastChecked))throw Error('Missing schedule check timestamp');
  if(schedule.days.length>15)throw Error('Too many days in schedule snapshot');
  if(!review||typeof review!=='object'||!stamp(review.lastChecked)||!Array.isArray(review.items))throw Error('Invalid source review');
+ const seenDays=new Set();
  for(const day of schedule.days){
   if(!validDate(day?.date)||day.verified!==true||!day.queues||typeof day.queues!=='object')
    throw Error('Invalid verified day');
+  if(seenDays.has(day.date))throw Error('Duplicate official date');
+  seenDays.add(day.date);
   for(const q of QUEUES){
-   const periods=day.queues[q]?.off;
+   const item=day.queues[q],periods=item?.off;
    if(!Array.isArray(periods)||periods.length>24)throw Error('Missing or invalid queue: '+q);
-   for(const span of periods)if(!Array.isArray(span)||span.length!==2||
-     !/^(?:[01]\d|2[0-4]):[0-5]\d$/.test(span[0])||
-     !/^(?:[01]\d|2[0-4]):[0-5]\d$/.test(span[1]))throw Error('Invalid outage interval');
+   const knownFrom=minute(item.knownFrom??'00:00');
+   if(knownFrom<0)throw Error('Invalid confirmed starting time');
+   let end=0;
+   for(const span of periods){
+    if(!Array.isArray(span)||span.length!==2)throw Error('Invalid outage interval');
+    const from=minute(span[0]),to=minute(span[1]);
+    if(from<0||to<0||from>=to||from<end||from<knownFrom)
+     throw Error('Overlapping, backwards or invalid outage interval');
+    end=to;
+   }
   }
  }
  const bytes=Buffer.byteLength(JSON.stringify({schedule,review}),'utf8');
