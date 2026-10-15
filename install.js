@@ -19,7 +19,7 @@
   }
   const userAgent=navigator.userAgent||'';
   const platform=/iPad/i.test(userAgent)?'iPad':/iPhone|iPod/i.test(userAgent)?'iPhone':/Android/i.test(userAgent)?'Android':/Windows/i.test(userAgent)?'Windows':/Macintosh/i.test(userAgent)?'macOS':/Linux/i.test(userAgent)?'Linux':'Інше';
-  const version=document.querySelector('meta[name="svitlo-version"]')?.content||'';
+  const version=document.querySelector?.('meta[name="svitlo-version"]')?.content||'';
   // Measurements are independent aggregate counters. No visitor identifier,
   // house, street, or connection to a particular support ticket is transmitted.
   reportUsage(standalone?'app_open':'landing');
