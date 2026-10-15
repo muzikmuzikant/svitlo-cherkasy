@@ -5,6 +5,7 @@ from pathlib import Path
 import shutil
 import json
 import re
+import hashlib
 
 ROOT=Path(__file__).resolve().parent.parent
 DEST=ROOT/'_site'
@@ -31,7 +32,16 @@ feedback_path.write_text(support_html,encoding='utf-8')
 sw_path=DEST/'sw.js'
 sw=sw_path.read_text(encoding='utf-8')
 channel_suffix='-beta' if release.get('channel') == 'beta' else ''
-sw=re.sub(r"const VERSION='[^']+';","const VERSION='svitlo-cherkasy-shell-v"+version+channel_suffix+"';",sw,count=1)
+# A version may have many beta builds. Fingerprint static assets to invalidate
+# outdated service-worker caches without changing the public release version.
+signature=hashlib.sha256()
+for filename in FILES:
+    if filename == 'sw.js':
+        continue
+    signature.update(filename.encode('utf-8'))
+    signature.update((ROOT/filename).read_bytes())
+build_hash=signature.hexdigest()[:12]
+sw=re.sub(r"const VERSION='[^']+';","const VERSION='svitlo-cherkasy-shell-v"+version+channel_suffix+"-"+build_hash+"';",sw,count=1)
 sw_path.write_text(sw,encoding='utf-8')
 for icon in ROOT.glob('favicon*'):
     if icon.is_file():shutil.copy2(icon, DEST/icon.name)
