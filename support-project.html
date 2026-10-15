@@ -110,6 +110,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #79a8ff;outline-offset:3p
   const config=await timedFetch('./push-config.json').then(r=>{if(!r.ok)throw Error('Configuration unavailable');return r.json()});
   const response=await timedFetch(new URL(config.apiBase).origin+'/api/ads');if(!response.ok)throw Error('Support unavailable');
   const s=(await response.json()).support||{};
+  if(!s.enabled){const main=document.querySelector('main');main.replaceChildren();const notice=el('section',undefined,'section');notice.append(el('h1','Приймання внесків поки вимкнене'),el('p','Застосунок залишається безкоштовним. Дякуємо за вашу підтримку.'));const back=el('a','До застосунку');back.href='./index.html';notice.append(back);main.append(notice);return;}
   for(const [id,field] of [['title','title'],['intro','description'],['details','details'],['whyTitle','whyTitle'],['thanksTitle','thanksTitle']])put(id,s[field]);
   document.documentElement.style.setProperty('--bg',s.background||'#f6f8fc');document.documentElement.style.setProperty('--accent',s.accent||'#397bff');
   if(s.heroImage&&url(s.heroImage)){const hero=$('heroImage');hero.src=url(s.heroImage);hero.hidden=false}
