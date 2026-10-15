@@ -37,51 +37,51 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
 @media(max-width:650px){.planner-grid{grid-template-columns:1fr;max-height:530px}.planner-slot{font-size:12px}.planner-hour{grid-template-columns:50px 1fr 1fr}}
 </style>
 <link rel="stylesheet" href="./motion.css"><script defer src="./motion.js"></script></head><body><main>
-<header><div class="flex"><svg aria-hidden="true" width="37" height="37" viewBox="0 0 48 48"><rect width="48" height="48" rx="16" fill="#347dff"/><path d="M27 7 14 26h9l-1 15L35 20h-9Z" fill="#fff"/></svg><strong>Світло Черкаси</strong></div><a href="./">🔙 До застосунку</a></header>
+<header><div class="flex"><svg aria-hidden="true" width="37" height="37" viewBox="0 0 48 48"><rect width="48" height="48" rx="16" fill="#347dff"/><path d="M27 7 14 26h9l-1 15L35 20h-9Z" fill="#fff"/></svg><strong>Світло Черкаси</strong></div><a href="./">← До застосунку</a></header>
 <section id="adminLoginScreen" class="login-view">
- <div class="login-symbol" aria-hidden="true">⚡</div>
+ <div class="login-symbol" aria-hidden="true">ϟ</div>
  <div class="login-overline">SVITLO CONTROL / PRIVATE ACCESS</div>
  <h1>Центр керування Світло Черкаси</h1>
  <p>Керуйте публікаціями, графіками та аналітикою з одного захищеного робочого простору.</p>
  <form id="loginForm" class="card login-card">
-  <div class="login-lock-title"><span aria-hidden="true">💝</span><div><h2>Захищений вхід</h2><small>Перевірка на сервері Railway</small></div></div>
+  <div class="login-lock-title"><span aria-hidden="true">◈</span><div><h2>Захищений вхід</h2><small>Перевірка на сервері Railway</small></div></div>
   <div class="field"><label for="adminUsername">Логін</label><input id="adminUsername" name="username" type="text" autocomplete="username" maxlength="32" required value="owner"></div><div class="field"><label for="password">Пароль адміністратора</label><div class="login-password-field"><input id="password" type="password" placeholder="Введіть пароль" autocomplete="current-password" required minlength="7" autofocus><button type="button" id="togglePassword" class="secondary" aria-pressed="false">Показати</button></div></div>
   <div class="field"><label for="otp">Код автентифікатора <small>(якщо увімкнено 2FA)</small></label><input id="otp" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="6 цифр" autocomplete="one-time-code"></div>
-  <button type="submit" class="login-submit" id="connect">Увійти до панелі ➡️</button>
+  <button type="submit" class="login-submit" id="connect">Увійти до панелі →</button>
   <p id="loginError" class="login-alert" role="alert" aria-live="polite"></p>
   <input id="server" type="hidden">
-  <div class="login-assurance"><span aria-hidden="true">🔔</span><p>Дані входу не зберігаються в браузері. Термін дії сеансу: до 8 годин, з автоматичним завершенням після 30 хвилин бездіяльності.</p></div>
+  <div class="login-assurance"><span aria-hidden="true">♧</span><p>Дані входу не зберігаються в браузері. Термін дії сеансу: до 8 годин, з автоматичним завершенням після 30 хвилин бездіяльності.</p></div>
  </form>
 </section>
 <div id="adminDashboard" hidden>
-<div class="auth-head"><div class="control-brand"><span class="control-logo">⚡</span><div><span class="control-kicker">SVITLO CONTROL / ADMIN</span><h1>Центр керування</h1><p class="auth-note">Світло Черкаси · Робоче середовище</p></div></div><div class="control-head-actions"><span id="connection" class="pill ok">Авторизовано</span><span id="controlServerState" class="control-server-state">Перевіряємо сервер…</span><button id="disconnect" class="secondary" type="button">Вийти</button></div></div>
+<div class="auth-head"><div class="control-brand"><span class="control-logo">ϟ</span><div><span class="control-kicker">SVITLO CONTROL / ADMIN</span><h1>Центр керування</h1><p class="auth-note">Світло Черкаси · Робоче середовище</p></div></div><div class="control-head-actions"><span id="connection" class="pill ok">Авторизовано</span><span id="controlServerState" class="control-server-state">Перевіряємо сервер…</span><button id="disconnect" class="secondary" type="button">Вийти</button></div></div>
 <nav class="admin-tabs" aria-label="Розділи адмінпанелі">
  <div class="control-nav-search"><label for="controlSearch">Пошук розділів</label><input type="search" id="controlSearch" placeholder="Пошук…  Ctrl+K" autocomplete="off"></div>
  <div class="control-nav-group"><span>РОБОЧИЙ СТІЛ</span>
- <button type="button" data-admin-tab="overview" aria-pressed="true">🏠 <span>Огляд</span></button>
- <button type="button" data-admin-tab="insights" aria-pressed="false">📊 <span>Аналітика</span></button>
- <button type="button" data-admin-tab="quality" aria-pressed="false">🔎 <span>Діагностика</span></button></div>
+ <button type="button" data-admin-tab="overview" aria-pressed="true">◫ <span>Огляд</span></button>
+ <button type="button" data-admin-tab="insights" aria-pressed="false">▥ <span>Аналітика</span></button>
+ <button type="button" data-admin-tab="quality" aria-pressed="false">◎ <span>Діагностика</span></button></div>
  <div class="control-nav-group"><span>ПУБЛІКАЦІЇ ТА КОРИСТУВАЧІ</span>
- <button type="button" data-admin-tab="operations" aria-pressed="false">📣 <span>Повідомлення</span></button>
- <button type="button" data-admin-tab="push" aria-pressed="false">🔔 <span>Push-розсилки</span></button>
- <button type="button" data-admin-tab="media" aria-pressed="false">🖼️ <span>Медіатека</span></button>
- <button type="button" data-admin-tab="ads" aria-pressed="false">📢 <span>Реклама</span></button>
- <button type="button" data-admin-tab="feedback" aria-pressed="false">💬 <span>Звернення</span></button>
- <button type="button" data-admin-tab="help" aria-pressed="false">❓ <span>Центр допомоги</span></button></div>
+ <button type="button" data-admin-tab="operations" aria-pressed="false">▤ <span>Повідомлення</span></button>
+ <button type="button" data-admin-tab="push" aria-pressed="false">♧ <span>Push-розсилки</span></button>
+ <button type="button" data-admin-tab="media" aria-pressed="false">▧ <span>Медіатека</span></button>
+ <button type="button" data-admin-tab="ads" aria-pressed="false">◈ <span>Реклама</span></button>
+ <button type="button" data-admin-tab="feedback" aria-pressed="false">▣ <span>Звернення</span></button>
+ <button type="button" data-admin-tab="help" aria-pressed="false">❔ <span>Центр допомоги</span></button></div>
  <div class="control-nav-group"><span>ЗАСТОСУНОК</span>
- <button type="button" data-admin-tab="features" aria-pressed="false">⚙️️ <span>Функції</span></button>
- <button type="button" data-admin-tab="design" aria-pressed="false">🎨 <span>Оформлення</span></button>
- <button type="button" data-admin-tab="maintenance" aria-pressed="false">🛠️ <span>Техроботи</span></button></div>
+ <button type="button" data-admin-tab="features" aria-pressed="false">⚙ <span>Функції</span></button>
+ <button type="button" data-admin-tab="design" aria-pressed="false">◈ <span>Оформлення</span></button>
+ <button type="button" data-admin-tab="maintenance" aria-pressed="false">⚒ <span>Техроботи</span></button></div>
  <div class="control-nav-group"><span>ДАНІ ТА СИСТЕМА</span>
- <button type="button" data-admin-tab="sources" aria-pressed="false">📡 <span>Джерела</span></button>
- <button type="button" data-admin-tab="planner" aria-pressed="false">🗓️ <span>Планувальник</span></button>
- <button type="button" data-admin-tab="tools" aria-pressed="false">🧰 <span>Швидкі інструменти</span></button>
- <button type="button" data-admin-tab="data" aria-pressed="false">🗂️ <span>Редактор даних</span></button>
- <button type="button" data-admin-tab="security" aria-pressed="false">🔐 <span>Доступ і права</span></button>
- <button type="button" data-admin-tab="backup" aria-pressed="false">💾 <span>Резервні копії</span></button>
- <button type="button" data-admin-tab="revisions" aria-pressed="false">🕘 <span>Історія версій</span></button>
- <button type="button" data-admin-tab="audit" aria-pressed="false">📋 <span>Журнал</span></button></div>
- <div class="control-nav-foot"><span id="controlNavigationCount">19 розділів</span><a href="./index.html" target="_blank" rel="noopener">Відкрити застосунок 🔗</a></div>
+ <button type="button" data-admin-tab="sources" aria-pressed="false">◉ <span>Джерела</span></button>
+ <button type="button" data-admin-tab="planner" aria-pressed="false">▦ <span>Планувальник</span></button>
+ <button type="button" data-admin-tab="tools" aria-pressed="false">⌘ <span>Швидкі інструменти</span></button>
+ <button type="button" data-admin-tab="data" aria-pressed="false">⌁ <span>Редактор даних</span></button>
+ <button type="button" data-admin-tab="security" aria-pressed="false">⛨ <span>Доступ і права</span></button>
+ <button type="button" data-admin-tab="backup" aria-pressed="false">▨ <span>Резервні копії</span></button>
+ <button type="button" data-admin-tab="revisions" aria-pressed="false">↶ <span>Історія версій</span></button>
+ <button type="button" data-admin-tab="audit" aria-pressed="false">◷ <span>Журнал</span></button></div>
+ <div class="control-nav-foot"><span id="controlNavigationCount">19 розділів</span><a href="./index.html" target="_blank" rel="noopener">Відкрити застосунок ↗</a></div>
 </nav>
 <section class="card" data-admin-panel="overview">
  <div class="headline"><h2>Огляд роботи сервісу</h2><button type="button" class="secondary" id="monitorRefresh">Оновити</button></div>
@@ -188,14 +188,14 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
   <p class="hint">Фактична історія імпорту графіків і публікації сайту з GitHub API.</p></div>
   <button type="button" class="secondary" id="controlActionsRefresh">Оновити історію</button></div>
   <div id="controlActionsList" class="control-action-list"><p class="hint">Відкрийте розділ для завантаження.</p></div>
-  <a class="control-actions-link" href="https://github.com/muzikmuzikant/svitlo-cherkasy/actions" target="_blank" rel="noopener">Відкрити всі запуски в GitHub 🔗</a>
+  <a class="control-actions-link" href="https://github.com/muzikmuzikant/svitlo-cherkasy/actions" target="_blank" rel="noopener">Відкрити всі запуски в GitHub ↗</a>
  </section>
  <h2 style="margin-top:23px">Публікації, що потребують уваги</h2>
  <div id="sourceIssues" class="review-list"></div>
  <p class="hint">Перевірка не виправляє помилки офіційного сайту автоматично. Для ручного уточнення використовуйте тільки підтверджене джерело в редакторі.</p>
 </section>
 <section class="card" data-admin-panel="help" hidden>
- <div class="headline"><h2>Центр допомоги</h2><a class="secondary admin-link" href="./help.html" target="_blank" rel="noopener">Подивитися сторінку 🔗</a></div>
+ <div class="headline"><h2>Центр допомоги</h2><a class="secondary admin-link" href="./help.html" target="_blank" rel="noopener">Подивитися сторінку ↗</a></div>
  <p>Редагуйте запитання й відповіді без коду. Після збереження матеріали будуть доступні користувачам, які можуть з’єднатися з Railway.</p>
  <div class="two">
   <div class="field"><label for="helpArticlePicker">Стаття</label><select id="helpArticlePicker"></select></div>
@@ -208,7 +208,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
   <button type="button" data-help-format="bold" aria-label="Жирний текст"><strong>Ж</strong></button>
   <button type="button" data-help-format="heading" aria-label="Підзаголовок">H2</button>
   <button type="button" data-help-format="bullet" aria-label="Список">☷</button>
-  <button type="button" data-help-format="link" aria-label="HTTPS-посилання">🔗</button>
+  <button type="button" data-help-format="link" aria-label="HTTPS-посилання">↗</button>
  </div>
  <textarea id="helpAnswer" rows="5" maxlength="1600" style="resize:vertical"></textarea></div>
  <div class="flex" style="margin-top:12px"><button type="button" id="helpApply" class="secondary">Застосувати у списку</button><button type="button" id="helpDelete" class="danger">Видалити статтю</button></div>
@@ -246,7 +246,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
       <button type="button" data-ops-format="bold" aria-label="Жирний текст"><strong>Ж</strong></button>
       <button type="button" data-ops-format="heading" aria-label="Підзаголовок">H2</button>
       <button type="button" data-ops-format="bullet" aria-label="Маркер списку">☷</button>
-      <button type="button" data-ops-format="link" aria-label="Посилання"><span>🔗</span></button>
+      <button type="button" data-ops-format="link" aria-label="Посилання"><span>↗</span></button>
     </div>
     <textarea id="opsNoticeContent" rows="9" maxlength="6000" placeholder="Докладно опишіть, що сталося, і що робити користувачеві..."></textarea>
    </div>
@@ -348,7 +348,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  <div class="feature-grid" id="featuresGrid" aria-live="polite"></div>
  <div class="ops-panel-head"><h3>Посилання та інформаційний банер</h3><p>Тут зібрано все, що стосується навігації та загальних повідомлень, а не техробіт.</p></div>
   <section class="ops-section ops-site-management" aria-labelledby="siteManagementTitle">
- <div class="headline"><div><h2 id="siteManagementTitle">⚙️️ Налаштування застосунку</h2><p class="hint">Зміни посилань, доступності розділів і банерів без редагування коду.</p></div></div>
+ <div class="headline"><div><h2 id="siteManagementTitle">⚙️ Налаштування застосунку</h2><p class="hint">Зміни посилань, доступності розділів і банерів без редагування коду.</p></div></div>
  <h3>Основні посилання</h3>
  <div class="two">
   <div class="field"><label for="opsLinkHelp">Центр допомоги</label><input id="opsLinkHelp" placeholder="./help.html"></div>
@@ -359,7 +359,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  <div class="ops-flags">
   <label><input id="opsFlagInbox" type="checkbox" checked> 🔔 Центр повідомлень</label>
   <label><input id="opsFlagSharing" type="checkbox" checked> 📤 Поширення графіків</label>
-  <label><input id="opsFlagHelp" type="checkbox" checked> ❓ Центр допомоги</label>
+  <label><input id="opsFlagHelp" type="checkbox" checked> ❔ Центр допомоги</label>
  </div>
  <h3>Інформаційний банер / нова версія</h3>
  <label class="ops-toggle"><span><strong>Показувати банер у застосунку</strong><small>Може вести до довідки, опису оновлення або іншої сторінки.</small></span><input id="opsBannerActive" type="checkbox"></label>
@@ -400,7 +400,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
     <div class="field"><label for="pushBody">Текст повідомлення</label><textarea id="pushBody" maxlength="280" placeholder="Напиши, що мають побачити користувачі…"></textarea><div class="counter" id="pushBodyCount">0 / 280</div></div>
   </div>
   <p class="hint">Попередній перегляд на екрані блокування (вигляд залежить від iOS):</p>
-  <div class="push-preview" aria-live="polite"><span class="push-preview-icon" aria-hidden="true">⚡</span><div><b id="pushPreviewTitle">Заголовок сповіщення</b><p id="pushPreviewBody">Тут буде твій текст повідомлення.</p></div></div>
+  <div class="push-preview" aria-live="polite"><span class="push-preview-icon" aria-hidden="true">ϟ</span><div><b id="pushPreviewTitle">Заголовок сповіщення</b><p id="pushPreviewBody">Тут буде твій текст повідомлення.</p></div></div>
   <div class="push-actions" style="margin-top:14px"><button type="button" id="sendPush" disabled>Надіслати власне повідомлення</button></div>
   <div id="pushResult" class="push-state" role="status" aria-live="polite" style="margin-top:12px">Авторизуйтеся, щоб надіслати Push.</div>
 </section>
@@ -414,7 +414,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
   <div class="field"><label for="ticketTopicFilter">Тема</label><select id="ticketTopicFilter"><option value="all">Усі теми</option><option value="bug">Помилки</option><option value="address">Адреси</option><option value="schedule">Графіки</option><option value="push">Сповіщення</option><option value="idea">Ідеї</option><option value="other">Інше</option></select></div>
   <div class="field"><label for="ticketPriorityFilter">Пріоритет</label><select id="ticketPriorityFilter"><option value="all">Усі</option><option value="high">Високий</option><option value="normal">Звичайний</option><option value="low">Низький</option></select></div>
  </div>
- <div class="support-toolbar"><span id="ticketsSummary" role="status" aria-live="polite">Завантаження звернень…</span><button id="ticketExport" type="button" class="secondary">Експорт JSON 🔗</button></div>
+ <div class="support-toolbar"><span id="ticketsSummary" role="status" aria-live="polite">Завантаження звернень…</span><button id="ticketExport" type="button" class="secondary">Експорт JSON ↗</button></div>
  <details class="support-category-manager"><summary>Категорії та поля звернень</summary><div id="adminSupportCategories"></div></details>
  <details class="support-template-manager"><summary>Шаблони відповідей</summary><div id="adminReplyTemplates"></div></details>
  <div class="support-workspace"><div id="ticketsList" class="support-list" aria-label="Список звернень"></div><section id="ticketDetail" class="support-detail" aria-label="Звернення та відповіді"><div class="support-empty">Оберіть звернення у списку.</div></section></div>

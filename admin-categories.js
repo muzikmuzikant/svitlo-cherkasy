@@ -40,13 +40,13 @@
     input(inner,'Обов’язкове поле',field,'required','toggle');
     row.append(inner);btn(row,'Видалити поле',()=>{c.fields.splice(j,1);changed();render()});fields.append(row)
    }
-   btn(fields,'➕ Нове поле',()=>{c.fields.push({id:'field_'+(c.fields.length+1),label:'Нове поле',type:'text',required:false,options:[]});changed();render()});
+   btn(fields,'+ Нове поле',()=>{c.fields.push({id:'field_'+(c.fields.length+1),label:'Нове поле',type:'text',required:false,options:[]});changed();render()});
    form.append(fields);
    btn(form,'Видалити категорію',()=>{if(confirm('Видалити категорію зі списку для нових звернень?')){categories.splice(index,1);changed();render()}});
    card.append(form);root.append(card)
   }
   const toolbar=e('div',undefined,'support-category-actions');
-  btn(toolbar,'➕ Нова категорія',()=>{categories.push({id:'new_'+Date.now().toString(36).slice(-6),title:'Нова категорія',hint:'',enabled:false,fields:[]});changed();render()});
+  btn(toolbar,'+ Нова категорія',()=>{categories.push({id:'new_'+Date.now().toString(36).slice(-6),title:'Нова категорія',hint:'',enabled:false,fields:[]});changed();render()});
   const save=btn(toolbar,'Зберегти категорії',async()=>{
    if(!dirty)return;save.disabled=true;const status=document.getElementById('supportCategoriesStatus');
    try{const result=await api('PUT',{categories});categories=result.categories;dirty=false;render();const s=document.getElementById('supportCategoriesStatus');if(s)s.textContent='Збережено на сервері'}
