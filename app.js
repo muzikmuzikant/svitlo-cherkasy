@@ -11,7 +11,7 @@ const ICON='<svg class="bolt" viewBox="0 0 20 24" aria-hidden="true"><path fill=
 const PIN='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0z"/><circle cx="12" cy="10" r="2.4"/></svg>';
 const safeJSON=(k,fallback)=>{try{return JSON.parse(localStorage.getItem(k)??'null')??fallback}catch{return fallback}};
 const legacy=safeJSON('svitlo-addresses-v3',safeJSON('svitlo-addresses-v2',[]));
-let addresses=safeJSON(STORE,Array.isArray(legacy)?legacy:[]), prefs=Object.assign({primaryId:null,off:true,on:true,changes:true,tomorrow:true,emergency:true,offMinutes:30,onMinutes:15,quietEnabled:false,quietFrom:'23:00',quietTo:'07:00',favorites:[]},safeJSON(PREF,{}));
+let addresses=safeJSON(STORE,Array.isArray(legacy)?legacy:[]), prefs=Object.assign({primaryId:null,off:true,on:true,changes:true,tomorrow:true,emergency:true,offMinutes:30,onMinutes:15,quietEnabled:false,quietFrom:'23:00',quietTo:'07:00',favorites:[],addressRules:{}},safeJSON(PREF,{}));
 let previewQueue=null;
 let pushHealthLast=0,pushHealthBusy=null;
 let pushActive=('Notification' in window&&Notification.permission==='granted'&&localStorage.getItem(PUSH_CONSENT)==='yes'), emergency={events:[],lastChecked:null},overrides={schedules:{days:[]},addresses:{},emergency:{events:[]}},data={days:[],changes:[]},index={keys:{},streets:{},localities:{}},active='home',daySelected=null,dayStripStart=null,editId=null,suggestion=null,toastTimeout=null,lastPub=null,pushConfig=null,swRegistration=null,notified=new Set(safeJSON(SEEN,[])),lastRefresh=0,hasCheckedOnce=false,lastDownloadAt=null,lastSyncFailed=false,refreshInFlight=null;
@@ -499,10 +499,35 @@ function renderFavorites(){
  const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Відкріпити підчергу '+q);
  remove.onclick=()=>{prefs.favorites=known.filter(v=>v!==q);savePrefs();renderFavorites()};div.append(open,remove);el.append(div)}
 }
+function renderAddressRules(){
+ const host=$('addressNotificationRules');if(!host)return;host.replaceChildren();
+ if(!addresses.length){host.append(el('p','empty-places','Додайте адресу, щоб налаштувати її сповіщення.'));return}
+ const choice=[5,10,15,30,60];
+ prefs.addressRules=prefs.addressRules&&typeof prefs.addressRules==='object'&&!Array.isArray(prefs.addressRules)?prefs.addressRules:{};
+ for(const a of addresses.slice(0,12)){
+  if(!a.queue)continue;
+  const row=el('section','per-address-row');row.append(el('strong','',label(a)+' · '+a.queue));
+  const rule=prefs.addressRules[a.id]||{};
+  const toggles=el('div','per-address-checks');
+  for(const [key,title] of [['off','Перед відключенням'],['on','Перед відновленням'],['changes','Зміни графіка']]){
+   const labelNode=el('label','',title),box=document.createElement('input');box.type='checkbox';box.checked=rule[key]??prefs[key];labelNode.prepend(box);
+   box.onchange=()=>{const current=prefs.addressRules[a.id]||{};prefs.addressRules[a.id]={...current,[key]:box.checked};savePrefs();updatePushSubscription().catch(console.warn)};
+   toggles.append(labelNode)
+  }row.append(toggles);
+  const times=el('div','per-address-times');
+  for(const [key,title,defaultValue] of [['offMinutes','Відключення',30],['onMinutes','Відновлення',15]]){
+   const labelNode=el('label','',title),select=document.createElement('select');
+   for(const value of choice)select.add(new Option(value+' хв',value));
+   select.value=String(rule[key]||prefs[key]||defaultValue);
+   select.onchange=()=>{const current=prefs.addressRules[a.id]||{};prefs.addressRules[a.id]={...current,[key]:Number(select.value)};savePrefs();updatePushSubscription().catch(console.warn)};
+   labelNode.append(select);times.append(labelNode)
+  }row.append(times);host.append(row)
+ }
+}
 function renderSettings(){for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).checked=!!prefs[key];for(const key of ['offMinutes','onMinutes']){const el=$(key);if(el)el.value=String(key==='offMinutes'?prefs.offMinutes||30:prefs.onMinutes||15)}
  for(const key of ['quietEnabled','quietFrom','quietTo'])if($(key))$(key)[key==='quietEnabled'?'checked':'value']=prefs[key];
  if($('offlineDetails'))$('offlineDetails').textContent=(navigator.onLine?'Інтернет доступний. ':'Без інтернету. ')+(data.lastChecked?'Остання перевірка графіка: '+new Date(data.lastChecked).toLocaleString('uk-UA',{timeZone:TZ})+'. ':'Графік ще не перевірено. ')+(data.days?.length?'У застосунку є збережений розклад.':'Поки немає збереженого розкладу.');
- renderFavorites();
+ renderFavorites();renderAddressRules();
  const connected=!!pushConfig?.apiBase&&!!pushConfig?.publicKey;setText('pushHeadline','Сповіщення');setText('pushDescription',connected?'Отримуйте нагадування про відключення та зміни графіків, навіть коли застосунок закритий.':'Наразі нагадування доступні тільки під час використання застосунку.');setText('enableNotifications',connected?'Увімкнути сповіщення':'Дозволити нагадування');$('disableNotifications').hidden=!connected;}
 function fillQueueSelect(){const root=$('manualQueue');root.replaceChildren(new Option('Оберіть підчергу',''),...QUEUES.map(q=>new Option(q,q)))}
 function town(){return $('settlement').value==='Інше'?$('customSettlement').value.trim():$('settlement').value}
@@ -913,7 +938,16 @@ async function updatePushSubscription(){
   if(old.length!==key.length||old.some((v,i)=>v!==key[i])){await sub.unsubscribe();sub=null}
  }
  if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
- const payload={subscription:sub.toJSON(),queue:primary().queue,settlement:primary().settlement||'',preferences:{off:prefs.off,on:prefs.on,changes:prefs.changes,tomorrow:prefs.tomorrow,emergency:prefs.emergency,offMinutes:prefs.offMinutes||30,onMinutes:prefs.onMinutes||15,quietEnabled:!!prefs.quietEnabled,quietFrom:prefs.quietFrom,quietTo:prefs.quietTo}};
+ const basePrefs={off:prefs.off,on:prefs.on,changes:prefs.changes,tomorrow:prefs.tomorrow,emergency:prefs.emergency,
+  offMinutes:prefs.offMinutes||30,onMinutes:prefs.onMinutes||15,quietEnabled:!!prefs.quietEnabled,quietFrom:prefs.quietFrom,quietTo:prefs.quietTo};
+ const grouped=new Set(),rules=[];
+ for(const address of addresses){
+  if(!address.queue||grouped.has(address.queue))continue;grouped.add(address.queue);
+  const override=prefs.addressRules?.[address.id]||{};
+  rules.push({queue:address.queue,settlement:address.settlement||'',preferences:{...basePrefs,...override}})
+  if(rules.length>=8)break
+ }
+ const payload={subscription:sub.toJSON(),queue:primary().queue,settlement:primary().settlement||'',preferences:basePrefs,rules};
  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),12000);
  try{
   const response=await fetch(pushConfig.apiBase.replace(/\/$/,'')+'/api/subscribe',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload),signal:controller.signal});

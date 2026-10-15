@@ -76,8 +76,10 @@ const deliveryStats={
  lastAttempt:null,lastAccepted:null,lastFailure:null,
  lastCycle:null,totalAcceptedSinceBoot:0,totalFailedSinceBoot:0
 };
+const pendingPushKeys=new Set();
 async function send(rec,message,key,options={}){
- if(sent[key])return 'already-sent';
+ if(sent[key]||pendingPushKeys.has(key))return 'already-sent';
+ pendingPushKeys.add(key);
  const category=String(options.notificationId||'').split(':')[0]||'automatic';
  const payload=JSON.stringify({title:message.title,body:message.body,content:message.content||'',
   url:appUrl,notificationId:options.notificationId,kind:options.kind||'schedule',
@@ -96,7 +98,7 @@ async function send(rec,message,key,options={}){
   if([404,410].includes(e?.statusCode))delete subscribers[hash(rec.subscription.endpoint)];
   else console.warn('Auto Push failed:',e?.statusCode||e?.message);
   return 'failed';
- }
+ }finally{pendingPushKeys.delete(key)}
 }
 async function forEachLimited(items,limit,fn){
  let next=0;
@@ -116,7 +118,7 @@ async function transitionJob(){
   const current=schedulesSafe?source.days.find(d=>d.date===now.date&&d.verified===true):null;
   const nextDate=shiftDay(now.date,1);
   const tomorrow=schedulesSafe?source.days.find(d=>d.date===nextDate&&d.verified===true):null;
-  const all=Object.values(subscribers);
+  const all=Object.values(subscribers).flatMap(rec=>(Array.isArray(rec.rules)&&rec.rules.length?rec.rules:[{queue:rec.queue,settlement:rec.settlement,preferences:rec.preferences}]).map(rule=>({...rec,...rule,automatic:rec.automatic})));
   const cycle={at:new Date().toISOString(),subscribers:all.length,
    offEnabled:all.filter(x=>x?.preferences?.off).length,
    onEnabled:all.filter(x=>x?.preferences?.on).length,
@@ -125,7 +127,7 @@ async function transitionJob(){
   if(schedulesSafe)await forEachLimited(all,12,async record=>{
    const q=record?.queue,endpoint=record?.subscription?.endpoint;
    if(!QUEUES.has(q)||!endpoint)return;
-   const pref=record.preferences||{},prefix=hash(endpoint),minutes=now.m;
+   const pref=record.preferences||{},basePrefix=hash(endpoint),prefix=basePrefix+':'+q,minutes=now.m;
    const values=schedulesSafe?timeline(current,q):null;
    const valuesTomorrow=schedulesSafe?timeline(tomorrow,q):null;
    for(const [type,offset,target] of [['off',minutesFor(pref.offMinutes,30),1],['on',minutesFor(pref.onMinutes,15),0]]){
@@ -195,11 +197,11 @@ async function job(){
   }
   // The freshest verified bulletin determines whether an emergency is active or ended.
   const event=latestOfficialEvent(bulletin,timestamp);
-  const all=Object.values(subscribers);
+  const all=Object.values(subscribers).flatMap(rec=>(Array.isArray(rec.rules)&&rec.rules.length?rec.rules:[{queue:rec.queue,settlement:rec.settlement,preferences:rec.preferences}]).map(rule=>({...rec,...rule,automatic:rec.automatic})));
   await forEachLimited(all,12,async record=>{
    const q=record?.queue,endpoint=record?.subscription?.endpoint;
    if(!QUEUES.has(q)||!endpoint)return;
-   const pref=record.preferences||{},prefix=hash(endpoint),minutes=now.m;
+   const pref=record.preferences||{},basePrefix=hash(endpoint),prefix=basePrefix+':'+q,minutes=now.m;
    const quiet=quietNow(pref,minutes);
    const freshChanges=(source.changes||[]).slice(-30).filter(change=>{
     const when=Date.parse(change.detectedAt||change.publishedAt||''),age=timestamp-when;
@@ -214,7 +216,7 @@ async function job(){
    }
    if(pref.emergency&&freshEvent(event,timestamp)&&(!Array.isArray(event.queues)||!event.queues.length||event.queues.includes(q))){
     const msg=emergencyCopy(event.status);
-    if(msg)await send(record,msg,`${prefix}:emergency:${event.status}:${hash(event.id||event.source)}:${event.publishedAt}`,{
+    if(msg)await send(record,msg,`${basePrefix}:emergency:${event.status}:${hash(event.id||event.source)}:${event.publishedAt}`,{
      notificationId:emergencyId(event),at:event.publishedAt,source:event.source,kind:'emergency',ttl:3600,urgency:'high'});
    }
    if(!quiet&&schedulesSafe&&pref.changes)for(const change of freshChanges){
@@ -412,7 +414,18 @@ const server=http.createServer(async(req,res)=>{
   const preferences={off:!!prefs.off,on:!!prefs.on,changes:!!prefs.changes,tomorrow:!!prefs.tomorrow,emergency:!!prefs.emergency,offMinutes:minutesFor(prefs.offMinutes,30),onMinutes:minutesFor(prefs.onMinutes,15),quietEnabled:prefs.quietEnabled===true,quietFrom:/^([01]\d|2[0-3]):[0-5]\d$/.test(prefs.quietFrom||'')?prefs.quietFrom:'23:00',quietTo:/^([01]\d|2[0-3]):[0-5]\d$/.test(prefs.quietTo||'')?prefs.quietTo:'07:00'};
   // Store only the locality for opt-in Push targeting. Never store street/house.
   const settlement=typeof data.settlement==='string'?data.settlement.normalize('NFKC').trim().slice(0,70):'';
-  subscribers[key]={subscription:data.subscription,queue:data.queue,preferences,settlement,
+  const rules=[],seen=new Set();
+  for(const rule of Array.isArray(data.rules)?data.rules.slice(0,8):[]){
+   if(!rule||!QUEUES.has(rule.queue)||seen.has(rule.queue))continue;
+   seen.add(rule.queue);
+   const p=rule.preferences||{};
+   const prefsRule={off:!!p.off,on:!!p.on,changes:!!p.changes,tomorrow:!!p.tomorrow,emergency:!!p.emergency,
+    offMinutes:minutesFor(p.offMinutes,30),onMinutes:minutesFor(p.onMinutes,15),quietEnabled:p.quietEnabled===true,
+    quietFrom:/^([01]\d|2[0-3]):[0-5]\d$/.test(p.quietFrom||'')?p.quietFrom:'23:00',
+    quietTo:/^([01]\d|2[0-3]):[0-5]\d$/.test(p.quietTo||'')?p.quietTo:'07:00'};
+   rules.push({queue:rule.queue,settlement:typeof rule.settlement==='string'?rule.settlement.normalize('NFKC').trim().slice(0,70):'',preferences:prefsRule})
+  }
+  subscribers[key]={subscription:data.subscription,queue:data.queue,preferences,settlement,rules,
    automatic:subscribers[key]?.automatic||{}};
   save();response(res,200,{ok:true});
  }catch(e){response(res,e.message?.includes('save failed')?500:400,{error:'Invalid subscription request'})}

@@ -27,7 +27,10 @@ export function selectRecipients(subscribers, { queue = 'all', target = 'all', e
     return list.filter(r => r.subscription?.endpoint === endpoint);
   }
   if (target !== 'all') throw Error('Невідомий одержувач');
-  return list.filter(r => (queue === 'all' || r.queue === queue)&&(!settlement||normArea(r.settlement)===normArea(settlement)));
+  return list.filter(r => {
+   const rules=Array.isArray(r.rules)&&r.rules.length?r.rules:[{queue:r.queue,settlement:r.settlement}];
+   return rules.some(rule=>(queue==='all'||rule.queue===queue)&&(!settlement||normArea(rule.settlement)===normArea(settlement)))
+  });
 }
 
 export function createManualPush({ subscribers, webpush, appUrl, hash, save }) {

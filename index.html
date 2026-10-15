@@ -158,6 +158,9 @@ document.addEventListener('DOMContentLoaded', () => {
  <div class="setting-line"><div><strong>Початок тихих годин</strong></div><input id="quietFrom" type="time" value="23:00"></div>
  <div class="setting-line"><div><strong>Кінець тихих годин</strong></div><input id="quietTo" type="time" value="07:00"></div>
  </div>
+ <div class="surface settings-card per-address-notify" style="margin-top:14px">
+ <strong>Сповіщення для кожної адреси</strong><p>Налаштування застосовуються і коли PWA закритий. На сервері зберігається лише підчерга та населений пункт, без вулиці й номера будинку.</p>
+ <div id="addressNotificationRules"></div></div>
  <div class="surface notification-help"><strong id="pushHeadline">Сповіщення</strong><p id="pushDescription">Увімкніть сповіщення, щоб отримувати нагадування про зміни графіка.</p><button id="enableNotifications" class="secondary-action">Увімкнути дозволені сповіщення</button><button id="disableNotifications" class="secondary-action" hidden style="margin-top:10px">Вимкнути сповіщення та скасувати підписку</button></div></div><div class="surface settings-card quick-fav-settings"><div><strong>Улюблені підчерги</strong><p>Закріпіть підчергу для швидкого перегляду без зміни адреси.</p></div>
  <div class="quick-queue-controls"><select id="favoriteSelect" aria-label="Закріпити підчергу"></select><button type="button" id="favoriteAdd">Закріпити</button></div><div id="favoriteQueues" class="favorite-chips"></div></div>
  <div class="surface settings-card" style="margin-top:14px"><strong>Офлайн-дані</strong><p id="offlineDetails">Перевіряємо кешовані дані.</p></div>
