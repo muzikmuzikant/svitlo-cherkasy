@@ -3,7 +3,7 @@
  const host=document.getElementById('betaAd'),home=document.getElementById('home');
  if(!host||!home)return;
  const consent=document.getElementById('betaAnalyticsConsent');
- const STATS_OPT='svitlo-beta-analytics-opt-in',INSTALL_ID='svitlo-beta-install-id',PENDING='svitlo-beta-analytics-delete-pending';
+ const STATS_OPT='svitlo-beta-analytics-opt-in',INSTALL_ID='svitlo-beta-install-id',PENDING='svitlo-beta-analytics-delete-pending',CHOICE='svitlo-beta-analytics-choice';
  let api='',config=null,items=[],index=0,timer=null,impressionTimer=null,refreshAt=0;
  let lastInteraction=Date.now(),swipeStart=null,counted=false;
  const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
@@ -55,13 +55,15 @@
   host.replaceChildren();host.hidden=false;
   const label=make('span',item.id==='promo'?'ВАША РЕКЛАМА':'РЕКЛАМА','beta-ad-label');host.append(label);
   const a=make('a',undefined,'beta-ad-content');
-  const link=item.id==='promo'?'./advertising.html':item.link;
-  if(link){a.href=link;a.target='_blank';a.rel='noopener noreferrer'}else{a.tabIndex=-1;a.setAttribute('aria-disabled','true')}
+  const link=item.id==='promo'?'./advertising.html':item.detailEnabled?'./ad-detail.html?id='+encodeURIComponent(item.id):item.link;
+  if(link){a.href=link;a.target=(item.id==='promo'||item.detailEnabled)?'_self':'_blank';a.rel='noopener noreferrer'}else{a.tabIndex=-1;a.setAttribute('aria-disabled','true')}
   if(item.image){const img=make('img');img.src=item.image;img.alt='';img.loading='lazy';img.referrerPolicy='no-referrer';a.append(img)}
   const body=make('div');body.append(make('strong',item.title||'Реклама'),make('small',item.description||''));
-  const action=make('em',item.id==='promo'?(config.contactLabel||'Дізнатися більше'):(item.button||'Дізнатися більше'),'beta-ad-action');
+  const action=make('em',item.id==='promo'?(config.contactLabel||'Дізнатися більше'):(item.detailEnabled?'Детальніше':item.button||'Дізнатися більше'),'beta-ad-action');
   body.append(action);a.append(body);a.append(make('span','↗','beta-ad-arrow'));
   a.style.backgroundColor=item.background||'#ffffff';a.style.color=item.foreground||'#142338';
+  a.dataset.style=item.cardStyle||'soft';
+  if(item.cardBackgroundImage){const dark=item.cardStyle==='dark';a.style.backgroundImage=(dark?'linear-gradient(90deg,#0b1e35e8,#0b1e3533),':'linear-gradient(90deg,#fffffff2,#ffffff44),')+'url("'+item.cardBackgroundImage.replace(/"/g,'')+'")';a.style.backgroundSize='cover';a.style.backgroundPosition='center'}
   a.addEventListener('click',()=>{if(link)send(item.id,'click')});
   host.append(a);
   const footer=make('div',undefined,'beta-ad-controls');
@@ -104,5 +106,32 @@
  setInterval(heartbeat,15000);setTimeout(heartbeat,1200);
  setInterval(()=>{if(document.visibilityState==='visible')load(true).catch(()=>{})},120000);
  setTimeout(deletePending,1800);
+ const consentDialog=document.getElementById('betaConsentDialog');
+ const accept=document.getElementById('betaConsentAccept');
+ const decline=document.getElementById('betaConsentDecline');
+ function setConsentChoice(granted){
+  try{localStorage.setItem(CHOICE,granted?'accepted':'declined');localStorage.setItem(STATS_OPT,granted?'yes':'no')}catch{}
+  if(consent)consent.checked=granted;
+  if(!granted){
+   try{const existing=localStorage.getItem(INSTALL_ID);if(existing)localStorage.setItem(PENDING,existing);localStorage.removeItem(INSTALL_ID)}catch{}
+   deletePending();
+  }else heartbeat();
+  consentDialog?.close();
+ }
+ if(consentDialog){
+  accept?.addEventListener('click',()=>setConsentChoice(true));
+  decline?.addEventListener('click',()=>setConsentChoice(false));
+  consentDialog.addEventListener('cancel',()=>setConsentChoice(false));
+  const tryPrompt=()=>{
+   if(!standalone()||document.visibilityState!=='visible'||!homeOpen())return;
+   if(document.getElementById('emergencyBanner')?.hidden===false)return;
+   if(document.getElementById('maintenanceScreen')?.hidden===false)return;
+   try{if(localStorage.getItem(CHOICE)||localStorage.getItem(STATS_OPT)==='yes')return}
+   catch{return}
+   if(!consentDialog.open){consentDialog.showModal()}
+  };
+  setTimeout(tryPrompt,6500);
+  document.querySelectorAll('[data-go="home"]').forEach(button=>button.addEventListener('click',()=>setTimeout(tryPrompt,4500),{once:true}));
+ }
  load().catch(e=>console.warn('[beta-ads]',e.message));
 })();
