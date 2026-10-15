@@ -43,15 +43,15 @@ test('a tap on the entire schedule card opens detail, then opens in-app graph',a
  const action=allNodes(view.dialog()).find(n=>n.tag==='button'&&n.textContent.includes('Відкрити графік'));
  assert.ok(action,'internal graph action exists in detail');
  action.onclick();
- assert.equal(view.events[0].type,'svitlo:open-schedule');
- assert.equal(view.events[0].detail.date,'2026-10-12');
+ assert.equal(view.events.find(event=>event.type==='svitlo:open-schedule').type,'svitlo:open-schedule');
+ assert.equal(view.events.find(event=>event.type==='svitlo:open-schedule').detail.date,'2026-10-12');
  await new Promise(resolve=>setImmediate(resolve));assert.equal(view.readState(),true);
 });
 test('tomorrow Push opens next Kyiv day from its original timestamp',async()=>{
  const view=await mountInbox({id:'push:tomorrow:queue_1:random',title:'🗓️ Графік на завтра',body:'Підчерга 1.1',kind:'push',at:'2026-10-12T14:00:00Z'});
  view.card().onclick();
  const action=allNodes(view.dialog()).find(n=>n.tag==='button'&&n.textContent.includes('Відкрити графік'));
- assert.ok(action);action.onclick();assert.equal(view.events[0].detail.date,'2026-10-13');
+ assert.ok(action);action.onclick();assert.equal(view.events.find(event=>event.type==='svitlo:open-schedule').detail.date,'2026-10-13');
 });
 test('admin announcement opens a full detail, but has no false schedule shortcut',async()=>{
  const view=await mountInbox({id:'notice:announcement1',title:'📣 Оголошення',body:'Є нові можливості',content:'## Деталі\n**Важливо**',
