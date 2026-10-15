@@ -314,6 +314,12 @@ function renderTicketDetail(){
  }
 }
 window.betaAdminAdsApi=async(method='GET',settings)=>api('ads',{method,body:method==='PUT'?JSON.stringify(settings):undefined});
+window.betaAdminUploadAdPhoto=async(file)=>{
+ if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>1900000)throw Error('PNG, JPG або WebP не більше 1,9 МБ');
+ const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=()=>reject(Error('Не вдалося прочитати файл'));reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.readAsDataURL(file)});
+ const result=await api('media',{method:'POST',body:JSON.stringify({mime:file.type,data})});
+ return server.replace(/\/$/,'')+'/api/media/'+result.id;
+};
 async function refreshTickets(){
  if(!remote)return;
  $('ticketsSummary').textContent='Оновлюємо звернення…';
