@@ -109,7 +109,7 @@ function normalize(raw){
  return normalized;
 }
 
-export function createAdsStore({directory,clock=()=>Date.now()}){
+export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed=process.env.APP_ORIGIN!=='https://svitlo-cherkasy.pp.ua'}){
  const file=path.join(directory,'beta-ads.json');
  const visitorsFile=path.join(directory,'beta-pwa-installations.json');
  const stateDefault=normalize(defaults);
@@ -137,20 +137,20 @@ export function createAdsStore({directory,clock=()=>Date.now()}){
   }return {all,today,clicks}}
  function publicState(){
   const now=new Date(clock()).toISOString(),day=now.slice(0,10),weekday=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Kyiv',weekday:'short'}).format(new Date(clock())));
-  return {enabled:state.enabled,rotationSeconds:state.rotationSeconds,promoEvery:state.promoEvery,
+  return {enabled:commercialAllowed&&state.enabled,rotationSeconds:state.rotationSeconds,promoEvery:state.promoEvery,
    showPromo:state.showPromo,manualSwipe:state.manualSwipe,animation:state.animation,
    promoTitle:state.promoTitle,promoText:state.promoText,contactLabel:state.contactLabel,
    pageTitle:state.pageTitle,pageIntro:state.pageIntro,pageTerms:state.pageTerms,
    pageBackground:state.pageBackground,pageAccent:state.pageAccent,pageHeroImage:state.pageHeroImage,
    pageAbout:state.pageAbout,pageContactText:state.pageContactText,pageBenefits:state.pageBenefits,
-   contacts:state.contacts.filter(c=>c.enabled&&c.url).map(({label,url})=>({label,url})),
-   packages:state.packages.filter(p=>p.visible).map(({title,description,price,durationDays,badge,badgeBackground,badgeForeground,featured,features})=>({title,description,price,durationDays,badge,badgeBackground,badgeForeground,featured,features})),
-   support:{...state.support,
-    methods:state.support.methods.filter(m=>m.enabled&&!!(m.url||m.details)),
+   contacts:(commercialAllowed?state.contacts:[]).filter(c=>c.enabled&&c.url).map(({label,url})=>({label,url})),
+   packages:(commercialAllowed?state.packages:[]).filter(p=>p.visible).map(({title,description,price,durationDays,badge,badgeBackground,badgeForeground,featured,features})=>({title,description,price,durationDays,badge,badgeBackground,badgeForeground,featured,features})),
+   support:{...state.support,paymentUrl:commercialAllowed?state.support.paymentUrl:'',
+    methods:(commercialAllowed?state.support.methods:[]).filter(m=>m.enabled&&!!(m.url||m.details)),
     expenses:state.support.expenses.filter(e=>e.public),
-    enabled:state.support.enabled&&!!(state.support.paymentUrl||state.support.methods.some(m=>m.enabled&&(m.url||m.details)))
+    enabled:commercialAllowed&&state.support.enabled&&!!(state.support.paymentUrl||state.support.methods.some(m=>m.enabled&&(m.url||m.details)))
    },
-   campaigns:state.enabled?state.campaigns.filter(c=>{
+   campaigns:commercialAllowed&&state.enabled?state.campaigns.filter(c=>{
     if(!c.enabled||!c.title||c.start&&c.start>now||c.end&&c.end<=now)return false;
     if(c.days.length&&!c.days.includes(weekday))return false;
     const t=totals(c.id,day);return (!c.maxImpressions||t.all<c.maxImpressions)&&(!c.dailyCap||t.today<c.dailyCap);
@@ -161,7 +161,7 @@ export function createAdsStore({directory,clock=()=>Date.now()}){
  function update(value){if(!isObj(value))throw Error('Некоректні налаштування');state=normalize(value);lastModified=new Date(clock()).toISOString();flush();return dashboard()}
  function rateLimit(bucket,limit,windowMs){const now=clock(),r=rate.get(bucket);if(!r||now-r.last>=windowMs){rate.set(bucket,{last:now,count:1});return true}r.count++;return r.count<=limit}
  function event(id,type,clientKey=''){
-  if(!['impression','click','detailOpen','outbound'].includes(type)||!state.enabled)return false;
+  if(!commercialAllowed||!['impression','click','detailOpen','outbound'].includes(type)||!state.enabled)return false;
   if(id!=='promo'&&!publicState().campaigns.some(c=>c.id===id))return false;
   if(clientKey&&!rateLimit('ad:'+clientKey,150,60000))return false;
   const now=clock(),day=new Date(now).toISOString().slice(0,10),k=id+'|'+day;
