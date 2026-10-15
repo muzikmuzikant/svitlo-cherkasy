@@ -49,3 +49,32 @@ test('fresh Production storage publishes no ads, promo campaigns or payment dest
   assert.match(client,/if\(!config\?\.enabled\)\{host\.hidden=true;return\}/);
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });
+
+test('Production commercial lock survives enabled stored config and cannot collect ad events',async()=>{
+ const {createAdsStore}=await import('../push-server/ads.js');
+ const os=await import('node:os');
+ const path=await import('node:path');
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'svitlo-prod-commerce-lock-'));
+ try{
+  const store=createAdsStore({directory:dir,commercialAllowed:false});
+  const config=store.dashboard().settings;
+  store.update({...config,enabled:true,showPromo:true,
+   contacts:[{label:'Контакт',url:'https://example.com',enabled:true}],
+   packages:[{title:'Тариф',price:800,durationDays:30,visible:true}],
+   campaigns:[{id:'advert',title:'Оголошення',link:'https://example.com',enabled:true}],
+   support:{...config.support,enabled:true,paymentUrl:'https://example.com/pay',methods:[{title:'Банка',kind:'monobank',url:'https://example.com/donate',enabled:true}]}
+  });
+  const publicConfig=store.publicState();
+  assert.equal(publicConfig.enabled,false);
+  assert.deepEqual(publicConfig.campaigns,[]);
+  assert.deepEqual(publicConfig.packages,[]);
+  assert.deepEqual(publicConfig.contacts,[]);
+  assert.equal(publicConfig.support.enabled,false);
+  assert.equal(publicConfig.support.paymentUrl,'');
+  assert.deepEqual(publicConfig.support.methods,[]);
+  assert.equal(store.event('advert','impression'),false);
+  assert.equal(store.event('promo','impression'),false);
+  assert.ok(read('advertising.html').includes('if(!data.enabled)'));
+  assert.ok(read('support-project.html').includes('if(!s.enabled)'));
+ }finally{fs.rmSync(dir,{recursive:true,force:true})}
+});
