@@ -17,6 +17,7 @@ import {createDailyReports} from './daily-reports.js';
 import {createAppConfig} from './app-config.js';
 import {createMediaStore} from './media-store.js';
 import {createSchedulePublication} from './schedule-publication.js';
+import {createScheduleMirror} from './schedule-mirror.js';
 import {originPolicy} from './origins.js';
 import webpush from 'web-push';
 import {adminRouter} from './admin.js';
@@ -51,6 +52,7 @@ const dailyReports=createDailyReports({directory:path.dirname(DATA_FILE)});
 const siteControls=createAppConfig({directory:path.dirname(DATA_FILE),record:extras.record});
 const mediaStore=createMediaStore(path.dirname(DATA_FILE));
 const officialSchedules=createSchedulePublication({directory:path.dirname(DATA_FILE),token:process.env.SCHEDULE_INGEST_SECRET||''});
+const betaScheduleMirror=createScheduleMirror({publisher:officialSchedules,sourceOrigin:process.env.SCHEDULE_MIRROR_API_BASE||''});
 const appUrl=new URL('/',APP_ORIGIN).href; // Push opens PWA, never the GitHub raw JSON host.
 const manualPush=createManualPush({subscribers,webpush,appUrl,hash,save});
 const fmtKyiv=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
@@ -437,6 +439,8 @@ const reportSources={feedback,ads,push:manualPush,diagnostics:errorCounts,audit:
 function refreshDailyReport(){try{dailyReports.capture(reportSources)}catch(error){console.warn('Daily reports update:',error.message)}}
 setTimeout(refreshDailyReport,15_000).unref?.();
 setInterval(refreshDailyReport,60*60_000).unref?.();
+betaScheduleMirror.sync().catch(error=>console.warn('[beta-schedule-mirror]',error.message));
+if(betaScheduleMirror.enabled)setInterval(()=>betaScheduleMirror.sync().catch(error=>console.warn('[beta-schedule-mirror]',error.message)),5*60_000).unref?.();
 job().catch(console.error);
 transitionJob().catch(console.error);
 setInterval(()=>job().catch(console.error),60_000);
