@@ -3,11 +3,11 @@
  const host=document.getElementById('betaAd'),home=document.getElementById('home');
  if(!host||!home)return;
  const consent=document.getElementById('betaAnalyticsConsent');
- const STATS_OPT='svitlo-beta-analytics-opt-in',INSTALL_ID='svitlo-beta-install-id',PENDING='svitlo-beta-analytics-delete-pending',CHOICE='svitlo-beta-analytics-choice';
+ const STATS_OPT='svitlo-beta-analytics-opt-in',INSTALL_ID='svitlo-beta-install-id',PENDING='svitlo-beta-analytics-delete-pending',CHOICE='svitlo-beta-analytics-choice',CHOICE_REV='svitlo-beta-analytics-consent-revision',REVISION='7.9.8';
  let api='',config=null,items=[],index=0,timer=null,impressionTimer=null,refreshAt=0;
  let lastInteraction=Date.now(),swipeStart=null,counted=false;
  const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
- const enabled=()=>{try{return localStorage.getItem(STATS_OPT)==='yes'}catch{return false}};
+ const enabled=()=>{try{return localStorage.getItem(STATS_OPT)==='yes'&&localStorage.getItem(CHOICE_REV)===REVISION}catch{return false}};
  const key=()=>{try{let id=localStorage.getItem(INSTALL_ID);if(!id){id=crypto.randomUUID();localStorage.setItem(INSTALL_ID,id)}return id}catch{return ''}};
  const make=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e};
  const homeOpen=()=>!home.hidden&&getComputedStyle(home).display!=='none';
@@ -87,7 +87,7 @@
  new MutationObserver(()=>{if(canDisplay()){render();schedule()}else stop()}).observe(home,{attributes:true,attributeFilter:['hidden','class','style']});
  if(consent){
   consent.checked=enabled();consent.addEventListener('change',async()=>{
-   try{localStorage.setItem(STATS_OPT,consent.checked?'yes':'no')}catch{}
+   try{localStorage.setItem(STATS_OPT,consent.checked?'yes':'no');localStorage.setItem(CHOICE_REV,REVISION);localStorage.setItem(CHOICE,consent.checked?'accepted':'declined')}catch{}
    if(!consent.checked){
     try{const id=localStorage.getItem(INSTALL_ID);if(id)localStorage.setItem(PENDING,id);localStorage.removeItem(INSTALL_ID)}catch{}
     deletePending();
@@ -110,7 +110,7 @@
  const accept=document.getElementById('betaConsentAccept');
  const decline=document.getElementById('betaConsentDecline');
  function setConsentChoice(granted){
-  try{localStorage.setItem(CHOICE,granted?'accepted':'declined');localStorage.setItem(STATS_OPT,granted?'yes':'no')}catch{}
+  try{localStorage.setItem(CHOICE,granted?'accepted':'declined');localStorage.setItem(STATS_OPT,granted?'yes':'no');localStorage.setItem(CHOICE_REV,REVISION)}catch{}
   if(consent)consent.checked=granted;
   if(!granted){
    try{const existing=localStorage.getItem(INSTALL_ID);if(existing)localStorage.setItem(PENDING,existing);localStorage.removeItem(INSTALL_ID)}catch{}
@@ -126,7 +126,7 @@
    if(!standalone()||document.visibilityState!=='visible'||!homeOpen())return;
    if(document.getElementById('emergencyBanner')?.hidden===false)return;
    if(document.getElementById('maintenanceScreen')?.hidden===false)return;
-   try{if(localStorage.getItem(CHOICE)||localStorage.getItem(STATS_OPT)==='yes')return}
+   try{if(localStorage.getItem(CHOICE_REV)===REVISION)return}
    catch{return}
    if(!consentDialog.open){consentDialog.showModal()}
   };

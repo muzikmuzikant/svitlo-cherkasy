@@ -64,7 +64,7 @@ async function github(path,method='GET',payload){
  return data;
 }
 async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
-export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers){
+export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(!originPolicy.isAllowed(req.headers.origin)){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const url=new URL(req.url,'http://localhost');
@@ -142,6 +142,12 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    ||(pathName.startsWith('/api/admin/feedback/')&&method==='DELETE'));
  if(!allowed){send(res,403,{error:'Недостатньо прав для цієї дії'});return true}
  try{
+   if(pathName==='/api/admin/legal'&&method==='GET'){send(res,200,legal.publicState());return true}
+   if(pathName==='/api/admin/legal'&&method==='PUT'){
+    if(role!=='owner'||session.managed){send(res,403,{error:'Лише власник може публікувати нову редакцію'});return true}
+    const result=legal.update(await readJson(req,7000));extras?.record('legal.revision',result.termsVersion+' '+result.privacyVersion);
+    send(res,200,result);return true
+   }
    if(pathName==='/api/admin/users'&&method==='GET'){
     if(role!=='owner'||session.managed){send(res,403,{error:'Лише для власника'});return true}
     send(res,200,{users:adminUsers.list()});return true
