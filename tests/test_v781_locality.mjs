@@ -59,7 +59,7 @@ test('Admin editor, subscription flow and Inbox all enforce locality targeting',
 });
 test('v7.8.1 cache refreshes, and scripts parse',()=>{
  const release=JSON.parse(read('release.json'));
- assert.match(release.version,/^7\.8\.\d+$/);
+ assert.match(release.version,/^\d+\.\d+\.\d+$/);
  assert.match(read('sw.js'),new RegExp('svitlo-cherkasy-shell-v'+release.version.replaceAll('.','\\.')));
  for(const f of ['inbox-ui.js','app.js','admin-control.js','site-mode.js','sw.js'])
   assert.doesNotThrow(()=>new Function(read(f)),f);

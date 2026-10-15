@@ -51,3 +51,37 @@ test('public build includes feedback files, private store stays out of GitHub Pa
  assert.match(builder,/feedback\.html/);assert.match(builder,/feedback\.js/);
  assert.doesNotMatch(builder,/feedback-store\.js/);
 });
+
+test('new support ticket includes a private access code and keeps internal notes secret',()=>{
+ const {store,cleanup}=makeStore();try{
+  const receipt=store.submit({...sample,subject:'Не знаходить вулицю',queue:'2.1'},'10');
+  assert.match(receipt.token,/^[A-Za-z0-9_-]{32}$/);
+  const status=store.getStatus(receipt.id);
+  assert.equal(status.message,undefined);
+  assert.throws(()=>store.getStatus(receipt.id,'wrong'),e=>e.statusCode===403);
+  const visible=store.getStatus(receipt.id,receipt.token);
+  assert.equal(visible.subject,'Не знаходить вулицю');
+  assert.equal(visible.queue,'2.1');
+  store.change(receipt.id,{priority:'high',internalNote:'Внутрішнє уточнення для адміністратора',reply:'Ми перевіримо довідник адрес.'});
+  const updated=store.getStatus(receipt.id,receipt.token);
+  assert.equal(updated.messages.length,1);
+  assert.equal(updated.messages[0].from,'admin');
+  assert.equal(JSON.stringify(updated).includes('Внутрішнє'),false);
+  assert.equal(JSON.stringify(updated).includes('accessHash'),false);
+  assert.equal(JSON.stringify(store.list()).includes(receipt.token),false);
+ }finally{cleanup()}
+});
+test('secure two-way messages persist and cannot be forged without token',()=>{
+ const {store,filePath,cleanup}=makeStore();try{
+  const {id,token}=store.submit(sample,'127');
+  assert.throws(()=>store.reply(id,'wrong','Додаткова інформація','127'),e=>e.statusCode===403);
+  store.reply(id,token,'Проблема на iPhone','127');
+  const reopened=createFeedbackStore({filePath});
+  assert.equal(reopened.getStatus(id,token).messages[0].text,'Проблема на iPhone');
+  assert.equal(reopened.getStatus(id,token).status,'in_progress');
+  assert.throws(()=>store.change(id,{priority:'urgent'}));
+  assert.throws(()=>store.change(id,{reply:'x'.repeat(1601)}));
+  for(let i=0;i<3;i++)store.reply(id,token,'Ще деталі номер '+i,'127');
+  assert.throws(()=>store.reply(id,token,'Ще одне повідомлення','127'),e=>e.statusCode===429);
+ }finally{cleanup()}
+});

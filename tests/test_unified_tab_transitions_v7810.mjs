@@ -30,8 +30,8 @@ test('Reduced motion and admin animation-off apply to all tab entrance effects',
 test('PWA version increments so iPhone caches include the unified transitions',()=>{
  const release=JSON.parse(read('release.json'));
  const html=read('index.html'),worker=read('sw.js');
- assert.equal(release.version,'7.8.10');
- assert.match(html,/name="svitlo-version" content="7\.8\.10"/);
- assert.match(worker,/svitlo-cherkasy-shell-v7\.8\.10-unified-tabs/);
+ assert.match(release.version,/^\d+\.\d+\.\d+$/);
+ assert.match(html,new RegExp('name="svitlo-version" content="'+release.version.replaceAll('.','\\.')+'"'));
+ assert.match(worker,new RegExp('svitlo-cherkasy-shell-v'+release.version.replaceAll('.','\\.')));
  assert.ok(worker.includes('"./style.css"'));
 });

@@ -298,9 +298,20 @@ const server=http.createServer(async(req,res)=>{
   item.count++;statusAttempts.set(ip,item);
   try{const data=await readPayload(req,800);const id=String(data.id||'').trim().toUpperCase();
     if(!/^SC-[0-9A-F]{10}$/.test(id)){response(res,400,{error:'Перевірте номер звернення.'});return}
-    response(res,200,feedback.getStatus(id));
+    response(res,200,feedback.getStatus(id,data.token));
   }catch(e){response(res,e.statusCode||400,{error:e.statusCode?e.message:'Не вдалося перевірити номер.'})}
   return;
+ }
+ if(req.url==='/api/ticket/reply'&&req.method==='POST'){
+   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+   try{
+    const data=await readPayload(req,3500);
+    const id=String(data.id||'').trim().toUpperCase();
+    if(!/^SC-[0-9A-F]{10}$/.test(id)){response(res,400,{error:'Перевірте номер звернення.'});return}
+    const ip=(String(req.headers['x-forwarded-for']||'').split(',')[0].trim()||req.socket.remoteAddress||'unknown').slice(0,80);
+    response(res,200,feedback.reply(id,data.token,data.message,ip));
+   }catch(e){response(res,e.statusCode||500,{error:e.statusCode?e.message:'Не вдалося надіслати відповідь.'})}
+   return;
  }
  if(req.url==='/api/feedback'){
   if(req.method!=='POST'){response(res,405,{error:'Method not allowed'});return}

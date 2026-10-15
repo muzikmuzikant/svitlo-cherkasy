@@ -75,7 +75,7 @@ test('sources display actual GitHub workflow statuses, not synthetic counters',(
 });
 test('release and PWA cache refreshed for history recovery',()=>{
  const meta=JSON.parse(read('release.json'));
- assert.match(meta.version,/^7\.8\.\d+$/);
+ assert.match(meta.version,/^\d+\.\d+\.\d+$/);
  assert.match(read('sw.js'),new RegExp('svitlo-cherkasy-shell-v'+meta.version.replaceAll('.','\\.')));
  assert.match(read('index.html'),new RegExp('name="svitlo-version" content="'+meta.version.replaceAll('.','\\.')+'"'));
  for(const file of ['admin-control.js','admin-command.js','site-mode.js','sw.js']){
