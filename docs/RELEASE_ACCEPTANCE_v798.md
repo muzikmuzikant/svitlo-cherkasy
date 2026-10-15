@@ -49,3 +49,19 @@
 4. Після зелених check runs і завершених блокерів злити PR із зафіксованим SHA; GitHub Pages і Railway можуть оновитися автоматично. Не перемикати source вручну.
 5. Перевірити `/health`, графіки, адмінку, повідомлення та оновлення Service Worker. Якщо відмовляє код, повернути попередній commit/деплой, не відновлюючи том зі старими даними без окремої перевірки.
 
+
+### Безкоштовна локальна резервна копія Railway volume
+
+Railway Backups (вбудовані знімки) потребують Pro, але CLI підтримує читання та завантаження файлів тому без цієї функції. До злиття PR потрібно **зробити й перевірити локальну копію** з `svitlo-cherkasy-volume`, не лише створити Git rollback branch.
+
+На власному ПК (Windows PowerShell, Node.js встановлений):
+
+```powershell
+npm i -g @railway/cli
+railway login
+railway volume files --volume 67434b57-8999-46d1-ac26-21d52b257363 list / --project 47d8f817-0c42-4308-a193-d0b9f54cb37d --environment 2e7ec7db-5158-4613-8fff-91d55bc1436b
+railway volume files --volume 67434b57-8999-46d1-ac26-21d52b257363 download / .\\svitlo-volume-backup-20261016 --project 47d8f817-0c42-4308-a193-d0b9f54cb37d --environment 2e7ec7db-5158-4613-8fff-91d55bc1436b
+```
+
+Переконатися, що папка створена, файли не порожні, копія збережена **поза Railway**. Це конфіденційні дані: НЕ комітити в GitHub, не надсилати у чат, не робити публічного посилання. За можливості зашифрувати локальну резервну копію. Завантаження не повинно міняти файли на томі. CLI і документація: https://docs.railway.com/cli/volume .
+
