@@ -30,7 +30,24 @@
   details.dataset.motionTarget=opening?'open':'closed';
   animateDetails(details,opening);
  });
- const closingDialogs=new WeakMap();
+ // Reveal asynchronously rendered advertising plans, donation methods and expense cards too.
+ if(marketing&&'MutationObserver'in window){
+  const watch=new MutationObserver(records=>{
+   const fresh=[];
+   for(const record of records)for(const element of record.addedNodes){
+    if(element.nodeType!==1)continue;
+    if(element.matches?.('.benefit,.format,.plan,.method,.goal,.expense,.contact'))fresh.push(element);
+    element.querySelectorAll?.('.benefit,.format,.plan,.method,.goal,.expense,.contact').forEach(x=>fresh.push(x));
+   }
+   for(const element of fresh){
+    if(element.classList.contains('motion-reveal'))continue;
+    element.classList.add('motion-reveal');
+    element.classList.add('motion-visible'); // newly fetched cards remain visible without awaiting scrolling
+   }
+  });
+  watch.observe(document.body,{childList:true,subtree:true});
+ }
+  const closingDialogs=new WeakMap();
  function closeDialog(dialog,callback){
   if(!dialog?.open)return;
   const finish=()=>{

@@ -27,9 +27,10 @@
  }
  function dismiss(){if(!isOpen)return;if(history.state?.svitloInternal){history.back()}else close()}
  function display(url,remember=true){const u=internal(url);if(!u)return;
+  const resumingClose=leaveTimer!==null;
   if(leaveTimer){clearTimeout(leaveTimer);leaveTimer=null}
   browser.classList.remove('svitlo-internal-leaving');
-  if(!isOpen){previousOverflow=document.documentElement.style.overflow;previousFocus=document.activeElement}
+  if(!isOpen&&!resumingClose){previousOverflow=document.documentElement.style.overflow;previousFocus=document.activeElement}
   isOpen=true;browser.hidden=false;document.documentElement.style.overflow='hidden';
   browser.classList.add('svitlo-internal-loading');
   name.textContent=labels[u.pathname.split('/').pop()]||'Світло Черкаси';

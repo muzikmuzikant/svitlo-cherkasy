@@ -49,3 +49,13 @@
  html:focus-within{scroll-behavior:auto!important}
  .motion-reveal{opacity:1!important;transform:none!important}
 }
+
+/* Admin view transitions are interruptible; tabs never have a cooldown. */
+@media(prefers-reduced-motion:no-preference){
+ #adminDashboard:not([hidden]) > [data-admin-panel]:not([hidden]){view-transition-name:svitlo-admin-panel}
+ ::view-transition-old(svitlo-admin-panel){animation:svitloAdminOld .21s cubic-bezier(.4,0,.8,.4) both}
+ ::view-transition-new(svitlo-admin-panel){animation:svitloAdminNew .33s cubic-bezier(.18,.9,.25,1) both}
+ ::view-transition-old(root),::view-transition-new(root){animation-duration:.16s}
+ @keyframes svitloAdminOld{to{opacity:0;transform:translate3d(-11px,0,0) scale(.989)}}
+ @keyframes svitloAdminNew{from{opacity:0;transform:translate3d(12px,0,0) scale(.99)}to{opacity:1;transform:none}}
+}
