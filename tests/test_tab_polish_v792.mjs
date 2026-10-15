@@ -76,10 +76,11 @@ test('Without an address the graph tab opens the address picker, not an empty sc
 test('The selected day caption is exactly the requested text for missing schedules',()=>{
  assert.match(app,/setText\('detailUpdated',pub\?`Опубліковано \$\{fmtStamp\(pub\.publishedAt\)\}`:'Світло весь день'\)/);
  assert.doesNotMatch(app,/detailUpdated'.{0,140}за замовчуванням/);
- assert.match(css,/opacity:0;transform:translate3d\(0,30px,0\)/);
+ assert.match(css,/@keyframes tabSettle\{from\{opacity:\.25;transform:translate3d\(28px,0,0\)/);
+ assert.match(css,/@keyframes tabSettleBackward\{from\{opacity:\.25;transform:translate3d\(-28px,0,0\)/);
 });
 
-test('Modern iOS animates both fixed-size viewport snapshots using View Transitions',()=>{
+test('Modern iOS animates both fixed-size viewport snapshots using View Transitions',async()=>{
  const view=setup({native:true});
  view.navigate('detail');
  assert.equal(view.context.active,'detail');
@@ -87,6 +88,7 @@ test('Modern iOS animates both fixed-size viewport snapshots using View Transiti
  assert.equal(view.pages.detail.hidden,false);
  assert.equal(view.pages.detail.classList.contains('tab-enter'),false);
  assert.equal(view.context.document.documentElement.dataset.tabDirection,'forward');
+ await new Promise(resolve=>setImmediate(resolve));
  view.navigate('home');
  assert.equal(view.context.document.documentElement.dataset.tabDirection,'backward');
 });
