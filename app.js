@@ -11,7 +11,7 @@ const ICON='<svg class="bolt" viewBox="0 0 20 24" aria-hidden="true"><path fill=
 const PIN='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0z"/><circle cx="12" cy="10" r="2.4"/></svg>';
 const safeJSON=(k,fallback)=>{try{return JSON.parse(localStorage.getItem(k)??'null')??fallback}catch{return fallback}};
 const legacy=safeJSON('svitlo-addresses-v3',safeJSON('svitlo-addresses-v2',[]));
-let addresses=safeJSON(STORE,Array.isArray(legacy)?legacy:[]), prefs=Object.assign({primaryId:null,off:true,on:true,changes:true,tomorrow:true,emergency:true,offMinutes:30,onMinutes:15,quietEnabled:false,quietFrom:'23:00',quietTo:'07:00',favorites:[],addressRules:{}},safeJSON(PREF,{}));
+let addresses=safeJSON(STORE,Array.isArray(legacy)?legacy:[]), prefs=Object.assign({primaryId:null,off:true,on:true,changes:true,tomorrow:true,emergency:true},safeJSON(PREF,{}));
 let previewQueue=null;
 let pushHealthLast=0,pushHealthBusy=null;
 let pushActive=('Notification' in window&&Notification.permission==='granted'&&localStorage.getItem(PUSH_CONSENT)==='yes'), emergency={events:[],lastChecked:null},overrides={schedules:{days:[]},addresses:{},emergency:{events:[]}},data={days:[],changes:[]},index={keys:{},streets:{},localities:{}},active='home',daySelected=null,dayStripStart=null,editId=null,suggestion=null,toastTimeout=null,lastPub=null,pushConfig=null,swRegistration=null,notified=new Set(safeJSON(SEEN,[])),lastRefresh=0,hasCheckedOnce=false,lastDownloadAt=null,lastSyncFailed=false,refreshInFlight=null;
@@ -20,6 +20,12 @@ const byId=id=>addresses.find(x=>x.id===id);
 const primary=()=>byId(prefs.primaryId)||addresses[0]||null;
 const saveAddresses=()=>localStorage.setItem(STORE,JSON.stringify(addresses));
 const savePrefs=()=>localStorage.setItem(PREF,JSON.stringify(prefs));
+ // Drop obsolete 7.9.8 user preferences, including those already saved on Beta devices.
+ const retired798Prefs=['favorites','offMinutes','onMinutes','quietEnabled','quietFrom','quietTo','addressRules'];
+ if(retired798Prefs.some(name=>Object.prototype.hasOwnProperty.call(prefs,name))){
+  for(const name of retired798Prefs)delete prefs[name];
+  savePrefs();
+ }
 const id=()=>crypto.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;
 function norm(s){return String(s||'').toLocaleLowerCase('uk-UA').replace(/[’ʼ`]/g,"'").replace(/^(вул(?:иця)?\.?|пров(?:улок|\.)?|просп(?:ект)?\.?|пр-т\.?|б-р\.?|бульвар|узвіз)\s+/i,'').replace(/[^\p{L}\p{N}/]+/gu,'')}
 function normTown(s){
@@ -484,51 +490,7 @@ function updatePushInvite(){
  action.firstChild.textContent=denied?'Відкрити налаштування сповіщень ':'Увімкнути сповіщення ';
  action.onclick=denied?()=>navigate('settings'):()=>enableNotifications();
 }
-function inQuietHours(){
- if(!prefs.quietEnabled)return false;
- const parse=v=>/^([01]\d|2[0-3]):[0-5]\d$/.test(String(v))?Number(v.slice(0,2))*60+Number(v.slice(3)):null;
- const start=parse(prefs.quietFrom),end=parse(prefs.quietTo),at=nowMinutes();
- return start===null||end===null||start===end?false:start<end?at>=start&&at<end:at>=start||at<end;
-}
-function renderFavorites(){
- const el=$('favoriteQueues');if(!el)return;el.replaceChildren();
- const known=(Array.isArray(prefs.favorites)?prefs.favorites:[]).filter(q=>QUEUES.includes(q)).slice(0,8);
- for(const q of known){const div=document.createElement('div');div.className='favorite-chip';
- const open=document.createElement('button');open.type='button';open.textContent='Підчерга '+q;
- open.onclick=()=>{previewQueue=q;navigate('detail')};
- const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Відкріпити підчергу '+q);
- remove.onclick=()=>{prefs.favorites=known.filter(v=>v!==q);savePrefs();renderFavorites()};div.append(open,remove);el.append(div)}
-}
-function renderAddressRules(){
- const host=$('addressNotificationRules');if(!host)return;host.replaceChildren();
- if(!addresses.length){host.append(el('p','empty-places','Додайте адресу, щоб налаштувати її сповіщення.'));return}
- const choice=[5,10,15,30,60];
- prefs.addressRules=prefs.addressRules&&typeof prefs.addressRules==='object'&&!Array.isArray(prefs.addressRules)?prefs.addressRules:{};
- for(const a of addresses.slice(0,12)){
-  if(!a.queue)continue;
-  const row=el('section','per-address-row');row.append(el('strong','',label(a)+' · '+a.queue));
-  const rule=prefs.addressRules[a.id]||{};
-  const toggles=el('div','per-address-checks');
-  for(const [key,title] of [['off','Перед відключенням'],['on','Перед відновленням'],['changes','Зміни графіка']]){
-   const labelNode=el('label','',title),box=document.createElement('input');box.type='checkbox';box.checked=rule[key]??prefs[key];labelNode.prepend(box);
-   box.onchange=()=>{const current=prefs.addressRules[a.id]||{};prefs.addressRules[a.id]={...current,[key]:box.checked};savePrefs();updatePushSubscription().catch(console.warn)};
-   toggles.append(labelNode)
-  }row.append(toggles);
-  const times=el('div','per-address-times');
-  for(const [key,title,defaultValue] of [['offMinutes','Відключення',30],['onMinutes','Відновлення',15]]){
-   const labelNode=el('label','',title),select=document.createElement('select');
-   for(const value of choice)select.add(new Option(value+' хв',value));
-   select.value=String(rule[key]||prefs[key]||defaultValue);
-   select.onchange=()=>{const current=prefs.addressRules[a.id]||{};prefs.addressRules[a.id]={...current,[key]:Number(select.value)};savePrefs();updatePushSubscription().catch(console.warn)};
-   labelNode.append(select);times.append(labelNode)
-  }row.append(times);host.append(row)
- }
-}
-function renderSettings(){for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).checked=!!prefs[key];for(const key of ['offMinutes','onMinutes']){const el=$(key);if(el)el.value=String(key==='offMinutes'?prefs.offMinutes||30:prefs.onMinutes||15)}
- for(const key of ['quietEnabled','quietFrom','quietTo'])if($(key))$(key)[key==='quietEnabled'?'checked':'value']=prefs[key];
- if($('offlineDetails'))$('offlineDetails').textContent=(navigator.onLine?'Інтернет доступний. ':'Без інтернету. ')+(data.lastChecked?'Остання перевірка графіка: '+new Date(data.lastChecked).toLocaleString('uk-UA',{timeZone:TZ})+'. ':'Графік ще не перевірено. ')+(data.days?.length?'У застосунку є збережений розклад.':'Поки немає збереженого розкладу.');
- renderFavorites();renderAddressRules();
- const connected=!!pushConfig?.apiBase&&!!pushConfig?.publicKey;setText('pushHeadline','Сповіщення');setText('pushDescription',connected?'Отримуйте нагадування про відключення та зміни графіків, навіть коли застосунок закритий.':'Наразі нагадування доступні тільки під час використання застосунку.');setText('enableNotifications',connected?'Увімкнути сповіщення':'Дозволити нагадування');$('disableNotifications').hidden=!connected;}
+function renderSettings(){for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).checked=!!prefs[key];const connected=!!pushConfig?.apiBase&&!!pushConfig?.publicKey;setText('pushHeadline','Сповіщення');setText('pushDescription',connected?'Отримуйте нагадування про відключення та зміни графіків, навіть коли застосунок закритий.':'Наразі нагадування доступні тільки під час використання застосунку.');setText('enableNotifications',connected?'Увімкнути сповіщення':'Дозволити нагадування');$('disableNotifications').hidden=!connected;}
 function fillQueueSelect(){const root=$('manualQueue');root.replaceChildren(new Option('Оберіть підчергу',''),...QUEUES.map(q=>new Option(q,q)))}
 function town(){return $('settlement').value==='Інше'?$('customSettlement').value.trim():$('settlement').value}
 function localIndex(){const k=normTown(town());return k===normTown('Черкаси')?{keys:index.keys||{},streets:index.streets||{},streetQueues:index.streetQueues||{}}:index.localities?.[k]||{keys:{},streets:{},streetQueues:{}}}
@@ -796,7 +758,6 @@ function checkNotifications(){
  // Only verified, recently checked schedules can produce a new reminder.
  const nativeAllowed='Notification' in window&&Notification.permission==='granted';
  if(nativeAllowed&&prefs.emergency)notifyEmergencyEvent();
- if(inQuietHours())return;
  const a=primary();
  if(!a?.queue)return;
  const date=today(),m=nowMinutes(),verifiedAt=Date.parse(data.lastChecked||'');
@@ -804,7 +765,7 @@ function checkNotifications(){
    Date.now()-verifiedAt<=55*60_000&&data.reviewPending!==true;
  if(fresh){
   const current=timeline(date,a.queue),nextDate=shiftDay(date,1),tomorrow=timeline(nextDate,a.queue);
-  for(const [type,offset,desired] of [['off',prefs.offMinutes||30,1],['on',prefs.onMinutes||15,0]]){
+  for(const [type,offset,desired] of [['off',30,1],['on',15,0]]){
    if(!prefs[type])continue;
    // Opened PWAs can recover a delayed reminder before the actual event.
    // Never show a reminder after the published transition has happened.
@@ -938,16 +899,7 @@ async function updatePushSubscription(){
   if(old.length!==key.length||old.some((v,i)=>v!==key[i])){await sub.unsubscribe();sub=null}
  }
  if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
- const basePrefs={off:prefs.off,on:prefs.on,changes:prefs.changes,tomorrow:prefs.tomorrow,emergency:prefs.emergency,
-  offMinutes:prefs.offMinutes||30,onMinutes:prefs.onMinutes||15,quietEnabled:!!prefs.quietEnabled,quietFrom:prefs.quietFrom,quietTo:prefs.quietTo};
- const grouped=new Set(),rules=[];
- for(const address of addresses){
-  if(!address.queue||grouped.has(address.queue))continue;grouped.add(address.queue);
-  const override=prefs.addressRules?.[address.id]||{};
-  rules.push({queue:address.queue,settlement:address.settlement||'',preferences:{...basePrefs,...override}})
-  if(rules.length>=8)break
- }
- const payload={subscription:sub.toJSON(),queue:primary().queue,settlement:primary().settlement||'',preferences:basePrefs,rules};
+ const payload={subscription:sub.toJSON(),queue:primary().queue,settlement:primary().settlement||'',preferences:{off:prefs.off,on:prefs.on,changes:prefs.changes,tomorrow:prefs.tomorrow,emergency:prefs.emergency}};
  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),12000);
  try{
   const response=await fetch(pushConfig.apiBase.replace(/\/$/,'')+'/api/subscribe',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload),signal:controller.signal});
@@ -1006,12 +958,7 @@ $('closeSheet').onclick=()=>closeSheet($('addressSheet'));$('closePlaces').oncli
 for(const dialog of [$('addressSheet'),$('placesSheet')])dialog.addEventListener('close',unlockSheet);
 $('settlement').onchange=()=>{$('manualQueue').value='';$('customSettlement').hidden=$('settlement').value!=='Інше';suggestion=null;suggestions();checkLookup()};$('customSettlement').oninput=()=>{$('manualQueue').value='';checkLookup()};$('street').oninput=()=>{$('manualQueue').value='';suggestion=null;suggestions();checkLookup()};$('house').onfocus=()=>{$('streetSuggestions').hidden=true};$('house').oninput=()=>{$('streetSuggestions').hidden=true;checkLookup()};$('manualQueue').onchange=checkLookup;$('addressForm').onsubmit=saveAddress;$('deleteAddress').onclick=deleteAddress;$('goOfficial').onclick=officialOpen;
 for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).onchange=e=>{prefs[key]=e.target.checked;savePrefs();updatePushSubscription().catch(console.warn)};
-for(const key of ['offMinutes','onMinutes']){const el=$(key);if(!el)continue;el.replaceChildren(...[5,10,15,30,60].map(n=>new Option('За '+n+' хв',n)));
- el.onchange=()=>{prefs[key]=Number(el.value);savePrefs();updatePushSubscription().catch(console.warn)}}
- for(const key of ['quietEnabled','quietFrom','quietTo']){const el=$(key);if(!el)continue;el.onchange=()=>{prefs[key]=key==='quietEnabled'?el.checked:el.value;savePrefs();updatePushSubscription().catch(console.warn)}}
- const favorites=$('favoriteSelect');if(favorites){favorites.replaceChildren(...QUEUES.map(q=>new Option('Підчерга '+q,q)));
- $('favoriteAdd').onclick=()=>{const q=favorites.value;const list=Array.isArray(prefs.favorites)?prefs.favorites:[];if(q&&!list.includes(q)){prefs.favorites=[...list,q].slice(0,8);savePrefs();renderFavorites()}}}
- $('enableNotifications').onclick=enableNotifications;$('disableNotifications').onclick=disableNotifications;
+$('enableNotifications').onclick=enableNotifications;$('disableNotifications').onclick=disableNotifications;
 fillQueueSelect();
  const requestedScreen=new URL(location.href).searchParams.get('screen');
  let restore=null;

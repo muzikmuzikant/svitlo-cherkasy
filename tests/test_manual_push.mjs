@@ -95,18 +95,3 @@ test('admin login issues an expiring session; logout revokes it',async()=>{
     assert.equal((await call('/api/admin/status',{token:'local-test-only-strong-password'})).status,401);
   }finally{await new Promise(resolve=>server.close(resolve));}
 });
-
-
-test('multi-address Push subscriber matches secondary queues without double-counting',()=>{
- const endpoint='https://web.push.apple.com/multi';
- const record={subscription:{endpoint},queue:'1.1',settlement:'Черкаси',rules:[
-  {queue:'1.1',settlement:'Черкаси',preferences:{off:true}},
-  {queue:'2.2',settlement:'Слобода',preferences:{on:true}}
- ]};
- const pool={one:record};
- assert.equal(selectRecipients(pool,{queue:'1.1'}).length,1);
- assert.equal(selectRecipients(pool,{queue:'2.2'}).length,1);
- assert.equal(selectRecipients(pool,{queue:'2.2',settlement:'Слобода'}).length,1);
- assert.equal(selectRecipients(pool,{queue:'2.2',settlement:'Черкаси'}).length,0);
- assert.equal(selectRecipients(pool,{queue:'all'}).length,1);
-});
