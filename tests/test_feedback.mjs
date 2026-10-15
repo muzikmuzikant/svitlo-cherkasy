@@ -85,3 +85,21 @@ test('secure two-way messages persist and cannot be forged without token',()=>{
   assert.throws(()=>store.reply(id,token,'Ще одне повідомлення','127'),e=>e.statusCode===429);
  }finally{cleanup()}
 });
+
+
+test('configurable support categories enforce custom text and select fields',()=>{
+ const temp=fs.mkdtempSync(path.join(os.tmpdir(),'svitlo-feedback-config-'));
+ try{
+  const config=createFeedbackStore({filePath:path.join(temp,'feedback.json')});
+  config.setCategories([{id:'energy',title:'Електропостачання',hint:'Уточніть дату',enabled:true,fields:[
+   {id:'date',label:'Дата події',type:'text',required:true,options:[]},
+   {id:'severity',label:'Рівень',type:'select',required:true,options:['Звичайний','Важливий']}
+  ]}]);
+  assert.equal(config.getCategories()[0].id,'energy');
+  assert.throws(()=>config.submit({topic:'energy',message:'Проблема із графіками',extra:{severity:'Звичайний'}},'127.0.0.2'),/Заповніть поле/);
+  assert.throws(()=>config.submit({topic:'energy',message:'Проблема із графіками',extra:{date:'15.10.2026',severity:'недопустимо'}},'127.0.0.3'),/Невірний варіант/);
+  const result=config.submit({topic:'energy',message:'Проблема із графіками',extra:{date:'15.10.2026',severity:'Важливий'}},'127.0.0.4');
+  assert.ok(result.id.startsWith('SC-'));
+  assert.equal(config.list().items[0].extra.date.value,'15.10.2026');
+ }finally{fs.rmSync(temp,{recursive:true,force:true})}
+});
