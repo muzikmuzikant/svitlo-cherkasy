@@ -32,6 +32,7 @@
  accept.onclick=()=>{try{localStorage.setItem(KEY,revision)}catch{}lastRevision=revision;dialog.close()};
  later.onclick=()=>{lastRevision=revision;dialog.close()};
  dialog.addEventListener('cancel',()=>{lastRevision=revision});
+ document.getElementById('betaConsentDialog')?.addEventListener('close',()=>setTimeout(check,550));
  setTimeout(check,10500);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(check,2500)});
 })();

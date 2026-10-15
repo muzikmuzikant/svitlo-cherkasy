@@ -172,3 +172,21 @@ test('7.9.10: full screen advertising page and first run consent have shipped as
  const build=fs.readFileSync(new URL('scripts/build_pages.py',root),'utf8');
  assert.ok(build.includes("'ad-detail.html'"));
 });
+
+
+test('7.9.8: badges and supported donation methods expose only enabled configured values',()=>{
+ const {store,dir}=fresh();const settings=store.dashboard().settings;
+ settings.packages=[{title:'Доступний',price:420,durationDays:14,badge:'Вигідно',badgeBackground:'#e5f1ff',badgeForeground:'#1456b5',featured:true,features:['Основна картка','Сторінка реклами']}];
+ settings.support={...settings.support,enabled:true,methods:[
+ {kind:'monobank',title:'Банка',url:'https://example.com/jar',enabled:true},
+ {kind:'iban',title:'Переказ',details:'UA000000000000000000000000000',enabled:true},
+ {kind:'other',title:'Вимкнено',url:'https://example.com/private',enabled:false}
+ ],expenses:[{title:'Сервер',amount:300,date:'2026-10-15',description:'Підписка',public:true},
+ {title:'Особисте',amount:200,date:'2026-10-15',public:false}]};
+ store.update(settings);
+ const a=store.publicState();assert.equal(a.packages[0].badge,'Вигідно');
+ assert.equal(a.packages[0].featured,true);assert.deepEqual(a.packages[0].features,['Основна картка','Сторінка реклами']);
+ assert.equal(a.support.enabled,true);assert.equal(a.support.methods.length,2);assert.equal(a.support.expenses.length,1);
+ assert.ok(!JSON.stringify(a).includes('https://example.com/private'));
+ fs.rmSync(dir,{recursive:true,force:true});
+});
