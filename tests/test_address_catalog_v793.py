@@ -47,3 +47,18 @@ def test_third_import_never_reclassifies_an_archived_label_as_freshly_verified()
     assert set(first['localities']['слобода']['streets']) <= set(saved['streets'])
     assert len(saved.get('archiveOnlyStreets',[])) == len(saved['streets'])
     assert saved['streetQueues'] == {}
+
+
+def test_legacy_false_towns_are_removed_from_historical_catalogue():
+    live={'keys':{},'streets':{},'streetQueues':{},'stats':{},'localities':{
+        'слобода':{'keys':{},'streets':{'вулиця|соборна':'Вулиця Соборна'},
+                   'streetQueues':{'вулиця|соборна':['4.1']}}
+    }}
+    previous={'localities':{
+        'леонтовича':{'keys':{},'streets':{'вулиця|вигадана':'Вулиця Вигадана'},'streetQueues':{}},
+        'залізняка':{'keys':{},'streets':{'вулиця|примарна':'Вулиця Примарна'},'streetQueues':{}},
+        'слобода':{'keys':{},'streets':{'вулиця|різдвяна':'Вулиця Різдвяна'},'streetQueues':{}}
+    }}
+    preserve_street_catalogue(live,previous,{})
+    assert not {'леонтовича','залізняка'} & live['localities'].keys()
+    assert 'вулиця|різдвяна' in live['localities']['слобода']['streets']
