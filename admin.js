@@ -23,6 +23,7 @@ async function api(route,opts={}){
  if(!response.ok)throw Error(data.error||'HTTP '+response.status);
  return data;
 }
+window.svitloAdminApi=(route,opts)=>api(route,opts);
 async function load(){
  const kind=$('kind').value;
  try{
@@ -60,7 +61,7 @@ $('loginForm').onsubmit=async event=>{
  const enteredCode=$('otp')?.value.trim()||'';
  $('connect').disabled=true;$('connect').textContent='Перевіряємо пароль…';$('loginError').textContent='';
  try{
-   const response=await fetch(url+'/api/admin/login',{method:'POST',cache:'no-store',headers:{'content-type':'application/json'},body:JSON.stringify({password:enteredPassword,code:enteredCode})});
+   const response=await fetch(url+'/api/admin/login',{method:'POST',cache:'no-store',headers:{'content-type':'application/json'},body:JSON.stringify({username:$('adminUsername').value.trim(),password:enteredPassword,code:enteredCode})});
    const result=await response.json().catch(()=>({}));
    if(!response.ok||!result.token)throw Error(result.error||'Помилка входу: HTTP '+response.status);
    server=url;sessionToken=result.token;adminRole=result.role||'owner';document.body.dataset.adminRole=adminRole;
