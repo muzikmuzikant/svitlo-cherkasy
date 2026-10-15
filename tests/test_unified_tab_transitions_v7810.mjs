@@ -15,12 +15,14 @@ test('All four tabs use a short page reveal without cascading block animations',
  assert.doesNotMatch(css,/\.screen:not\(\[hidden\]\) > :nth-child\(n\+4\)/);
  assert.doesNotMatch(css,/animation:rise \.52s/);
  assert.match(app,/if\(name===active\)\{/);
- assert.match(app,/Prepare content before reveal/);
+ assert.match(app,/Prepare content before capturing the entering screen/);
  assert.match(app,/section\.classList\.remove\('tab-enter'\)/);
  assert.match(app,/if\(n===name&&useFallback\)section\.classList\.add\('tab-enter'\)/);
  assert.match(app,/document\.startViewTransition\(\(\)=>update\(false\)\)/);
- assert.match(css,/::view-transition-old\(svitlo-screen\)/);
- assert.match(css,/::view-transition-new\(svitlo-screen\)/);
+ assert.match(css,/::view-transition-old\(root\)/);
+ assert.match(css,/::view-transition-new\(root\)/);
+ assert.match(css,/\.bottom-nav\{view-transition-name:svitlo-navigation\}/);
+ assert.doesNotMatch(css,/view-transition-name:svitlo-screen/);
  assert.match(css,/@keyframes tabSettle\{from\{opacity:0;transform:translate3d\(0,30px,0\)/);
 });
 

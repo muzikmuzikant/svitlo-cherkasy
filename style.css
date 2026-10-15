@@ -515,47 +515,59 @@ html:not([data-app-mode="standalone"]) #appBootScreen,.app-boot-screen[hidden]{d
 .archive-street-tag{font-size:10px;color:#986c2d;font-weight:550;white-space:nowrap}
 
 
-/* iOS Safari: animate the ACTUAL outgoing and incoming screens, not a 3px fade. */
-@supports (view-transition-name: svitlo-screen) {
- .screen:not([hidden]){view-transition-name:svitlo-screen}
+/* Stable iOS tab transitions: two fixed-VIEWPORT snapshots, never variable-height
+   section screenshots. The bottom bar is excluded so it stays anchored. */
+@supports (view-transition-name: svitlo-navigation){
+ .bottom-nav{view-transition-name:svitlo-navigation}
 }
-@media (prefers-reduced-motion: no-preference) {
- html:not(.feature-off-animations)::view-transition-old(root),
- html:not(.feature-off-animations)::view-transition-new(root){animation:none}
- html:not(.feature-off-animations)::view-transition-group(svitlo-screen){
-  animation-duration:.44s;animation-timing-function:cubic-bezier(.22,1,.36,1)
+@media (prefers-reduced-motion: no-preference){
+ html:not(.feature-off-animations)::view-transition-group(root){
+  animation:none!important
  }
- html:not(.feature-off-animations)::view-transition-old(svitlo-screen){
-  animation:svitloScreenOut .33s cubic-bezier(.4,0,.85,.35) both
+ html:not(.feature-off-animations)::view-transition-old(root){
+  animation:svitloViewportOut .46s cubic-bezier(.22,.8,.27,1) both
  }
- html:not(.feature-off-animations)::view-transition-new(svitlo-screen){
-  animation:svitloScreenIn .44s cubic-bezier(.16,1,.3,1) both
+ html:not(.feature-off-animations)::view-transition-new(root){
+  animation:svitloViewportIn .46s cubic-bezier(.18,.78,.2,1) both
  }
- html:not(.feature-off-animations)[data-tab-direction="backward"]::view-transition-old(svitlo-screen){
-  animation-name:svitloScreenOutBackward
+ html:not(.feature-off-animations)[data-tab-direction="backward"]::view-transition-old(root){
+  animation-name:svitloViewportOutBackward
  }
- html:not(.feature-off-animations)[data-tab-direction="backward"]::view-transition-new(svitlo-screen){
-  animation-name:svitloScreenInBackward
+ html:not(.feature-off-animations)[data-tab-direction="backward"]::view-transition-new(root){
+  animation-name:svitloViewportInBackward
  }
+ html:not(.feature-off-animations)::view-transition-group(svitlo-navigation),
+ html:not(.feature-off-animations)::view-transition-old(svitlo-navigation),
+ html:not(.feature-off-animations)::view-transition-new(svitlo-navigation){
+  animation:none!important
+ }
+ html:not(.feature-off-animations)::view-transition-old(svitlo-navigation){opacity:0}
+ html:not(.feature-off-animations)::view-transition-new(svitlo-navigation){opacity:1}
  .bottom-nav .nav-item.active::before{animation:navFocusPop .34s cubic-bezier(.2,1,.3,1) both}
 }
-@keyframes svitloScreenOut{
- to{opacity:0;transform:translate3d(-36px,-7px,0) scale(.965);filter:blur(3px)}
+/* Equal 460ms start/end positions keep the final screenshot pixel-aligned
+   with the already-updated page. No size or group geometry interpolation. */
+@keyframes svitloViewportOut{
+ from{opacity:1;transform:translate3d(0,0,0) scale(1)}
+ to{opacity:0;transform:translate3d(-54px,0,0) scale(.985)}
 }
-@keyframes svitloScreenIn{
- from{opacity:0;transform:translate3d(46px,12px,0) scale(.982);filter:blur(4px)}
- to{opacity:1;transform:translate3d(0,0,0) scale(1);filter:blur(0)}
+@keyframes svitloViewportIn{
+ from{opacity:.28;transform:translate3d(62px,0,0) scale(.985)}
+ to{opacity:1;transform:translate3d(0,0,0) scale(1)}
 }
-@keyframes svitloScreenOutBackward{
- to{opacity:0;transform:translate3d(36px,-7px,0) scale(.965);filter:blur(3px)}
+@keyframes svitloViewportOutBackward{
+ from{opacity:1;transform:translate3d(0,0,0) scale(1)}
+ to{opacity:0;transform:translate3d(54px,0,0) scale(.985)}
 }
-@keyframes svitloScreenInBackward{
- from{opacity:0;transform:translate3d(-46px,12px,0) scale(.982);filter:blur(4px)}
- to{opacity:1;transform:translate3d(0,0,0) scale(1);filter:blur(0)}
+@keyframes svitloViewportInBackward{
+ from{opacity:.28;transform:translate3d(-62px,0,0) scale(.985)}
+ to{opacity:1;transform:translate3d(0,0,0) scale(1)}
 }
 @media(prefers-reduced-motion:reduce){
- .screen:not([hidden]){view-transition-name:none!important}
+ .bottom-nav{view-transition-name:none!important}
  ::view-transition-old(root),::view-transition-new(root),
- ::view-transition-old(svitlo-screen),::view-transition-new(svitlo-screen){animation:none!important}
+ ::view-transition-old(svitlo-navigation),::view-transition-new(svitlo-navigation){
+  animation:none!important
+ }
 }
-html.feature-off-animations .screen:not([hidden]){view-transition-name:none!important}
+html.feature-off-animations .bottom-nav{view-transition-name:none!important}
