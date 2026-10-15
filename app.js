@@ -20,6 +20,12 @@ const byId=id=>addresses.find(x=>x.id===id);
 const primary=()=>byId(prefs.primaryId)||addresses[0]||null;
 const saveAddresses=()=>localStorage.setItem(STORE,JSON.stringify(addresses));
 const savePrefs=()=>localStorage.setItem(PREF,JSON.stringify(prefs));
+ // Drop obsolete 7.9.8 user preferences, including those already saved on Beta devices.
+ const retired798Prefs=['favorites','offMinutes','onMinutes','quietEnabled','quietFrom','quietTo','addressRules'];
+ if(retired798Prefs.some(name=>Object.prototype.hasOwnProperty.call(prefs,name))){
+  for(const name of retired798Prefs)delete prefs[name];
+  savePrefs();
+ }
 const id=()=>crypto.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;
 function norm(s){return String(s||'').toLocaleLowerCase('uk-UA').replace(/[’ʼ`]/g,"'").replace(/^(вул(?:иця)?\.?|пров(?:улок|\.)?|просп(?:ект)?\.?|пр-т\.?|б-р\.?|бульвар|узвіз)\s+/i,'').replace(/[^\p{L}\p{N}/]+/gu,'')}
 function normTown(s){
@@ -176,11 +182,12 @@ function renderFreshness(){
    :hasTime
      ?` Публікації оператора востаннє перевіряли ${fmtStamp(data.lastChecked)}. Новіші зміни можуть бути відсутні.`
      :' Не вдалося визначити час останньої перевірки публікацій.');
- const link=el('a','', 'Перевірити в оператора ↗');
+ const link=el('a','', 'Перевірити в оператора 🔗');
  link.href=OFFICIAL;link.target='_blank';link.rel='noopener noreferrer';
  node.append(title,message,link);
 }
 function renderHome(){
+ try{window.SvitloTelemetry?.sampleSelected(primary())}catch{}
  renderEmergency();renderFreshness();const a=primary(),date=today(),m=nowMinutes();
  setText('primaryName',label(a));setText('primarySub',a?`${a.settlement||'Черкаси'} · ${a.queue?'підчерга '+a.queue:'підчергу не визначено'}`:'Черкаси або села району');
  const schedule=a?.queue?currentDay(date):null;
@@ -236,7 +243,7 @@ function renderQuickPlaces(){
  host.replaceChildren();
  if(!addresses.length){host.append(el('span','quick-place-empty','Додайте адресу, щоб перемикатися одним дотиком'));return}
  [...addresses].sort((a,b)=>Number(!!b.favorite)-Number(!!a.favorite)).forEach(item=>{
-  const button=el('button','quick-place'+(primary()?.id===item.id?' selected':''),(item.favorite?'★  ':'')+label(item));
+  const button=el('button','quick-place'+(primary()?.id===item.id?' selected':''),(item.favorite?'⭐  ':'')+label(item));
   button.type='button';button.dataset.queue=item.queue||'';
   button.setAttribute('aria-pressed',String(primary()?.id===item.id));
   button.onclick=()=>{
@@ -339,7 +346,7 @@ async function shareSchedule(date,{copy=false}={}){
   header.addColorStop(0,'#102e5c');header.addColorStop(.55,'#1b4d85');header.addColorStop(1,'#337bc6');
   round(margin,66,W-margin*2,348,38,header);
   round(101,100,70,70,21,'#ffffff24');
-  line('ϟ',136,153,'700 53px system-ui','#ffffff','center');
+  line('⚡',136,153,'700 53px system-ui','#ffffff','center');
   line('СВІТЛО ЧЕРКАСИ',197,127,'700 28px system-ui','#b6d8ff');
   line('МІЙ ГРАФІК ВІДКЛЮЧЕНЬ',197,163,'650 17px system-ui','#c9e1ff');
   line(formatDate(date,{weekday:'long',day:'numeric',month:'long'}),104,252,'750 42px system-ui','#ffffff');
@@ -389,82 +396,91 @@ async function shareSchedule(date,{copy=false}={}){
  }catch(error){if(error?.name==='AbortError')return;console.warn('Share schedule:',error);flash('Не вдалося поділитися графіком')}
 }
 function renderBar(a){const bar=$('overviewBar');bar.replaceChildren();if(!a){const b=el('span','bar-segment unknown');b.style.flex='1';bar.append(b);return}let start=0,v=a[0];for(let i=1;i<=1440;i++){if(i===1440||a[i]!==v){const seg=el('span','bar-segment '+(v===1?'off':v===0?'on':'unknown'));seg.style.flex=String(i-start);seg.title=`${clock(start)}–${clock(i)} · ${v===1?'відключення':v===0?'світло':'немає даних'}`;bar.append(seg);start=i;v=a[i]}}const line=el('span','bar-now');line.style.left=(nowMinutes()/1440*100)+'%';bar.append(line)}
+// Latest tap wins. Previous WAAPI animations are interrupted at their actual
+// visual position rather than rewinding, and clicks are never rate-limited.
+let tabMotion=null;
+const TAB_MOTION_MS=460;
 function navigate(name){
- if(!['home','detail','updates','settings'].includes(name))return;
+ const names=['home','detail','updates','settings'];
+ if(!names.includes(name))return;
  if(name==='detail'&&!primary()&&!previewQueue){openAddressSheet();return}
- // Do not interrupt an active View Transition: on iOS the interrupted
- // snapshot can fall back to the vertical section animation.
- // A repeat tap cancels an older queued destination; a different tab wins.
- if(navigate.runningTransition){
-  navigate.queuedName=name===navigate.pendingName?null:name;
-  return;
- }
- if(name===active){
-  if(name==='detail')renderDetail();
-  else if(name==='updates')renderUpdates();
-  else if(name==='settings')renderSettings();
-  else renderHome();
-  return;
- }
+ if(name===active)return;
+ const previous=active;
  if(name!=='detail')previewQueue=null;
  try{sessionStorage.setItem(SCREEN_RETURN,name)}catch{}
- // Prepare content before capturing the entering screen.
  if(name==='detail'){daySelected=today();dayStripStart=today();renderDetail()}
  else if(name==='updates')renderUpdates();
  else if(name==='settings')renderSettings();
  else renderHome();
- const allowMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches!==true &&
+ const direction=names.indexOf(name)>=names.indexOf(previous)?1:-1;
+ document.documentElement.dataset.tabDirection=direction>0?'forward':'backward';
+ const previousSection=$(previous),nextSection=$(name);
+ const animate=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches!==true&&
   !document.documentElement.classList.contains('feature-off-animations');
- const screenNames=['home','detail','updates','settings'];
- const previous=active;
- const token=(navigate.transitionSerial||0)+1;
- navigate.transitionSerial=token;
- const update=useFallback=>{
-  if(token!==navigate.transitionSerial)return; // Older asynchronous callback.
-  // iOS must NOT perform smooth document scrolling while screenshots move.
-  // A smooth scroll can continue after the transition and create an end snap.
-  const scrollStyle=document.documentElement.style;
-  const previousBehavior=scrollStyle?.scrollBehavior;
-  if(scrollStyle)scrollStyle.scrollBehavior='auto';
-  try{window.scrollTo(0,0)}
-  finally{if(scrollStyle)scrollStyle.scrollBehavior=previousBehavior||''}
-  active=name;
-  for(const n of screenNames){
-   const section=$(n);
-   section.classList.remove('tab-enter');
-   if(n===name&&useFallback)section.classList.add('tab-enter');
-   section.hidden=n!==name;
+ // Sample current pixels BEFORE cancelling an unfinished transition.
+ const previousStyle=window.getComputedStyle?.(previousSection);
+ const currentTransform=previousStyle?.transform&&previousStyle.transform!=='none'?previousStyle.transform:'translate3d(0,0,0)';
+ const currentOpacity=Number(previousStyle?.opacity)||1;
+ // When quickly returning to the tab we were just leaving, reuse its actual
+ // outgoing visual position instead of teleporting it to a generic start.
+ const returningToOutgoing=tabMotion?.from===nextSection;
+ const returnStyle=returningToOutgoing?window.getComputedStyle?.(nextSection):null;
+ const returnTransform=returnStyle?.transform&&returnStyle.transform!=='none'?returnStyle.transform:'translate3d(0,0,0)';
+ const returnOpacity=Number(returnStyle?.opacity)||1;
+ if(tabMotion){
+  tabMotion.incoming?.cancel();tabMotion.outgoing?.cancel();
+  if(tabMotion.from){tabMotion.from.hidden=true;tabMotion.from.style.cssText=''}
+  if(tabMotion.to){tabMotion.to.style.cssText=''}
+  tabMotion=null;
+ }
+ const root=document.documentElement,scrollBehavior=root.style.scrollBehavior;
+ root.style.scrollBehavior='auto';
+ try{window.scrollTo(0,0)}finally{root.style.scrollBehavior=scrollBehavior||''}
+ active=name;
+ for(const id of names){
+  const node=$(id);node.classList.remove('tab-enter');
+  node.hidden=id!==name&&id!==previous;
+ }
+ // Keep the old screen in a temporary, noninteractive layer until it fades out.
+ // Only transform/opacity are animated (GPU-friendly on Android and iOS).
+ const nav=document.querySelector('.bottom-nav');
+ if(nav)nav.style.setProperty('--tab-offset','calc('+(names.indexOf(name)*100)+'% + '+(names.indexOf(name)*3)+'px)');
+ document.querySelectorAll('[data-go]').forEach(item=>{
+  if(item.classList.contains('nav-item')){
+   const selected=item.dataset.go===name;
+   item.classList.toggle('active',selected);
+   item.setAttribute('aria-current',selected?'page':'false');
   }
-  document.querySelectorAll('[data-go]').forEach(x=>{
-   if(x.classList.contains('nav-item'))x.classList.toggle('active',x.dataset.go===name);
-  });
- };
- // Match fallback slide direction to the native horizontal transition.
- document.documentElement.dataset.tabDirection=
-  screenNames.indexOf(name)>=screenNames.indexOf(previous)?'forward':'backward';
- if(allowMotion&&typeof document.startViewTransition==='function'){
-  // Root screenshots always share the same VIEWPORT dimensions.
-  // Section snapshots have different heights and previously resized at the end.
-  try{
-   const transition=document.startViewTransition(()=>update(false));
-   navigate.runningTransition=transition;
-   navigate.pendingName=name;
-   Promise.resolve(transition.finished).catch(()=>{}).then(()=>{
-    if(navigate.runningTransition!==transition)return;
-    navigate.runningTransition=null;
-    navigate.pendingName=null;
-    // Queue at most one destination; never interrupt screenshot interpolation.
-    const next=navigate.queuedName;
-    navigate.queuedName=null;
-    if(next&&next!==active)navigate(next);
-   });
-  }catch(error){
-   console.warn('Tab transition unavailable:',error);
-   navigate.runningTransition=null;
-   navigate.pendingName=null;
-   update(true);
-  }
- }else{navigate.pendingName=null;update(allowMotion)}
+ });
+ if(!animate||!previousSection.animate||!nextSection.animate){
+  previousSection.hidden=true;
+  if(animate)nextSection.classList.add('tab-enter');
+  return;
+ }
+ const token={from:previousSection,to:nextSection,incoming:null,outgoing:null};
+ tabMotion=token;
+ previousSection.style.position='absolute';
+ previousSection.style.inset='0';
+ previousSection.style.width='100%';
+ previousSection.style.zIndex='2';
+ previousSection.style.pointerEvents='none';
+ nextSection.hidden=false;
+ const easing='cubic-bezier(.2,.78,.22,1)';
+ token.outgoing=previousSection.animate([
+  {transform:currentTransform,opacity:currentOpacity},
+  {transform:'translate3d('+(-direction*30)+'px,0,0)',opacity:0}
+ ],{duration:TAB_MOTION_MS,easing,fill:'forwards'});
+ token.incoming=nextSection.animate([
+  {transform:returningToOutgoing?returnTransform:'translate3d('+(direction*34)+'px,0,0)',opacity:returningToOutgoing?returnOpacity:0.12},
+  {transform:'translate3d(0,0,0)',opacity:1}
+ ],{duration:TAB_MOTION_MS,easing,fill:'forwards'});
+ token.incoming.finished.then(()=>{
+  if(tabMotion!==token)return;
+  token.outgoing.cancel();token.incoming.cancel();
+  previousSection.hidden=true;previousSection.style.cssText='';
+  nextSection.style.cssText='';
+  tabMotion=null;
+ },()=>{});
 }
 function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Підчерга '+previewQueue,settlement:'Черкаси та район'}:primary();
  if(!a)return;
@@ -510,7 +526,7 @@ function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Пі�
  setText('nextTime',next?nextChangeLabel(next):st==='on'?'Не заплановано':'Невідомо');
  setText('nextDescription',next?`Планове ${next.to===1?'відключення':'відновлення електропостачання'}${next.dayOffset===1?' наступного дня':''}`:
   st==='on'?'На сьогодні та завтра у підтверджених даних змін не зазначено':'Точний час не підтверджено');$('articleLink').href=pub?.queueSources?.[a.queue]||pub?.source||'https://www.cherkasyoblenergo.com/news'}
-function renderUpdates(){setText('lastCheck',data.lastChecked?fmtStamp(data.lastChecked):'Час перевірки невідомий');setText('updateNote',data.lastChecked?'Остання перевірка графіків.':'Перевірте графік безпосередньо на сайті оператора.');const root=$('updateList');root.replaceChildren();const all=[...(data.changes||[]).map(x=>({kind:'change',...x})),...(data.days||[]).map(x=>({kind:'publication',...x}))].sort((a,b)=>String(b.publishedAt).localeCompare(String(a.publishedAt))).slice(0,24);if(!all.length)root.append(el('div','empty-places','Поки немає підтверджених публікацій.'));for(const d of all){const c=el('div','update-card');c.append(el('time','',fmtStamp(d.publishedAt)),el('strong','',d.kind==='change'?`Графік скориговано · ${formatDate(d.date)}`:`Опубліковано графік · ${formatDate(d.date)}`));const meta=el('div','small-source',d.kind==='change'?`Змінені підчерги: ${(d.queues||[]).join(', ')||'не уточнено'}`:`Редакцій: ${d.revisions||1}`);c.append(meta);const link=el('a','', 'Офіційна публікація ↗');link.href=d.source||'https://www.cherkasyoblenergo.com/news';link.target='_blank';link.rel='noopener';c.append(link);root.append(c)}}
+function renderUpdates(){setText('lastCheck',data.lastChecked?fmtStamp(data.lastChecked):'Час перевірки невідомий');setText('updateNote',data.lastChecked?'Остання перевірка графіків.':'Перевірте графік безпосередньо на сайті оператора.');const root=$('updateList');root.replaceChildren();const all=[...(data.changes||[]).map(x=>({kind:'change',...x})),...(data.days||[]).map(x=>({kind:'publication',...x}))].sort((a,b)=>String(b.publishedAt).localeCompare(String(a.publishedAt))).slice(0,24);if(!all.length)root.append(el('div','empty-places','Поки немає підтверджених публікацій.'));for(const d of all){const c=el('div','update-card');c.append(el('time','',fmtStamp(d.publishedAt)),el('strong','',d.kind==='change'?`Графік скориговано · ${formatDate(d.date)}`:`Опубліковано графік · ${formatDate(d.date)}`));const meta=el('div','small-source',d.kind==='change'?`Змінені підчерги: ${(d.queues||[]).join(', ')||'не уточнено'}`:`Редакцій: ${d.revisions||1}`);c.append(meta);const link=el('a','', 'Офіційна публікація 🔗');link.href=d.source||'https://www.cherkasyoblenergo.com/news';link.target='_blank';link.rel='noopener';c.append(link);root.append(c)}}
 function updatePushInvite(){
  const box=$('pushInvite');if(!box)return;
  const supported='Notification' in window;
@@ -641,9 +657,9 @@ function deleteAddress(){if(!editId||!confirm('Видалити цю адрес�
 function movePlace(id,direction){const i=addresses.findIndex(x=>x.id===id);const j=i+direction;if(i<0||j<0||j>=addresses.length)return;[addresses[i],addresses[j]]=[addresses[j],addresses[i]];saveAddresses();openPickerContent();renderHome()}
 function openPickerContent(){const root=$('placesOptions');root.replaceChildren();for(const [i,a] of addresses.entries()){
  const row=el('div','place-option');row.draggable=true;row.dataset.id=a.id;
- const choose=el('button','place-choose');const txt=el('span');txt.append(el('strong','',label(a)),el('small','',fullAddress(a)));choose.append(txt,el('span','',a.id===primary()?.id?'✓':'›'));choose.onclick=()=>{prefs.primaryId=a.id;savePrefs();closeSheet($('placesSheet'));render();updatePushSubscription().catch(()=>{})};row.append(choose);
+ const choose=el('button','place-choose');const txt=el('span');txt.append(el('strong','',label(a)),el('small','',fullAddress(a)));choose.append(txt,el('span','',a.id===primary()?.id?'✅':'➡️'));choose.onclick=()=>{prefs.primaryId=a.id;savePrefs();closeSheet($('placesSheet'));render();updatePushSubscription().catch(()=>{})};row.append(choose);
  const moves=el('span','place-moves');
- const favorite=el('button','move-btn favorite-btn'+(a.favorite?' selected':''),a.favorite?'★':'☆');
+ const favorite=el('button','move-btn favorite-btn'+(a.favorite?' selected':''),a.favorite?'⭐':'🤍');
  favorite.type='button';favorite.title=a.favorite?'Прибрати з улюблених':'Додати до улюблених';
  favorite.setAttribute('aria-label',favorite.title);
  favorite.onclick=()=>{a.favorite=!a.favorite;saveAddresses();openPickerContent();renderHome()};

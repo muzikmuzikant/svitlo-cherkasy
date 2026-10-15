@@ -1,7 +1,7 @@
 /* Minute-accurate cell paints and masks. Source of truth: 1440-minute schedule. */
 (function(root){
  'use strict';
- const COLOR={0:'#f7fafc',1:'#29384f','-1':'#eaf0f7'};
+ const COLOR={0:'#ffffff',1:'#29384f','-1':'#eaf0f7'};
  function segments(timeline,hour){
    const at=hour*60;
    if(!timeline||!Number.isInteger(hour)||hour<0||hour>23)return [];

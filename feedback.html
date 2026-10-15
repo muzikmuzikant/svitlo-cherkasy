@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="uk"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta charset="utf-8"><meta name="svitlo-version" content="7.9.8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f6f8fc"><meta name="color-scheme" content="light">
 <meta name="description" content="Центр підтримки «Світло Черкаси»: звернення, відповіді адміністратора та відстеження статусу без реєстрації.">
 <title>Центр підтримки · Світло Черкаси</title>
@@ -47,9 +47,12 @@
       <div><label for="queue">Підчерга <span class="optional">якщо стосується</span></label><select id="queue"><option value="">Не вказувати</option><option value="1.1">1.1</option><option value="1.2">1.2</option><option value="2.1">2.1</option><option value="2.2">2.2</option><option value="3.1">3.1</option><option value="3.2">3.2</option><option value="4.1">4.1</option><option value="4.2">4.2</option><option value="5.1">5.1</option><option value="5.2">5.2</option><option value="6.1">6.1</option><option value="6.2">6.2</option></select></div>
       <div><label for="email">Електронна пошта <span class="optional">необов’язково</span></label><input id="email" type="email" maxlength="254" autocomplete="email" placeholder="name@example.com"></div>
      </div>
+     <div id="extraTicketFields" class="extra-ticket-fields"></div>
      <label for="message">Деталі звернення <span class="required">*</span></label>
      <textarea id="message" required minlength="12" maxlength="2000" placeholder="Що саме не працює? Коли це трапляється?"></textarea>
      <div class="form-help"><span>Потрібно щонайменше 12 символів.</span><span id="count" aria-live="polite">0 / 2000</span></div>
+     <label class="support-diagnostics"><input type="checkbox" id="includeDiagnostics"><span><strong>Додати технічну інформацію про пристрій</strong><small>Необов’язково. Тип пристрою, система, браузер і версія застосунку допоможуть відтворити помилку. Точна модель, IP-адреса, вулиця, будинок і повний User-Agent не додаються.</small></span></label>
+     <p class="support-diagnostics-preview" id="diagnosticsPreview">Технічна інформація не надсилається без вашої згоди.</p>
      <div class="support-privacy"><span aria-hidden="true">🔒</span><p>Не надсилайте паролі, документи чи приватні дані. Відповіді можна прочитати тут, навіть якщо не вказувати email.</p></div>
      <div class="trap" aria-hidden="true"><label for="website">Сайт</label><input id="website" autocomplete="off" tabindex="-1"></div>
      <button class="support-primary" id="send" type="submit">Надіслати звернення <span aria-hidden="true">→</span></button>
@@ -82,10 +85,16 @@
    <div class="conversation-head"><div><small id="conversationId"></small><h2 id="conversationHeading">Ваше звернення</h2><span id="conversationStatus" class="support-status"></span></div><button type="button" id="closeConversation" class="support-secondary">Закрити</button></div>
    <div id="conversationMeta" class="conversation-meta"></div><div id="conversationMessages" class="conversation-messages"></div>
    <form id="replyForm" class="reply-form" hidden><label for="replyMessage">Додати інформацію</label><textarea id="replyMessage" required minlength="3" maxlength="1200" placeholder="Напишіть уточнення або відповідь адміністратору…"></textarea><div class="reply-actions"><span>До 1200 символів</span><button type="submit" id="sendReply" class="support-primary">Надіслати →</button></div></form>
-   <p id="conversationMessage" class="support-alert" role="status" hidden></p>
+   <div id="ticketRating" class="ticket-rating" hidden><h3>Оцініть допомогу</h3><p>Оцінка добровільна й не впливає на можливість звернутися знову.</p>
+    <div id="ticketRatingOptions" class="rating-options">
+     <button type="button" data-rating="1" aria-label="1 із 5">1</button><button type="button" data-rating="2" aria-label="2 із 5">2</button>
+     <button type="button" data-rating="3" aria-label="3 із 5">3</button><button type="button" data-rating="4" aria-label="4 із 5">4</button>
+     <button type="button" data-rating="5" aria-label="5 із 5">5</button>
+    </div><p id="ratingNotice" role="status"></p></div>
+    <p id="conversationMessage" class="support-alert" role="status" hidden></p>
   </section>
  </section>
 </main>
-<footer class="support-footer"><span>© Світло Черкаси · Незалежний інформаційний сервіс</span><nav><a href="./help.html">Допомога</a><a href="./privacy.html">Приватність</a><a href="./index.html?screen=settings">Застосунок</a></nav></footer>
+<footer class="support-footer"><span>© Світло Черкаси · Незалежний інформаційний сервіс</span><nav><a href="./help.html">Допомога</a><a href="./privacy.html">Приватність</a><a href="./terms.html">Умови</a><a href="./index.html?screen=settings">Застосунок</a></nav></footer>
 </div>
 <script defer src="./feedback.js"></script></body></html>

@@ -4,6 +4,32 @@ const SAVED='svitlo-support-tickets-v1',DRAFT='svitlo-support-draft-v1';
 const TOPICS={bug:'Помилка застосунку',address:'Адреса або підчерга',schedule:'Графік відключень',push:'Сповіщення',idea:'Пропозиція',other:'Інше'};
 const HINTS={bug:'На якому екрані виникла помилка? Що саме не працює?',address:'Вкажіть населений пункт, назву вулиці та правильну підчергу, якщо знаєте її. Номер будинку необов’язковий.',schedule:'Вкажіть дату та підчергу. Якщо можливо, порівняйте з офіційним графіком.',push:'Уточніть, яке сповіщення не надійшло або прийшло двічі, та модель пристрою.',idea:'Розкажіть, як ця функція спростить використання застосунку.',other:'Опишіть ваше питання якомога конкретніше.'};
 const STATUSES={new:'Нове',in_progress:'У роботі',resolved:'Вирішено'};
+let customCategories=null;
+function selectedCategory(){return customCategories?.find(c=>c.id===$('topic').value)||null}
+function renderExtraFields(){
+ const root=$('extraTicketFields');if(!root)return;root.replaceChildren();
+ const cat=selectedCategory();if(!cat)return;
+ for(const field of cat.fields||[]){
+  const wrap=document.createElement('label');wrap.className='extra-ticket-field';
+  const label=document.createElement('span');label.textContent=field.label+(field.required?' *':'');wrap.append(label);
+  const inp=field.type==='select'?document.createElement('select'):document.createElement('input');
+  inp.dataset.key=field.id;inp.dataset.type=field.type;
+  if(field.type==='select'){inp.append(new Option('Оберіть варіант',''));for(const option of field.options||[])inp.append(new Option(option,option))}
+  else if(field.type==='checkbox')inp.type='checkbox';else{inp.type='text';inp.maxLength=200}
+  inp.required=field.required;wrap.append(inp);root.append(wrap);
+ }
+}
+async function loadTicketCategories(){
+ try{
+  const base=await service();const r=await fetch(base+'/api/feedback/categories',{cache:'no-store'});
+  if(!r.ok)return;const data=await r.json();if(!data.categories?.length)return;
+  customCategories=data.categories;const previous=$('topic').value;$('topic').replaceChildren();
+  for(const c of customCategories){TOPICS[c.id]=c.title;HINTS[c.id]=c.hint||c.title;$('topic').append(new Option(c.title,c.id))}
+  if(customCategories.some(c=>c.id===previous))$('topic').value=previous;
+  setTopic();
+ }catch(e){console.warn('Feedback categories:',e.message)}
+}
+
 const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||'null')??fallback}catch{return fallback}};
 let saved=Array.isArray(read(SAVED,[]))?read(SAVED,[]):[];
 let selectedTicket=null,lastSent=null,basePromise=null;
@@ -42,6 +68,7 @@ function setTopic(){
  const topic=$('topic').value;
  $('topicHint').textContent=HINTS[topic]||HINTS.other;
  $('message').placeholder=HINTS[topic]||HINTS.other;
+ renderExtraFields();
 }
 function saveDraft(){
  const draft={topic:$('topic').value,subject:$('subject').value,queue:$('queue').value,email:$('email').value,message:$('message').value};
@@ -111,10 +138,23 @@ function showConversation(ticket){
   root.append(bubble('user',ticket.message,ticket.createdAt));
   for(const entry of ticket.messages||[])root.append(bubble(entry.from,entry.text,entry.at));
  }else root.append(text('p','Для старого звернення доступний лише статус. Для листування потрібен приватний код доступу.','support-alert'));
+ $('ticketRating').hidden=ticket.canReply!==true||ticket.status!=='resolved';
+ $('ticketRatingOptions').hidden=!!ticket.rating;
+ $('ratingNotice').textContent=ticket.rating?'Ваша оцінка: '+ticket.rating+' із 5. Дякуємо!':'';
  $('replyForm').hidden=ticket.canReply!==true;
  $('conversationMessage').hidden=true;
  $('ticketConversation').scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
 }
+$('ticketRatingOptions')?.addEventListener('click',async event=>{
+ const button=event.target.closest('button[data-rating]');if(!button||!selectedTicket?.token)return;
+ const rating=Number(button.dataset.rating);
+ if(!Number.isInteger(rating)||rating<1||rating>5)return;
+ button.disabled=true;$('ratingNotice').textContent='Зберігаємо оцінку…';
+ try{const id=selectedTicket.id;await post('/api/ticket/rate',{id,token:selectedTicket.token,rating});
+  await openTicket(id);$('ratingNotice').textContent='Дякуємо за оцінку!'
+ }catch(error){$('ratingNotice').textContent=friendlyError(error)}
+ finally{button.disabled=false}
+});
 async function openTicket(id){
  const item=saved.find(x=>x.id===id);if(!item)return;
  $('ticketConversation').hidden=false;$('conversationId').textContent=id;
@@ -129,6 +169,25 @@ $('tabNew').addEventListener('click',()=>chooseTab('new'));
 $('tabTickets').addEventListener('click',()=>chooseTab('tickets'));
 $('topic').addEventListener('change',()=>{setTopic();saveDraft()});
 for(const name of ['subject','queue','email','message'])$(name).addEventListener('input',saveDraft);
+function coarseDiagnostics(){
+ const ua=navigator.userAgent||'';
+ const platform=/iPad/i.test(ua)?'iPad':/iPhone|iPod/i.test(ua)?'iPhone':/Android/i.test(ua)?'Android':/Windows/i.test(ua)?'Windows':/Macintosh/i.test(ua)?'macOS':/Linux/i.test(ua)?'Linux':'Інше';
+ const osName=platform==='iPhone'?'iOS':platform==='iPad'?'iPadOS':platform==='Android'?'Android':platform==='Windows'?'Windows':platform==='macOS'?'macOS':platform==='Linux'?'Linux':'Інше';
+ const osMatch=ua.match(platform==='iPhone'||platform==='iPad'?/OS (\d{1,2})[_\d]*/:platform==='Android'?/Android (\d{1,2})/:platform==='Windows'?/Windows NT (\d+)\./:platform==='macOS'?/Mac OS X (\d{1,2})[_\d]*/:/$^/);
+ const os=osName+(osMatch?' '+osMatch[1]:'');
+ const browser=/Edg\//.test(ua)?'Edge':/SamsungBrowser\//.test(ua)?'Samsung Internet':/Firefox|FxiOS/.test(ua)?'Firefox':/CriOS|Chrome\//.test(ua)?'Chrome':/Safari|AppleWebKit/.test(ua)?'Safari':'Інше';
+ const appVersion=document.querySelector('meta[name="svitlo-version"]')?.content||'';
+ return {platform,os,browser,appVersion:/^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(appVersion)?appVersion:''};
+}
+function updateDiagnosticsPreview(){
+ const checked=$('includeDiagnostics')?.checked===true;
+ const p=$('diagnosticsPreview');if(!p)return;
+ const d=coarseDiagnostics();
+ p.textContent=checked?'Буде передано: '+[d.platform,d.os,d.browser,d.appVersion&&('версія '+d.appVersion)].filter(Boolean).join(' · '):'Технічна інформація не надсилається без вашої згоди.';
+}
+$('includeDiagnostics')?.addEventListener('change',updateDiagnosticsPreview);
+loadTicketCategories();
+updateDiagnosticsPreview();
 $('feedbackForm').addEventListener('submit',async event=>{
  event.preventDefault();
  if(!$('feedbackForm').reportValidity())return;
@@ -136,6 +195,9 @@ $('feedbackForm').addEventListener('submit',async event=>{
  const button=$('send');button.disabled=true;button.textContent='Надсилаємо…';$('formMessage').hidden=true;
  try{
   const payload={topic:$('topic').value,subject:$('subject').value.trim(),queue:$('queue').value,message,email:$('email').value.trim(),website:$('website').value};
+  const extraFields=[...document.querySelectorAll('#extraTicketFields [data-key]')];
+  if(extraFields.length){payload.extra={};for(const inp of extraFields){payload.extra[inp.dataset.key]=inp.dataset.type==='checkbox'?inp.checked:inp.value.trim()}}
+  if($('includeDiagnostics')?.checked){payload.includeDiagnostics=true;payload.diagnostics=coarseDiagnostics()}
   const result=await post('/api/feedback',payload);
   remember({...result,topic:payload.topic,subject:payload.subject});
   lastSent=result;
@@ -145,7 +207,7 @@ $('feedbackForm').addEventListener('submit',async event=>{
  }catch(e){alertAt('formMessage',friendlyError(e))}
  finally{button.disabled=false;button.textContent='Надіслати звернення →'}
 });
-$('another').addEventListener('click',()=>{$('feedbackForm').reset();$('feedbackForm').hidden=false;$('success').hidden=true;$('formMessage').hidden=true;restoreDraft()});
+$('another').addEventListener('click',()=>{$('feedbackForm').reset();updateDiagnosticsPreview();$('feedbackForm').hidden=false;$('success').hidden=true;$('formMessage').hidden=true;restoreDraft()});
 $('openSent').addEventListener('click',()=>{if(!lastSent)return;chooseTab('tickets');openTicket(lastSent.id)});
 $('copyReceipt').addEventListener('click',async()=>{
  if(!lastSent)return;
