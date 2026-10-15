@@ -49,7 +49,7 @@ jobs:
           test -f _site/beta-ads.js && test -f _site/admin-ads.js && test -f _site/admin-users.js && test -f _site/internal-pages.js
           test -f _site/ad-detail.html && test -f _site/advertising.html && test -f _site/support-project.html
       - name: Run Beta advertising contract tests
-        run: node --test tests/test_beta_monetization.mjs tests/test_admin_users_beta.mjs tests/test_legal_revision_beta.mjs tests/test_schedule_quality_beta.mjs
+        run: node --test tests/test_beta_monetization.mjs tests/test_admin_users_beta.mjs tests/test_legal_revision_beta.mjs tests/test_schedule_quality_beta.mjs tests/test_manual_push.mjs
       - name: Verify published beta API read-only route
         run: |
           python - <<'PY'
