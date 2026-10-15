@@ -28,7 +28,7 @@ async function mountInbox(item){
   localStorage:{getItem(){return null}},navigator:{serviceWorker:{addEventListener(){}}},
   fetch:async()=>({ok:true,json:async()=>({days:[],changes:[],events:[]})}),
   CustomEvent:class{constructor(type,config={}){this.type=type;this.detail=config.detail}},
-  Intl,Date,URL,console,matchMedia:()=>({matches:true}),setInterval(){},history:{replaceState(){}}};
+  Intl,Date,URL,console,setTimeout,clearTimeout,matchMedia:()=>({matches:true}),setInterval(){},history:{replaceState(){}}};
  vm.runInNewContext(read('inbox-ui.js'),context);
  await new Promise(resolve=>setImmediate(resolve));await new Promise(resolve=>setImmediate(resolve));
  return {elements,page,events,readState:()=>markedRead,card:()=>elements.inboxList.children.find(n=>n.tag==='article'),

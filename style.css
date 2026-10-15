@@ -470,3 +470,4 @@ html.feature-off-scheduleOpenShortcut #openDetail{display:none!important}
 
 /* Feature management: quick switching is distinct from the full saved-address list. */
 html.feature-off-quickAddresses #homeQuickPlaces{display:none!important}
+html.feature-off-homeQuickActions #shareToday,html.feature-off-homeQuickActions #copyToday{display:none!important}

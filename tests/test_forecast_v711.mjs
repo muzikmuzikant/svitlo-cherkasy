@@ -8,8 +8,8 @@ const root=join(dirname(fileURLToPath(import.meta.url)),'..');
 const code=readFileSync(join(root,'app.js'),'utf8');
 const start=code.indexOf('const currentDay='),end=code.indexOf('function stats(a){',start);
 assert.ok(start!==-1&&end>start);
-function sample({days=[],stale=false,error=false}={}){
- const input={days,lastChecked:new Date(Date.now()-(stale?3*3600_000:5*60000)).toISOString()};
+function sample({days=[],stale=false,error=false,confirmedNoScheduleDates=['2026-10-10','2026-10-11']}={}){
+ const input={days,confirmedNoScheduleDates,lastChecked:new Date(Date.now()-(stale?3*3600_000:5*60000)).toISOString()};
  const ctx=vm.createContext({data:input,lastSyncFailed:error,QUEUES:['1.1','2.1','6.2'],today:()=> '2026-10-10',shiftDay:(date,num)=>{const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+num);return d.toISOString().slice(0,10)},clock:(n)=>`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`});
  vm.runInContext(code.slice(start,end)+';this.api={timeline,sourceFresh,nextChange,statusCopy,stateAt};',ctx);
  return ctx.api;
@@ -33,15 +33,17 @@ test('single verified schedule does not count omitted subqueue as outage',()=>{
  const f=sample({days:[day('2026-10-11','2.1',[['05:00','06:00']])]});
  const v=f.timeline('2026-10-11','6.2');assert.equal(v[300],0);
 });
-test('user-selected no-schedule days show full light even with a stale importer (never official verification)',()=>{
+test('stale or failed importer never invents confirmed light for missing dates',()=>{
  for(const opts of [{stale:true},{error:true}]){
   const f=sample(opts),arr=f.timeline('2026-10-11','2.1');
-  assert.equal(arr.length,1440);assert.equal(arr[0],0);assert.equal(arr[1439],0);
-  assert.equal(f.stateAt(arr,500),'on');
+  assert.equal(arr,null);
+  assert.equal(f.stateAt(arr,500),'unknown');
  }
 });
-test('the preferred light-all-day display extends to dates without any publication',()=>{
- const f=sample();assert.equal(f.timeline('2026-10-12','2.1')[1439],0);
+test('unknown dates outside verified horizon never turn into a green schedule',()=>{
+ const f=sample();assert.equal(f.timeline('2026-10-12','2.1'),null);
+ const uncertain=sample({confirmedNoScheduleDates:[]});
+ assert.equal(uncertain.timeline('2026-10-11','2.1'),null);
 });
 test('cross-midnight continuation of scheduled outage ends at midnight if tomorrow has no planned outages',()=>{
  const f=sample({days:[day('2026-10-10','2.1',[['22:00','24:00']])]});
