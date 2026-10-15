@@ -1,0 +1,105 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import {createAdsStore} from '../push-server/ads.js';
+
+const fresh=()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'svitlo-beta-ads-'));
+ let clock=Date.parse('2026-10-15T12:00:00Z');
+ const store=createAdsStore({directory:dir,clock:()=>clock});
+ return {store,dir,advance:n=>{clock+=n}};
+};
+const ad=(id='first')=>({id,title:'Тестова реклама',enabled:true,weight:2,seconds:9,link:'https://example.com',background:'#ffffff',start:'',end:'',price:1000});
+
+test('no ads: promo appears without invented commercial campaigns',()=>{
+ const {store,dir}=fresh();const pub=store.publicState();
+ assert.equal(pub.campaigns.length,0);
+ assert.equal(pub.showPromo,true);
+ assert.equal(pub.promoTitle,'Тут може бути ваша реклама');
+ assert.equal(store.dashboard().pwa.known,0);
+ fs.rmSync(dir,{recursive:true,force:true});
+});
+
+test('campaign settings, personalization, contacts, tariffs and support are isolated & validated',()=>{
+ const {store,dir}=fresh();
+ const original=store.dashboard().settings;
+ const changed=store.update({...original,rotationSeconds:12,promoEvery:3,animation:'slide',
+  contacts:[{label:'Telegram',url:'https://t.me/example',enabled:true},{label:'Пошта',url:'mailto:test@example.com',enabled:true}],
+  packages:[{id:'pkg',title:'Тиждень',price:450,durationDays:7,visible:true}],
+  support:{enabled:true,title:'Підтримати',description:'Для сервера',paymentUrl:'https://example.com/donate',button:'Донат'},
+  campaigns:[ad()]});
+ assert.equal(changed.settings.rotationSeconds,12);
+ assert.equal(store.publicState().campaigns.length,1);
+ assert.equal(store.publicState().support.enabled,true);
+ assert.equal(store.publicState().contacts.length,2);
+ assert.equal(store.publicState().packages[0].durationDays,7);
+ assert.equal(store.event('first','impression'),true);
+ assert.equal(store.event('first','click'),true);
+ assert.equal(store.dashboard().stats.first.impressions,1);
+ assert.equal(store.dashboard().stats.first.clicks,1);
+ store.flush();const reopened=createAdsStore({directory:dir});
+ assert.equal(reopened.dashboard().stats.first.impressions,1);
+ assert.equal(reopened.dashboard().settings.campaigns.length,1);
+ fs.rmSync(dir,{recursive:true,force:true});
+});
+
+test('scheduled and capped campaigns are hidden from public carousel',()=>{
+ const {store,dir}=fresh();const settings=store.dashboard().settings;
+ settings.campaigns=[{...ad(),dailyCap:1},{...ad('future'),start:'2035-01-01T00:00:00Z'}];
+ store.update(settings);
+ assert.deepEqual(store.publicState().campaigns.map(c=>c.id),['first']);
+ store.event('first','impression');
+ assert.equal(store.publicState().campaigns.length,0);
+ assert.equal(store.event('future','click'),false);
+ fs.rmSync(dir,{recursive:true,force:true});
+});
+
+test('donation button cannot activate without a verified HTTPS target',()=>{
+ const {store,dir}=fresh();const s=store.dashboard().settings;
+ s.support={enabled:true,paymentUrl:'javascript:alert(1)',title:'Donation'};
+ store.update(s);assert.equal(store.publicState().support.enabled,false);
+ assert.equal(store.publicState().support.paymentUrl,'');
+ fs.rmSync(dir,{recursive:true,force:true});
+});
+
+test('PWA counters require explicit consent, only standalone, and are deletable',()=>{
+ const {store,dir,advance}=fresh();
+ const id='c92659db-d68e-4f58-9f90-bd6b677909eb';
+ assert.equal(store.activity({id,mode:'browser',consent:true}),false);
+ assert.equal(store.activity({id,mode:'standalone',consent:false}),false);
+ assert.equal(store.dashboard().pwa.known,0);
+ assert.equal(store.activity({id,mode:'standalone',consent:true,platform:'iPhone'}),true);
+ assert.equal(store.dashboard().pwa.known,1);
+ assert.equal(store.dashboard().pwa.online,1);
+ assert.equal(store.dashboard().pwa.byPlatform.iPhone,1);
+ store.flushVisitors();assert.ok(!fs.readFileSync(path.join(dir,'beta-pwa-installations.json'),'utf8').includes(id));
+ advance(47000);assert.equal(store.dashboard().pwa.online,0);
+ assert.equal(store.dashboard().pwa.active24h,1);
+ assert.equal(store.optOut({id}),true);
+ assert.equal(store.dashboard().pwa.known,0);
+ fs.rmSync(dir,{recursive:true,force:true});
+});
+
+test('malformed configuration and invalid ads are rejected',()=>{
+ const {store,dir}=fresh();const s=store.dashboard().settings;
+ assert.throws(()=>store.update({...s,campaigns:[{...ad(),start:'2026-10-18T00:00:00Z',end:'2026-10-16T00:00:00Z'}]}));
+ assert.throws(()=>store.update({...s,campaigns:[ad(),ad()]}),/унікальними/);
+ fs.rmSync(dir,{recursive:true,force:true});
+});
+
+test('beta site only includes ad placement in home and PWA requires privacy opt-in',()=>{
+ const root=new URL('../',import.meta.url);
+ const html=fs.readFileSync(new URL('index.html',root),'utf8');
+ const js=fs.readFileSync(new URL('beta-ads.js',root),'utf8');
+ const build=fs.readFileSync(new URL('scripts/build_pages.py',root),'utf8');
+ const start=html.indexOf('<section id="home"');
+ const end=html.indexOf('<section id="detail"');
+ const adpos=html.indexOf('id="betaAd"');
+ assert.ok(start<adpos&&adpos<end,'ads must remain in home section only');
+ assert.ok(js.includes("standalone()")&&js.includes("enabled()"));
+ for(const filename of ['beta-ads.js','admin-ads.js','admin-ads.css','advertising.html','support-project.html']){
+  assert.ok(build.includes("'"+filename+"'"),'beta build is missing '+filename);
+ }
+});
