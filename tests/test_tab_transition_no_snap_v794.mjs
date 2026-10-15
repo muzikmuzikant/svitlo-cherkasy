@@ -68,6 +68,6 @@ test('fixed viewport View Transition avoids size interpolation of variable-heigh
  assert.match(css,/::view-transition-old\(root\)\{\s*animation:svitloViewportOut \.46s/);
  for(const name of ['svitloViewportOut','svitloViewportIn','svitloViewportOutBackward','svitloViewportInBackward']){
   const piece=css.slice(css.indexOf('@keyframes '+name+'{'));
-  assert.match(piece,/to\{opacity:[01];transform:translate3d\(0,0,0\) scale\(1\)\}|to\{opacity:0;transform:translate3d\([^-\n}]+\) scale\(\.985\)\}/);
+  assert.match(piece,/to\{opacity:0;transform:translate3d\(-?\d+px,0,0\) scale\(\.985\)\}|to\{opacity:1;transform:translate3d\(0,0,0\) scale\(1\)\}/);
  }
 });
