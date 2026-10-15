@@ -14,7 +14,7 @@ const legacy=safeJSON('svitlo-addresses-v3',safeJSON('svitlo-addresses-v2',[]));
 let addresses=safeJSON(STORE,Array.isArray(legacy)?legacy:[]), prefs=Object.assign({primaryId:null,off:true,on:true,changes:true,tomorrow:true,emergency:true},safeJSON(PREF,{}));
 let previewQueue=null;
 let pushHealthLast=0,pushHealthBusy=null;
-let pushActive=false, emergency={events:[],lastChecked:null},overrides={schedules:{days:[]},addresses:{},emergency:{events:[]}},data={days:[],changes:[]},index={keys:{},streets:{},localities:{}},active='home',daySelected=null,dayStripStart=null,editId=null,suggestion=null,toastTimeout=null,lastPub=null,pushConfig=null,swRegistration=null,notified=new Set(safeJSON(SEEN,[])),lastRefresh=0,hasCheckedOnce=false,lastDownloadAt=null,lastSyncFailed=false,refreshInFlight=null;
+let pushActive=('Notification' in window&&Notification.permission==='granted'&&localStorage.getItem(PUSH_CONSENT)==='yes'), emergency={events:[],lastChecked:null},overrides={schedules:{days:[]},addresses:{},emergency:{events:[]}},data={days:[],changes:[]},index={keys:{},streets:{},localities:{}},active='home',daySelected=null,dayStripStart=null,editId=null,suggestion=null,toastTimeout=null,lastPub=null,pushConfig=null,swRegistration=null,notified=new Set(safeJSON(SEEN,[])),lastRefresh=0,hasCheckedOnce=false,lastDownloadAt=null,lastSyncFailed=false,refreshInFlight=null;
 if(!Array.isArray(addresses))addresses=[];
 const byId=id=>addresses.find(x=>x.id===id);
 const primary=()=>byId(prefs.primaryId)||addresses[0]||null;
@@ -62,8 +62,8 @@ function timeline(date,queue){
  if(!QUEUES.includes(queue))return null;
  const day=currentDay(date),q=day?.queues?.[queue];
  if(!day){
-   // The operator does not publish a graph when planned outages are absent.
-   // Do not extend this assumption beyond today/tomorrow or a fresh check.
+   // Product display rule: no published graph means 24h green, for any date.
+   // This is a schedule convention, not a live electricity measurement.
    return new Int8Array(1440);
  }
  if(!q){return new Int8Array(1440)} // Omitted subqueue in verified publication.
@@ -439,7 +439,7 @@ function renderUpdates(){setText('lastCheck',data.lastChecked?fmtStamp(data.last
 function updatePushInvite(){
  const box=$('pushInvite');if(!box)return;
  const supported='Notification' in window;
- box.hidden=!supported||pushActive;
+ box.hidden=!supported||pushActive||(Notification.permission==='granted'&&localStorage.getItem(PUSH_CONSENT)==='yes');
  if(box.hidden)return;
  const denied=Notification.permission==='denied';
  setText('pushInviteTitle',denied?'Сповіщення вимкнені в iPhone':'Не пропустіть зміну графіка');
@@ -924,7 +924,25 @@ fillQueueSelect();
  for(const name of ['home','detail','updates','settings'])$(name).hidden=name!==active;
  document.querySelectorAll('[data-go]').forEach(x=>{if(x.classList.contains('nav-item'))x.classList.toggle('active',x.dataset.go===active)});
  if(requestedScreen==='settings')try{const u=new URL(location.href);u.searchParams.delete('screen');history.replaceState(null,'',u.pathname+u.search+u.hash)}catch{}
- render();refreshData();getPushConfig();
+ // Keep first-render placeholders completely behind the launch screen.
+ render();
+ async function finishInitialLoad(){
+   try{await refreshData()}
+   catch(error){
+     console.warn('First launch schedule sync:',error);
+     hasCheckedOnce=true;
+     try{render()}catch(renderError){console.warn('Initial fallback render:',renderError)}
+   }finally{
+     const splash=$('appBootScreen');
+     if(splash){
+       splash.classList.add('is-complete');
+       // iOS can skip transitionend while waking up a previously closed PWA.
+       setTimeout(()=>{splash.hidden=true},350);
+     }
+   }
+ }
+ finishInitialLoad();
+ getPushConfig();
 setInterval(()=>{renderHome();if(active==='detail')renderDetail();checkNotifications()},30_000);
 setInterval(()=>{if(!document.hidden)refreshData()},5*60_000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();refreshData();checkNotifications()}});

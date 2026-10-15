@@ -19,21 +19,38 @@
       .catch(error=>console.warn('SW registration:',error));
   }
   if (standalone) {
+    // A failed cached script must present a retry, not leave the splash stuck.
+    const reportLaunchFailure = () => {
+      const splash = document.getElementById('appBootScreen');
+      const message = document.getElementById('appBootMessage');
+      const retry = document.getElementById('appBootRetry');
+      if (!splash || splash.hidden || splash.classList.contains('is-complete')) return;
+      splash.classList.add('app-boot-failed');
+      if (message) message.textContent = 'Не вдалося завантажити застосунок';
+      if (retry) { retry.hidden = false; retry.onclick = () => location.reload(); }
+    };
+    const bootTimeout = setTimeout(reportLaunchFailure, 25000);
     const hour = document.createElement('script');
+    hour.onerror = reportLaunchFailure;
     hour.src = './hour-paint.js';
     hour.onload = () => {
       const lookup = document.createElement('script');
       lookup.src = './address-lookup.js';
+      lookup.onerror = reportLaunchFailure;
       lookup.onload = () => {
         const merger = document.createElement('script');
         merger.src = './data-merge.js';
+        merger.onerror = reportLaunchFailure;
         merger.onload = () => {
           const inbox = document.createElement('script');
           inbox.src = './notification-center.js';
+          inbox.onerror = reportLaunchFailure;
           inbox.onload = () => {
           const app = document.createElement('script');
           app.src = './app.js';
+          app.onerror = reportLaunchFailure;
           app.onload = () => {
+            if (typeof clearTimeout === 'function') clearTimeout(bootTimeout);
             // Inbox must never depend on the optional rich-copy file loading.
             // Cached iPhone PWAs can temporarily have a mismatched script bundle.
             let inboxStarted = false;

@@ -471,3 +471,22 @@ html.feature-off-scheduleOpenShortcut #openDetail{display:none!important}
 /* Feature management: quick switching is distinct from the full saved-address list. */
 html.feature-off-quickAddresses #homeQuickPlaces{display:none!important}
 html.feature-off-homeQuickActions #shareToday,html.feature-off-homeQuickActions #copyToday{display:none!important}
+
+/* v7.8.9: Cold PWA launch: never expose provisional schedules or notification banners. */
+.app-boot-screen{position:fixed;inset:0;z-index:40000;display:grid;place-items:center;box-sizing:border-box;min-height:100svh;min-height:100dvh;padding:24px max(24px,env(safe-area-inset-right)) 24px max(24px,env(safe-area-inset-left));background:radial-gradient(ellipse 300px 260px at 50% 35%,#e3eeff 0%,transparent 90%),linear-gradient(160deg,#fafdff,#f2f7ff);color:#182d4d;opacity:1;transition:opacity .28s ease;overflow:hidden}
+html:not([data-app-mode="standalone"]) #appBootScreen,.app-boot-screen[hidden]{display:none!important}
+.app-boot-screen.is-complete{opacity:0;pointer-events:none}
+.app-boot-content{display:flex;align-items:center;flex-direction:column;text-align:center;width:min(100%,310px);gap:0}
+.app-boot-logo{width:74px;height:74px;display:block;border-radius:23px;box-shadow:0 16px 34px #387aff30}
+.app-boot-logo svg{display:block;width:100%;height:100%}
+.app-boot-brand{font-size:37px;font-weight:850;letter-spacing:-1.6px;line-height:1.1;margin-top:18px}
+.app-boot-brand span{color:#397dff}
+.app-boot-content p{font-size:14px;font-weight:600;line-height:1.5;color:#536a89;margin:23px 0 0}
+.app-boot-content small{font-size:11px;color:#95a6ba;margin-top:18px}
+.app-boot-progress{height:4px;width:136px;border-radius:40px;background:#dce7f8;overflow:hidden;margin-top:18px}
+.app-boot-progress i{display:block;width:44%;height:100%;border-radius:inherit;background:#387dff;animation:appBootMove 1.35s ease-in-out infinite alternate}
+.app-boot-retry{margin-top:22px;border:0;border-radius:12px;padding:12px 18px;font-size:13px;font-weight:760;color:#fff;background:#377dff}
+.app-boot-retry[hidden]{display:none!important}
+.app-boot-screen.app-boot-failed .app-boot-progress{display:none}
+@keyframes appBootMove{from{transform:translateX(-35%)}to{transform:translateX(205%)}}
+@media(prefers-reduced-motion:reduce){.app-boot-screen{transition:none}.app-boot-progress i{animation:none;width:100%}}
