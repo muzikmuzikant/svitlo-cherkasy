@@ -13,6 +13,7 @@ import {createAdminUserStore} from './admin-users.js';
 import {createLegalStore} from './legal-store.js';
 import {auditSchedule} from './schedule-quality.js';
 import {createDiagnosticsStore} from './diagnostics.js';
+import {createDailyReports} from './daily-reports.js';
 import {createAppConfig} from './app-config.js';
 import {createMediaStore} from './media-store.js';
 import {createSchedulePublication} from './schedule-publication.js';
@@ -46,6 +47,7 @@ const ads=createAdsStore({directory:path.dirname(DATA_FILE)});
 const adminUsers=createAdminUserStore({directory:path.dirname(DATA_FILE)});
 const legal=createLegalStore({directory:path.dirname(DATA_FILE)});
 const errorCounts=createDiagnosticsStore({directory:path.dirname(DATA_FILE)});
+const dailyReports=createDailyReports({directory:path.dirname(DATA_FILE)});
 const siteControls=createAppConfig({directory:path.dirname(DATA_FILE),record:extras.record});
 const mediaStore=createMediaStore(path.dirname(DATA_FILE));
 const officialSchedules=createSchedulePublication({directory:path.dirname(DATA_FILE),token:process.env.SCHEDULE_INGEST_SECRET||''});
@@ -311,7 +313,7 @@ const server=http.createServer(async(req,res)=>{
     const tickets=feedback.list().items;
     result.feedback={total:tickets.length,new:tickets.filter(t=>t.status==='new').length,inProgress:tickets.filter(t=>t.status==='in_progress').length};
     return result;
-  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule(officialSchedules.schedule()||lastLoadedSchedule),errorCounts);return}
+  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule(officialSchedules.schedule()||lastLoadedSchedule),errorCounts,dailyReports);return}
  if(req.url?.startsWith('/api/media/')&&req.method==='GET'){
    const id=req.url.slice('/api/media/'.length).split('?')[0],file=mediaStore.read(id);
    if(!file){response(res,404,{error:'Фото не знайдене'});return}
@@ -423,6 +425,10 @@ const server=http.createServer(async(req,res)=>{
  }catch(e){response(res,e.message?.includes('save failed')?500:400,{error:'Invalid subscription request'})}
 });
 server.listen(Number(PORT),()=>console.log('Push companion listening on port '+PORT));
+const reportSources={feedback,ads,push:manualPush,diagnostics:errorCounts,audit:()=>auditSchedule(officialSchedules.schedule()||lastLoadedSchedule)};
+function refreshDailyReport(){try{dailyReports.capture(reportSources)}catch(error){console.warn('Daily reports update:',error.message)}}
+setTimeout(refreshDailyReport,15_000).unref?.();
+setInterval(refreshDailyReport,60*60_000).unref?.();
 job().catch(console.error);
 transitionJob().catch(console.error);
 setInterval(()=>job().catch(console.error),60_000);
