@@ -24,6 +24,7 @@ async function api(route,opts={}){
  return data;
 }
 window.svitloAdminApi=(route,opts)=>api(route,opts);
+window.svitloAdminDraft=()=>({kind:current,original,raw:$('editor').value});
 async function load(){
  const kind=$('kind').value;
  try{

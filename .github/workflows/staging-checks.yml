@@ -44,7 +44,7 @@ jobs:
       - name: Check all Beta additions and server syntax
         run: |
           node --check app.js && node --check client-errors.js && node --check admin-errors.js && node --check app-info.js && node --check install.js && node --check sw.js
-          node --check beta-ads.js && node --check admin-ads.js && node --check internal-pages.js && node --check admin-users.js && node --check admin-workspace.js && node --check admin-quality.js && node --check admin-categories.js && node --check feedback.js && node --check legal-consent.js && node --check admin-legal.js
+          node --check beta-ads.js && node --check admin-ads.js && node --check internal-pages.js && node --check admin-users.js && node --check admin-workspace.js && node --check admin-schedule-diff.js && node --check admin-quality.js && node --check admin-categories.js && node --check feedback.js && node --check legal-consent.js && node --check admin-legal.js
           node --check push-server/server.js && node --check push-server/admin.js && node --check push-server/ads.js && node --check push-server/admin-users.js && node --check push-server/diagnostics.js && node --check push-server/legal-store.js && node --check push-server/schedule-quality.js
           test -f _site/beta-ads.js && test -f _site/admin-ads.js && test -f _site/admin-users.js && test -f _site/internal-pages.js
           test -f _site/ad-detail.html && test -f _site/advertising.html && test -f _site/support-project.html
