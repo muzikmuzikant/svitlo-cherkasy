@@ -64,6 +64,7 @@ test('Production commercial lock survives enabled stored config and cannot colle
    campaigns:[{id:'advert',title:'Оголошення',link:'https://example.com',enabled:true}],
    support:{...config.support,enabled:true,paymentUrl:'https://example.com/pay',details:'PRIVATE-IBAN-NEVER-PUBLISH',provider:'monobank',methods:[{title:'Банка',kind:'monobank',url:'https://example.com/donate',enabled:true}],expenses:[{title:'Private invoice',amount:123,public:true}]}
   });
+  assert.equal(store.dashboard().commercialLocked,true,'Production must visibly warn admin that ad drafts are non-public');
   const publicConfig=store.publicState();
   assert.equal(publicConfig.enabled,false);
   assert.deepEqual(publicConfig.campaigns,[]);
@@ -77,6 +78,7 @@ test('Production commercial lock survives enabled stored config and cannot colle
   assert.deepEqual(publicConfig.support.methods,[]);
   assert.equal(store.event('advert','impression'),false);
   assert.equal(store.event('promo','impression'),false);
+  assert.ok(read('admin-ads.js').includes('report.commercialLocked'),'Admin must label Production advertising drafts');
   assert.ok(read('advertising.html').includes('if(!data.enabled)'));
   assert.ok(read('support-project.html').includes('if(!s.enabled)'));
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
