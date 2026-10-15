@@ -47,7 +47,7 @@ jobs:
           node --check beta-ads.js && node --check admin-ads.js
           node --check push-server/server.js && node --check push-server/admin.js && node --check push-server/ads.js
           test -f _site/beta-ads.js && test -f _site/admin-ads.js
-          test -f _site/advertising.html && test -f _site/support-project.html
+          test -f _site/ad-detail.html && test -f _site/advertising.html && test -f _site/support-project.html
       - name: Run Beta advertising contract tests
         run: node --test tests/test_beta_monetization.mjs
       - name: Verify published beta API read-only route
