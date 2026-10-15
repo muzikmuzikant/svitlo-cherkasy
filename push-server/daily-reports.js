@@ -1,7 +1,7 @@
 /* Hourly refreshed, daily aggregate report snapshots for the beta admin. */
 import fs from 'node:fs';
 import path from 'node:path';
-const dayInKyiv=stamp=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit'}).format(stamp);
+const dayInKyiv=stamp=>{const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(stamp).map(p=>[p.type,p.value]));return `${parts.year}-${parts.month}-${parts.day}`};
 export function createDailyReports({directory,clock=()=>new Date()}){
  const file=path.join(directory,'beta-daily-reports.json');let snapshots={};
  try{const saved=JSON.parse(fs.readFileSync(file,'utf8'));if(saved&&typeof saved==='object'&&!Array.isArray(saved))snapshots=saved}catch(e){if(e.code!=='ENOENT')console.warn('Daily reports recovery:',e.message)}
