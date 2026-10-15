@@ -7,6 +7,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import {createFeedbackStore,readFeedbackBody} from './feedback-store.js';
 import {createAdminExtras} from './admin-extras.js';
+import {createAnalyticsStore} from './analytics.js';
 import {createAppConfig} from './app-config.js';
 import {createMediaStore} from './media-store.js';
 import {createSchedulePublication} from './schedule-publication.js';
@@ -35,6 +36,7 @@ function save(){
 }
 const feedback=createFeedbackStore({filePath:process.env.FEEDBACK_FILE||path.join(path.dirname(DATA_FILE),'feedback.json')});
 const extras=createAdminExtras({directory:path.dirname(DATA_FILE)});
+const analytics=createAnalyticsStore({filePath:path.join(path.dirname(DATA_FILE),'analytics.json')});
 const siteControls=createAppConfig({directory:path.dirname(DATA_FILE),record:extras.record});
 const mediaStore=createMediaStore(path.dirname(DATA_FILE));
 const officialSchedules=createSchedulePublication({directory:path.dirname(DATA_FILE),token:process.env.SCHEDULE_INGEST_SECRET||''});
@@ -259,6 +261,15 @@ const server=http.createServer(async(req,res)=>{
    response(res,400,{error:e.message});}
   return;
  }
+ if(requestPath==='/api/telemetry'&&req.method==='POST'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  try{
+   const body=await readPayload(req,256);
+   if(!analytics.record(body?.event,body?.source)){response(res,400,{error:'Unknown aggregate event'});return}
+   response(res,202,{ok:true});
+  }catch{response(res,400,{error:'Invalid aggregate event'})}
+  return;
+ }
  if(req.url?.startsWith('/api/admin/')){
   await adminRouter(req,res,manualPush,feedback,extras,async()=>{
     const result={server:{lastPushCheck:lastSuccess,pushCheckError:lastError,pushSubscribers:Object.keys(subscribers).length},sources:{}};
@@ -273,7 +284,7 @@ const server=http.createServer(async(req,res)=>{
     const tickets=feedback.list().items;
     result.feedback={total:tickets.length,new:tickets.filter(t=>t.status==='new').length,inProgress:tickets.filter(t=>t.status==='in_progress').length};
     return result;
-  },siteControls,mediaStore);return}
+  },siteControls,mediaStore,analytics);return}
  if(req.url?.startsWith('/api/media/')&&req.method==='GET'){
    const id=req.url.slice('/api/media/'.length).split('?')[0],file=mediaStore.read(id);
    if(!file){response(res,404,{error:'Фото не знайдене'});return}

@@ -2,6 +2,22 @@
 (() => {
   'use strict';
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  // No device identifiers are collected. Count one event per tab and day.
+  const referrerSource=(()=>{try{const x=new URLSearchParams(location.search).get('src');return ['telegram-echerkasy','telegram'].includes(x)?x:'direct'}catch{return 'direct'}})();
+  async function reportUsage(event){
+    try{
+      const date=new Date().toISOString().slice(0,10),key='svitlo-aggregate-'+event+'-'+date;
+      if(sessionStorage.getItem(key)==='yes')return;
+      const response=await fetch('./push-config.json',{cache:'no-store'});
+      if(!response.ok)return;
+      const cfg=await response.json(),base=new URL(cfg.apiBase);
+      if(base.protocol!=='https:')return;
+      const result=await fetch(new URL('/api/telemetry',base),{method:'POST',cache:'no-store',keepalive:true,
+        headers:{'content-type':'application/json'},body:JSON.stringify({event,source:referrerSource})});
+      if(result.ok)sessionStorage.setItem(key,'yes');
+    }catch{/* Telemetry must never block the application. */}
+  }
+  reportUsage(standalone?'app_open':'landing');
   // Installed iPhone PWAs must update their own Service Worker, not only the browser installer.
   if (navigator.serviceWorker?.register) {
     const previousController=navigator.serviceWorker.controller;
@@ -137,6 +153,7 @@
     action.innerHTML = 'Встановити застосунок <span aria-hidden="true">→</span>';
   });
   action.addEventListener('click', async () => {
+    reportUsage('install_guide');
     if (deferredPrompt) {
       const prompt = deferredPrompt;
       deferredPrompt = null;

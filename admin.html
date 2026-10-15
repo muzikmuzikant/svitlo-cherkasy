@@ -40,15 +40,17 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
 <header><div class="flex"><svg aria-hidden="true" width="37" height="37" viewBox="0 0 48 48"><rect width="48" height="48" rx="16" fill="#347dff"/><path d="M27 7 14 26h9l-1 15L35 20h-9Z" fill="#fff"/></svg><strong>Світло Черкаси</strong></div><a href="./">← До застосунку</a></header>
 <section id="adminLoginScreen" class="login-view">
  <div class="login-symbol" aria-hidden="true">ϟ</div>
- <h1>Вхід для адміністратора</h1>
- <p>Увійдіть, щоб керувати графіками, надсилати Push-повідомлення та змінювати дані застосунку.</p>
+ <div class="login-overline">SVITLO CONTROL / PRIVATE ACCESS</div>
+ <h1>Центр керування Світло Черкаси</h1>
+ <p>Керуйте публікаціями, графіками та аналітикою з одного захищеного робочого простору.</p>
  <form id="loginForm" class="card login-card">
-  <h2>Авторизація</h2>
-  <div class="field"><label for="password">Пароль адміністратора</label><input id="password" type="password" placeholder="Введіть пароль" autocomplete="current-password" required minlength="7" autofocus></div>
+  <div class="login-lock-title"><span aria-hidden="true">◈</span><div><h2>Захищений вхід</h2><small>Перевірка на сервері Railway</small></div></div>
+  <div class="field"><label for="password">Пароль адміністратора</label><div class="login-password-field"><input id="password" type="password" placeholder="Введіть пароль" autocomplete="current-password" required minlength="7" autofocus><button type="button" id="togglePassword" class="secondary" aria-pressed="false">Показати</button></div></div>
+  <div class="field"><label for="otp">Код автентифікатора <small>(якщо увімкнено 2FA)</small></label><input id="otp" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="6 цифр" autocomplete="one-time-code"></div>
   <button type="submit" class="login-submit" id="connect">Увійти до панелі →</button>
   <p id="loginError" class="login-alert" role="alert" aria-live="polite"></p>
-  <details><summary>Налаштування сервера (якщо вхід не працює)</summary><div class="field"><label for="server">Адреса Railway (HTTPS)</label><input id="server" type="url" placeholder="https://your-server.up.railway.app" autocomplete="url"></div><p>Зазвичай адреса визначається автоматично з push-config.json.</p></details>
-  <p class="login-security">Пароль перевіряється сервером Railway. Він не зберігається у файлах сайту.</p>
+  <input id="server" type="hidden">
+  <div class="login-assurance"><span aria-hidden="true">♧</span><p>Дані входу не зберігаються в браузері. Термін дії сеансу: до 8 годин, з автоматичним завершенням після 30 хвилин бездіяльності.</p></div>
  </form>
 </section>
 <div id="adminDashboard" hidden>
@@ -106,7 +108,12 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  </div>
 </section>
 <section class="card control-large-panel" data-admin-panel="insights" hidden>
- <div class="control-panel-lead"><span>REAL-TIME DATA</span><h2>Аналітика роботи</h2><p>Тільки реальні операційні показники. Без вигаданих переглядів, користувачів чи геолокацій.</p></div>
+ <div class="control-panel-lead"><span>SVITLO INSIGHTS</span><h2>Аналітика застосунку</h2><p>Реальні агреговані події, графіки відвідуваності та джерела переходів. Без персональних даних.</p></div>
+ <div class="analytics-toolbar"><div><strong>Активність відвідувачів</strong><small id="analyticsSince">Отримуємо дані з Railway…</small></div><div class="analytics-actions"><label for="analyticsRange">Період</label><select id="analyticsRange"><option value="7">7 днів</option><option value="30">30 днів</option></select><button type="button" class="secondary" id="analyticsReload">Оновити</button></div></div>
+ <div id="analyticsSummary" class="analytics-summary"></div>
+ <div class="analytics-grid"><div class="analytics-chart-card"><div class="analytics-chart-head"><div><h3>Динаміка відкриттів</h3><p>Сторінка встановлення та запуски PWA</p></div><span id="analyticsPeriod">7 днів</span></div><div id="analyticsTrendChart" class="analytics-trend" role="img" aria-label="Динаміка відкриттів за обраний період"></div><div class="analytics-legend"><span><i class="landing"></i> Сторінка встановлення</span><span><i class="installed"></i> Запуск PWA</span></div></div><div class="analytics-chart-card"><div class="analytics-chart-head"><div><h3>Останні 24 години</h3><p>Агреговані події за київським часом</p></div></div><div id="analyticsHourlyChart" class="analytics-hourly" role="img" aria-label="Активність за 24 години"></div></div></div>
+ <div class="analytics-grid analytics-bottom"><div class="analytics-chart-card"><h3>Рекламні переходи</h3><div id="analyticsReferrals"></div><p class="hint">Для рекламного каналу додавайте ?src=telegram-echerkasy до посилання. Показник не дорівнює кількості людей.</p></div><div class="analytics-chart-card"><h3>Що означає статистика</h3><div class="analytics-notes"><p><strong>Відкриття</strong> рахують відвідування сторінки встановлення.</p><p><strong>Запуски PWA</strong> рахують відкриття встановленого застосунку, але не точні встановлення.</p><p><strong>Намір встановити</strong> показує натискання на інструкцію.</p><p>Не використовуються профілі, адреси користувачів або ідентифікатори пристроїв.</p></div></div></div>
+ <p id="analyticsStatus" class="hint" role="status"></p>
  <div id="controlInsightsMetrics" class="control-summary-metrics"></div>
  <div class="control-cols"><div class="control-subcard"><h3>Повідомлення за статусом</h3><div id="controlNoticeStats"></div></div>
  <div class="control-subcard"><h3>Події адміністрації</h3><div id="controlAuditStats"></div></div></div>
@@ -143,6 +150,8 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  <div id="controlAccessCards" class="control-summary-metrics"></div>
  <div class="control-subcard"><h3>Ролі та дозволи</h3><div id="controlRoles"></div></div>
  <div class="control-subcard"><h3>Безпека дій</h3><p>Масова Push-розсилка, увімкнення техробіт та видалення контенту вимагають підтвердження. Доступ додаткових ролей визначається конфігурацією Railway.</p></div>
+<div class="security-cards" id="securityOverview"></div>
+ <div class="control-subcard security-revoke"><h3>Завершити інші сеанси</h3><p>Залишити активним лише цей вхід. Потрібен пароль власника. Дія не змінює пароль Railway.</p><div class="security-revoke-form"><label for="securityRevokePassword">Пароль власника</label><input type="password" id="securityRevokePassword" autocomplete="off" placeholder="Повторіть пароль"><button type="button" class="danger" id="securityRevoke">Завершити інші сеанси</button></div><button type="button" class="secondary" id="securityReload">Оновити захист</button><p id="securityMessage" class="hint" role="status"></p></div>
 </section>
 <section class="card control-large-panel" data-admin-panel="design" hidden>
  <div class="control-panel-lead"><span>APPEARANCE STUDIO</span><h2>Оформлення застосунку</h2><p>Кольори, щільність елементів і візуальний стиль. Публікація через Railway без перевипуску PWA.</p></div>
@@ -431,4 +440,4 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
 </div>
 <div class="card" data-admin-panel="data" hidden><div class="headline"><h2>Редактор та перевірка</h2><span class="pill" id="editMode">Локальна копія</span></div><div class="flex"><div class="field"><label for="kind">Файл</label><select id="kind"><option value="overrides">Ручні уточнення (не перезаписуються імпортером)</option><option value="schedules">Планові графіки</option><option value="addresses">Точні адреси</option><option value="streets">Довідник сіл і вулиць</option><option value="emergency">Повідомлення про аварійні відключення</option></select></div></div><p class="hint">Рекомендуємо змінювати <b>«Ручні уточнення»</b>: інакше наступний імпорт може перезаписати графіки чи адреси. Для виправлення обов'язково залишайте посилання на офіційну публікацію.</p><textarea id="editor" class="mono" spellcheck="false" aria-label="Редагування JSON"></textarea><div class="flex" style="margin-top:13px"><button id="validate" class="secondary">Перевірити JSON</button><button id="reload" class="secondary">Повернути збережене</button><button id="download" class="secondary">Експортувати JSON</button><button id="publish" disabled>Опублікувати через GitHub</button></div><div id="result" role="status" aria-live="polite">Оберіть файл або підключіть сервер, щоб перевіряти дані.</div></div>
 <div class="card" data-admin-panel="data" hidden><h2>Правила перевірки</h2><p>Адреси з вулицями без будинків показують <strong>можливі</strong> підчерги, а не точні. Не позначайте аварійні повідомлення як активні без офіційного підтвердження. Автоматичні Push на заблокованому iPhone працюють лише при увімкненому push-сервері й дозволі користувача.</p></div>
-</div></main><script defer src="./admin.js"></script><script defer src="./admin-extra.js"></script><script defer src="./admin-control.js"></script><script defer src="./admin-richtext.js"></script><script defer src="./admin-help-richtext.js"></script><script defer src="./admin-features.js"></script><script defer src="./admin-command.js"></script><script defer src="./admin-dashboard.js"></script><script defer src="./schedule-planner.js"></script><script defer src="./admin-planner.js"></script></body></html>
+</div></main><script defer src="./admin.js"></script><script defer src="./admin-extra.js"></script><script defer src="./admin-control.js"></script><script defer src="./admin-richtext.js"></script><script defer src="./admin-help-richtext.js"></script><script defer src="./admin-features.js"></script><script defer src="./admin-command.js"></script><script defer src="./admin-dashboard.js"></script><script defer src="./admin-analytics.js"></script><script defer src="./admin-security-ui.js"></script><script defer src="./schedule-planner.js"></script><script defer src="./admin-planner.js"></script></body></html>

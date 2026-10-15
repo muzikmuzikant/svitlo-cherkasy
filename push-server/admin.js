@@ -4,6 +4,7 @@
 import crypto from 'node:crypto';
 import {originPolicy} from './origins.js';
 import {validateAppConfig} from './app-config.js';
+import {verifyTotp} from './auth-security.js';
 const PATHS={
  overrides:'data/manual_overrides.json',
  schedules:'data/schedules.json',
@@ -13,16 +14,19 @@ const PATHS={
 };
 const ATTEMPTS=new Map();
 const SESSIONS=new Map();
-const SESSION_TTL=12*60*60*1000;
+const SESSION_TTL=8*60*60*1000;
+const IDLE_TTL=30*60*1000;
+const ADMIN_TOTP_SECRET=process.env.ADMIN_TOTP_SECRET||'';
 const MAX_SESSIONS=100;
 const now=()=>Date.now();
-function expireSessions(){for(const [token,session] of SESSIONS)if(session.expires<=now())SESSIONS.delete(token)}
+const agentHash=req=>crypto.createHash('sha256').update(String(req.headers['user-agent']||'')).digest('hex');
+function expireSessions(){for(const [token,session] of SESSIONS)if(session.expires<=now()||session.idleUntil<=now())SESSIONS.delete(token)}
 const ADMIN_PASSWORD=process.env.ADMIN_PASSWORD||'';
 const GH_TOKEN=process.env.GITHUB_TOKEN||'';
 const REPO=process.env.GITHUB_REPOSITORY||'';
 const BRANCH=process.env.GITHUB_BRANCH||'main';
 const origin=process.env.APP_ORIGIN||'';
-function send(res,status,body){const headers={'content-type':'application/json; charset=utf-8','cache-control':'no-store','vary':'Origin'};if(res._allowedAppOrigin)headers['access-control-allow-origin']=res._allowedAppOrigin;res.writeHead(status,headers);res.end(JSON.stringify(body))}
+function send(res,status,body){const headers={'content-type':'application/json; charset=utf-8','cache-control':'no-store','vary':'Origin','x-content-type-options':'nosniff','referrer-policy':'no-referrer'};if(res._allowedAppOrigin)headers['access-control-allow-origin']=res._allowedAppOrigin;res.writeHead(status,headers);res.end(JSON.stringify(body))}
 function authCompare(received){
  const a=crypto.createHash('sha256').update(received).digest();
  const passwords=[['owner',ADMIN_PASSWORD],['editor',process.env.EDITOR_PASSWORD],
@@ -60,7 +64,7 @@ async function github(path,method='GET',payload){
  return data;
 }
 async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
-export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore){
+export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(!originPolicy.isAllowed(req.headers.origin)){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const url=new URL(req.url,'http://localhost');
@@ -68,6 +72,7 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    // A login uses the password ONCE. Other admin API requests use the session token.
    // Limit failed attempts; never include secrets in logs or responses.
    const ip=String(req.socket.remoteAddress||'unknown').slice(0,120);
+   if(ATTEMPTS.size>4000)for(const [key,value] of ATTEMPTS)if(value.until<now())ATTEMPTS.delete(key);
    let track=ATTEMPTS.get(ip)||{count:0,until:0};
    if(now()>track.until)track={count:0,until:now()+60_000};
    if(track.count>=8){send(res,429,{error:'Забагато спроб входу. Спробуйте за хвилину.'});return true}
@@ -75,9 +80,10 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    try{
      const body=await readJson(req,1024);
      const role=authCompare(String(body.password||''));
-     if(!role){
+     const otpRequired=role==='owner'&&!!ADMIN_TOTP_SECRET;
+     if(!role||(otpRequired&&!verifyTotp(ADMIN_TOTP_SECRET,body.code,now()))){
        track.count++;ATTEMPTS.set(ip,track);
-       send(res,401,{error:'Неправильний пароль'});return true;
+       send(res,401,{error:'Невірні дані входу. Перевірте пароль і, якщо ввімкнено, код автентифікатора.'});return true;
      }
      ATTEMPTS.delete(ip);expireSessions();extras?.record('auth.login');
      if(SESSIONS.size>=MAX_SESSIONS){
@@ -85,17 +91,18 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
        if(oldest)SESSIONS.delete(oldest);
      }
      const token=crypto.randomBytes(32).toString('base64url');
-     SESSIONS.set(crypto.createHash('sha256').update(token).digest('hex'),{expires:now()+SESSION_TTL,role});
+     SESSIONS.set(crypto.createHash('sha256').update(token).digest('hex'),{expires:now()+SESSION_TTL,idleUntil:now()+IDLE_TTL,ua:agentHash(req),role});
      send(res,200,{ok:true,token,role,expiresIn:SESSION_TTL/1000});return true;
    }catch(e){send(res,e.statusCode||400,{error:'Некоректний запит входу'});return true}
  }
  const bearer=/^Bearer ([A-Za-z0-9_-]+)$/.exec(String(req.headers.authorization||''));
  const tokenHash=bearer?crypto.createHash('sha256').update(bearer[1]).digest('hex'):'';
  const session=SESSIONS.get(tokenHash)||null;
- if(!session||session.expires<=now()){
+ if(!session||session.expires<=now()||session.idleUntil<=now()||session.ua!==agentHash(req)){
    if(session)SESSIONS.delete(tokenHash);
    send(res,401,{error:'Сеанс завершився. Увійдіть знову.'});return true;
  }
+ session.idleUntil=now()+IDLE_TTL;
  const role=session.role;
  if(url.pathname==='/api/admin/logout'&&req.method==='POST'){
    SESSIONS.delete(tokenHash);extras?.record('auth.logout');send(res,200,{ok:true});return true;
@@ -105,7 +112,7 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
  const allowed=role==='owner'
   ||role==='viewer'&&method==='GET'
   ||role==='operator'&&(
-   method==='GET'&&(/\/api\/admin\/(?:monitor|audit|status|feedback|help)$/.test(pathName)
+   method==='GET'&&(/\/api\/admin\/(?:monitor|audit|status|feedback|help|analytics|security)$/.test(pathName)
     ||pathName==='/api/admin/push/status')
    ||method==='PATCH'&&pathName.startsWith('/api/admin/feedback/'))
   ||role==='editor'&&!(pathName==='/api/admin/push/send'
@@ -114,6 +121,24 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    ||(pathName.startsWith('/api/admin/feedback/')&&method==='DELETE'));
  if(!allowed){send(res,403,{error:'Недостатньо прав для цієї дії'});return true}
  try{
+   if(url.pathname==='/api/admin/analytics'&&req.method==='GET'){
+     if(!analytics){send(res,503,{error:'Аналітика поки недоступна'});return true}
+     send(res,200,analytics.report());return true;
+   }
+   if(url.pathname==='/api/admin/security'&&req.method==='GET'){
+     expireSessions();send(res,200,{role,activeSessions:SESSIONS.size,secondFactorEnabled:!!ADMIN_TOTP_SECRET,
+       passwordNeedsUpgrade:role==='owner'&&ADMIN_PASSWORD.length<12,idleMinutes:IDLE_TTL/60000,
+       maximumHours:SESSION_TTL/3600000,sessionExpiresAt:new Date(session.expires).toISOString()});return true;
+   }
+   if(url.pathname==='/api/admin/security/revoke-others'&&req.method==='POST'){
+     if(role!=='owner'){send(res,403,{error:'Доступно лише власнику'});return true}
+     const body=await readJson(req,700);
+     if(body?.confirm!==true||authCompare(String(body.password||''))!=='owner'){
+       send(res,403,{error:'Підтвердьте дію паролем власника'});return true;
+     }
+     let removed=0;for(const key of SESSIONS.keys())if(key!==tokenHash){SESSIONS.delete(key);removed++}
+     extras?.record('auth.revokeOthers','count='+removed);send(res,200,{ok:true,removed});return true;
+   }
    if(url.pathname==='/api/admin/push/status'&&req.method==='GET'){send(res,200,manualPush.stats());return true}
    if(url.pathname==='/api/admin/push/test'&&req.method==='POST'){const output=await manualPush.test(await readJson(req));extras?.record('push.test','test notification');send(res,200,output);return true}
    if(url.pathname==='/api/admin/notices/test'&&req.method==='POST'){
