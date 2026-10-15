@@ -409,7 +409,16 @@ function navigate(name){
  else renderHome();
  window.scrollTo({top:0,behavior:'instant'});
  active=name;
- for(const n of ['home','detail','updates','settings'])$(n).hidden=n!==name;
+ // One reveal for the whole screen; never animate all cards separately.
+ // Respect iOS Reduce Motion and the admin animation preference.
+ const allowMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches!==true &&
+  !document.documentElement.classList.contains('feature-off-animations');
+ for(const n of ['home','detail','updates','settings']){
+  const section=$(n);
+  section.classList.remove('tab-enter');
+  if(n===name&&allowMotion)section.classList.add('tab-enter');
+  section.hidden=n!==name;
+ }
  document.querySelectorAll('[data-go]').forEach(x=>{if(x.classList.contains('nav-item'))x.classList.toggle('active',x.dataset.go===name)});
 }
 function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Підчерга '+previewQueue,settlement:'Черкаси та район'}:primary();
@@ -432,7 +441,7 @@ function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Пі�
  const pub=currentDay(day),t=timeline(day,a.queue);
  const dayStats=stats(t);
  setText('detailDayStat',dayStats?(pub?(dayStats.unknown?'Частина годин уточнюється':'Без світла '+formatDuration(dayStats.off)+' · Зі світлом '+formatDuration(dayStats.on)):''):'Немає даних');
- setText('detailDayLabel',formatDate(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:'Графік не опубліковано · світло весь день за замовчуванням');const grid=$('hourGrid');grid.replaceChildren();
+ setText('detailDayLabel',formatDate(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:'Світло весь день');const grid=$('hourGrid');grid.replaceChildren();
  for(let h=0;h<24;h++){
    let on=0,off=0;
    for(let m=h*60;m<h*60+60;m++){if(t?.[m]===0)on++;if(t?.[m]===1)off++}

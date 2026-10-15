@@ -93,7 +93,7 @@ test('active PWA gets admin updates without exit/reenter; restored options links
 test('all empty published dates render as green days without modifying official data files',()=>{
  const app=read('app.js');
  assert.match(app,/if\(!day\)\{[\s\S]*?return new Int8Array\(1440\)/);
- assert.match(app,/Графік не опубліковано · світло весь день за замовчуванням/);
+ assert.match(app,/Світло весь день/);
  assert.match(app,/Графік не опубліковано\. За замовчуванням позначено світло весь день/);
  assert.match(app,/currentDay\(date\)/);
 });
