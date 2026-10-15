@@ -547,3 +547,12 @@ html:not([data-app-mode="standalone"]) #appBootScreen,.app-boot-screen[hidden]{d
 .beta-consent-actions #betaConsentDecline{background:#f4f7fc;color:#3b4e69}
 @media(max-width:390px){.beta-consent-dialog{padding:19px}.beta-consent-dialog h2{font-size:22px}}
 @media(prefers-reduced-motion:reduce){.beta-consent-dialog,.beta-consent-actions button{transition:none!important}}
+
+/* 7.9.8 user-controlled reminder timings, quiet hours and favorite queues */
+.push-advanced select,.push-advanced input[type=time],.quick-fav-settings select{max-width:138px;min-width:95px;padding:10px;border-radius:11px;border:1px solid #dce5ef;background:#fff;color:#1b304b;font:inherit}
+.favorite-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.favorite-chip{display:flex;overflow:hidden;border-radius:11px;border:1px solid #dce8f6;background:#f3f8ff}
+.favorite-chip button{border:0;background:transparent;color:#2b5cb2;padding:10px 12px;font:600 12px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.favorite-chip button:last-child{border-left:1px solid #dce8f6}
+.quick-fav-settings>div:first-child p{color:#7b8a9f;font-size:12px}
+@media(max-width:380px){.push-advanced .setting-line{gap:9px}.push-advanced select,.push-advanced input[type=time]{max-width:115px;font-size:12px}}
