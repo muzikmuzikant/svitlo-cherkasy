@@ -260,7 +260,30 @@
   button(expenses,'+ Додати витрату',()=>{draft.support.expenses.push({id:uuid(),title:'',amount:0,date:'',description:'',public:false});mark();render()});
   support.append(expenses);
   root.append(support);
-  const ads=section('Рекламні кампанії','Кожна реклама має власні налаштування, терміни, пріоритети та статистику.');draft.campaigns.forEach((c,i)=>campaign(ads,c,i));
+  const overview=section('Календар кампаній та архів','Усі кампанії зберігаються разом зі статистикою. Після завершення терміну вони автоматично переходять до списку завершених і більше не показуються користувачам.');
+  const board=el('div',undefined,'ad-campaign-calendar');
+  const campaigns=[...draft.campaigns].sort((a,b)=>String(a.start||'').localeCompare(String(b.start||'')));
+  const currentTime=Date.now();
+  for(const c of campaigns){
+   const start=c.start?Date.parse(c.start):null,end=c.end?Date.parse(c.end):null;
+   const state=!c.enabled?'Вимкнено':end&&end<=currentTime?'Завершено':start&&start>currentTime?'Заплановано':'Активне';
+   const card=el('article',undefined,'ad-calendar-item');card.append(el('strong',c.title||'Без назви'),el('small',state));
+   const timing=el('p',[start?new Date(start).toLocaleString('uk-UA'):'Без дати початку',end?new Date(end).toLocaleString('uk-UA'):'Без дати завершення'].join('  →  '),'ad-muted');
+   card.append(timing);board.append(card)
+  }
+  if(!campaigns.length)board.append(el('p','Кампаній ще немає.','ad-muted'));
+  overview.append(board);root.append(overview);
+  const ads=section('Рекламні кампанії','Кожна реклама має власні налаштування, терміни, пріоритети та статистику.');
+  draft.campaigns.forEach((c,i)=>campaign(ads,c,i));
+  const templates=el('details',undefined,'ad-templates-panel');templates.append(el('summary','Швидко створити оголошення за шаблоном'));
+  for(const [title,background,foreground,style] of [['Світлий мінімалізм','#ffffff','#172c49','soft'],['Темний преміум','#19385c','#ffffff','dark'],['Контрастний банер','#e6f1ff','#123a72','outline']]){
+   button(templates,'+ '+title,()=>{
+    draft.campaigns.unshift({id:uuid(),title:'Нове оголошення',description:'Опис рекламної кампанії',image:'',link:'',button:'Дізнатися більше',
+     enabled:false,paid:false,background,foreground,cardStyle:style,detailEnabled:false,detailBackground:background,detailForeground:foreground,
+     start:'',end:'',days:[],weight:1,seconds:8,maxImpressions:0,dailyCap:0,price:0,note:''});mark();render()
+   },'secondary');
+  }
+  ads.append(templates);
   button(ads,'+ Створити оголошення',()=>{draft.campaigns.unshift({id:uuid(),title:'',description:'',image:'',link:'',button:'Дізнатися більше',enabled:false,background:'#ffffff',foreground:'#142338',start:'',end:'',days:[],weight:1,seconds:8,maxImpressions:0,dailyCap:0,price:0,paid:false,note:''});mark();render()});root.append(ads);
   const bottom=el('div',undefined,'ad-sticky-savebar');
   const caption=el('span','Зміни застосовуються до Beta після збереження.');
