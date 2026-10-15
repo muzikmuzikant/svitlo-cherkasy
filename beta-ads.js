@@ -60,14 +60,14 @@
   if(item.image){const img=make('img');img.src=item.image;img.alt='';img.loading='lazy';img.referrerPolicy='no-referrer';a.append(img)}
   const body=make('div');body.append(make('strong',item.title||'Реклама'),make('small',item.description||''));
   const action=make('em',item.id==='promo'?(config.contactLabel||'Дізнатися більше'):(item.detailEnabled?'Детальніше':item.button||'Дізнатися більше'),'beta-ad-action');
-  body.append(action);a.append(body);a.append(make('span','↗','beta-ad-arrow'));
+  body.append(action);a.append(body);a.append(make('span','🔗','beta-ad-arrow'));
   a.style.backgroundColor=item.background||'#ffffff';a.style.color=item.foreground||'#142338';
   a.dataset.style=item.cardStyle||'soft';
   if(item.cardBackgroundImage){const dark=item.cardStyle==='dark';a.style.backgroundImage=(dark?'linear-gradient(90deg,#0b1e35e8,#0b1e3533),':'linear-gradient(90deg,#fffffff2,#ffffff44),')+'url("'+item.cardBackgroundImage.replace(/"/g,'')+'")';a.style.backgroundSize='cover';a.style.backgroundPosition='center'}
   a.addEventListener('click',()=>{if(link)send(item.id,'click')});
   host.append(a);
   const footer=make('div',undefined,'beta-ad-controls');
-  const prev=make('button','‹','beta-ad-arrowbtn'),next=make('button','›','beta-ad-arrowbtn');
+  const prev=make('button','⬅️','beta-ad-arrowbtn'),next=make('button','➡️','beta-ad-arrowbtn');
   prev.type=next.type='button';prev.setAttribute('aria-label','Попередня реклама');next.setAttribute('aria-label','Наступна реклама');
   prev.onclick=()=>move(-1);next.onclick=()=>move(1);
   footer.append(prev,make('span',(index+1)+' / '+items.length,'beta-ad-counter'),next);

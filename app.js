@@ -182,7 +182,7 @@ function renderFreshness(){
    :hasTime
      ?` Публікації оператора востаннє перевіряли ${fmtStamp(data.lastChecked)}. Новіші зміни можуть бути відсутні.`
      :' Не вдалося визначити час останньої перевірки публікацій.');
- const link=el('a','', 'Перевірити в оператора ↗');
+ const link=el('a','', 'Перевірити в оператора 🔗');
  link.href=OFFICIAL;link.target='_blank';link.rel='noopener noreferrer';
  node.append(title,message,link);
 }
@@ -243,7 +243,7 @@ function renderQuickPlaces(){
  host.replaceChildren();
  if(!addresses.length){host.append(el('span','quick-place-empty','Додайте адресу, щоб перемикатися одним дотиком'));return}
  [...addresses].sort((a,b)=>Number(!!b.favorite)-Number(!!a.favorite)).forEach(item=>{
-  const button=el('button','quick-place'+(primary()?.id===item.id?' selected':''),(item.favorite?'★  ':'')+label(item));
+  const button=el('button','quick-place'+(primary()?.id===item.id?' selected':''),(item.favorite?'⭐  ':'')+label(item));
   button.type='button';button.dataset.queue=item.queue||'';
   button.setAttribute('aria-pressed',String(primary()?.id===item.id));
   button.onclick=()=>{
@@ -346,7 +346,7 @@ async function shareSchedule(date,{copy=false}={}){
   header.addColorStop(0,'#102e5c');header.addColorStop(.55,'#1b4d85');header.addColorStop(1,'#337bc6');
   round(margin,66,W-margin*2,348,38,header);
   round(101,100,70,70,21,'#ffffff24');
-  line('ϟ',136,153,'700 53px system-ui','#ffffff','center');
+  line('⚡',136,153,'700 53px system-ui','#ffffff','center');
   line('СВІТЛО ЧЕРКАСИ',197,127,'700 28px system-ui','#b6d8ff');
   line('МІЙ ГРАФІК ВІДКЛЮЧЕНЬ',197,163,'650 17px system-ui','#c9e1ff');
   line(formatDate(date,{weekday:'long',day:'numeric',month:'long'}),104,252,'750 42px system-ui','#ffffff');
@@ -476,7 +476,7 @@ function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Пі�
  setText('nextTime',next?nextChangeLabel(next):st==='on'?'Не заплановано':'Невідомо');
  setText('nextDescription',next?`Планове ${next.to===1?'відключення':'відновлення електропостачання'}${next.dayOffset===1?' наступного дня':''}`:
   st==='on'?'На сьогодні та завтра у підтверджених даних змін не зазначено':'Точний час не підтверджено');$('articleLink').href=pub?.queueSources?.[a.queue]||pub?.source||'https://www.cherkasyoblenergo.com/news'}
-function renderUpdates(){setText('lastCheck',data.lastChecked?fmtStamp(data.lastChecked):'Час перевірки невідомий');setText('updateNote',data.lastChecked?'Остання перевірка графіків.':'Перевірте графік безпосередньо на сайті оператора.');const root=$('updateList');root.replaceChildren();const all=[...(data.changes||[]).map(x=>({kind:'change',...x})),...(data.days||[]).map(x=>({kind:'publication',...x}))].sort((a,b)=>String(b.publishedAt).localeCompare(String(a.publishedAt))).slice(0,24);if(!all.length)root.append(el('div','empty-places','Поки немає підтверджених публікацій.'));for(const d of all){const c=el('div','update-card');c.append(el('time','',fmtStamp(d.publishedAt)),el('strong','',d.kind==='change'?`Графік скориговано · ${formatDate(d.date)}`:`Опубліковано графік · ${formatDate(d.date)}`));const meta=el('div','small-source',d.kind==='change'?`Змінені підчерги: ${(d.queues||[]).join(', ')||'не уточнено'}`:`Редакцій: ${d.revisions||1}`);c.append(meta);const link=el('a','', 'Офіційна публікація ↗');link.href=d.source||'https://www.cherkasyoblenergo.com/news';link.target='_blank';link.rel='noopener';c.append(link);root.append(c)}}
+function renderUpdates(){setText('lastCheck',data.lastChecked?fmtStamp(data.lastChecked):'Час перевірки невідомий');setText('updateNote',data.lastChecked?'Остання перевірка графіків.':'Перевірте графік безпосередньо на сайті оператора.');const root=$('updateList');root.replaceChildren();const all=[...(data.changes||[]).map(x=>({kind:'change',...x})),...(data.days||[]).map(x=>({kind:'publication',...x}))].sort((a,b)=>String(b.publishedAt).localeCompare(String(a.publishedAt))).slice(0,24);if(!all.length)root.append(el('div','empty-places','Поки немає підтверджених публікацій.'));for(const d of all){const c=el('div','update-card');c.append(el('time','',fmtStamp(d.publishedAt)),el('strong','',d.kind==='change'?`Графік скориговано · ${formatDate(d.date)}`:`Опубліковано графік · ${formatDate(d.date)}`));const meta=el('div','small-source',d.kind==='change'?`Змінені підчерги: ${(d.queues||[]).join(', ')||'не уточнено'}`:`Редакцій: ${d.revisions||1}`);c.append(meta);const link=el('a','', 'Офіційна публікація 🔗');link.href=d.source||'https://www.cherkasyoblenergo.com/news';link.target='_blank';link.rel='noopener';c.append(link);root.append(c)}}
 function updatePushInvite(){
  const box=$('pushInvite');if(!box)return;
  const supported='Notification' in window;
@@ -607,9 +607,9 @@ function deleteAddress(){if(!editId||!confirm('Видалити цю адрес�
 function movePlace(id,direction){const i=addresses.findIndex(x=>x.id===id);const j=i+direction;if(i<0||j<0||j>=addresses.length)return;[addresses[i],addresses[j]]=[addresses[j],addresses[i]];saveAddresses();openPickerContent();renderHome()}
 function openPickerContent(){const root=$('placesOptions');root.replaceChildren();for(const [i,a] of addresses.entries()){
  const row=el('div','place-option');row.draggable=true;row.dataset.id=a.id;
- const choose=el('button','place-choose');const txt=el('span');txt.append(el('strong','',label(a)),el('small','',fullAddress(a)));choose.append(txt,el('span','',a.id===primary()?.id?'✓':'›'));choose.onclick=()=>{prefs.primaryId=a.id;savePrefs();closeSheet($('placesSheet'));render();updatePushSubscription().catch(()=>{})};row.append(choose);
+ const choose=el('button','place-choose');const txt=el('span');txt.append(el('strong','',label(a)),el('small','',fullAddress(a)));choose.append(txt,el('span','',a.id===primary()?.id?'✅':'➡️'));choose.onclick=()=>{prefs.primaryId=a.id;savePrefs();closeSheet($('placesSheet'));render();updatePushSubscription().catch(()=>{})};row.append(choose);
  const moves=el('span','place-moves');
- const favorite=el('button','move-btn favorite-btn'+(a.favorite?' selected':''),a.favorite?'★':'☆');
+ const favorite=el('button','move-btn favorite-btn'+(a.favorite?' selected':''),a.favorite?'⭐':'🤍');
  favorite.type='button';favorite.title=a.favorite?'Прибрати з улюблених':'Додати до улюблених';
  favorite.setAttribute('aria-label',favorite.title);
  favorite.onclick=()=>{a.favorite=!a.favorite;saveAddresses();openPickerContent();renderHome()};

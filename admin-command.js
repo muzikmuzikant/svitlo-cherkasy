@@ -130,7 +130,7 @@
   }catch(e){announceCheck(rows,false,'Перевірка сервера',e.message)}
   root.replaceChildren();
   rows.forEach(item=>{const card=make('div',null,'control-check '+(item.ok?'is-ok':'is-bad'));
-   card.append(make('span',item.ok?'✓':'!','control-check-icon'));
+   card.append(make('span',item.ok?'✅':'⚠️','control-check-icon'));
    const copy=make('div');copy.append(make('strong',item.label),make('small',item.detail));card.append(copy);root.append(card)});
   $('controlCheckSummary').textContent=rows.filter(x=>x.ok).length+'/'+rows.length+' перевірок без зауважень';
   refreshBusy=false;
@@ -216,7 +216,7 @@
      meta=make('span',when(run.created_at)+' · '+state);
     left.append(title,meta);
     const id=Number(run.id);
-    const link=document.createElement('a');link.textContent='Переглянути ↗';
+    const link=document.createElement('a');link.textContent='Переглянути 🔗';
     link.href=Number.isSafeInteger(id)&&id>0?'https://github.com/muzikmuzikant/svitlo-cherkasy/actions/runs/'+id:
      'https://github.com/muzikmuzikant/svitlo-cherkasy/actions';
     link.target='_blank';link.rel='noopener noreferrer';

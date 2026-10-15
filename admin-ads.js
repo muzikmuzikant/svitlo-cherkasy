@@ -201,7 +201,7 @@
   colorField(landingFields,'Акцентний колір',draft,'pageAccent','#377cff');
   const list=el('div',undefined,'ad-benefits-editor');list.append(el('h4','Переваги розміщення'));
   draft.pageBenefits.forEach((v,idx)=>{const line=el('div',undefined,'ad-benefit-row');const input=el('input');input.value=v;input.maxLength=180;
-   input.oninput=()=>{draft.pageBenefits[idx]=input.value;mark()};line.append(input);button(line,'×',()=>{draft.pageBenefits.splice(idx,1);mark();render()},'secondary');list.append(line)});
+   input.oninput=()=>{draft.pageBenefits[idx]=input.value;mark()};line.append(input);button(line,'❌',()=>{draft.pageBenefits.splice(idx,1);mark();render()},'secondary');list.append(line)});
   button(list,'+ Додати перевагу',()=>{draft.pageBenefits.push('Нова перевага');mark();render()});landing.append(list);
   root.append(main,landing);
   const contact=section('Зв’язатися з нами','Ці контакти автоматично відображаються на сторінці замовлення реклами.');
@@ -238,7 +238,7 @@
   (draft.support.goals||[]).forEach((goal,ix)=>{const line=el('div',undefined,'ad-subcard');const gb=grid(line);
    field(gb,'Іконка',goal,'icon');field(gb,'Заголовок',goal,'title');field(gb,'Опис',goal,'description','long');
    button(line,'Видалити картку',()=>{draft.support.goals.splice(ix,1);mark();render()},'danger');goalEditor.append(line)});
-  button(goalEditor,'+ Додати картку',()=>{draft.support.goals.push({icon:'♡',title:'Нова перевага',description:''});mark();render()});
+  button(goalEditor,'+ Додати картку',()=>{draft.support.goals.push({icon:'💙',title:'Нова перевага',description:''});mark();render()});
   support.append(goalEditor);
   const methods=section('Способи підтримки','Окремі картки Monobank, IBAN, банківських та інших переказів. Ми не приймаємо оплату всередині застосунку.');
   (draft.support.methods||=[]).forEach((m,i)=>{
@@ -249,7 +249,7 @@
    colorField(gf,'Колір тексту',m,'foreground','#172c49');
    button(row,'Видалити спосіб',()=>{draft.support.methods.splice(i,1);mark();render()},'danger');methods.append(row);
   });
-  button(methods,'+ Додати спосіб',()=>{draft.support.methods.push({id:uuid(),kind:'monobank',title:'Новий спосіб',description:'',url:'',details:'',icon:'♡',enabled:false,background:'#ffffff',foreground:'#172c49'});mark();render()});
+  button(methods,'+ Додати спосіб',()=>{draft.support.methods.push({id:uuid(),kind:'monobank',title:'Новий спосіб',description:'',url:'',details:'',icon:'💙',enabled:false,background:'#ffffff',foreground:'#172c49'});mark();render()});
   support.append(methods);
   const expenses=section('Облік витрат','Справжні витрати проєкту; публічно показуються лише записи з дозволом «Показувати на сторінці».');
   (draft.support.expenses||=[]).forEach((e,i)=>{
@@ -268,7 +268,7 @@
    const start=c.start?Date.parse(c.start):null,end=c.end?Date.parse(c.end):null;
    const state=!c.enabled?'Вимкнено':end&&end<=currentTime?'Завершено':start&&start>currentTime?'Заплановано':'Активне';
    const card=el('article',undefined,'ad-calendar-item');card.append(el('strong',c.title||'Без назви'),el('small',state));
-   const timing=el('p',[start?new Date(start).toLocaleString('uk-UA'):'Без дати початку',end?new Date(end).toLocaleString('uk-UA'):'Без дати завершення'].join('  →  '),'ad-muted');
+   const timing=el('p',[start?new Date(start).toLocaleString('uk-UA'):'Без дати початку',end?new Date(end).toLocaleString('uk-UA'):'Без дати завершення'].join('  ➡️  '),'ad-muted');
    card.append(timing);board.append(card)
   }
   if(!campaigns.length)board.append(el('p','Кампаній ще немає.','ad-muted'));

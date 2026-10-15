@@ -30,14 +30,15 @@
   details.dataset.motionTarget=opening?'open':'closed';
   animateDetails(details,opening);
  });
- // Reveal asynchronously rendered advertising plans, donation methods and expense cards too.
- if(marketing&&'MutationObserver'in window){
+ // Reveal newly created cards in both marketing pages and all admin editors.
+ const adminPage=/\/admin\.html$/.test(location.pathname);
+ if((marketing||adminPage)&&'MutationObserver'in window){
   const watch=new MutationObserver(records=>{
    const fresh=[];
    for(const record of records)for(const element of record.addedNodes){
     if(element.nodeType!==1)continue;
-    if(element.matches?.('.benefit,.format,.plan,.method,.goal,.expense,.contact'))fresh.push(element);
-    element.querySelectorAll?.('.benefit,.format,.plan,.method,.goal,.expense,.contact').forEach(x=>fresh.push(x));
+    if(element.matches?.('.benefit,.format,.plan,.method,.goal,.expense,.contact,.ad-subcard,.ad-calendar-item,.account-entry,.support-category-card,.schedule-diff-item,.reply-template-row'))fresh.push(element);
+    element.querySelectorAll?.('.benefit,.format,.plan,.method,.goal,.expense,.contact,.ad-subcard,.ad-calendar-item,.account-entry,.support-category-card,.schedule-diff-item,.reply-template-row').forEach(x=>fresh.push(x));
    }
    for(const element of fresh){
     if(element.classList.contains('motion-reveal'))continue;
