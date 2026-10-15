@@ -27,7 +27,10 @@ const defaults={
  enabled:false,title:'Підтримати Світло Черкаси',description:'Добровільна підтримка розвитку проєкту.',
  provider:'',paymentUrl:'',button:'Підтримати',details:'',
   heroImage:'',background:'#f5f8ff',accent:'#377cff',amounts:[30,60,120],
-  whyTitle:'Навіщо потрібна підтримка?',thanksTitle:'Дякуємо, що допомагаєте розвивати сервіс',showAmounts:true
+  whyTitle:'Навіщо потрібна підтримка?',thanksTitle:'Дякуємо, що допомагаєте розвивати сервіс',showAmounts:true,showGoals:true,showThanks:true,
+  goals:[{icon:'☁',title:'Робота серверів',description:'Підтримка доступності та оновлення даних.'},
+   {icon:'◈',title:'Розвиток',description:'Нові функції та виправлення помилок.'},
+   {icon:'⌁',title:'Стабільність',description:'Тестування і покращення інтерфейсу.'}]
 
  }
 };
@@ -79,7 +82,10 @@ function normalize(raw){
   amounts:(Array.isArray(su.amounts)?su.amounts:defaults.support.amounts).slice(0,6).map(n=>clamp(n,1,1000000,30)),
   whyTitle:text(su.whyTitle||defaults.support.whyTitle,110),
   thanksTitle:text(su.thanksTitle||defaults.support.thanksTitle,170),
-  showAmounts:su.showAmounts!==false
+  showAmounts:su.showAmounts!==false,showGoals:su.showGoals!==false,showThanks:su.showThanks!==false,
+  goals:(Array.isArray(su.goals)?su.goals:defaults.support.goals).slice(0,6).map(g=>({
+   icon:text(g.icon,6),title:text(g.title,100),description:text(g.description,350)
+  })).filter(g=>g.title)
 
  }
  };
