@@ -1,0 +1,18 @@
+name: Release read-only production smoke
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-readonly-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate current Production public endpoints (never send Push or admin mutation)
+        run: node --test smoke/live_release.mjs
