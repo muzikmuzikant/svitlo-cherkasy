@@ -560,7 +560,7 @@ html:not([data-app-mode="standalone"]) #appBootScreen,.app-boot-screen[hidden]{d
 .bottom-nav::before{
  content:"";position:absolute;top:8px;left:8px;width:calc((100% - 16px - 9px)/4);
  height:calc(100% - 16px);border-radius:16px;background:#eaf2ff;
- transform:translateX(calc(var(--tab-index,0) * (100% + 3px)));
+ transform:translateX(var(--tab-offset,0px));
  pointer-events:none;z-index:-1;
  transition:transform 460ms cubic-bezier(.2,.78,.22,1);
 }

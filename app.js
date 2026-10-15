@@ -438,7 +438,7 @@ function navigate(name){
  // Keep the old screen in a temporary, noninteractive layer until it fades out.
  // Only transform/opacity are animated (GPU-friendly on Android and iOS).
  const nav=document.querySelector('.bottom-nav');
- if(nav)nav.style.setProperty('--tab-index',String(names.indexOf(name)));
+ if(nav)nav.style.setProperty('--tab-offset','calc('+(names.indexOf(name)*100)+'% + '+(names.indexOf(name)*3)+'px)');
  document.querySelectorAll('[data-go]').forEach(item=>{
   if(item.classList.contains('nav-item')){
    const selected=item.dataset.go===name;
