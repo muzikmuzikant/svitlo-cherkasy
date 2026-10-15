@@ -25,7 +25,7 @@
   reportUsage(standalone?'app_open':'landing');
   reportUsage('platform_sample',platform);
   if(/^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(version))reportUsage('version_sample',version);
-  window.SvitloTelemetry={sampleSelected(place){
+  if(typeof window!=='undefined')window.SvitloTelemetry={sampleSelected(place){
     if(!place||!standalone)return;
     if(/^[1-6]\.[12]$/.test(String(place.queue||'')))reportUsage('queue_sample',place.queue);
     const town=String(place.settlement||'').trim().replace(/\s+/g,' ').slice(0,55);
