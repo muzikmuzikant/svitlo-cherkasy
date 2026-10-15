@@ -50,6 +50,40 @@
 <li><strong>Переглянути або попросити видалити звернення:</strong> зверніться через <a href="./feedback.html">центр підтримки</a> і збережіть номер та приватний код звернення для підтвердження доступу.</li>
 <li><strong>Запит щодо приватності:</strong> напишіть через <a href="./feedback.html">форму зв'язку</a>. Ви можете запитати мету та склад оброблюваних даних, уточнення, обмеження або видалення відповідно до законодавства.</li></ul>
 <p>Детальні права суб'єкта персональних даних передбачені <a href="https://zakon.rada.gov.ua/laws/show/2297-17" target="_blank" rel="noopener">статтею 8 Закону України «Про захист персональних даних»</a>. Дані суто агрегованої статистики не дозволяють знайти конкретну особу для індивідуального видалення.</p>
+<div class="note" id="revokeAnalytics"><strong>Відкликати згоду на необов’язкову аналітику</strong>
+<p>Аналітика не потрібна для перегляду графіків. Ви можете відкликати згоду та видалити запис встановлення, пов’язаний із цим браузером.</p>
+<button type="button" id="analyticsRevokeButton" style="padding:12px 16px;border:0;border-radius:12px;background:#e7f0ff;color:#285cb2;font:750 13px system-ui;cursor:pointer">Відкликати згоду та видалити запис</button>
+<p id="analyticsRevokeStatus" role="status" aria-live="polite"></p>
+</div>
+<script>
+(function(){
+ const button=document.getElementById('analyticsRevokeButton'),message=document.getElementById('analyticsRevokeStatus');
+ button.addEventListener('click',async()=>{
+  button.disabled=true;
+  try{
+   const current=localStorage.getItem('svitlo-beta-install-id')||'';
+   if(current)localStorage.setItem('svitlo-beta-analytics-delete-pending',current);
+   localStorage.removeItem('svitlo-beta-install-id');
+   localStorage.setItem('svitlo-beta-analytics-opt-in','no');
+   localStorage.setItem('svitlo-beta-analytics-choice','declined');
+   localStorage.setItem('svitlo-beta-analytics-consent-revision','7.9.8');
+   const pending=localStorage.getItem('svitlo-beta-analytics-delete-pending');
+   if(pending){
+    message.textContent='Згоду відкликано. Виконується видалення запису…';
+    const cfg=await fetch('./push-config.json',{cache:'no-store'}).then(r=>r.json());
+    const url=new URL(cfg.apiBase);
+    if(url.protocol!=='https:')throw Error('Invalid API');
+    const res=await fetch(url.origin+'/api/pwa/forget',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id:pending})});
+    if(!res.ok)throw Error('Delete was not confirmed');
+    localStorage.removeItem('svitlo-beta-analytics-delete-pending');
+   }
+   message.textContent='Згоду відкликано. Запис видалено або його не було.';
+  }catch{
+   message.textContent='Згоду відкликано. Видалення запису повториться при наступному відкритті застосунку онлайн.';
+  }finally{button.disabled=false}
+ });
+})();
+</script>
 <h2>9. Надійність і безпека</h2><p>Графіки можуть оновлюватися із затримкою через зовнішні джерела, інтернет або платформу розміщення. Статуси «Є світло» й «Немає світла» — це прогноз за опублікованим графіком, а не підтвердження фактичного стану електропостачання. Не використовуйте їх як єдине джерело інформації в надзвичайних ситуаціях.</p>
 <h2>10. Зміни цієї сторінки</h2><p>Якщо перелік даних, способи їх обробки або постачальники сервісів зміняться, ми оновимо цю сторінку та вкажемо нову дату редакції. Ви можете користуватися переглядом графіків без увімкнених Push-повідомлень.</p>
 <h2>11. Відповідальний за сервіс і контакт</h2><p>Питання щодо обробки даних і реалізації прав приймає оператор сервісу через <a href="./feedback.html">форму «Зв’язок із нами»</a>. Перед публічним запуском оператор має надати актуальні відомості про володільця даних та офіційний контакт для таких запитів. Для відповіді на ваше звернення можна залишити електронну пошту.</p><div class="note"><strong>Напишіть нам через форму зворотного зв’язку.</strong><p>Відповідь можна переглядати у розділі «Мої звернення», без обов'язкової електронної пошти. Перед широким запуском власник проєкту має також оприлюднити актуальний контакт відповідального за обробку даних і перевірити цю сторінку на відповідність роботі сервісу.</p></div>
