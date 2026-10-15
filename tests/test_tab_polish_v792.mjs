@@ -14,7 +14,7 @@ const classes=(initial=[])=>{
   contains:name=>names.has(name),
   toggle(name,enabled){if(enabled)names.add(name);else names.delete(name)}};
 };
-function setup({reduced=false,adminOff=false,address=true}={}){
+function setup({reduced=false,adminOff=false,address=true,native=false}={}){
  const actions=[],ids=['home','detail','updates','settings'];
  const pages=Object.fromEntries(ids.map(id=>[id,{hidden:id!=='home',classList:classes()}]));
  const buttons=ids.map(id=>({dataset:{go:id},
@@ -26,8 +26,9 @@ function setup({reduced=false,adminOff=false,address=true}={}){
   renderDetail:()=>actions.push('detail'),renderUpdates:()=>actions.push('updates'),
   renderSettings:()=>actions.push('settings'),renderHome:()=>actions.push('home'),
   window:{matchMedia:()=>({matches:reduced}),scrollTo:()=>actions.push('scroll')},
-  document:{documentElement:{classList:classes(adminOff?['feature-off-animations']:[])},
-   querySelectorAll:()=>buttons},
+  document:{documentElement:{classList:classes(adminOff?['feature-off-animations']:[]),dataset:{}},
+   querySelectorAll:()=>buttons,
+   ...(native?{startViewTransition:cb=>{actions.push('native-transition');cb();return {finished:Promise.resolve()}}}:{} )},
   $:id=>pages[id]
  };
  vm.runInNewContext(navigation+';this.navigate=navigate;',context);
@@ -75,5 +76,23 @@ test('Without an address the graph tab opens the address picker, not an empty sc
 test('The selected day caption is exactly the requested text for missing schedules',()=>{
  assert.match(app,/setText\('detailUpdated',pub\?`Опубліковано \$\{fmtStamp\(pub\.publishedAt\)\}`:'Світло весь день'\)/);
  assert.doesNotMatch(app,/detailUpdated'.{0,140}за замовчуванням/);
- assert.match(css,/opacity:\.38;transform:translate3d\(0,10px,0\)/);
+ assert.match(css,/opacity:0;transform:translate3d\(0,30px,0\)/);
+});
+
+test('Modern iOS animates both departing and arriving screen using View Transitions',()=>{
+ const view=setup({native:true});
+ view.navigate('detail');
+ assert.equal(view.context.active,'detail');
+ assert.ok(view.actions.includes('native-transition'));
+ assert.equal(view.pages.detail.hidden,false);
+ assert.equal(view.pages.detail.classList.contains('tab-enter'),false);
+ assert.equal(view.context.document.documentElement.dataset.tabDirection,'forward');
+ view.navigate('home');
+ assert.equal(view.context.document.documentElement.dataset.tabDirection,'backward');
+});
+test('Reduced Motion skips native View Transitions completely',()=>{
+ const view=setup({native:true,reduced:true});
+ view.navigate('updates');
+ assert.equal(view.context.active,'updates');
+ assert.equal(view.actions.includes('native-transition'),false);
 });
