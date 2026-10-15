@@ -11,7 +11,7 @@ const stamp=t=>{const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{
  return parts.year+'-'+parts.month+'-'+parts.day+'T'+parts.hour;
 };
 const dayFrom=(today,offset)=>{const d=new Date(today+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+offset);return d.toISOString().slice(0,10)};
-const empty=()=>({landing:0,app_open:0,install_guide:0,telegram:0});
+const empty=()=>({landing:0,appOpen:0,installGuide:0,telegram:0});
 export function createAnalyticsStore({filePath,clock=()=>Date.now()}={}){
  if(!filePath)throw Error('Analytics file required');
  let buckets={},since=null,lastUpdated=null,timer=null;
@@ -54,7 +54,7 @@ export function createAnalyticsStore({filePath,clock=()=>Date.now()}={}){
   const days=Array.from({length:30},(_,i)=>dayFrom(today,i-29)).map(date=>{
    const out={date,...empty()};
    for(const [k,b] of Object.entries(buckets))if(k.startsWith(date+'T')){
-    for(const [ev,part] of Object.entries({landing:'landing',app_open:'app_open',install_guide:'install_guide'})){
+    for(const [ev,part] of Object.entries({landing:'landing',app_open:'appOpen',install_guide:'installGuide'})){
      out[part]+=Object.values(b[ev]||{}).reduce((s,n)=>s+int(n),0);
     }
     for(const ev of EVENTS)out.telegram+=int(b[ev]?.['telegram-echerkasy']);
@@ -71,8 +71,8 @@ export function createAnalyticsStore({filePath,clock=()=>Date.now()}={}){
   const sum=(rows,k)=>rows.reduce((s,r)=>s+r[k],0);
   const week=days.slice(-7);
   return {schemaVersion:1,since,lastUpdated,days,hours,
-   totals7:{landing:sum(week,'landing'),appOpen:sum(week,'app_open'),installGuide:sum(week,'install_guide'),telegram:sum(week,'telegram')},
-   totals30:{landing:sum(days,'landing'),appOpen:sum(days,'app_open'),installGuide:sum(days,'install_guide'),telegram:sum(days,'telegram')},
+   totals7:{landing:sum(week,'landing'),appOpen:sum(week,'appOpen'),installGuide:sum(week,'installGuide'),telegram:sum(week,'telegram')},
+   totals30:{landing:sum(days,'landing'),appOpen:sum(days,'appOpen'),installGuide:sum(days,'installGuide'),telegram:sum(days,'telegram')},
    note:'Анонімні події з моменту ввімкнення лічильника. Це не унікальні люди та не точні встановлення. Telegram: лише посилання з ?src=telegram-echerkasy.'};
  }
  return {record,report,flush};
