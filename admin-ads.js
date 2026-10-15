@@ -32,6 +32,31 @@
  function section(title,help){const w=el('section',undefined,'ad-panel');w.append(el('h3',title));if(help)w.append(el('p',help,'ad-muted'));return w}
  function grid(box){const x=el('div',undefined,'ad-fields-grid');box.append(x);return x}
  function button(box,label,click,cls='secondary'){const b=el('button',label,cls);b.type='button';b.addEventListener('click',click);box.append(b);return b}
+ function colorField(box,label,obj,key,defaultColor='#ffffff'){
+  const wrap=el('div',undefined,'ad-field ad-color-field');wrap.append(el('span',label));
+  const inner=el('div',undefined,'ad-color-inputs');
+  const color=el('input');color.type='color';color.value=/^#[a-f\d]{6}$/i.test(obj[key]||'')?obj[key]:defaultColor;color.setAttribute('aria-label',label+' · палітра');
+  const code=el('input');code.type='text';code.maxLength=7;code.value=obj[key]||defaultColor;code.placeholder='#ffffff';code.setAttribute('aria-label',label+' · HEX');
+  color.oninput=()=>{code.value=color.value;obj[key]=color.value;mark()};
+  code.oninput=()=>{obj[key]=code.value;if(/^#[a-f\d]{6}$/i.test(code.value))color.value=code.value;mark()};
+  inner.append(color,code);wrap.append(inner);box.append(wrap);return color;
+ }
+ function uploadField(box,label,obj,key){
+  const wrapper=el('div',undefined,'ad-field');
+  wrapper.append(el('span',label));
+  const input=field(wrapper,'HTTPS-посилання',obj,key,'url');
+  const upload=el('input');upload.type='file';upload.accept='image/png,image/jpeg,image/webp';
+  upload.setAttribute('aria-label','Завантажити '+label.toLowerCase());
+  upload.onchange=async()=>{
+   const f=upload.files?.[0];if(!f)return;
+   if(f.size>1900000){alert('Зображення має бути не більше 1,9 МБ');return}
+   upload.disabled=true;
+   try{const link=await window.betaAdminUploadAdPhoto(f);obj[key]=link;input.value=link;mark();wrapper.dispatchEvent(new Event('input',{bubbles:true}))}
+   catch(error){alert(error.message)}
+   finally{upload.disabled=false}
+  };
+  wrapper.append(upload);box.append(wrapper);
+ }
  function mini(label,value,help){const box=el('div',undefined,'ad-kpi');box.append(el('span',label),el('strong',value),el('small',help||''));return box}
  const toLocal=iso=>{if(!iso)return '';const d=new Date(iso);return Number.isFinite(d.getTime())?new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16):''};
  const fromLocal=value=>value?new Date(value).toISOString():'';
@@ -44,7 +69,8 @@
   const preview=el('div',undefined,'ad-card-preview');
   const display=()=>{preview.replaceChildren();preview.style.backgroundColor=c.background||'#fff';preview.style.color=c.foreground||'#142338';if(c.image){const img=el('img');img.src=c.image;img.alt='';preview.append(img)}const col=el('div');col.append(el('strong',c.title||'Заголовок'),el('small',c.description||'Опис рекламного оголошення'),el('em',c.button||'Дізнатися більше'));preview.append(col)};
   display();body.append(preview);
-  const fields=grid(body);
+  const compact=section('Картка на головній','Оформлення, яке бачить користувач перед натисканням. Повноекранний перегляд налаштовується окремо.');
+  const fields=grid(compact);body.append(compact);
   field(fields,'Назва / заголовок',c,'title','text','До 100 символів',{maxLength:100});
   field(fields,'Опис реклами',c,'description','long','До 250 символів',{maxLength:250,rows:3});
   field(fields,'Текст кнопки',c,'button');
@@ -55,14 +81,42 @@
   uploader.addEventListener('change',async()=>{const file=uploader.files?.[0];if(!file)return;if(file.size>1900000){alert('Максимум 1,9 МБ');return}
    uploader.disabled=true;try{const link=await window.betaAdminUploadAdPhoto(file);c.image=link;image.value=link;mark();display()}catch(e){alert(e.message)}finally{uploader.disabled=false}});
   imageRow.append(uploader);fields.append(imageRow);
-  field(fields,'Фон (#RRGGBB)',c,'background','text','Наприклад, #ffffff');
-  field(fields,'Колір тексту (#RRGGBB)',c,'foreground','text');
+  uploadField(fields,'Фонове зображення картки',c,'cardBackgroundImage');
+  colorField(fields,'Колір фону картки',c,'background');
+  colorField(fields,'Колір тексту картки',c,'foreground','#142338');
+  choice(fields,'Оформлення',c,'cardStyle',[['soft','М’яка картка'],['outline','Чітка рамка'],['dark','Темний банер']]);
   field(fields,'Пріоритет відносно інших (1-10)',c,'weight','number','Впливає на частку показів',{min:1,max:10});
   field(fields,'Час одного показу, с',c,'seconds','number',null,{min:3,max:60});
   field(fields,'Усього показів максимум (0 = без ліміту)',c,'maxImpressions','number');
   field(fields,'Показів на день максимум (0 = без ліміту)',c,'dailyCap','number');
   const dateBox=el('div',undefined,'ad-field');dateBox.append(el('span','Початок показів (необов’язково)'));const start=el('input');start.type='datetime-local';start.value=toLocal(c.start);start.onchange=()=>{c.start=fromLocal(start.value);mark()};dateBox.append(start);fields.append(dateBox);
   const endBox=el('div',undefined,'ad-field');endBox.append(el('span','Завершення (необов’язково)'));const end=el('input');end.type='datetime-local';end.value=toLocal(c.end);end.onchange=()=>{c.end=fromLocal(end.value);mark()};endBox.append(end);fields.append(endBox);
+  const expanded=section('Повноекранна реклама','Після натискання на картку відкриється окрема повноекранна сторінка з банером, фото, довгим описом і кнопкою. Якщо вимкнено, картка веде одразу на зовнішній сайт.');
+  const ex=grid(expanded);
+  field(ex,'Відкривати повноекранну сторінку',c,'detailEnabled','toggle');
+  field(ex,'Заголовок повноекранної сторінки',c,'detailTitle','text','Якщо порожньо, використовуємо заголовок картки.');
+  field(ex,'Підзаголовок',c,'detailSubtitle','long');
+  field(ex,'Розгорнутий опис',c,'detailDescription','long','До 6500 символів; абзаци зберігаються.',{rows:7,maxLength:6500});
+  uploadField(ex,'Широкий банер у верхній частині',c,'detailBanner');
+  uploadField(ex,'Додаткове фото в тексті',c,'detailImage');
+  colorField(ex,'Фон повноекранної сторінки',c,'detailBackground','#f5f8ff');
+  colorField(ex,'Колір тексту сторінки',c,'detailForeground','#172c49');
+  colorField(ex,'Акцент кнопок',c,'detailAccent','#377cff');
+  field(ex,'Текст кнопки переходу на сайт рекламодавця',c,'detailButton');
+  const fullPreview=el('div',undefined,'ad-full-preview');
+  const showPreview=()=>{
+   fullPreview.replaceChildren();fullPreview.style.backgroundColor=c.detailBackground||'#f5f8ff';
+   fullPreview.style.color=c.detailForeground||'#172c49';
+   const photo=el('div',undefined,'ad-full-preview-hero');
+   photo.style.background='linear-gradient(120deg,'+(c.detailAccent||'#377cff')+',#153568)';
+   if(c.detailBanner){photo.style.backgroundImage='linear-gradient(0deg,#142c59a8,#142c5920),url("'+c.detailBanner.replace(/"/g,'')+'")';photo.style.backgroundSize='cover';photo.style.backgroundPosition='center'}
+   photo.append(el('small','РЕКЛАМА'),el('h3',c.detailTitle||c.title||'Заголовок'),el('p',c.detailSubtitle||c.description||'Підзаголовок'));
+   fullPreview.append(photo,el('p',(c.detailDescription||c.description||'Ваш текст').slice(0,430),'ad-full-preview-copy'));
+   if(c.detailImage){const img=el('img');img.src=c.detailImage;img.alt='Попередній перегляд';fullPreview.append(img)}
+   const action=el('div',c.detailButton||'Перейти на сайт','ad-full-preview-cta');action.style.background=c.detailAccent||'#377cff';fullPreview.append(action);
+  };
+  showPreview();expanded.append(fullPreview);body.append(expanded);
+  expanded.addEventListener('input',()=>setTimeout(showPreview,0));
   const days=el('fieldset',undefined,'ad-days');days.append(el('legend','Дні тижня (нічого не вибрано = щодня)'));
   for(const [day,label] of [[1,'Пн'],[2,'Вт'],[3,'Ср'],[4,'Чт'],[5,'Пт'],[6,'Сб'],[0,'Нд']]){
    const l=el('label',label),check=el('input');check.type='checkbox';check.checked=(c.days||[]).includes(day);
@@ -81,6 +135,7 @@
    recent.append(table);body.append(recent)}
 
   const tools=el('div',undefined,'ad-toolbar');
+  button(tools,'Зберегти всі зміни',()=>document.getElementById('betaAdsSaveButton')?.click(),'primary');
   button(tools,'Дублювати',()=>{draft.campaigns.splice(index+1,0,{...structuredClone(c),id:uuid(),title:(c.title||'Реклама')+' (копія)',enabled:false,paid:false});mark();render()});
   button(tools,'Видалити',()=>{if(confirm('Видалити рекламну кампанію?')){draft.campaigns.splice(index,1);mark();render()}},'danger');
   body.append(tools);details.append(body);container.append(details);
@@ -121,9 +176,9 @@
   const title=el('div');title.append(el('h3','Центр рекламного керування'),el('p','Лише головна сторінка · Зміни зберігаються на Beta Railway','ad-muted'));
   const tools=el('div',undefined,'ad-toolbar');
   button(tools,'Оновити дані',()=>refresh(true));
-  const save=button(tools,'Зберегти зміни',saveDraft,'primary');
+  // Saving lives in a sticky footer, not in the distant heading.
   const status=el('small',dirty?'Є незбережені зміни':'Налаштування завантажено','ad-muted');status.id='betaAdsSaveStatus';
-  tools.append(status);heading.append(title,tools);root.append(heading);
+  heading.append(title,tools);root.append(heading);
   analytics();
   const main=section('Загальні параметри каруселі','Реклама відображається лише на головній сторінці. Індивідуальні параметри мають пріоритет над загальними.');
   const g=grid(main);
@@ -133,8 +188,21 @@
   field(g,'Стандартний інтервал, с',draft,'rotationSeconds','number',null,{min:3,max:60});
   field(g,'«Ваша реклама» після кожних N кампаній',draft,'promoEvery','number',null,{min:1,max:20});
   choice(g,'Анімація перемикання',draft,'animation',[['fade','Плавна'],['slide','Ковзання'],['none','Без анімації']]);
-  for(const [k,l] of [['promoTitle','Заголовок «Ваша реклама»'],['promoText','Опис «Ваша реклама»'],['contactLabel','Текст кнопки'],['pageTitle','Заголовок рекламної сторінки'],['pageIntro','Опис рекламної сторінки'],['pageTerms','Умови розміщення']])field(g,l,draft,k,k==='pageIntro'||k==='pageTerms'?'long':'text');
-  root.append(main);
+  for(const [k,l] of [['promoTitle','Заголовок «Ваша реклама»'],['promoText','Опис «Ваша реклама»'],['contactLabel','Текст кнопки']])field(g,l,draft,k,'text');
+  const landing=section('Сторінка «Реклама у Світло Черкаси»','Редагуйте зміст і вигляд сторінки для рекламодавців прямо звідси.');
+  const landingFields=grid(landing);
+  field(landingFields,'Заголовок',draft,'pageTitle');field(landingFields,'Вступ',draft,'pageIntro','long');
+  field(landingFields,'Про рекламне місце',draft,'pageAbout','long');
+  field(landingFields,'Умови розміщення',draft,'pageTerms','long');
+  field(landingFields,'Пояснення поруч із контактами',draft,'pageContactText','long');
+  uploadField(landingFields,'Зображення обкладинки',draft,'pageHeroImage');
+  colorField(landingFields,'Фон сторінки',draft,'pageBackground','#f5f8ff');
+  colorField(landingFields,'Акцентний колір',draft,'pageAccent','#377cff');
+  const list=el('div',undefined,'ad-benefits-editor');list.append(el('h4','Переваги розміщення'));
+  draft.pageBenefits.forEach((v,idx)=>{const line=el('div',undefined,'ad-benefit-row');const input=el('input');input.value=v;input.maxLength=180;
+   input.oninput=()=>{draft.pageBenefits[idx]=input.value;mark()};line.append(input);button(line,'×',()=>{draft.pageBenefits.splice(idx,1);mark();render()},'secondary');list.append(line)});
+  button(list,'+ Додати перевагу',()=>{draft.pageBenefits.push('Нова перевага');mark();render()});landing.append(list);
+  root.append(main,landing);
   const contact=section('Зв’язатися з нами','Ці контакти автоматично відображаються на сторінці замовлення реклами.');
   draft.contacts.forEach((c,i)=>{const row=el('div',undefined,'ad-subcard');const f=grid(row);field(f,'Назва контакту',c,'label');field(f,'Посилання HTTPS (Telegram, сайт, email через форму)',c,'url','url');field(f,'Показувати',c,'enabled','toggle');button(row,'Видалити',()=>{draft.contacts.splice(i,1);mark();render()},'danger');contact.append(row)});
   button(contact,'+ Додати контакт',()=>{draft.contacts.push({id:uuid(),label:'Telegram',url:'',enabled:true});mark();render()});root.append(contact);
@@ -143,9 +211,25 @@
   button(packs,'+ Новий тариф',()=>{draft.packages.push({id:uuid(),title:'Новий тариф',description:'',price:0,durationDays:30,visible:true});mark();render()});root.append(packs);
   const support=section('Добровільна підтримка проєкту','Без комісій та автоматичного приймання коштів у нашому застосунку. Посилання на зовнішній платіжний сервіс задається вручну.');
   const su=grid(support);for(const [k,l,t] of [['enabled','Увімкнути підтримку','toggle'],['title','Заголовок сторінки','text'],['description','Опис','long'],['details','На що підуть внески','long'],['provider','Назва платіжного сервісу','text'],['paymentUrl','Зовнішнє HTTPS посилання для внесків','url'],['button','Текст кнопки','text']])field(su,l,draft.support,k,t);
+  uploadField(su,'Фото обкладинки сторінки підтримки',draft.support,'heroImage');
+  colorField(su,'Фон сторінки підтримки',draft.support,'background','#f5f8ff');
+  colorField(su,'Акцентний колір сторінки підтримки',draft.support,'accent','#377cff');
+  field(su,'Заголовок блоку мети',draft.support,'whyTitle');
+  field(su,'Текст подяки',draft.support,'thanksTitle');
+  field(su,'Показувати приклади сум',draft.support,'showAmounts','toggle');
+  const amounts=el('div',undefined,'ad-field');amounts.append(el('span','Приклади сум підтримки через кому'));
+  const amountInput=el('input');amountInput.type='text';amountInput.value=(draft.support.amounts||[]).join(', ');
+  amountInput.onchange=()=>{draft.support.amounts=amountInput.value.split(',').map(x=>Number(x.trim())).filter(x=>Number.isFinite(x)&&x>0).slice(0,6);mark()};
+  amounts.append(amountInput);su.append(amounts);
   root.append(support);
   const ads=section('Рекламні кампанії','Кожна реклама має власні налаштування, терміни, пріоритети та статистику.');draft.campaigns.forEach((c,i)=>campaign(ads,c,i));
   button(ads,'+ Створити оголошення',()=>{draft.campaigns.unshift({id:uuid(),title:'',description:'',image:'',link:'',button:'Дізнатися більше',enabled:false,background:'#ffffff',foreground:'#142338',start:'',end:'',days:[],weight:1,seconds:8,maxImpressions:0,dailyCap:0,price:0,paid:false,note:''});mark();render()});root.append(ads);
+  const bottom=el('div',undefined,'ad-sticky-savebar');
+  const caption=el('span','Зміни застосовуються до Beta після збереження.');
+  const controls=el('div',undefined,'ad-toolbar');
+  button(controls,'Скасувати зміни',()=>refresh(true),'secondary');
+  const save=button(controls,'Зберегти всі зміни',saveDraft,'primary');save.id='betaAdsSaveButton';
+  bottom.append(caption,status,controls);root.append(bottom);
   async function saveDraft(){if(loading)return;loading=true;save.disabled=true;status.textContent='Зберігаємо...';
     try{const r=await api('PUT',draft);report=r;draft=structuredClone(r.settings);dirty=false;render();const n=document.getElementById('betaAdsSaveStatus');if(n)n.textContent='Зміни збережено у Beta'}
     catch(e){status.textContent='Помилка: '+e.message;alert('Не вдалося зберегти: '+e.message)}
@@ -159,5 +243,6 @@
   finally{loading=false}
  }
  document.querySelector('[data-admin-tab="ads"]')?.addEventListener('click',()=>{if(!report)refresh()});
+ window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
  document.addEventListener('svitlo:admin-logout',()=>{report=null;draft=null;dirty=false;root.textContent='Увійдіть в адмінпанель, щоб керувати рекламою.'});
 })();
