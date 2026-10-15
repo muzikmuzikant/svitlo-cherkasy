@@ -257,11 +257,11 @@ function renderTicketDetail(){
  const meta=supportNode('div',undefined,'support-detail-meta');
  meta.append(supportNode('span','Створено '+supportDate(ticket.createdAt)),supportNode('span',TICKET_TOPICS[ticket.topic]||'Інше'));
  if(ticket.queue)meta.append(supportNode('span','Підчерга '+ticket.queue));
- if(ticket.diagnostics){
-  const d=ticket.diagnostics;
+ if(true){
+  const d=ticket.diagnostics||null;
   const panel=supportNode('div',undefined,'support-device-info');
-  panel.append(supportNode('strong','Технічні дані, надані користувачем'));
-  panel.append(supportNode('p',[d.platform,d.os,d.browser,d.appVersion?('Світло v'+d.appVersion):'Версія не визначена'].filter(Boolean).join(' · ')));
+  panel.append(supportNode('strong','Інформація про пристрій'));
+  panel.append(supportNode('p',d?[d.platform,d.os,d.browser,d.appVersion?('Світло v'+d.appVersion):'Версія не визначена'].filter(Boolean).join(' · '):'Технічні дані не надано або недоступні.'));
   meta.append(panel);
  }
 
@@ -313,6 +313,7 @@ function renderTicketDetail(){
   root.append(remove);
  }
 }
+window.betaAdminAdsApi=async(method='GET',settings)=>api('ads',{method,body:method==='PUT'?JSON.stringify(settings):undefined});
 async function refreshTickets(){
  if(!remote)return;
  $('ticketsSummary').textContent='Оновлюємо звернення…';

@@ -64,7 +64,7 @@ async function github(path,method='GET',payload){
  return data;
 }
 async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
-export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics){
+export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(!originPolicy.isAllowed(req.headers.origin)){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const url=new URL(req.url,'http://localhost');
@@ -121,6 +121,8 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    ||(pathName.startsWith('/api/admin/feedback/')&&method==='DELETE'));
  if(!allowed){send(res,403,{error:'Недостатньо прав для цієї дії'});return true}
  try{
+   if(url.pathname==='/api/admin/ads'&&req.method==='GET'){send(res,200,ads.dashboard());return true}
+   if(url.pathname==='/api/admin/ads'&&req.method==='PUT'){if(role!=='owner'){send(res,403,{error:'Лише для власника'});return true}send(res,200,ads.update(await readJson(req,140000)));return true}
    if(url.pathname==='/api/admin/analytics'&&req.method==='GET'){
      if(!analytics){send(res,503,{error:'Аналітика поки недоступна'});return true}
      send(res,200,analytics.report());return true;
