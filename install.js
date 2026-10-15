@@ -3,7 +3,7 @@
   'use strict';
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   // No device identifiers are collected. Count one event per tab and day.
-  const referrerSource=(()=>{try{const x=new URLSearchParams(location.search).get('src');return ['telegram-echerkasy','telegram'].includes(x)?x:'direct'}catch{return 'direct'}})();
+  const referrerSource=(()=>{try{const x=new URLSearchParams(location.search).get('src');return ['telegram-echerkasy','telegram-cherkasy-golovne','telegram'].includes(x)?x:'direct'}catch{return 'direct'}})();
   async function reportUsage(event){
     try{
       const date=new Date().toISOString().slice(0,10),key='svitlo-aggregate-'+event+'-'+date;
@@ -107,9 +107,20 @@
     return;
   }
 
+  const campaign=document.getElementById('installCampaign');
+  if(campaign&&referrerSource==='telegram-cherkasy-golovne')campaign.hidden=false;
   const action = document.getElementById('installAction');
   const instructions = document.getElementById('installInstructions');
   const platformLabel = document.getElementById('installPlatformLabel');
+  const copyButton=document.getElementById('installCopyLink');
+  copyButton?.addEventListener('click',async()=>{
+   try{
+    await navigator.clipboard.writeText(location.href);
+    copyButton.textContent='✓ Посилання скопійовано. Відкрийте у Safari або Chrome';
+   }catch{
+    copyButton.textContent='Скопіюйте адресу сайту зверху: svitlo-cherkasy.pp.ua';
+   }
+  });
   if (!action || !instructions || !platformLabel) return;
   const isiOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -122,7 +133,7 @@
       <li>Натисніть кнопку <strong>Поділитися</strong> (квадрат зі стрілкою).</li>
       <li>Оберіть <strong>На початковий екран</strong> → <strong>Додати</strong>.</li>
       <li>Відкрийте «Світло Черкаси» із нової іконки.</li>
-    </ol><p class="install-note">Якщо ви в Telegram, Instagram чи іншому застосунку, спершу відкрийте сторінку в Safari. Потрібна захищена адреса HTTPS.</p>`;
+    </ol><p class="install-note">Відкрили посилання в Telegram? У меню браузера виберіть «Відкрити в Safari». Якщо такого пункту немає, скопіюйте посилання кнопкою нижче та вставте в Safari.</p>`;
     if (isAndroid) return `<strong>На Android:</strong><ol>
       <li>Відкрийте сайт у <strong>Google Chrome</strong>.</li>
       <li>Натисніть меню <strong>⋮</strong> у браузері.</li>
@@ -141,7 +152,7 @@
     if (scroll) instructions.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   }
   platformLabel.textContent = isiOS ? 'iPhone / iPad · Safari' : isAndroid ? 'Android · Chrome' : 'iPhone, Android або комп’ютер';
-  action.innerHTML = isiOS ? 'Показати кроки для iPhone <span aria-hidden="true">→</span>' :
+  action.innerHTML = isiOS ? 'Як встановити на iPhone <span aria-hidden="true">→</span>' :
     isAndroid ? 'Як встановити на Android <span aria-hidden="true">→</span>' :
       'Як встановити застосунок <span aria-hidden="true">→</span>';
   // Apple Safari cannot open a native install dialog; showing clear steps is more useful.

@@ -19,3 +19,24 @@
 @media(max-width:520px){.install-landing{padding:0 18px}.install-top{padding:18px 0 14px}.install-brand img{width:41px;height:41px}.install-brand strong{font-size:14px}.install-brand small{font-size:10px}.install-top-actions{gap:9px}.install-free{font-size:10px;padding:7px 9px}.install-help-link{font-size:11px}.install-main{padding:31px 0 26px}.install-kicker{font-size:10px;letter-spacing:1.1px}.install-content h1{font-size:clamp(35px,9.6vw,44px);letter-spacing:-1.9px;margin:19px 0}.install-lead{font-size:14px;line-height:1.65}.install-benefits{gap:7px;margin-bottom:22px}.install-benefit{font-size:10px;padding:7px 9px}.install-panel{padding:16px;border-radius:20px}.install-panel-heading strong{font-size:13px}.install-panel-heading small{font-size:11px}.install-button{font-size:13px;padding:15px;min-height:52px}.install-footer{align-items:flex-start;flex-direction:column}.install-footer nav{gap:10px 15px}.install-bottom-note{font-size:10px}}
 @media(prefers-reduced-motion:no-preference){.install-content{animation:installEnter .55s both}.install-showcase{animation:installEnter .8s .1s both}@keyframes installEnter{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}}
 @media(prefers-reduced-motion:reduce){.install-button{transition:none}}
+
+/* v7.9.7: campaign-first landing, compact iPhone installation instructions. */
+.install-landing{--i-blue:#246be8;background:radial-gradient(ellipse 480px 360px at 78% 48%,#d9e7ff 0%,transparent 85%),linear-gradient(160deg,#fbfdff 0%,#f2f6ff 70%,#f8faff 100%)}
+.install-main{padding-top:26px;column-gap:52px}
+.install-content h1{letter-spacing:-2.8px;line-height:1.04}
+.install-content h1 span{background:linear-gradient(125deg,#276ef0,#579cff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.install-campaign{width:fit-content;max-width:100%;margin-top:14px;padding:9px 13px;border-radius:999px;background:#ecf3ff;color:#28549c;border:1px solid #d5e5ff;font-size:12px;font-weight:700}
+.install-campaign span{color:#3276e7;margin:0 5px}
+.install-panel{border:1px solid #dce7fb;box-shadow:0 24px 64px rgba(36,88,162,.10),0 3px 12px rgba(36,88,162,.04)}
+.install-copy{display:block;width:100%;border:0;background:transparent;color:#426fae;font-size:11px;line-height:1.5;padding:12px 4px 2px;text-align:center;font-weight:650;cursor:pointer}
+.install-copy:focus-visible{outline:3px solid #397ef9;outline-offset:2px}
+.install-steps{max-width:510px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:18px}
+.install-steps>div{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px 13px;background:#ffffffb5;border:1px solid #e2ebf9;border-radius:15px;min-width:0}
+.install-steps span{display:grid;place-items:center;width:24px;height:24px;border-radius:8px;background:#e9f1ff;color:#246ce9;font-size:12px;font-weight:850}
+.install-steps strong{font-size:11px;font-weight:800;color:#223957;margin-top:4px}
+.install-steps small{font-size:10px;line-height:1.4;color:#6b809d}
+.install-instructions{box-shadow:inset 0 0 0 1px #fff;line-height:1.6}
+.install-instructions ol{counter-reset:item}
+@media(max-width:750px){.install-main{padding-top:23px}.install-content h1{letter-spacing:-1.8px}.install-landing{background:linear-gradient(160deg,#fbfdff,#eff5ff 68%,#f8faff)}}
+@media(max-width:520px){.install-landing{padding:0 16px}.install-top{padding:16px 0 12px}.install-main{padding:20px 0 22px}.install-content h1{font-size:clamp(35px,9vw,44px);margin:13px 0 13px}.install-lead{font-size:13px;line-height:1.5;margin-bottom:14px}.install-benefits{margin-bottom:14px}.install-panel{padding:16px}.install-panel-heading{margin-bottom:13px}.install-instructions{font-size:11px;padding:12px 14px;margin-top:12px}.install-instructions li+li{margin-top:3px}.install-copy{font-size:11px}.install-steps{gap:6px;margin-top:12px}.install-steps>div{padding:9px 8px;border-radius:12px}.install-steps strong{font-size:10px}.install-steps small{font-size:9px}.install-open-hint{margin-top:12px;font-size:11px}.install-bottom-note{margin-top:3px}.install-footer{padding:14px 0 20px}}
+@media(prefers-reduced-motion:reduce){.install-content,.install-showcase{animation:none!important}}
