@@ -26,7 +26,7 @@ const defaults={
  contacts:[],packages:[],campaigns:[],support:{
  enabled:false,title:'Підтримати Світло Черкаси',description:'Добровільна підтримка розвитку проєкту.',
  provider:'',paymentUrl:'',button:'Підтримати',details:'',
-  heroImage:'',background:'#f5f8ff',accent:'#377cff',amounts:[30,60,120],
+  heroImage:'',background:'#f5f8ff',accent:'#377cff',amounts:[30,60,120],methods:[],expenses:[],
   whyTitle:'Навіщо потрібна підтримка?',thanksTitle:'Дякуємо, що допомагаєте розвивати сервіс',showAmounts:true,showGoals:true,showThanks:true,
   goals:[{icon:'☁',title:'Робота серверів',description:'Підтримка доступності та оновлення даних.'},
    {icon:'◈',title:'Розвиток',description:'Нові функції та виправлення помилок.'},
@@ -52,7 +52,12 @@ function normalize(raw){
  pageBenefits:(Array.isArray(s.pageBenefits)?s.pageBenefits:defaults.pageBenefits).slice(0,8).map(v=>text(v,180)).filter(Boolean),
 
  contacts:contacts.map(c=>({id:text(c.id,50)||crypto.randomUUID(),label:text(c.label,70),url:contactUrl(c.url),enabled:c.enabled!==false})).filter(c=>c.label),
- packages:packages.map(p=>({id:text(p.id,50)||crypto.randomUUID(),title:text(p.title,100),description:text(p.description,350),price:clamp(p.price,0,100000000,0),durationDays:clamp(p.durationDays,1,3650,30),visible:p.visible!==false})).filter(p=>p.title),
+ packages:packages.map(p=>({
+   id:text(p.id,50)||crypto.randomUUID(),title:text(p.title,100),description:text(p.description,550),
+   price:clamp(p.price,0,100000000,0),durationDays:clamp(p.durationDays,1,3650,30),visible:p.visible!==false,
+   badge:text(p.badge,32),badgeBackground:color(p.badgeBackground,'#e5f1ff'),badgeForeground:color(p.badgeForeground,'#1456b5'),
+   featured:p.featured===true,features:(Array.isArray(p.features)?p.features:[]).slice(0,12).map(x=>text(x,130)).filter(Boolean)
+ })).filter(p=>p.title),
  campaigns:campaigns.map(c=>{
   const start=when(c.start),end=when(c.end),days=Array.isArray(c.days)?c.days.map(Number).filter(n=>Number.isInteger(n)&&n>=0&&n<=6):[];
   if(start&&end&&start>=end)throw Error('Дата завершення реклами має бути пізнішою за початок');
@@ -83,6 +88,17 @@ function normalize(raw){
   whyTitle:text(su.whyTitle||defaults.support.whyTitle,110),
   thanksTitle:text(su.thanksTitle||defaults.support.thanksTitle,170),
   showAmounts:su.showAmounts!==false,showGoals:su.showGoals!==false,showThanks:su.showThanks!==false,
+  methods:(Array.isArray(su.methods)?su.methods:[]).slice(0,12).map(m=>({
+   id:text(m.id,50)||crypto.randomUUID(),kind:['monobank','iban','bank','other'].includes(m.kind)?m.kind:'other',
+   title:text(m.title,100),description:text(m.description,350),url:url(m.url),
+   details:text(m.details,240),icon:text(m.icon,8),background:color(m.background,'#ffffff'),
+   foreground:color(m.foreground,'#172c49'),enabled:m.enabled!==false
+  })).filter(m=>m.title),
+  expenses:(Array.isArray(su.expenses)?su.expenses:[]).slice(0,30).map(e=>({
+   id:text(e.id,50)||crypto.randomUUID(),title:text(e.title,120),amount:clamp(e.amount,0,100000000,0),
+   date:text(e.date,10),description:text(e.description,300),public:e.public===true
+  })).filter(e=>e.title),
+
   goals:(Array.isArray(su.goals)?su.goals:defaults.support.goals).slice(0,6).map(g=>({
    icon:text(g.icon,6),title:text(g.title,100),description:text(g.description,350)
   })).filter(g=>g.title)
@@ -129,8 +145,12 @@ export function createAdsStore({directory,clock=()=>Date.now()}){
    pageBackground:state.pageBackground,pageAccent:state.pageAccent,pageHeroImage:state.pageHeroImage,
    pageAbout:state.pageAbout,pageContactText:state.pageContactText,pageBenefits:state.pageBenefits,
    contacts:state.contacts.filter(c=>c.enabled&&c.url).map(({label,url})=>({label,url})),
-   packages:state.packages.filter(p=>p.visible).map(({title,description,price,durationDays})=>({title,description,price,durationDays})),
-   support:{...state.support,enabled:state.support.enabled&&!!state.support.paymentUrl},
+   packages:state.packages.filter(p=>p.visible).map(({title,description,price,durationDays,badge,badgeBackground,badgeForeground,featured,features})=>({title,description,price,durationDays,badge,badgeBackground,badgeForeground,featured,features})),
+   support:{...state.support,
+    methods:state.support.methods.filter(m=>m.enabled&&!!(m.url||m.details)),
+    expenses:state.support.expenses.filter(e=>e.public),
+    enabled:state.support.enabled&&!!(state.support.paymentUrl||state.support.methods.some(m=>m.enabled&&(m.url||m.details)))
+   },
    campaigns:state.enabled?state.campaigns.filter(c=>{
     if(!c.enabled||!c.title||c.start&&c.start>now||c.end&&c.end<=now)return false;
     if(c.days.length&&!c.days.includes(weekday))return false;
