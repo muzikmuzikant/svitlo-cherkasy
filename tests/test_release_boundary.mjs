@@ -56,7 +56,7 @@ test('Production commercial lock survives enabled stored config and cannot colle
  const path=await import('node:path');
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'svitlo-prod-commerce-lock-'));
  try{
-  const store=createAdsStore({directory:dir,commercialAllowed:false});
+  const store=createAdsStore({directory:dir});
   const config=store.dashboard().settings;
   store.update({...config,enabled:true,showPromo:true,
    contacts:[{label:'Контакт',url:'https://example.com',enabled:true}],
