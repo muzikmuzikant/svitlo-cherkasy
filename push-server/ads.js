@@ -204,7 +204,7 @@ export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed
    const d=daily[day]??={impressions:0,clicks:0};
    d.impressions+=Number(s.impressions)||0;d.clicks+=Number(s.clicks)||0;
   }
-  return {settings:state,stats:totals,statsByCampaignDay:stats,daily,pwa,lastModified};
+  return {settings:state,stats:totals,statsByCampaignDay:stats,daily,pwa,lastModified,commercialLocked:!commercialAllowed};
  }
  return {publicState,update,event,activity,optOut,dashboard,flush,flushVisitors};
 }
