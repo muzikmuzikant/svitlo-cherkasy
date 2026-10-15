@@ -22,6 +22,9 @@
    input(form,'Назва для користувача',c,'title');
    input(form,'Підказка до звернення',c,'hint','long');
    input(form,'Показувати категорію',c,'enabled','toggle');
+   const priorityLabel=e('label',undefined,'support-category-field');priorityLabel.append(e('span','Пріоритет нових звернень цієї категорії'));
+   const priority=e('select');for(const [id,label] of [['normal','Звичайний'],['high','Високий']]){const option=e('option',label);option.value=id;priority.append(option)}
+   priority.value=c.priority||'normal';priority.onchange=()=>{c.priority=priority.value;changed()};priorityLabel.append(priority);form.append(priorityLabel);
    const fields=e('div',undefined,'support-extra-edit');fields.append(e('h4','Додаткові поля'));
    for(const [j,field] of (c.fields||[]).entries()){
     const row=e('div',undefined,'support-category-extra');const inner=e('div',undefined,'support-category-fields');

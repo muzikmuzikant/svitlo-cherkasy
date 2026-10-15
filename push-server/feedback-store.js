@@ -47,7 +47,7 @@ export async function readFeedbackBody(req){
 export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
  if(!filePath)throw Error('Feedback store path is required');
  let categories=[
- {id:'bug',title:'Помилка застосунку',hint:'Опишіть, що саме не працює.',enabled:true,fields:[]},
+ {id:'bug',title:'Помилка застосунку',hint:'Опишіть, що саме не працює.',enabled:true,priority:'normal',fields:[]},
  {id:'address',title:'Адреса або підчерга',hint:'Укажіть населений пункт і підчергу, якщо її знаєте.',enabled:true,fields:[]},
  {id:'schedule',title:'Графік відключень',hint:'Укажіть дату, підчергу та відхилення.',enabled:true,fields:[]},
  {id:'push',title:'Сповіщення',hint:'Коли очікували сповіщення?',enabled:true,fields:[]},
@@ -90,7 +90,7 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   if(Object.keys(extra).length)data.extra=extra;
   cleanup();if(items.length>=MAX_ITEMS)throw bad('Наразі не можемо прийняти звернення. Спробуйте пізніше.',503);
   const token=crypto.randomBytes(24).toString('base64url');
-  const newItem={id:'SC-'+crypto.randomBytes(5).toString('hex').toUpperCase(),...data,status:'new',priority:'normal',internalNote:'',tags:[],messages:[],accessHash:hash(token),createdAt:new Date(t).toISOString(),updatedAt:new Date(t).toISOString()};
+  const newItem={id:'SC-'+crypto.randomBytes(5).toString('hex').toUpperCase(),...data,status:'new',priority:category?.priority==='high'?'high':'normal',internalNote:'',tags:[],messages:[],accessHash:hash(token),createdAt:new Date(t).toISOString(),updatedAt:new Date(t).toISOString()};
   items.push(newItem);
   try{save()}catch{items.pop();throw bad('Не вдалося зберегти звернення. Спробуйте пізніше.',503)}
   entry.times.push(t);entry.expire=t+interval;attempts.set(k,entry);
@@ -176,7 +176,7 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
     return {id:key,label,type,options,required:f.required===true}
    });
    if(new Set(fields.map(f=>f.id)).size!==fields.length)throw bad('Повторення назв полів');
-   return {id,title,hint,enabled:c.enabled!==false,fields}
+   return {id,title,hint,enabled:c.enabled!==false,priority:c.priority==='high'?'high':'normal',fields}
   });
   if(new Set(norm.map(c=>c.id)).size!==norm.length)throw bad('Дубль категорії');
   if(!norm.some(c=>c.enabled))throw bad('Має залишитися принаймні одна активна категорія');

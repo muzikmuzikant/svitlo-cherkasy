@@ -96,11 +96,14 @@ test('configurable support categories enforce custom text and select fields',()=
    {id:'severity',label:'Рівень',type:'select',required:true,options:['Звичайний','Важливий']}
   ]}]);
   assert.equal(config.getCategories()[0].id,'energy');
+  const updated=config.getCategories().map(c=>({...c,priority:'high'}));
+  config.setCategories(updated);
   assert.throws(()=>config.submit({topic:'energy',message:'Проблема із графіками',extra:{severity:'Звичайний'}},'127.0.0.2'),/Заповніть поле/);
   assert.throws(()=>config.submit({topic:'energy',message:'Проблема із графіками',extra:{date:'15.10.2026',severity:'недопустимо'}},'127.0.0.3'),/Невірний варіант/);
   const result=config.submit({topic:'energy',message:'Проблема із графіками',extra:{date:'15.10.2026',severity:'Важливий'}},'127.0.0.4');
   assert.ok(result.id.startsWith('SC-'));
   assert.equal(config.list().items[0].extra.date.value,'15.10.2026');
+  assert.equal(config.list().items[0].priority,'high');
  }finally{fs.rmSync(temp,{recursive:true,force:true})}
 });
 
