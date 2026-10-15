@@ -43,3 +43,13 @@ test('beta build fingerprints static changes without changing semantic release n
  assert.match(build,/build_hash/);
  assert.match(build,/channel_suffix\+"-"\+build_hash/);
 });
+
+test('preserve existing beautiful application icons and admin navigation, never emoji-replace originals',()=>{
+ const app=read('index.html'),admin=read('admin.html');
+ assert.ok(app.includes('install-kicker-icon" aria-hidden="true">✦'));
+ assert.ok(app.includes('install-benefit-icon" aria-hidden="true">⌖'));
+ assert.ok(admin.includes('<div class="login-symbol" aria-hidden="true">ϟ'));
+ assert.ok(admin.includes('data-admin-tab="insights" aria-pressed="false">▥'));
+ assert.ok(app.includes('./motion.js'));
+ assert.ok(admin.includes('./motion.js'));
+});
