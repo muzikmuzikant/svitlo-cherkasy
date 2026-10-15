@@ -208,8 +208,18 @@
   draft.contacts.forEach((c,i)=>{const row=el('div',undefined,'ad-subcard');const f=grid(row);field(f,'Назва контакту',c,'label');field(f,'Посилання HTTPS (Telegram, сайт, email через форму)',c,'url','url');field(f,'Показувати',c,'enabled','toggle');button(row,'Видалити',()=>{draft.contacts.splice(i,1);mark();render()},'danger');contact.append(row)});
   button(contact,'+ Додати контакт',()=>{draft.contacts.push({id:uuid(),label:'Telegram',url:'',enabled:true});mark();render()});root.append(contact);
   const packs=section('Тарифи та формати','Будь-які назви, терміни і ціни. Відображаються на сторінці «Реклама у Світло Черкаси».');
-  draft.packages.forEach((p,i)=>{const row=el('div',undefined,'ad-subcard');const f=grid(row);for(const [k,l,t] of [['title','Назва','text'],['description','Опис','long'],['price','Вартість у грн','number'],['durationDays','Тривалість у днях','number'],['visible','Видимий тариф','toggle']])field(f,l,p,k,t);button(row,'Видалити тариф',()=>{draft.packages.splice(i,1);mark();render()},'danger');packs.append(row)});
-  button(packs,'+ Новий тариф',()=>{draft.packages.push({id:uuid(),title:'Новий тариф',description:'',price:0,durationDays:30,visible:true});mark();render()});root.append(packs);
+  draft.packages.forEach((pkg,i)=>{
+   const row=el('article',undefined,'ad-subcard'),fields=grid(row);
+   for(const [k,l,t] of [['title','Назва','text'],['description','Опис','long'],['price','Ціна, грн','number'],['durationDays','Тривалість, дні','number'],['visible','Показувати','toggle'],['featured','Рекомендований тариф','toggle'],['badge','Текст плашки','text']])field(fields,l,pkg,k,t);
+   colorField(fields,'Колір плашки',pkg,'badgeBackground','#e5f1ff');
+   colorField(fields,'Текст плашки',pkg,'badgeForeground','#1456b5');
+   const features=el('div',undefined,'ad-field');features.append(el('span','Що входить у тариф (один рядок = одна перевага)'));
+   const input=el('textarea');input.rows=5;input.value=(pkg.features||[]).join('\n');
+   input.oninput=()=>{pkg.features=input.value.split('\n').map(v=>v.trim()).filter(Boolean).slice(0,12);mark()};
+   features.append(input);row.append(features);
+   button(row,'Видалити тариф',()=>{draft.packages.splice(i,1);mark();render()},'danger');packs.append(row);
+  });
+  button(packs,'+ Новий тариф',()=>{draft.packages.push({id:uuid(),title:'Новий тариф',description:'',price:0,durationDays:30,visible:true,featured:false,badge:'',badgeBackground:'#e5f1ff',badgeForeground:'#1456b5',features:[]});mark();render()});root.append(packs);
   const support=section('Добровільна підтримка проєкту','Без комісій та автоматичного приймання коштів у нашому застосунку. Посилання на зовнішній платіжний сервіс задається вручну.');
   const su=grid(support);for(const [k,l,t] of [['enabled','Увімкнути підтримку','toggle'],['title','Заголовок сторінки','text'],['description','Опис','long'],['details','На що підуть внески','long'],['provider','Назва платіжного сервісу','text'],['paymentUrl','Зовнішнє HTTPS посилання для внесків','url'],['button','Текст кнопки','text']])field(su,l,draft.support,k,t);
   uploadField(su,'Фото обкладинки сторінки підтримки',draft.support,'heroImage');
@@ -230,6 +240,25 @@
    button(line,'Видалити картку',()=>{draft.support.goals.splice(ix,1);mark();render()},'danger');goalEditor.append(line)});
   button(goalEditor,'+ Додати картку',()=>{draft.support.goals.push({icon:'♡',title:'Нова перевага',description:''});mark();render()});
   support.append(goalEditor);
+  const methods=section('Способи підтримки','Окремі картки Monobank, IBAN, банківських та інших переказів. Ми не приймаємо оплату всередині застосунку.');
+  (draft.support.methods||=[]).forEach((m,i)=>{
+   const row=el('div',undefined,'ad-subcard');const gf=grid(row);
+   choice(gf,'Тип',m,'kind',[['monobank','Банка Monobank'],['iban','Переказ за IBAN'],['bank','Прямий банківський переказ'],['other','Інший']]);
+   for(const [key,label,type] of [['title','Назва','text'],['description','Опис','long'],['url','Зовнішнє HTTPS-посилання','url'],['details','Реквізити / інструкція','long'],['icon','Іконка / символ','text'],['enabled','Спосіб активний','toggle']])field(gf,label,m,key,type);
+   colorField(gf,'Фон картки',m,'background','#ffffff');
+   colorField(gf,'Колір тексту',m,'foreground','#172c49');
+   button(row,'Видалити спосіб',()=>{draft.support.methods.splice(i,1);mark();render()},'danger');methods.append(row);
+  });
+  button(methods,'+ Додати спосіб',()=>{draft.support.methods.push({id:uuid(),kind:'monobank',title:'Новий спосіб',description:'',url:'',details:'',icon:'♡',enabled:false,background:'#ffffff',foreground:'#172c49'});mark();render()});
+  support.append(methods);
+  const expenses=section('Облік витрат','Справжні витрати проєкту; публічно показуються лише записи з дозволом «Показувати на сторінці».');
+  (draft.support.expenses||=[]).forEach((e,i)=>{
+   const row=el('div',undefined,'ad-subcard'),g=grid(row);
+   for(const [key,label,type] of [['title','Назва витрати','text'],['amount','Сума, грн','number'],['date','Дата YYYY-MM-DD','text'],['description','Примітка','long'],['public','Показувати на сторінці','toggle']])field(g,label,e,key,type);
+   button(row,'Видалити витрату',()=>{draft.support.expenses.splice(i,1);mark();render()},'danger');expenses.append(row);
+  });
+  button(expenses,'+ Додати витрату',()=>{draft.support.expenses.push({id:uuid(),title:'',amount:0,date:'',description:'',public:false});mark();render()});
+  support.append(expenses);
   root.append(support);
   const ads=section('Рекламні кампанії','Кожна реклама має власні налаштування, терміни, пріоритети та статистику.');draft.campaigns.forEach((c,i)=>campaign(ads,c,i));
   button(ads,'+ Створити оголошення',()=>{draft.campaigns.unshift({id:uuid(),title:'',description:'',image:'',link:'',button:'Дізнатися більше',enabled:false,background:'#ffffff',foreground:'#142338',start:'',end:'',days:[],weight:1,seconds:8,maxImpressions:0,dailyCap:0,price:0,paid:false,note:''});mark();render()});root.append(ads);
