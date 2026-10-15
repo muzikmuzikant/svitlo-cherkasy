@@ -33,7 +33,7 @@ export function createAdminUserStore({directory}){
  const get=username=>{const u=find(username);return u?{...safe(u),revision:u.revision}:null};
  const create=value=>{
   const username=String(value?.username||'').toLowerCase().trim(),password=String(value?.password||'');
-  if(!idValid(username)||['owner','admin','root','system'].includes(username))throw Error('Логін: від 3 до 32 символів, латинські літери, цифри, _ . -; заборонені системні імена.');
+  if(!idValid(username)||['owner','admin','root','system','editor','operator','viewer'].includes(username))throw Error('Логін: від 3 до 32 символів, латинські літери, цифри, _ . -; заборонені системні імена.');
   if(find(username))throw Error('Користувач з таким логіном існує');
   if(password.length<12||password.length>128)throw Error('Пароль повинен містити 12–128 символів');
   if(!ROLES.includes(value?.role))throw Error('Невідома роль');
@@ -59,7 +59,7 @@ export function createAdminUserStore({directory}){
   }
   if(value&&Object.hasOwn(value,'username')){
    const n=String(value.username).trim().toLowerCase();
-   if(!idValid(n)||['owner','admin','root','system'].includes(n)||n!==u.username&&find(n))throw Error('Логін недопустимий або вже зайнятий');
+   if(!idValid(n)||['owner','admin','root','system','editor','operator','viewer'].includes(n)||n!==u.username&&find(n))throw Error('Логін недопустимий або вже зайнятий');
    u.username=n
   }
   u.revision=(u.revision||0)+1;u.updatedAt=new Date().toISOString();save();return safe(u)
