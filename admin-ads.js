@@ -67,7 +67,8 @@
   sum.append(desc,el('span','Налаштувати ▾'));details.append(sum);
   const body=el('div',undefined,'ad-campaign-body');
   const preview=el('div',undefined,'ad-card-preview');
-  const display=()=>{preview.replaceChildren();preview.style.backgroundColor=c.background||'#fff';preview.style.color=c.foreground||'#142338';if(c.image){const img=el('img');img.src=c.image;img.alt='';preview.append(img)}const col=el('div');col.append(el('strong',c.title||'Заголовок'),el('small',c.description||'Опис рекламного оголошення'),el('em',c.button||'Дізнатися більше'));preview.append(col)};
+  const display=()=>{preview.replaceChildren();preview.style.backgroundColor=c.background||'#fff';preview.style.color=c.foreground||'#142338';
+  preview.style.backgroundImage=c.cardBackgroundImage?((c.cardStyle==='dark'?'linear-gradient(90deg,#0b1e35e8,#0b1e3533),':'linear-gradient(90deg,#fffffff2,#ffffff44),')+'url("'+c.cardBackgroundImage.replace(/"/g,'')+'")'):'none';preview.style.backgroundSize='cover';preview.style.backgroundPosition='center';if(c.image){const img=el('img');img.src=c.image;img.alt='';preview.append(img)}const col=el('div');col.append(el('strong',c.title||'Заголовок'),el('small',c.description||'Опис рекламного оголошення'),el('em',c.button||'Дізнатися більше'));preview.append(col)};
   display();body.append(preview);
   const compact=section('Картка на головній','Оформлення, яке бачить користувач перед натисканням. Повноекранний перегляд налаштовується окремо.');
   const fields=grid(compact);body.append(compact);
@@ -221,6 +222,14 @@
   const amountInput=el('input');amountInput.type='text';amountInput.value=(draft.support.amounts||[]).join(', ');
   amountInput.onchange=()=>{draft.support.amounts=amountInput.value.split(',').map(x=>Number(x.trim())).filter(x=>Number.isFinite(x)&&x>0).slice(0,6);mark()};
   amounts.append(amountInput);su.append(amounts);
+  field(su,'Показувати картки призначення внесків',draft.support,'showGoals','toggle');
+  field(su,'Показувати блок подяки',draft.support,'showThanks','toggle');
+  const goalEditor=el('div',undefined,'ad-goal-editor');goalEditor.append(el('h4','Картки «На що йдуть внески»'));
+  (draft.support.goals||[]).forEach((goal,ix)=>{const line=el('div',undefined,'ad-subcard');const gb=grid(line);
+   field(gb,'Іконка',goal,'icon');field(gb,'Заголовок',goal,'title');field(gb,'Опис',goal,'description','long');
+   button(line,'Видалити картку',()=>{draft.support.goals.splice(ix,1);mark();render()},'danger');goalEditor.append(line)});
+  button(goalEditor,'+ Додати картку',()=>{draft.support.goals.push({icon:'♡',title:'Нова перевага',description:''});mark();render()});
+  support.append(goalEditor);
   root.append(support);
   const ads=section('Рекламні кампанії','Кожна реклама має власні налаштування, терміни, пріоритети та статистику.');draft.campaigns.forEach((c,i)=>campaign(ads,c,i));
   button(ads,'+ Створити оголошення',()=>{draft.campaigns.unshift({id:uuid(),title:'',description:'',image:'',link:'',button:'Дізнатися більше',enabled:false,background:'#ffffff',foreground:'#142338',start:'',end:'',days:[],weight:1,seconds:8,maxImpressions:0,dailyCap:0,price:0,paid:false,note:''});mark();render()});root.append(ads);
