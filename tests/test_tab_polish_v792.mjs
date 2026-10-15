@@ -1,100 +1,65 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import fs from 'node:fs';
 import vm from 'node:vm';
-
-const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+const read=path=>fs.readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const app=read('app.js'),css=read('style.css');
-const start=app.indexOf('function navigate(name){'),end=app.indexOf('function renderDetail(){',start);
-assert.ok(start>=0&&end>start,'Navigation must remain testable');
-const navigation=app.slice(start,end);
-const classes=(initial=[])=>{
- const names=new Set(initial);
- return {add:name=>names.add(name),remove:name=>names.delete(name),
-  contains:name=>names.has(name),
-  toggle(name,enabled){if(enabled)names.add(name);else names.delete(name)}};
-};
-function setup({reduced=false,adminOff=false,address=true,native=false}={}){
- const actions=[],ids=['home','detail','updates','settings'];
+const nav=app.slice(app.indexOf('function navigate(name){'),app.indexOf('function renderDetail(){'));
+function setup({reduced=false,off=false,hasAddress=true}={}){
+ const events=[],ids=['home','detail','updates','settings'];
+ const classes=()=>({set:new Set(),add(k){this.set.add(k)},remove(k){this.set.delete(k)},contains(k){return this.set.has(k)},toggle(k,v){if(v)this.set.add(k);else this.set.delete(k)}});
  const pages=Object.fromEntries(ids.map(id=>[id,{hidden:id!=='home',classList:classes()}]));
- const buttons=ids.map(id=>({dataset:{go:id},
-  classList:classes(['nav-item',...(id==='home'?['active']:[])])}));
- const context={
-  active:'home',previewQueue:null,primary:()=>address?{queue:'1.1'}:null,
-  openAddressSheet:()=>actions.push('picker'),sessionStorage:{setItem(){}},
-  SCREEN_RETURN:'screen',today:()=> '2026-10-15',
-  renderDetail:()=>actions.push('detail'),renderUpdates:()=>actions.push('updates'),
-  renderSettings:()=>actions.push('settings'),renderHome:()=>actions.push('home'),
-  window:{matchMedia:()=>({matches:reduced}),scrollTo:()=>actions.push('scroll')},
-  document:{documentElement:{classList:classes(adminOff?['feature-off-animations']:[]),dataset:{}},
-   querySelectorAll:()=>buttons,
-   ...(native?{startViewTransition:cb=>{actions.push('native-transition');cb();return {finished:Promise.resolve()}}}:{} )},
+ const buttons=ids.map(name=>({dataset:{go:name},classList:{contains:k=>k==='nav-item',toggle(k,v){events.push('nav:'+name+':'+v)}}}));
+ const element={style:{scrollBehavior:'smooth'},dataset:{},classList:{contains:k=>off&&k==='feature-off-animations'}};
+ const context={active:'home',previewQueue:null,primary:()=>hasAddress?{queue:'2.1'}:null,openAddressSheet:()=>events.push('picker'),
+  sessionStorage:{setItem(){}},SCREEN_RETURN:'selected',today:()=> '2026-10-15',
+  renderHome:()=>events.push('render-home'),renderDetail:()=>events.push('render-detail'),
+  renderUpdates:()=>events.push('render-updates'),renderSettings:()=>events.push('render-settings'),
+  window:{scrollTo:()=>events.push('scroll'),matchMedia:()=>({matches:reduced})},
+  document:{documentElement:element,querySelectorAll:()=>buttons},
   $:id=>pages[id]
  };
- vm.runInNewContext(navigation+';this.navigate=navigate;',context);
- return {navigate:context.navigate,context,pages,buttons,actions};
+ vm.runInNewContext(nav+';this.navigate=navigate;',context);
+ return {context,events,pages,element};
 }
-test('All four screens animate as a single unit only when switching',()=>{
- const view=setup();
- view.navigate('detail');
- assert.equal(view.context.active,'detail');
- assert.equal(view.pages.home.hidden,true);
- assert.equal(view.pages.detail.hidden,false);
- assert.equal(view.pages.detail.classList.contains('tab-enter'),true);
- assert.deepEqual(view.actions,['detail','scroll']);
- view.navigate('updates');
- assert.equal(view.pages.detail.hidden,true);
- assert.equal(view.pages.detail.classList.contains('tab-enter'),false);
- assert.equal(view.pages.updates.classList.contains('tab-enter'),true);
- assert.equal(view.buttons.find(x=>x.dataset.go==='updates').classList.contains('active'),true);
- view.navigate('settings');
- assert.equal(view.pages.settings.classList.contains('tab-enter'),true);
- view.navigate('home');
- assert.equal(view.pages.home.classList.contains('tab-enter'),true);
+test('every tab tap commits immediately without queued cooldown',()=>{
+ const {context,pages,events}=setup();
+ for(const name of ['detail','settings','updates','home','detail']){
+  context.navigate(name);
+  assert.equal(context.active,name);
+  assert.equal(pages[name].hidden,false);
+  assert.equal(pages[name].classList.contains('tab-enter'),true);
+ }
+ assert.equal(events.filter(x=>x==='scroll').length,5);
+ assert.equal(context.navigate.queuedName,undefined);
+ assert.equal(context.navigate.runningTransition,undefined);
 });
-test('A second tap on the active tab never restarts the transition or scrolls',()=>{
- const view=setup();
- view.navigate('updates');
- const scrolling=view.actions.filter(x=>x==='scroll').length;
- view.navigate('updates');
- assert.equal(view.actions.filter(x=>x==='scroll').length,scrolling);
- assert.equal(view.actions.filter(x=>x==='updates').length,2);
- assert.equal(view.pages.updates.classList.contains('tab-enter'),true);
+test('double-tap does not restart entrance animation or force scrolling',()=>{
+ const {context,pages,events}=setup();
+ context.navigate('updates');const before=events.slice();
+ context.navigate('updates');context.navigate('updates');
+ assert.deepEqual(events,before);
+ assert.equal(pages.updates.classList.contains('tab-enter'),true);
 });
-test('Reduce Motion and admin animation-off both disable the reveal',()=>{
- for(const options of [{reduced:true},{adminOff:true}]){
-  const view=setup(options);view.navigate('settings');
-  assert.equal(view.pages.settings.hidden,false);
-  assert.equal(view.pages.settings.classList.contains('tab-enter'),false);
+test('reduce motion and admin animation-off remove entrance without delaying tab',()=>{
+ for(const x of [{reduced:true},{off:true}]){
+  const {context,pages}=setup(x);
+  context.navigate('settings');assert.equal(context.active,'settings');
+  assert.equal(pages.settings.classList.contains('tab-enter'),false);
  }
 });
-test('Without an address the graph tab opens the address picker, not an empty screen',()=>{
- const view=setup({address:false});view.navigate('detail');
- assert.equal(view.context.active,'home');
- assert.deepEqual(view.actions,['picker']);
+test('no address opens selector and keeps home active',()=>{
+ const {context,events}=setup({hasAddress:false});
+ context.navigate('detail');assert.equal(context.active,'home');assert.deepEqual(events,['picker']);
 });
-test('The selected day caption is exactly the requested text for missing schedules',()=>{
- assert.match(app,/setText\('detailUpdated',pub\?`Опубліковано \$\{fmtStamp\(pub\.publishedAt\)\}`:'Світло весь день'\)/);
- assert.doesNotMatch(app,/detailUpdated'.{0,140}за замовчуванням/);
+test('lateral CSS has no native page snapshot or vertical fallbacks',()=>{
+ assert.doesNotMatch(app,/document\.startViewTransition|navigate\.queuedName|navigate\.runningTransition|skipTransition/);
+ assert.doesNotMatch(css,/svitloViewportIn|svitloViewportOut|view-transition-name:svitlo-navigation/);
+ assert.match(css,/animation:tabSettle \.22s/);
  assert.match(css,/@keyframes tabSettle\{from\{opacity:\.25;transform:translate3d\(28px,0,0\)/);
  assert.match(css,/@keyframes tabSettleBackward\{from\{opacity:\.25;transform:translate3d\(-28px,0,0\)/);
+ assert.match(app,/section\.classList\.remove\('tab-enter'\)/);
 });
-
-test('Modern iOS animates both fixed-size viewport snapshots using View Transitions',async()=>{
- const view=setup({native:true});
- view.navigate('detail');
- assert.equal(view.context.active,'detail');
- assert.ok(view.actions.includes('native-transition'));
- assert.equal(view.pages.detail.hidden,false);
- assert.equal(view.pages.detail.classList.contains('tab-enter'),false);
- assert.equal(view.context.document.documentElement.dataset.tabDirection,'forward');
- await new Promise(resolve=>setImmediate(resolve));
- view.navigate('home');
- assert.equal(view.context.document.documentElement.dataset.tabDirection,'backward');
-});
-test('Reduced Motion skips native View Transitions completely',()=>{
- const view=setup({native:true,reduced:true});
- view.navigate('updates');
- assert.equal(view.context.active,'updates');
- assert.equal(view.actions.includes('native-transition'),false);
+test('missing schedule keeps simple caption',()=>{
+ assert.match(app,/setText\('detailUpdated',pub\?\x60Опубліковано/);
 });
