@@ -59,8 +59,13 @@
     const anchor=e.target.closest?.('a[href]');if(!anchor||anchor.hasAttribute('download'))return;
     const target=new URL(anchor.href,frame.contentWindow.location.href);
     if(target.origin!==location.origin)return;
-    // Scroll to a section in the current page without reloading the iframe.
-    if(target.pathname===frame.contentWindow.location.pathname&&target.search===frame.contentWindow.location.search&&target.hash)return;
+    // Local section links scroll inside the iframe without adding history entries.
+    // Otherwise the first Back press would undo the hash rather than close this page.
+    if(target.pathname===frame.contentWindow.location.pathname&&target.search===frame.contentWindow.location.search&&target.hash){
+     const section=doc.getElementById(decodeURIComponent(target.hash.slice(1)));
+     if(section){e.preventDefault();section.scrollIntoView({behavior:frame.contentWindow.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'})}
+     return;
+    }
     if(/(?:\/index\.html|\/)$/.test(target.pathname)){e.preventDefault();dismiss();return}
     const next=internal(target.href);
     if(next){e.preventDefault();display(next.href)}

@@ -396,41 +396,85 @@ async function shareSchedule(date,{copy=false}={}){
  }catch(error){if(error?.name==='AbortError')return;console.warn('Share schedule:',error);flash('Не вдалося поділитися графіком')}
 }
 function renderBar(a){const bar=$('overviewBar');bar.replaceChildren();if(!a){const b=el('span','bar-segment unknown');b.style.flex='1';bar.append(b);return}let start=0,v=a[0];for(let i=1;i<=1440;i++){if(i===1440||a[i]!==v){const seg=el('span','bar-segment '+(v===1?'off':v===0?'on':'unknown'));seg.style.flex=String(i-start);seg.title=`${clock(start)}–${clock(i)} · ${v===1?'відключення':v===0?'світло':'немає даних'}`;bar.append(seg);start=i;v=a[i]}}const line=el('span','bar-now');line.style.left=(nowMinutes()/1440*100)+'%';bar.append(line)}
+// Latest tap wins. Previous WAAPI animations are interrupted at their actual
+// visual position rather than rewinding, and clicks are never rate-limited.
+let tabMotion=null;
+const TAB_MOTION_MS=460;
 function navigate(name){
- // Each tab tap commits immediately; only the visual sideways animation lasts.
- // An already active tab never restarts or replays its entrance.
- if(!['home','detail','updates','settings'].includes(name))return;
+ const names=['home','detail','updates','settings'];
+ if(!names.includes(name))return;
  if(name==='detail'&&!primary()&&!previewQueue){openAddressSheet();return}
  if(name===active)return;
- const names=['home','detail','updates','settings'],previous=active;
+ const previous=active;
  if(name!=='detail')previewQueue=null;
  try{sessionStorage.setItem(SCREEN_RETURN,name)}catch{}
- // Prepare the next screen before it becomes visible.
  if(name==='detail'){daySelected=today();dayStripStart=today();renderDetail()}
  else if(name==='updates')renderUpdates();
  else if(name==='settings')renderSettings();
  else renderHome();
- document.documentElement.dataset.tabDirection=
-  names.indexOf(name)>=names.indexOf(previous)?'forward':'backward';
- const scrollStyle=document.documentElement.style;
- const previousBehavior=scrollStyle?.scrollBehavior;
- if(scrollStyle)scrollStyle.scrollBehavior='auto';
- try{window.scrollTo(0,0)}
- finally{if(scrollStyle)scrollStyle.scrollBehavior=previousBehavior||''}
- active=name;
- const animate=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches!==true &&
+ const direction=names.indexOf(name)>=names.indexOf(previous)?1:-1;
+ document.documentElement.dataset.tabDirection=direction>0?'forward':'backward';
+ const previousSection=$(previous),nextSection=$(name);
+ const animate=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches!==true&&
   !document.documentElement.classList.contains('feature-off-animations');
- for(const id of names){
-  const section=$(id);
-  // Remove old animation classes before changing visibility; never use
-  // ViewTransition snapshots or a queued, delayed destination.
-  section.classList.remove('tab-enter');
-  section.hidden=id!==name;
+ // Sample current pixels BEFORE cancelling an unfinished transition.
+ const previousStyle=window.getComputedStyle?.(previousSection);
+ const currentTransform=previousStyle?.transform&&previousStyle.transform!=='none'?previousStyle.transform:'translate3d(0,0,0)';
+ const currentOpacity=Number(previousStyle?.opacity)||1;
+ if(tabMotion){
+  tabMotion.incoming?.cancel();tabMotion.outgoing?.cancel();
+  if(tabMotion.from){tabMotion.from.hidden=true;tabMotion.from.style.cssText=''}
+  if(tabMotion.to){tabMotion.to.style.cssText=''}
+  tabMotion=null;
  }
- if(animate)$(name).classList.add('tab-enter');
+ const root=document.documentElement,scrollBehavior=root.style.scrollBehavior;
+ root.style.scrollBehavior='auto';
+ try{window.scrollTo(0,0)}finally{root.style.scrollBehavior=scrollBehavior||''}
+ active=name;
+ for(const id of names){
+  const node=$(id);node.classList.remove('tab-enter');
+  node.hidden=id!==name&&id!==previous;
+ }
+ // Keep the old screen in a temporary, noninteractive layer until it fades out.
+ // Only transform/opacity are animated (GPU-friendly on Android and iOS).
+ const nav=document.querySelector('.bottom-nav');
+ if(nav)nav.style.setProperty('--tab-index',String(names.indexOf(name)));
  document.querySelectorAll('[data-go]').forEach(item=>{
-  if(item.classList.contains('nav-item'))item.classList.toggle('active',item.dataset.go===name);
+  if(item.classList.contains('nav-item')){
+   const selected=item.dataset.go===name;
+   item.classList.toggle('active',selected);
+   item.setAttribute('aria-current',selected?'page':'false');
+  }
  });
+ if(!animate||!previousSection.animate||!nextSection.animate){
+  previousSection.hidden=true;
+  if(animate)nextSection.classList.add('tab-enter');
+  return;
+ }
+ const token={from:previousSection,to:nextSection,incoming:null,outgoing:null};
+ tabMotion=token;
+ previousSection.style.position='absolute';
+ previousSection.style.inset='0';
+ previousSection.style.width='100%';
+ previousSection.style.zIndex='2';
+ previousSection.style.pointerEvents='none';
+ nextSection.hidden=false;
+ const easing='cubic-bezier(.2,.78,.22,1)';
+ token.outgoing=previousSection.animate([
+  {transform:currentTransform,opacity:currentOpacity},
+  {transform:'translate3d('+(-direction*30)+'px,0,0)',opacity:0}
+ ],{duration:TAB_MOTION_MS,easing,fill:'forwards'});
+ token.incoming=nextSection.animate([
+  {transform:'translate3d('+(direction*34)+'px,0,0)',opacity:0.12},
+  {transform:'translate3d(0,0,0)',opacity:1}
+ ],{duration:TAB_MOTION_MS,easing,fill:'forwards'});
+ token.incoming.finished.then(()=>{
+  if(tabMotion!==token)return;
+  token.outgoing.cancel();token.incoming.cancel();
+  previousSection.hidden=true;previousSection.style.cssText='';
+  nextSection.style.cssText='';
+  tabMotion=null;
+ },()=>{});
 }
 function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Підчерга '+previewQueue,settlement:'Черкаси та район'}:primary();
  if(!a)return;
