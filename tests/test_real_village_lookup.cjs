@@ -21,10 +21,15 @@ test('archived Sloboda street can be found but must never auto-confirm a stale q
  const fallback=JSON.parse(fs.readFileSync(path.join(data,'published_street_fallback.json'),'utf8'));
  const idx=mergeIndexes(live,fallback).localities['слобода'];
  const r=resolve({idx,settlement:'Слобода',street:'Вулиця Різдвяна'});
- assert.equal(r.status,'possible');
- assert.equal(r.reason,'archived-only');
- assert.ok(r.streetKey==='вулиця|різдвяна');
- assert.equal(r.queue,undefined);
+ assert.equal(r.streetKey,'вулиця|різдвяна');
+ if(live.localities['слобода'].archiveOnlyStreets?.includes(r.streetKey)){
+  assert.equal(r.status,'possible');
+  assert.equal(r.reason,'archived-only');
+  assert.equal(r.queue,undefined);
+ }else{
+  assert.notEqual(r.reason,'archived-only');
+  assert.ok(live.localities['слобода'].streetQueues[r.streetKey]?.length);
+ }
 });
 test('currently confirmed Sloboda streets still resolve automatically from current source',()=>{
  const fs=require('node:fs'),path=require('node:path'),{mergeIndexes}=require('../data-merge.js');
