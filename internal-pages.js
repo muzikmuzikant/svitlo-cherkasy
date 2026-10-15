@@ -46,9 +46,12 @@
     const next=internal(target.href);
     if(next){e.preventDefault();display(next.href)}
    },true);
-   // Avoid duplicate app back controls when the subpage is embedded.
-   const backLink=doc.querySelector('a.back,a[href="./index.html"],a[href="./"]');
-   if(backLink){backLink.setAttribute('aria-label','Повернутися до застосунку')}
+   // One consistent back button lives in the host header. Hide legacy return buttons in embedded pages only.
+   doc.documentElement.classList.add('svitlo-embedded');
+   const style=doc.createElement('style');style.id='svitlo-embedded-back-cleanup';
+   style.textContent='.svitlo-embedded a.back,.svitlo-embedded a.support-back,.svitlo-embedded nav a[href="./"],.svitlo-embedded nav a[href^="./index.html"],.svitlo-embedded header a[href="./"]:not(.support-brand),.svitlo-embedded header a[href^="./index.html"]:not(.support-brand),.svitlo-embedded .footer a[href="./"],.svitlo-embedded footer a[href="./"],.svitlo-embedded footer a[href^="./index.html"]{display:none!important}';
+   doc.head.append(style);
+   // Legal information and the support brand remain available when the page is opened standalone.
   }catch(error){console.warn('Internal page shell:',error.message)}
  });
  window.SvitloInternalPages={open:url=>display(url),close:dismiss};
