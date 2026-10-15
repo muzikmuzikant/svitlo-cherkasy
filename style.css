@@ -12,8 +12,8 @@ html{scrollbar-width:none;overflow-x:clip;overscroll-behavior-x:none;scroll-beha
 @media(hover:hover){.place-card:hover,.picker-btn:hover,.icon-btn:hover,.add-place-card:hover,.setting-action:hover{transform:translateY(-2px);box-shadow:0 13px 28px #33598c19}.day-choice:hover:not(.selected){background:#eaf2ff}}
 @media(max-width:370px){.viewport{padding-inline:12px}.status-panel{padding-inline:18px}.hour-grid{gap:5px}.hour-cell{font-size:10px}.stats-row{gap:8px}.stat-card{padding:14px}.day-choice{font-size:10px}}
 @media(prefers-reduced-motion:no-preference){
-.screen:not([hidden]){animation:tabSettle .19s cubic-bezier(.22,.72,.32,1) both}
-.screen:not([hidden]) > :not([hidden]){animation:none}
+html:not(.feature-off-animations) .screen.tab-enter:not([hidden]){animation:tabSettle .22s cubic-bezier(.2,.78,.25,1) both}
+html:not(.feature-off-animations) .screen.tab-enter:not([hidden]) > :not([hidden]){animation:none}
 .sheet[open]{animation:sheetIn .3s var(--ease) both}
 .sheet::backdrop{animation:fadeIn .22s ease both}
 .toast:not([hidden]){animation:toastIn .2s ease both}
@@ -21,7 +21,7 @@ html{scrollbar-width:none;overflow-x:clip;overscroll-behavior-x:none;scroll-beha
 .nav-item:active,.picker-btn:active,.place-card:active,.icon-btn:active,.primary-action:active,.day-choice:active,.add-place-card:active{transform:scale(.985)}
 .status-title,.status-count,.stat-val{transition:opacity .2s ease}
 .live-dot{animation:pulse 2.5s infinite}
-@keyframes tabSettle{from{opacity:.72;transform:translate3d(0,3px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
+@keyframes tabSettle{from{opacity:.38;transform:translate3d(0,10px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
 @keyframes sheetIn{from{transform:translateY(28px);opacity:.6}to{transform:none;opacity:1}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes toastIn{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}

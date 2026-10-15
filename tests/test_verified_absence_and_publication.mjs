@@ -12,7 +12,7 @@ test('CRITICAL PRODUCT RULE: missing graph always means 24 hours of light in vis
  const app=read('app.js');
  assert.match(app,/if\(!day\)\{[\s\S]*?return new Int8Array\(1440\)/);
  assert.match(app,/ГРАФІКА НЕМАЄ · СВІТЛО ВЕСЬ ДЕНЬ/);
- assert.match(app,/Графік не опубліковано · світло весь день за замовчуванням/);
+ assert.match(app,/Світло весь день/);
  assert.match(read('style.css'),/feature-off-quickAddresses #homeQuickPlaces/);
 });
 

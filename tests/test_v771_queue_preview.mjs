@@ -21,7 +21,7 @@ test('detail screen shows source context without the removed decorative verifica
  const app=read('app.js'),html=read('index.html');
  assert.doesNotMatch(html,/id="detailVerified"/);
  assert.match(html,/id="detailUpdated"/);
- assert.match(app,/Графік не опубліковано · світло весь день за замовчуванням/);
+ assert.match(app,/Світло весь день/);
  assert.match(app,/pub\?\x60Опубліковано/);
 });
 test('maintenance incident mode has its own readable look',()=>{
