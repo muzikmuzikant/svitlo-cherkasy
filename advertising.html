@@ -117,6 +117,7 @@
   const cfg=await timedFetch('./push-config.json').then(r=>{if(!r.ok)throw Error('config');return r.json()});
   const base=new URL(cfg.apiBase).origin;const response=await timedFetch(base+'/api/ads');
   if(!response.ok)throw Error('data');const data=await response.json();
+  if(!data.enabled){const main=document.querySelector('main');main.replaceChildren();const notice=make('section',undefined,'section');notice.append(make('h1','Рекламні розміщення поки недоступні'),make('p','Сервіс працює без реклами. Поверніться до графіків.'));const back=make('a','До застосунку','contact');back.href='./index.html';notice.append(back);main.append(notice);return;}
   put('title',data.pageTitle);put('intro',data.pageIntro);put('about',data.pageAbout);put('terms',data.pageTerms);put('contactText',data.pageContactText);
   document.title=(data.pageTitle||'Реклама')+' · Світло Черкаси';
   document.documentElement.style.setProperty('--bg',data.pageBackground||'#f6f8fc');document.documentElement.style.setProperty('--accent',data.pageAccent||'#397bff');
