@@ -31,6 +31,7 @@
   animateDetails(details,opening);
  });
  // Reveal newly created cards in both marketing pages and all admin editors.
+ const marketing=/\/(advertising|support-project|ad-detail)\.html$/.test(location.pathname);
  const adminPage=/\/admin\.html$/.test(location.pathname);
  if((marketing||adminPage)&&'MutationObserver'in window){
   const watch=new MutationObserver(records=>{
@@ -71,7 +72,6 @@
   closeDialog(event.target);
  },true);
  // Scroll reveals for the two newly redesigned landing pages and their components.
- const marketing=/\/(advertising|support-project|ad-detail)\.html$/.test(location.pathname);
  if(marketing){
   const targets=[...document.querySelectorAll('.hero,.section,.benefit,.format,.plan,.method,.goal,.expense,.faq details,.contact-banner,.gratitude,.article,.aside')];
   for(let i=0;i<targets.length;i++){
