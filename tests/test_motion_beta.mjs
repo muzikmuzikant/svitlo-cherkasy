@@ -73,7 +73,7 @@ test('details open and close using height animation',async()=>{
 });
 test('new pages use phone emoji, not fake symbol-font glyphs',()=>{
  const broken=/[ϟ⌖◇▤▣✳✦↗♡⌘◈▥▦◫▧◉⌁⛨▨↶◷♧◎★☆‹›]/u;
- for(const name of ['advertising.html','support-project.html','ad-detail.html','admin-ads.js','beta-ads.js']){
+ for(const name of ['advertising.html','support-project.html','ad-detail.html','admin-ads.js','beta-ads.js','admin-workspace.js']){
   assert.equal(broken.test(source(name)),false,name+' contains decorative Unicode placeholder');
  }
  assert.match(source('advertising.html'),/📍|📱|📰/u);
