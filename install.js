@@ -4,20 +4,34 @@
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   // No device identifiers are collected. Count one event per tab and day.
   const referrerSource=(()=>{try{const x=new URLSearchParams(location.search).get('src');return ['telegram-echerkasy','telegram-cherkasy-golovne','telegram'].includes(x)?x:'direct'}catch{return 'direct'}})();
-  async function reportUsage(event){
+  async function reportUsage(event,value=''){
     try{
-      const date=new Date().toISOString().slice(0,10),key='svitlo-aggregate-'+event+'-'+date;
+      const date=new Date().toISOString().slice(0,10),key='svitlo-aggregate-'+event+'-'+value+'-'+date;
       if(sessionStorage.getItem(key)==='yes')return;
       const response=await fetch('./push-config.json',{cache:'no-store'});
       if(!response.ok)return;
       const cfg=await response.json(),base=new URL(cfg.apiBase);
       if(base.protocol!=='https:')return;
       const result=await fetch(new URL('/api/telemetry',base),{method:'POST',cache:'no-store',keepalive:true,
-        headers:{'content-type':'application/json'},body:JSON.stringify({event,source:referrerSource})});
+        headers:{'content-type':'application/json'},body:JSON.stringify({event,source:referrerSource,value})});
       if(result.ok)sessionStorage.setItem(key,'yes');
     }catch{/* Telemetry must never block the application. */}
   }
+  const userAgent=navigator.userAgent||'';
+  const platform=/iPad/i.test(userAgent)?'iPad':/iPhone|iPod/i.test(userAgent)?'iPhone':/Android/i.test(userAgent)?'Android':/Windows/i.test(userAgent)?'Windows':/Macintosh/i.test(userAgent)?'macOS':/Linux/i.test(userAgent)?'Linux':'Інше';
+  const version=document.querySelector('meta[name="svitlo-version"]')?.content||'';
+  // Measurements are independent aggregate counters. No visitor identifier,
+  // house, street, or connection to a particular support ticket is transmitted.
   reportUsage(standalone?'app_open':'landing');
+  reportUsage('platform_sample',platform);
+  if(/^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(version))reportUsage('version_sample',version);
+  window.SvitloTelemetry={sampleSelected(place){
+    if(!place||!standalone)return;
+    if(/^[1-6]\.[12]$/.test(String(place.queue||'')))reportUsage('queue_sample',place.queue);
+    const town=String(place.settlement||'').trim().replace(/\s+/g,' ').slice(0,55);
+    if(town)reportUsage('locality_sample',town);
+  }};
+
   // Installed iPhone PWAs must update their own Service Worker, not only the browser installer.
   if (navigator.serviceWorker?.register) {
     const previousController=navigator.serviceWorker.controller;
