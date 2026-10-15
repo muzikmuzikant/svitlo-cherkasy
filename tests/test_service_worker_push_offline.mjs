@@ -19,7 +19,7 @@ function worker(openTabs=[]){
  vm.runInNewContext(script,{self,importScripts:()=>{},URL,Promise,Date,console,Math,setTimeout,clearTimeout});
  const invoke=async(type,data)=>{
   const pending=[];
-  const event={data,waitUntil:p=>pending.push(Promise.resolve(p))};
+  const event=type==='notificationclick'?{notification:data,waitUntil:p=>pending.push(Promise.resolve(p))}:{data,waitUntil:p=>pending.push(Promise.resolve(p))};
   handlers.get(type)(event);
   await Promise.all(pending);
  };
