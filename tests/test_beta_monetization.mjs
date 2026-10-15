@@ -140,14 +140,14 @@ test('7.9.10: editable advertising and support designs survive restart',()=>{
  s.pageBenefits=['Перша','Друга','Третя'];
  s.support={...s.support,background:'#f0f5fc',accent:'#336699',
  heroImage:'https://example.com/support.webp',goals:[{icon:'♡',title:'Підтримка',description:'Розвиток проєкту'}],
- showGoals:true,showAmounts:true,showThanks:false,amounts:[20,50,100]};
+ showGoals:true,showThanks:false};
  store.update(s);store.flush();
  const reload=createAdsStore({directory:dir}).publicState();
  assert.equal(reload.pageAccent,'#2360c5');
  assert.equal(reload.pageBenefits.length,3);
  assert.equal(reload.support.goals[0].title,'Підтримка');
  assert.equal(reload.support.showThanks,false);
- assert.equal(reload.support.amounts[1],50);
+ assert.equal('amounts' in reload.support,false,'suggested donations must not be published');
  fs.rmSync(dir,{recursive:true,force:true});
 });
 
@@ -167,7 +167,8 @@ test('7.9.10: full screen advertising page and first run consent have shipped as
  assert.ok(beta.includes("item.detailEnabled?'./ad-detail.html"));
  assert.ok(full.includes('detailBanner')&&full.includes('detailImage')&&full.includes("type:'outbound'"));
  assert.ok(adInfo.includes('pageBenefits')&&adInfo.includes('pageHeroImage'));
- assert.ok(support.includes('showGoals')&&support.includes('showAmounts'));
+ assert.ok(support.includes('showGoals')&&!support.includes('showAmounts'));
+ assert.ok(!support.includes('amountBlock'));
  assert.ok(sw.includes('ad-detail.html'));
  const build=fs.readFileSync(new URL('scripts/build_pages.py',root),'utf8');
  assert.ok(build.includes("'ad-detail.html'"));

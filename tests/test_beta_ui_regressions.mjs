@@ -53,3 +53,44 @@ test('preserve existing beautiful application icons and admin navigation, never 
  assert.ok(app.includes('./motion.js'));
  assert.ok(admin.includes('./motion.js'));
 });
+
+
+test('7.9.8 navigation keeps 460ms motion, no cooldown and correct neutral schedule legend',()=>{
+ const style=read('style.css'),paint=read('hour-paint.js');
+ assert.match(app,/const TAB_MOTION_MS=460/);
+ assert.match(app,/token\.incoming\.finished/);
+ assert.match(app,/token\.outgoing\.cancel/);
+ assert.match(app,/getComputedStyle/);
+ assert.match(style,/\.bottom-nav::before/);
+ assert.match(style,/width:min\(calc\(100% - 28px\)/);
+ assert.match(style,/\.dot-light\{background:#fff/);
+ assert.match(style,/\.dot-mixed\{background:linear-gradient\(90deg,#2c3c54 50%,#fff 50%\)/);
+ assert.match(paint,/COLOR=\{0:'#ffffff'/);
+});
+test('hero banner placeholders are masked until API config arrives with fallback',()=>{
+ for(const path of ['support-project.html','advertising.html']){
+  const page=read(path);
+  assert.match(page,/data-content-loading="true"/);
+  assert.match(page,/data\.contentLoading='false'/);
+  assert.match(page,/heroSkeleton/);
+  assert.match(page,/heroReady/);
+  assert.match(page,/src="\.\/assets\/icon\.svg"/);
+ }
+});
+test('support has no suggested amounts, admin editor also omits them, icon goals are emoji',()=>{
+ const page=read('support-project.html'),admin=read('admin-ads.js'),ads=read('push-server/ads.js');
+ assert.ok(!page.includes('amountBlock'));
+ assert.ok(!page.includes('showAmounts'));
+ assert.ok(!admin.includes('Показувати приклади сум'));
+ assert.ok(!admin.includes('Приклади сум підтримки'));
+ assert.ok(!ads.includes('showAmounts'));
+ assert.match(page,/🛡️/u);
+ assert.match(page,/🚀/u);
+ assert.match(page,/✨/u);
+});
+test('iframe in-page anchor links do not add history entries before Back',()=>{
+ const nav=read('internal-pages.js');
+ assert.match(nav,/section\.scrollIntoView/);
+ assert.match(nav,/e\.preventDefault\(\);section\.scrollIntoView/);
+ assert.match(nav,/history\.back\(\)/);
+});

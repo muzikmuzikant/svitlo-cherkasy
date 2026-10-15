@@ -29,8 +29,8 @@ const defaults={
   heroImage:'',background:'#f5f8ff',accent:'#377cff',methods:[],expenses:[],
   whyTitle:'Навіщо потрібна підтримка?',thanksTitle:'Дякуємо, що допомагаєте розвивати сервіс',showGoals:true,showThanks:true,
   goals:[{icon:'🛡️',title:'Стабільність',description:'Підтримка доступності та оновлення даних.'},
-   {icon:'◈',title:'Розвиток',description:'Нові функції та виправлення помилок.'},
-   {icon:'⌁',title:'Стабільність',description:'Тестування і покращення інтерфейсу.'}]
+   {icon:'🚀',title:'Розвиток',description:'Нові функції та виправлення помилок.'},
+   {icon:'✨',title:'Нові можливості',description:'Тестування і покращення інтерфейсу.'}]
 
  }
 };
