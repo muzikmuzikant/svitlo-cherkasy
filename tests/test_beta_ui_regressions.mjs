@@ -71,7 +71,7 @@ test('hero banner placeholders are masked until API config arrives with fallback
  for(const path of ['support-project.html','advertising.html']){
   const page=read(path);
   assert.match(page,/data-content-loading="true"/);
-  assert.match(page,/data\.contentLoading='false'/);
+  assert.match(page,/dataset\.contentLoading='false'/);
   assert.match(page,/heroSkeleton/);
   assert.match(page,/heroReady/);
   assert.match(page,/src="\.\/assets\/icon\.svg"/);
