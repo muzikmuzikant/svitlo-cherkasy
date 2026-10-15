@@ -23,3 +23,29 @@ test('admin correction deliberately overrides current per-street data',()=>{
  const admin={streetQueues:{'вулиця|соборна':['6.2']}};
  assert.deepEqual(mergeIndexes(live,admin,{manual:true}).streetQueues['вулиця|соборна'],['6.2']);
 });
+
+test('real Sloboda keeps every archived street name when the live district import is partial',()=>{
+ const fs=require('node:fs'),path=require('node:path');
+ const base=path.join(__dirname,'../data');
+ const live=JSON.parse(fs.readFileSync(path.join(base,'addresses.json'),'utf8'));
+ const backup=JSON.parse(fs.readFileSync(path.join(base,'published_street_fallback.json'),'utf8'));
+ const fresh=live.localities['слобода'],old=backup.localities['слобода'];
+ assert.ok(Object.keys(fresh.streets).length< Object.keys(old.streets).length,'Fixture must include partial fresh street list');
+ const merged=mergeIndexes(live,backup).localities['слобода'];
+ for(const key of Object.keys(old.streets))assert.ok(merged.streets[key],'Missing historical street: '+key);
+ assert.ok(Object.keys(merged.streets).length>=Object.keys(old.streets).length);
+ assert.ok(merged.archiveOnlyStreets.includes('вулиця|різдвяна'));
+ assert.equal(merged.streetQueues['вулиця|різдвяна'],undefined,'Obsolete queues must not become confirmed');
+ assert.deepEqual(merged.archivedStreetQueues['вулиця|різдвяна'],old.streetQueues['вулиця|різдвяна']);
+ assert.deepEqual(merged.streetQueues['вулиця|соборна'],fresh.streetQueues['вулиця|соборна']);
+});
+test('manual verified addition upgrades an archived street into confirmed queue',()=>{
+ const archived=mergeIndexes(
+   {streets:{'вулиця|нова':'Вулиця Нова'},streetQueues:{'вулиця|нова':['1.1']}},
+   {streets:{'вулиця|стара':'Вулиця Стара'},streetQueues:{'вулиця|стара':['3.2']}}
+ );
+ assert.deepEqual(archived.archiveOnlyStreets,['вулиця|стара']);
+ const corrected=mergeIndexes(archived,{streets:{'вулиця|стара':'Вулиця Стара'},streetQueues:{'вулиця|стара':['5.1']}},{manual:true});
+ assert.ok(!corrected.archiveOnlyStreets.includes('вулиця|стара'));
+ assert.deepEqual(corrected.streetQueues['вулиця|стара'],['5.1']);
+});
