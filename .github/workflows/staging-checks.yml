@@ -1,0 +1,43 @@
+name: Check private Beta branch
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate-staging:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify staging identity and no production push configuration
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          release=json.loads(Path('release.json').read_text())
+          manifest=json.loads(Path('manifest.webmanifest').read_text())
+          push=json.loads(Path('push-config.json').read_text())
+          assert release['version']=='7.9.8'
+          assert release['channel']=='beta'
+          assert 'Beta' in manifest['name']
+          assert push.get('apiBase')=='https://staging-api.invalid'
+          assert not push.get('publicKey')
+          PY
+      - run: python scripts/build_pages.py
+      - name: Check staged site output
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          assert not Path('_site/CNAME').exists()
+          assert '-beta' in Path('_site/sw.js').read_text()
+          assert 'Світло Beta' in Path('_site/manifest.webmanifest').read_text()
+          assert 'BETA 7.9.8' in Path('_site/index.html').read_text()
+          PY
+      - run: node --check app.js && node --check install.js && node --check sw.js
