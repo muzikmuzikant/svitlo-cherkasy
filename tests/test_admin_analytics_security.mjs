@@ -22,6 +22,12 @@ test('anonymous traffic is persisted only as aggregate source/event counts',()=>
   assert.equal(result.totals7.appOpen,1);
   assert.equal(result.totals7.installGuide,1);
   assert.equal(result.totals7.telegram,2);
+  // The chart's daily row fields must match the frontend's camelCase schema.
+  assert.equal(result.days.at(-1).landing,2);
+  assert.equal(result.days.at(-1).appOpen,1);
+  assert.equal(result.days.at(-1).installGuide,1);
+  assert.equal(result.days.at(-1).telegram,2);
+  assert.equal(result.days.at(-1).app_open,undefined);
   assert.equal(result.days.length,30);
   assert.equal(result.hours.length,24);
   store.flush();
