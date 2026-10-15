@@ -62,10 +62,26 @@
 @media(max-width:620px){.shell{padding:0 16px 42px}.nav{min-height:64px}.nav-tools a:not(.back){display:none}.hero{border-radius:23px}.hero-copy{padding:33px 24px 20px}.hero h1{font-size:36px}.hero-visual{min-height:235px;max-height:235px}.phone{width:218px;transform:rotate(-6deg) translateY(105px)}.benefits{grid-template-columns:1fr;gap:10px}.benefit{min-height:0;padding:20px;gap:15px}.section{padding-top:49px}.format-strip{grid-template-columns:1fr}.format{min-height:165px}.plan{padding:21px}.plan.featured{padding:20px}.contact-banner{padding:26px 22px}.section-heading h2{font-size:28px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
 @media(prefers-reduced-motion:no-preference){.hero{animation:enter .45s both}@keyframes enter{from{opacity:.3;transform:translateY(10px)}to{opacity:1;transform:none}}}
+
+/* Prevent initial HTML copy from flashing before the admin-managed copy arrives. */
+.hero[data-content-loading="true"] .hero-copy h1,.hero[data-content-loading="true"] .hero-copy p{
+ color:transparent!important;background:linear-gradient(105deg,#ffffff14 8%,#ffffff2f 28%,#ffffff14 50%)!important;
+ background-size:220% 100%!important;border-radius:10px;user-select:none;animation:heroSkeleton 1.25s ease infinite!important;
+}
+.hero[data-content-loading="true"] .hero-copy h1{min-height:2.1em}
+.hero[data-content-loading="true"] .hero-copy p{min-height:4.7em}
+.hero[data-content-loading="false"] .hero-copy h1,.hero[data-content-loading="false"] .hero-copy p{animation:heroReady .34s cubic-bezier(.2,.8,.25,1) both}
+.hero>img:not([hidden]){animation:heroImageReady .42s ease-out both}
+@keyframes heroSkeleton{0%{background-position:110% 0}100%{background-position:-110% 0}}
+@keyframes heroReady{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+@keyframes heroImageReady{from{opacity:0}to{opacity:.32}}
+@media(prefers-reduced-motion:reduce){.hero[data-content-loading="true"] .hero-copy h1,.hero[data-content-loading="true"] .hero-copy p{animation:none!important;background:#ffffff24!important}.hero[data-content-loading="false"] .hero-copy h1,.hero[data-content-loading="false"] .hero-copy p{animation:none!important}}
+.logo-mark img,.brand-symbol img{display:block;width:100%;height:100%;border-radius:12px;object-fit:contain}
+
 </style><link rel="stylesheet" href="./motion.css"><script defer src="./motion.js"></script></head>
 <body><main class="shell">
-<nav class="nav" aria-label="Навігація"><div class="logo"><span class="logo-mark">⚡</span><span>світло<span style="color:var(--accent)">.</span> Черкаси</span></div><div class="nav-tools"><a href="#formats">Формати</a><a href="#tariffs">Тарифи</a><a class="back" href="./index.html">🔙 До застосунку</a></div></nav>
-<header class="hero"><div class="hero-copy"><div class="kicker">РЕКЛАМА ТА СПІВПРАЦЯ</div><h1 id="title">Ваш бізнес ближче до місцевих.</h1><p id="intro">Знайомте користувачів «Світло Черкаси» зі своєю пропозицією через акуратні рекламні формати в застосунку.</p><a class="action-primary" href="#tariffs">Переглянути тарифи <span aria-hidden="true">🔗</span></a></div>
+<nav class="nav" aria-label="Навігація"><div class="logo"><span class="logo-mark"><img src="./assets/icon.svg" alt="" width="37" height="37"></span><span>світло<span style="color:var(--accent)">.</span> Черкаси</span></div><div class="nav-tools"><a href="#formats">Формати</a><a href="#tariffs">Тарифи</a><a class="back" href="./index.html">🔙 До застосунку</a></div></nav>
+<header class="hero" data-content-loading="true"><div class="hero-copy"><div class="kicker">РЕКЛАМА ТА СПІВПРАЦЯ</div><h1 id="title">Ваш бізнес ближче до місцевих.</h1><p id="intro">Знайомте користувачів «Світло Черкаси» зі своєю пропозицією через акуратні рекламні формати в застосунку.</p><a class="action-primary" href="#tariffs">Переглянути тарифи <span aria-hidden="true">🔗</span></a></div>
 <div class="hero-visual"><img id="heroImage" class="hero-art" alt="" hidden><div class="phone" aria-label="Приклад вигляду рекламного блоку в застосунку">
 <div class="phone-logo">світло<span style="color:#327aff">.</span></div><div class="phone-status">⚡ Є світло весь день</div><div class="phone-schedule"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="phone-ad"><small>РЕКЛАМА · ПРИКЛАД ФОРМАТУ</small><b>Ваше оголошення</b><p>Короткий опис для тих, кому це цікаво.</p></div></div>
 <span class="visual-caption">Ілюстрація формату, не реальна кампанія</span></div></header>
@@ -121,9 +137,11 @@
   for(const contact of data.contacts||[]){const href=safeUrl(contact.url);if(!href)continue;const link=make('a',undefined,'contact');link.href=href;link.rel='noopener noreferrer';if(href.startsWith('https:'))link.target='_blank';
    link.append(make('span',contact.label||'Контакт'),make('span','🔗'));contacts.append(link)
   }
+  document.querySelector('.hero').dataset.contentLoading='false';
   if(!contacts.children.length){const link=make('a',undefined,'contact');link.href='./feedback.html';link.append(make('span','Зв’язок із нами'),make('span','🔗'));contacts.append(link)}
  }catch(error){
   console.warn('Advertising configuration unavailable',error.message);
+  document.querySelector('.hero').dataset.contentLoading='false';
   $('packages').replaceChildren(make('p','Зараз не вдалося отримати тарифи. Для уточнення умов напишіть через центр підтримки.','empty'));
   $('contacts').replaceChildren();const link=make('a','Зв’язатися з підтримкою 🔗','contact');link.href='./feedback.html';$('contacts').append(link);
  }

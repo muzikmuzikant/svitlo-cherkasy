@@ -50,18 +50,34 @@ button:focus-visible,a:focus-visible{outline:3px solid #79a8ff;outline-offset:3p
 @media(max-width:620px){.nav{min-height:62px}.hero{border-radius:23px}.hero-copy{padding:30px 24px 18px}.hero h1{font-size:37px}.hero-graphic{height:140px}.methods{grid-template-columns:1fr;gap:12px}.method{padding:20px}.section{padding-top:50px}.section-heading h2{font-size:29px}.why-text{padding:23px}.goals{grid-template-columns:1fr}.goal{grid-template-columns:50px 1fr}.goal-icon{grid-row:span 2}.gratitude{padding:33px 21px;margin-top:49px}.expense{align-items:flex-start}.expense strong{font-size:13px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
 @media(prefers-reduced-motion:no-preference){.hero{animation:rise .45s both}@keyframes rise{from{opacity:.25;transform:translateY(10px)}to{opacity:1;transform:none}}}
+
+/* Prevent initial HTML copy from flashing before the admin-managed copy arrives. */
+.hero[data-content-loading="true"] .hero-copy h1,.hero[data-content-loading="true"] .hero-copy p{
+ color:transparent!important;background:linear-gradient(105deg,#ffffff14 8%,#ffffff2f 28%,#ffffff14 50%)!important;
+ background-size:220% 100%!important;border-radius:10px;user-select:none;animation:heroSkeleton 1.25s ease infinite!important;
+}
+.hero[data-content-loading="true"] .hero-copy h1{min-height:2.1em}
+.hero[data-content-loading="true"] .hero-copy p{min-height:4.7em}
+.hero[data-content-loading="false"] .hero-copy h1,.hero[data-content-loading="false"] .hero-copy p{animation:heroReady .34s cubic-bezier(.2,.8,.25,1) both}
+.hero>img:not([hidden]){animation:heroImageReady .42s ease-out both}
+@keyframes heroSkeleton{0%{background-position:110% 0}100%{background-position:-110% 0}}
+@keyframes heroReady{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+@keyframes heroImageReady{from{opacity:0}to{opacity:.32}}
+@media(prefers-reduced-motion:reduce){.hero[data-content-loading="true"] .hero-copy h1,.hero[data-content-loading="true"] .hero-copy p{animation:none!important;background:#ffffff24!important}.hero[data-content-loading="false"] .hero-copy h1,.hero[data-content-loading="false"] .hero-copy p{animation:none!important}}
+.logo-mark img,.brand-symbol img{display:block;width:100%;height:100%;border-radius:12px;object-fit:contain}
+
 </style><link rel="stylesheet" href="./motion.css"><script defer src="./motion.js"></script></head>
 <body><main class="shell">
-<nav class="nav"><div class="brand"><span class="brand-symbol">⚡</span><span>світло<b>.</b> Черкаси</span></div><a href="./index.html" class="back">🔙 До застосунку</a></nav>
-<header class="hero"><img id="heroImage" alt="" hidden><div class="hero-copy"><div class="kicker">ПІДТРИМКА ПРОЄКТУ</div><h1 id="title">Зробімо корисне ще кращим.</h1><p id="intro">«Світло Черкаси» допомагає стежити за графіками відключень. Якщо хочете підтримати його розвиток, оберіть зручний спосіб.</p><a href="#methods" class="hero-cta">Способи підтримки <span>🔗</span></a></div><div class="hero-graphic" aria-hidden="true"><span class="heart-graphic">💙</span><span class="hero-floating">Дякуємо за підтримку</span></div></header>
+<nav class="nav"><div class="brand"><span class="brand-symbol"><img src="./assets/icon.svg" alt="" width="38" height="38"></span><span>світло<b>.</b> Черкаси</span></div><a href="./index.html" class="back">🔙 До застосунку</a></nav>
+<header class="hero" data-content-loading="true"><img id="heroImage" alt="" hidden><div class="hero-copy"><div class="kicker">ПІДТРИМКА ПРОЄКТУ</div><h1 id="title">Зробімо корисне ще кращим.</h1><p id="intro">«Світло Черкаси» допомагає стежити за графіками відключень. Якщо хочете підтримати його розвиток, оберіть зручний спосіб.</p><a href="#methods" class="hero-cta">Способи підтримки <span>🔗</span></a></div><div class="hero-graphic" aria-hidden="true"><span class="heart-graphic">💙</span><span class="hero-floating">Дякуємо за підтримку</span></div></header>
 <section class="section" id="methods"><div class="section-heading"><span class="kicker">ЗРУЧНИЙ СПОСІБ</span><h2>Обирайте, як вам комфортніше.</h2><p>Кожен спосіб підтримки налаштовується адміністратором. Внески добровільні, суми та можливість переказу визначає обраний сервіс.</p></div>
 <div class="methods" id="methodList"><div class="empty">Завантажуємо доступні способи підтримки…</div></div>
 <div id="methodsUnavailable" class="empty" hidden>Способи підтримки поки не налаштовані. Основні функції застосунку залишаються доступними без внесків.</div>
 <div id="legacyMethod" hidden><a href="#" id="legacyPaymentLink" class="hero-cta" target="_blank" rel="noopener noreferrer">Відкрити сторінку підтримки 🔗</a></div></section>
 <section class="section" id="why"><div class="section-heading"><div class="kicker">ДЛЯ ЧОГО ЦЕ</div><h2 id="whyTitle">Ваш внесок допомагає розвивати сервіс.</h2><p>Ми хочемо, щоб перегляд графіків був зрозумілим, доступним і стабільним.</p></div>
 <div class="why-grid"><div class="why-text" id="details">Підтримка допомагає працювати над оновленнями, технічною інфраструктурою та новими можливостями. Ви самі вирішуєте, чи робити внесок.</div>
-<div class="goals" id="goals"><div class="goal"><span class="goal-icon">🛠️</span><strong>Стабільність</strong><p>Підтримка й розвиток сервісу.</p></div><div class="goal"><span class="goal-icon">🧩</span><strong>Зручність</strong><p>Робота над інтерфейсом.</p></div><div class="goal"><span class="goal-icon">🔗</span><strong>Нові можливості</strong><p>Покращення функціональності.</p></div></div></div>
-<div id="amountBlock" hidden><div class="amounts" id="amounts"></div><p class="amount-hint">Суми наведено як приклади. Натискання на них не створює платіж і не встановлює суму в банку.</p></div>
+<div class="goals" id="goals"><div class="goal"><span class="goal-icon">🛡️</span><strong>Стабільність</strong><p>Підтримка й розвиток сервісу.</p></div><div class="goal"><span class="goal-icon">🚀</span><strong>Розвиток</strong><p>Робота над інтерфейсом.</p></div><div class="goal"><span class="goal-icon">✨</span><strong>Нові можливості</strong><p>Покращення функціональності.</p></div></div></div>
+
 </section>
 <section class="section" id="expensesSection" hidden><div class="section-heading"><span class="kicker">ПРОЗОРІСТЬ</span><h2>Витрати проєкту</h2><p>Опубліковані записи про фактичні витрати, пов’язані з роботою сервісу.</p></div><div class="expenses" id="expenses"></div></section>
 <section class="section"><div class="section-heading"><div class="kicker">ВАЖЛИВО ЗНАТИ</div><h2>Коротко про підтримку.</h2></div>
@@ -115,11 +131,10 @@ button:focus-visible,a:focus-visible{outline:3px solid #79a8ff;outline-offset:3p
   }
   if(s.showGoals===false){$('goals').hidden=true}
   else if(Array.isArray(s.goals)&&s.goals.length){const goals=$('goals');goals.replaceChildren();for(const item of s.goals){
-   const goal=el('div',undefined,'goal');goal.append(el('span',item.icon||'🛠️','goal-icon'),el('strong',item.title||''),el('p',item.description||''));goals.append(goal)
+   const goal=el('div',undefined,'goal');const semantic=/стабільн/i.test(item.title||'')?'🛡️':/розвит/i.test(item.title||'')?'🚀':/можливост/i.test(item.title||'')?'✨':null;
+   const configured=/\p{Extended_Pictographic}/u.test(item.icon||'')?item.icon:null;
+   goal.append(el('span',semantic||configured||'🎯','goal-icon'),el('strong',item.title||''),el('p',item.description||''));goals.append(goal)
   }}
-  if(s.enabled&&s.showAmounts&&Array.isArray(s.amounts)&&s.amounts.length){
-   $('amountBlock').hidden=false;for(const n of s.amounts){if(Number(n)>0)$('amounts').append(el('span',Number(n).toLocaleString('uk-UA')+' грн','amount'))}
-  }
   if(Array.isArray(s.expenses)&&s.expenses.length){$('expensesSection').hidden=false;for(const expense of s.expenses){
    if(!expense.title||!expense.public)continue;
    const row=el('article',undefined,'expense'),details=el('div');details.append(el('b',expense.title));
@@ -127,9 +142,11 @@ button:focus-visible,a:focus-visible{outline:3px solid #79a8ff;outline-offset:3p
    row.append(details,el('strong',Number(expense.amount||0).toLocaleString('uk-UA')+' грн'));$('expenses').append(row)
   }}
   if(s.showThanks===false)$('thanks').hidden=true;
+  document.querySelector('.hero').dataset.contentLoading='false';
  }catch(error){console.warn('Support configuration unavailable',error.message);
   $('methodList').replaceChildren();
   $('methodsUnavailable').hidden=false;
+  document.querySelector('.hero').dataset.contentLoading='false';
  }
 })();
 </script></body></html>

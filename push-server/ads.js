@@ -26,9 +26,9 @@ const defaults={
  contacts:[],packages:[],campaigns:[],support:{
  enabled:false,title:'Підтримати Світло Черкаси',description:'Добровільна підтримка розвитку проєкту.',
  provider:'',paymentUrl:'',button:'Підтримати',details:'',
-  heroImage:'',background:'#f5f8ff',accent:'#377cff',amounts:[30,60,120],methods:[],expenses:[],
-  whyTitle:'Навіщо потрібна підтримка?',thanksTitle:'Дякуємо, що допомагаєте розвивати сервіс',showAmounts:true,showGoals:true,showThanks:true,
-  goals:[{icon:'☁',title:'Робота серверів',description:'Підтримка доступності та оновлення даних.'},
+  heroImage:'',background:'#f5f8ff',accent:'#377cff',methods:[],expenses:[],
+  whyTitle:'Навіщо потрібна підтримка?',thanksTitle:'Дякуємо, що допомагаєте розвивати сервіс',showGoals:true,showThanks:true,
+  goals:[{icon:'🛡️',title:'Стабільність',description:'Підтримка доступності та оновлення даних.'},
    {icon:'◈',title:'Розвиток',description:'Нові функції та виправлення помилок.'},
    {icon:'⌁',title:'Стабільність',description:'Тестування і покращення інтерфейсу.'}]
 
@@ -84,10 +84,9 @@ function normalize(raw){
   button:text(su.button||'Підтримати',70),details:text(su.details,1100),
   heroImage:url(su.heroImage),background:color(su.background,'#f5f8ff'),
   accent:color(su.accent,'#377cff'),
-  amounts:(Array.isArray(su.amounts)?su.amounts:defaults.support.amounts).slice(0,6).map(n=>clamp(n,1,1000000,30)),
   whyTitle:text(su.whyTitle||defaults.support.whyTitle,110),
   thanksTitle:text(su.thanksTitle||defaults.support.thanksTitle,170),
-  showAmounts:su.showAmounts!==false,showGoals:su.showGoals!==false,showThanks:su.showThanks!==false,
+  showGoals:su.showGoals!==false,showThanks:su.showThanks!==false,
   methods:(Array.isArray(su.methods)?su.methods:[]).slice(0,12).map(m=>({
    id:text(m.id,50)||crypto.randomUUID(),kind:['monobank','iban','bank','other'].includes(m.kind)?m.kind:'other',
    title:text(m.title,100),description:text(m.description,350),url:url(m.url),

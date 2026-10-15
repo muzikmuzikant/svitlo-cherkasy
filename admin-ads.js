@@ -227,11 +227,6 @@
   colorField(su,'Акцентний колір сторінки підтримки',draft.support,'accent','#377cff');
   field(su,'Заголовок блоку мети',draft.support,'whyTitle');
   field(su,'Текст подяки',draft.support,'thanksTitle');
-  field(su,'Показувати приклади сум',draft.support,'showAmounts','toggle');
-  const amounts=el('div',undefined,'ad-field');amounts.append(el('span','Приклади сум підтримки через кому'));
-  const amountInput=el('input');amountInput.type='text';amountInput.value=(draft.support.amounts||[]).join(', ');
-  amountInput.onchange=()=>{draft.support.amounts=amountInput.value.split(',').map(x=>Number(x.trim())).filter(x=>Number.isFinite(x)&&x>0).slice(0,6);mark()};
-  amounts.append(amountInput);su.append(amounts);
   field(su,'Показувати картки призначення внесків',draft.support,'showGoals','toggle');
   field(su,'Показувати блок подяки',draft.support,'showThanks','toggle');
   const goalEditor=el('div',undefined,'ad-goal-editor');goalEditor.append(el('h4','Картки «На що йдуть внески»'));
