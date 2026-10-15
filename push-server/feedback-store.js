@@ -22,7 +22,17 @@ export function validateFeedback(value){
   if(subject.length>110)throw bad('Заголовок завеликий.');
   if(subject)result.subject=subject;
  }
- if(value.queue!==undefined&&value.queue!==''){
+ if(value.includeDiagnostics===true){
+  const d=value.diagnostics;
+  if(!d||typeof d!=='object'||Array.isArray(d))throw bad('Перевірте технічні дані.');
+  const platform=String(d.platform||''),os=String(d.os||''),browser=String(d.browser||''),appVersion=String(d.appVersion||'');
+  if(!['iPhone','iPad','Android','Windows','macOS','Linux','Інше'].includes(platform)
+   ||!/^(?:iOS|iPadOS|Android|Windows|macOS|Linux|Інше)(?: [0-9]{1,2})?$/.test(os)
+   ||!['Safari','Chrome','Firefox','Edge','Samsung Internet','Інше'].includes(browser)
+   ||(appVersion&&!/^[0-9]{1,3}\.[0-9]{1,3}\\.[0-9]{1,3}$/.test(appVersion)))throw bad('Некоректні технічні параметри.');
+  result.diagnostics={platform,os,browser,appVersion};
+ }
+  if(value.queue!==undefined&&value.queue!==''){
   if(!/^[1-6]\.[12]$/.test(String(value.queue)))throw bad('Перевірте підчергу.');
   result.queue=String(value.queue);
  }
