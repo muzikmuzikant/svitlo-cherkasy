@@ -389,8 +389,29 @@ async function shareSchedule(date,{copy=false}={}){
  }catch(error){if(error?.name==='AbortError')return;console.warn('Share schedule:',error);flash('Не вдалося поділитися графіком')}
 }
 function renderBar(a){const bar=$('overviewBar');bar.replaceChildren();if(!a){const b=el('span','bar-segment unknown');b.style.flex='1';bar.append(b);return}let start=0,v=a[0];for(let i=1;i<=1440;i++){if(i===1440||a[i]!==v){const seg=el('span','bar-segment '+(v===1?'off':v===0?'on':'unknown'));seg.style.flex=String(i-start);seg.title=`${clock(start)}–${clock(i)} · ${v===1?'відключення':v===0?'світло':'немає даних'}`;bar.append(seg);start=i;v=a[i]}}const line=el('span','bar-now');line.style.left=(nowMinutes()/1440*100)+'%';bar.append(line)}
-function navigate(name){if(!['home','detail','updates','settings'].includes(name))return;if(name==='detail'&&!primary()&&!previewQueue){openAddressSheet();return}if(name!=='detail')previewQueue=null;active=name;try{sessionStorage.setItem(SCREEN_RETURN,name)}catch{}
- for(const n of ['home','detail','updates','settings'])$(n).hidden=n!==name;document.querySelectorAll('[data-go]').forEach(x=>{if(x.classList.contains('nav-item'))x.classList.toggle('active',x.dataset.go===name)});if(name==='detail'){daySelected=today();dayStripStart=today();renderDetail()}else if(name==='updates')renderUpdates();else if(name==='settings')renderSettings();else renderHome();window.scrollTo({top:0,behavior:'instant'});}
+function navigate(name){
+ if(!['home','detail','updates','settings'].includes(name))return;
+ if(name==='detail'&&!primary()&&!previewQueue){openAddressSheet();return}
+ // A repeated tap must not reset scroll or trigger entrance animation again.
+ if(name===active){
+  if(name==='detail')renderDetail();
+  else if(name==='updates')renderUpdates();
+  else if(name==='settings')renderSettings();
+  else renderHome();
+  return;
+ }
+ if(name!=='detail')previewQueue=null;
+ try{sessionStorage.setItem(SCREEN_RETURN,name)}catch{}
+ // Prepare content before reveal, to avoid placeholder flashes.
+ if(name==='detail'){daySelected=today();dayStripStart=today();renderDetail()}
+ else if(name==='updates')renderUpdates();
+ else if(name==='settings')renderSettings();
+ else renderHome();
+ window.scrollTo({top:0,behavior:'instant'});
+ active=name;
+ for(const n of ['home','detail','updates','settings'])$(n).hidden=n!==name;
+ document.querySelectorAll('[data-go]').forEach(x=>{if(x.classList.contains('nav-item'))x.classList.toggle('active',x.dataset.go===name)});
+}
 function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Підчерга '+previewQueue,settlement:'Черкаси та район'}:primary();
  if(!a)return;
  $('editActive').hidden=!!previewQueue;
