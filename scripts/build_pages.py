@@ -23,6 +23,11 @@ html=index_path.read_text(encoding='utf-8')
 html=re.sub(r'(<meta name="svitlo-version" content=")[^"]+(")',lambda m:m.group(1)+version+m.group(2),html,count=1)
 html=re.sub(r'(<span id="appVersion">)v[^<]+',lambda m:m.group(1)+'v'+version,html,count=1)
 index_path.write_text(html,encoding='utf-8')
+feedback_path=DEST/'feedback.html'
+support_html=feedback_path.read_text(encoding='utf-8')
+support_html=re.sub(r'(<meta name="svitlo-version" content=")[^"]+(")',lambda m:m.group(1)+version+m.group(2),support_html,count=1)
+feedback_path.write_text(support_html,encoding='utf-8')
+
 sw_path=DEST/'sw.js'
 sw=sw_path.read_text(encoding='utf-8')
 sw=re.sub(r"const VERSION='[^']+';","const VERSION='svitlo-cherkasy-shell-v"+version+"';",sw,count=1)
