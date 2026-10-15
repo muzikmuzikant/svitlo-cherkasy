@@ -18,10 +18,17 @@ const defaults={
  promoTitle:'Тут може бути ваша реклама',promoText:'Розкажіть про свій бізнес користувачам «Світло Черкаси»',
  contactLabel:'Зв’язатися з нами',pageTitle:'Реклама у Світло Черкаси',
  pageIntro:'Невелике рекламне оголошення на головній сторінці застосунку. Обговорімо умови розміщення.',
+ pageBackground:'#f5f8ff',pageAccent:'#377cff',pageHeroImage:'',pageAbout:'Реклама залишається компактною, не закриває графіки та не потрапляє у push-сповіщення.',
+ pageContactText:'Напишіть нам, щоб обговорити формат, термін і вартість розміщення.',
+ pageBenefits:['Локальна аудиторія Черкас і району','Ненав’язлива реклама на головній','Зрозуміла статистика показів і переходів'],
+
  pageTerms:'Умови та тривалість розміщення погоджуються індивідуально.',
  contacts:[],packages:[],campaigns:[],support:{
  enabled:false,title:'Підтримати Світло Черкаси',description:'Добровільна підтримка розвитку проєкту.',
- provider:'',paymentUrl:'',button:'Підтримати',details:''
+ provider:'',paymentUrl:'',button:'Підтримати',details:'',
+  heroImage:'',background:'#f5f8ff',accent:'#377cff',amounts:[30,60,120],
+  whyTitle:'Навіщо потрібна підтримка?',thanksTitle:'Дякуємо, що допомагаєте розвивати сервіс',showAmounts:true
+
  }
 };
 function normalize(raw){
@@ -36,6 +43,11 @@ function normalize(raw){
  promoTitle:text(s.promoTitle||defaults.promoTitle,100),promoText:text(s.promoText||defaults.promoText,240),
  contactLabel:text(s.contactLabel||defaults.contactLabel,70),pageTitle:text(s.pageTitle||defaults.pageTitle,120),
  pageIntro:text(s.pageIntro||defaults.pageIntro,750),pageTerms:text(s.pageTerms||defaults.pageTerms,1200),
+ pageBackground:color(s.pageBackground,'#f5f8ff'),pageAccent:color(s.pageAccent,'#377cff'),
+ pageHeroImage:url(s.pageHeroImage),pageAbout:text(s.pageAbout||defaults.pageAbout,1800),
+ pageContactText:text(s.pageContactText||defaults.pageContactText,700),
+ pageBenefits:(Array.isArray(s.pageBenefits)?s.pageBenefits:defaults.pageBenefits).slice(0,8).map(v=>text(v,180)).filter(Boolean),
+
  contacts:contacts.map(c=>({id:text(c.id,50)||crypto.randomUUID(),label:text(c.label,70),url:contactUrl(c.url),enabled:c.enabled!==false})).filter(c=>c.label),
  packages:packages.map(p=>({id:text(p.id,50)||crypto.randomUUID(),title:text(p.title,100),description:text(p.description,350),price:clamp(p.price,0,100000000,0),durationDays:clamp(p.durationDays,1,3650,30),visible:p.visible!==false})).filter(p=>p.title),
  campaigns:campaigns.map(c=>{
@@ -44,6 +56,13 @@ function normalize(raw){
   return {id:/^[a-zA-Z0-9_-]{1,50}$/.test(c.id||'')?c.id:crypto.randomUUID(),
    title:text(c.title,100),description:text(c.description,250),image:url(c.image),link:url(c.link),
    button:text(c.button||'Дізнатися більше',70),background:color(c.background,'#ffffff'),
+   cardBackgroundImage:url(c.cardBackgroundImage),cardStyle:['soft','outline','dark'].includes(c.cardStyle)?c.cardStyle:'soft',
+   detailEnabled:c.detailEnabled===true,detailTitle:text(c.detailTitle,130),
+   detailSubtitle:text(c.detailSubtitle,240),detailDescription:text(c.detailDescription,6500),
+   detailBanner:url(c.detailBanner),detailImage:url(c.detailImage),
+   detailBackground:color(c.detailBackground,'#f5f8ff'),detailForeground:color(c.detailForeground,'#172c49'),
+   detailAccent:color(c.detailAccent,'#377cff'),detailButton:text(c.detailButton||'Перейти на сайт',80),
+
    foreground:color(c.foreground,'#142338'),enabled:c.enabled===true,
    start,end,days:[...new Set(days)],weight:clamp(c.weight,1,10,1),
    seconds:clamp(c.seconds,3,60,8),maxImpressions:clamp(c.maxImpressions,0,100000000,0),
@@ -54,7 +73,14 @@ function normalize(raw){
   enabled:su.enabled===true,title:text(su.title||defaults.support.title,100),
   description:text(su.description||defaults.support.description,500),
   provider:text(su.provider,80),paymentUrl:url(su.paymentUrl),
-  button:text(su.button||'Підтримати',70),details:text(su.details,650)
+  button:text(su.button||'Підтримати',70),details:text(su.details,1100),
+  heroImage:url(su.heroImage),background:color(su.background,'#f5f8ff'),
+  accent:color(su.accent,'#377cff'),
+  amounts:(Array.isArray(su.amounts)?su.amounts:defaults.support.amounts).slice(0,6).map(n=>clamp(n,1,1000000,30)),
+  whyTitle:text(su.whyTitle||defaults.support.whyTitle,110),
+  thanksTitle:text(su.thanksTitle||defaults.support.thanksTitle,170),
+  showAmounts:su.showAmounts!==false
+
  }
  };
  const ids=normalized.campaigns.map(c=>c.id);
@@ -94,6 +120,8 @@ export function createAdsStore({directory,clock=()=>Date.now()}){
    showPromo:state.showPromo,manualSwipe:state.manualSwipe,animation:state.animation,
    promoTitle:state.promoTitle,promoText:state.promoText,contactLabel:state.contactLabel,
    pageTitle:state.pageTitle,pageIntro:state.pageIntro,pageTerms:state.pageTerms,
+   pageBackground:state.pageBackground,pageAccent:state.pageAccent,pageHeroImage:state.pageHeroImage,
+   pageAbout:state.pageAbout,pageContactText:state.pageContactText,pageBenefits:state.pageBenefits,
    contacts:state.contacts.filter(c=>c.enabled&&c.url).map(({label,url})=>({label,url})),
    packages:state.packages.filter(p=>p.visible).map(({title,description,price,durationDays})=>({title,description,price,durationDays})),
    support:{...state.support,enabled:state.support.enabled&&!!state.support.paymentUrl},
@@ -101,17 +129,20 @@ export function createAdsStore({directory,clock=()=>Date.now()}){
     if(!c.enabled||!c.title||c.start&&c.start>now||c.end&&c.end<=now)return false;
     if(c.days.length&&!c.days.includes(weekday))return false;
     const t=totals(c.id,day);return (!c.maxImpressions||t.all<c.maxImpressions)&&(!c.dailyCap||t.today<c.dailyCap);
-   }).map(({id,title,description,image,link,button,background,foreground,weight,seconds})=>({id,title,description,image,link,button,background,foreground,weight,seconds})):[]};
+   }).map(({id,title,description,image,link,button,background,foreground,weight,seconds,cardBackgroundImage,cardStyle,detailEnabled,detailTitle,detailSubtitle,detailDescription,detailBanner,detailImage,detailBackground,detailForeground,detailAccent,detailButton})=>
+    ({id,title,description,image,link,button,background,foreground,weight,seconds,cardBackgroundImage,cardStyle,
+     detailEnabled,detailTitle,detailSubtitle,detailDescription,detailBanner,detailImage,detailBackground,detailForeground,detailAccent,detailButton})):[]};
  }
  function update(value){if(!isObj(value))throw Error('Некоректні налаштування');state=normalize(value);lastModified=new Date(clock()).toISOString();flush();return dashboard()}
  function rateLimit(bucket,limit,windowMs){const now=clock(),r=rate.get(bucket);if(!r||now-r.last>=windowMs){rate.set(bucket,{last:now,count:1});return true}r.count++;return r.count<=limit}
  function event(id,type,clientKey=''){
-  if(!['impression','click'].includes(type)||!state.enabled)return false;
+  if(!['impression','click','detailOpen','outbound'].includes(type)||!state.enabled)return false;
   if(id!=='promo'&&!publicState().campaigns.some(c=>c.id===id))return false;
   if(clientKey&&!rateLimit('ad:'+clientKey,150,60000))return false;
   const now=clock(),day=new Date(now).toISOString().slice(0,10),k=id+'|'+day;
   if(clientKey&&type==='impression'){const dedupe=id+'|'+clientKey;if(now-(recentAdViews.get(dedupe)||0)<2000)return true;recentAdViews.set(dedupe,now)}
-  const s=stats[k]??={impressions:0,clicks:0};s[type==='click'?'clicks':'impressions']++;
+  const s=stats[k]??={impressions:0,clicks:0,detailOpens:0,outboundClicks:0};
+  s[({impression:'impressions',click:'clicks',detailOpen:'detailOpens',outbound:'outboundClicks'})[type]]++;
   schedule();return true;
  }
  function activity(data){
@@ -139,8 +170,8 @@ export function createAdsStore({directory,clock=()=>Date.now()}){
   const totals={},daily={};
   for(const [key,s] of Object.entries(stats)){
    const sep=key.lastIndexOf('|'),id=key.slice(0,sep),day=key.slice(sep+1);
-   const dst=totals[id]??={impressions:0,clicks:0};
-   dst.impressions+=Number(s.impressions)||0;dst.clicks+=Number(s.clicks)||0;
+   const dst=totals[id]??={impressions:0,clicks:0,detailOpens:0,outboundClicks:0};
+   dst.impressions+=Number(s.impressions)||0;dst.clicks+=Number(s.clicks)||0;dst.detailOpens+=Number(s.detailOpens)||0;dst.outboundClicks+=Number(s.outboundClicks)||0;
    const d=daily[day]??={impressions:0,clicks:0};
    d.impressions+=Number(s.impressions)||0;d.clicks+=Number(s.clicks)||0;
   }
