@@ -109,7 +109,7 @@ function normalize(raw){
  return normalized;
 }
 
-export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed=process.env.APP_ORIGIN!=='https://svitlo-cherkasy.pp.ua'}){
+export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed=String(process.env.APP_ORIGIN||'').replace(/\/+$/,'')!=='https://svitlo-cherkasy.pp.ua'}){
  const file=path.join(directory,'beta-ads.json');
  const visitorsFile=path.join(directory,'beta-pwa-installations.json');
  const stateDefault=normalize(defaults);
