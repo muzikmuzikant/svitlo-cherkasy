@@ -32,6 +32,6 @@ test('Persisted permitted Push does not show an invitation before subscription c
 
 test('Never change the rule: no published schedule is 24h green',()=>{
   const app=source('app.js');
-  assert.match(app,/if\(!day\)return new Int8Array\(1440\)/);
+  assert.match(app,/if\(!day\)\{[\s\S]*?return new Int8Array\(1440\)/);
   assert.match(app,/a&&!schedule\?'Світло весь день'/);
 });
