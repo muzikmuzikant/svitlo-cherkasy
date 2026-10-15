@@ -8,7 +8,7 @@ import {createAdsStore} from '../push-server/ads.js';
 const fresh=()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'svitlo-beta-ads-'));
  let clock=Date.parse('2026-10-15T12:00:00Z');
- const store=createAdsStore({directory:dir,clock:()=>clock});
+ const store=createAdsStore({directory:dir,commercialAllowed:true,clock:()=>clock});
  return {store,dir,advance:n=>{clock+=n}};
 };
 const ad=(id='first')=>({id,title:'Тестова реклама',enabled:true,weight:2,seconds:9,link:'https://example.com',background:'#ffffff',start:'',end:'',price:1000});
@@ -39,7 +39,7 @@ test('campaign settings, personalization, contacts, tariffs and support are isol
  assert.equal(store.event('first','click'),true);
  assert.equal(store.dashboard().stats.first.impressions,1);
  assert.equal(store.dashboard().stats.first.clicks,1);
- store.flush();const reopened=createAdsStore({directory:dir});
+ store.flush();const reopened=createAdsStore({directory:dir,commercialAllowed:true});
  assert.equal(reopened.dashboard().stats.first.impressions,1);
  assert.equal(reopened.dashboard().settings.campaigns.length,1);
  fs.rmSync(dir,{recursive:true,force:true});
@@ -126,7 +126,7 @@ test('7.9.10: fullscreen ad uses independently customizable content and images',
  assert.equal(store.dashboard().stats.more.detailOpens,1);
  assert.equal(store.dashboard().stats.more.outboundClicks,1);
  store.flush();
- const reopened=createAdsStore({directory:dir});
+ const reopened=createAdsStore({directory:dir,commercialAllowed:true});
  assert.equal(reopened.dashboard().settings.campaigns[0].detailEnabled,true);
  assert.equal(reopened.dashboard().stats.more.outboundClicks,1);
  fs.rmSync(dir,{recursive:true,force:true});
@@ -142,7 +142,7 @@ test('7.9.10: editable advertising and support designs survive restart',()=>{
  heroImage:'https://example.com/support.webp',goals:[{icon:'♡',title:'Підтримка',description:'Розвиток проєкту'}],
  showGoals:true,showThanks:false};
  store.update(s);store.flush();
- const reload=createAdsStore({directory:dir}).publicState();
+ const reload=createAdsStore({directory:dir,commercialAllowed:true}).publicState();
  assert.equal(reload.pageAccent,'#2360c5');
  assert.equal(reload.pageBenefits.length,3);
  assert.equal(reload.support.goals[0].title,'Підтримка');
