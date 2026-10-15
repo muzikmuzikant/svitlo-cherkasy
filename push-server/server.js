@@ -12,6 +12,7 @@ import {createAdsStore} from './ads.js';
 import {createAdminUserStore} from './admin-users.js';
 import {createLegalStore} from './legal-store.js';
 import {auditSchedule} from './schedule-quality.js';
+import {createDiagnosticsStore} from './diagnostics.js';
 import {createAppConfig} from './app-config.js';
 import {createMediaStore} from './media-store.js';
 import {createSchedulePublication} from './schedule-publication.js';
@@ -44,6 +45,7 @@ const analytics=createAnalyticsStore({filePath:path.join(path.dirname(DATA_FILE)
 const ads=createAdsStore({directory:path.dirname(DATA_FILE)});
 const adminUsers=createAdminUserStore({directory:path.dirname(DATA_FILE)});
 const legal=createLegalStore({directory:path.dirname(DATA_FILE)});
+const errorCounts=createDiagnosticsStore({directory:path.dirname(DATA_FILE)});
 const siteControls=createAppConfig({directory:path.dirname(DATA_FILE),record:extras.record});
 const mediaStore=createMediaStore(path.dirname(DATA_FILE));
 const officialSchedules=createSchedulePublication({directory:path.dirname(DATA_FILE),token:process.env.SCHEDULE_INGEST_SECRET||''});
@@ -261,7 +263,14 @@ const server=http.createServer(async(req,res)=>{
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   res.writeHead(204,{'access-control-allow-origin':origin,'access-control-allow-methods':'POST, OPTIONS, GET, PUT, PATCH, DELETE','access-control-allow-headers':'content-type, authorization','vary':'Origin'});res.end();return;
  }
- if(requestPath==='/api/legal'&&req.method==='GET'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}response(res,200,legal.publicState());return}
+ if(requestPath==='/api/diagnostics/event'&&req.method==='POST'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  try{const data=await readPayload(req);const addr=req.socket.remoteAddress||'';
+   const ok=errorCounts.event(data,addr);response(res,ok?200:202,{ok:true})}
+  catch{response(res,400,{error:'Invalid diagnostics event'})}
+  return
+ }
+  if(requestPath==='/api/legal'&&req.method==='GET'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}response(res,200,legal.publicState());return}
  if(requestPath==='/api/ads'&&req.method==='GET'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}response(res,200,ads.publicState());return}
  if(requestPath==='/api/ads/event'&&req.method==='POST'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}try{const body=await readPayload(req,500);response(res,ads.event(String(body.id||'').slice(0,55),body.type,crypto.createHash('sha256').update(String(req.socket.remoteAddress||'')+new Date().toISOString().slice(0,10)).digest('hex').slice(0,20))?202:400,{ok:true})}catch{response(res,400,{error:'Bad event'})}return}
  if(requestPath==='/api/pwa/presence'&&req.method==='POST'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}try{const body=await readPayload(req,500);response(res,ads.activity(body)?202:400,{ok:true})}catch{response(res,400,{error:'Bad presence'})}return}
@@ -312,7 +321,7 @@ const server=http.createServer(async(req,res)=>{
     const tickets=feedback.list().items;
     result.feedback={total:tickets.length,new:tickets.filter(t=>t.status==='new').length,inProgress:tickets.filter(t=>t.status==='in_progress').length};
     return result;
-  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule(officialSchedules.schedule()||lastLoadedSchedule));return}
+  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule(officialSchedules.schedule()||lastLoadedSchedule),errorCounts);return}
  if(req.url?.startsWith('/api/media/')&&req.method==='GET'){
    const id=req.url.slice('/api/media/'.length).split('?')[0],file=mediaStore.read(id);
    if(!file){response(res,404,{error:'Фото не знайдене'});return}
