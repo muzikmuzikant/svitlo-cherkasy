@@ -30,7 +30,8 @@ feedback_path.write_text(support_html,encoding='utf-8')
 
 sw_path=DEST/'sw.js'
 sw=sw_path.read_text(encoding='utf-8')
-sw=re.sub(r"const VERSION='[^']+';","const VERSION='svitlo-cherkasy-shell-v"+version+"';",sw,count=1)
+channel_suffix='-beta' if release.get('channel') == 'beta' else ''
+sw=re.sub(r"const VERSION='[^']+';","const VERSION='svitlo-cherkasy-shell-v"+version+channel_suffix+"';",sw,count=1)
 sw_path.write_text(sw,encoding='utf-8')
 for icon in ROOT.glob('favicon*'):
     if icon.is_file():shutil.copy2(icon, DEST/icon.name)
@@ -46,6 +47,7 @@ if not (DEST/'apple-touch-icon-v692.png').is_file():
 for folder in ('assets','data'):
     shutil.copytree(ROOT/folder,DEST/folder)
 # User-owned public configuration and custom domain must survive the release build.
-for optional in ('push-config.json','CNAME'):
+optional_files=('push-config.json',) if release.get('channel') == 'beta' else ('push-config.json','CNAME')
+for optional in optional_files:
     if (ROOT/optional).is_file():shutil.copy2(ROOT/optional,DEST/optional)
 print('Prepared public site with',len(list(DEST.rglob('*'))),'entries.')
