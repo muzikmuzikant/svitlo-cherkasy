@@ -49,7 +49,7 @@
    // One consistent back button lives in the host header. Hide legacy return buttons in embedded pages only.
    doc.documentElement.classList.add('svitlo-embedded');
    const style=doc.createElement('style');style.id='svitlo-embedded-back-cleanup';
-   style.textContent='.svitlo-embedded a.back,.svitlo-embedded a.support-back,.svitlo-embedded nav a[href="./"],.svitlo-embedded nav a[href^="./index.html"],.svitlo-embedded header a[href="./"]:not(.support-brand),.svitlo-embedded header a[href^="./index.html"]:not(.support-brand),.svitlo-embedded .footer a[href="./"],.svitlo-embedded footer a[href="./"],.svitlo-embedded footer a[href^="./index.html"]{display:none!important}';
+   style.textContent='.svitlo-embedded a.back,.svitlo-embedded a.support-back,.svitlo-embedded a[href="./"],.svitlo-embedded a[href="/"],.svitlo-embedded a[href^="./index.html"],.svitlo-embedded header.support-top{display:none!important}';
    doc.head.append(style);
    // Legal information and the support brand remain available when the page is opened standalone.
   }catch(error){console.warn('Internal page shell:',error.message)}
