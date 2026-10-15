@@ -22,10 +22,10 @@
  const icons=node('div',undefined,'admin-favorite-edit');
  for(const tab of tabs){
   const id=tab.dataset.adminTab;if(!id)continue;
-  const toggle=node('button',favorites.includes(id)?'★':'☆','admin-fav-star');
+  const toggle=node('button',favorites.includes(id)?'📌':'📍','admin-fav-star');
   toggle.type='button';toggle.title='Закріпити розділ «'+name(tab)+'»';
   toggle.setAttribute('aria-label',toggle.title);
-  toggle.onclick=e=>{e.preventDefault();e.stopPropagation();favorites=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];toggle.textContent=favorites.includes(id)?'★':'☆';store();renderFavorites()};
+  toggle.onclick=e=>{e.preventDefault();e.stopPropagation();favorites=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];toggle.textContent=favorites.includes(id)?'📌':'📍';store();renderFavorites()};
   tab.insertAdjacentElement('afterend',toggle);
  }
  function searchable(){
