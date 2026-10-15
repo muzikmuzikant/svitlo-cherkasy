@@ -9,6 +9,7 @@ import {createFeedbackStore,readFeedbackBody} from './feedback-store.js';
 import {createAdminExtras} from './admin-extras.js';
 import {createAnalyticsStore} from './analytics.js';
 import {createAdsStore} from './ads.js';
+import {createAdminUserStore} from './admin-users.js';
 import {createAppConfig} from './app-config.js';
 import {createMediaStore} from './media-store.js';
 import {createSchedulePublication} from './schedule-publication.js';
@@ -39,6 +40,7 @@ const feedback=createFeedbackStore({filePath:process.env.FEEDBACK_FILE||path.joi
 const extras=createAdminExtras({directory:path.dirname(DATA_FILE)});
 const analytics=createAnalyticsStore({filePath:path.join(path.dirname(DATA_FILE),'analytics.json')});
 const ads=createAdsStore({directory:path.dirname(DATA_FILE)});
+const adminUsers=createAdminUserStore({directory:path.dirname(DATA_FILE)});
 const siteControls=createAppConfig({directory:path.dirname(DATA_FILE),record:extras.record});
 const mediaStore=createMediaStore(path.dirname(DATA_FILE));
 const officialSchedules=createSchedulePublication({directory:path.dirname(DATA_FILE),token:process.env.SCHEDULE_INGEST_SECRET||''});
@@ -294,7 +296,7 @@ const server=http.createServer(async(req,res)=>{
     const tickets=feedback.list().items;
     result.feedback={total:tickets.length,new:tickets.filter(t=>t.status==='new').length,inProgress:tickets.filter(t=>t.status==='in_progress').length};
     return result;
-  },siteControls,mediaStore,analytics,ads);return}
+  },siteControls,mediaStore,analytics,ads,adminUsers);return}
  if(req.url?.startsWith('/api/media/')&&req.method==='GET'){
    const id=req.url.slice('/api/media/'.length).split('?')[0],file=mediaStore.read(id);
    if(!file){response(res,404,{error:'Фото не знайдене'});return}

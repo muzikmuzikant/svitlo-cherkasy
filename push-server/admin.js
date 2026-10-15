@@ -64,7 +64,7 @@ async function github(path,method='GET',payload){
  return data;
 }
 async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
-export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads){
+export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(!originPolicy.isAllowed(req.headers.origin)){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const url=new URL(req.url,'http://localhost');
@@ -79,7 +79,10 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    if(!ADMIN_PASSWORD||ADMIN_PASSWORD.length<7){send(res,503,{error:'У Railway не задано ADMIN_PASSWORD (мінімум 7 символів).'});return true}
    try{
      const body=await readJson(req,1024);
-     const role=authCompare(String(body.password||''));
+     const username=String(body.username||'owner').trim().toLowerCase();
+     const account=adminUsers?.login(username,String(body.password||''))||null;
+     const legacy=['owner','editor','operator','viewer'].includes(username)?authCompare(String(body.password||'')):null;
+     const role=account?.role||legacy===username?legacy:account?.role||null;
      const otpRequired=role==='owner'&&!!ADMIN_TOTP_SECRET;
      if(!role||(otpRequired&&!verifyTotp(ADMIN_TOTP_SECRET,body.code,now()))){
        track.count++;ATTEMPTS.set(ip,track);
@@ -91,7 +94,11 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
        if(oldest)SESSIONS.delete(oldest);
      }
      const token=crypto.randomBytes(32).toString('base64url');
-     SESSIONS.set(crypto.createHash('sha256').update(token).digest('hex'),{expires:now()+SESSION_TTL,idleUntil:now()+IDLE_TTL,ua:agentHash(req),role});
+     SESSIONS.set(crypto.createHash('sha256').update(token).digest('hex'),{
+      expires:now()+SESSION_TTL,idleUntil:now()+IDLE_TTL,ua:agentHash(req),role,
+      username:account?.username||username,managed:!!account,revision:account?adminUsers.get(account.username)?.revision:0,
+      permissions:account?.permissions||null
+     });
      send(res,200,{ok:true,token,role,expiresIn:SESSION_TTL/1000});return true;
    }catch(e){send(res,e.statusCode||400,{error:'Некоректний запит входу'});return true}
  }
@@ -102,6 +109,11 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    if(session)SESSIONS.delete(tokenHash);
    send(res,401,{error:'Сеанс завершився. Увійдіть знову.'});return true;
  }
+ if(session.managed){const current=adminUsers?.get(session.username);
+  if(!current||!current.active||current.revision!==session.revision){
+   SESSIONS.delete(tokenHash);send(res,401,{error:'Доступ змінено. Увійдіть повторно.'});return true
+  }
+ }
  session.idleUntil=now()+IDLE_TTL;
  const role=session.role;
  if(url.pathname==='/api/admin/logout'&&req.method==='POST'){
@@ -109,7 +121,16 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
  }
  // Every privileged route is checked server-side. Hiding UI controls alone is not security.
  const pathName=url.pathname,method=req.method;
- const allowed=role==='owner'
+ const custom=session.managed;
+ const permission=pathName.startsWith('/api/admin/feedback')?'feedback':
+  pathName.startsWith('/api/admin/help')?'help':
+  pathName.startsWith('/api/admin/ads')?'ads':
+  pathName.startsWith('/api/admin/push')?'push':
+  pathName.startsWith('/api/admin/notices')?'notices':
+  pathName.startsWith('/api/admin/file')||pathName.startsWith('/api/admin/schedule')?'schedules':
+  pathName.startsWith('/api/admin/media')?'media':'settings';
+ const allowed=custom?(method==='GET'?(session.permissions.includes('view')||session.permissions.includes(permission)):session.permissions.includes(permission))
+  :role==='owner'
   ||role==='viewer'&&method==='GET'
   ||role==='operator'&&(
    method==='GET'&&(/\/api\/admin\/(?:monitor|audit|status|feedback|help|analytics|ads|security)$/.test(pathName)
@@ -121,6 +142,23 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    ||(pathName.startsWith('/api/admin/feedback/')&&method==='DELETE'));
  if(!allowed){send(res,403,{error:'Недостатньо прав для цієї дії'});return true}
  try{
+   if(pathName==='/api/admin/users'&&method==='GET'){
+    if(role!=='owner'||session.managed){send(res,403,{error:'Лише для власника'});return true}
+    send(res,200,{users:adminUsers.list()});return true
+   }
+   if(pathName==='/api/admin/users'&&method==='POST'){
+    if(role!=='owner'||session.managed){send(res,403,{error:'Лише для власника'});return true}
+    const result=adminUsers.create(await readJson(req,6000));extras?.record('auth.user.create',result.username);
+    send(res,201,result);return true
+   }
+   if(pathName.startsWith('/api/admin/users/')&&(method==='PATCH'||method==='DELETE')){
+    if(role!=='owner'||session.managed){send(res,403,{error:'Лише для власника'});return true}
+    const username=decodeURIComponent(pathName.slice('/api/admin/users/'.length));
+    const result=method==='DELETE'?adminUsers.remove(username):adminUsers.patch(username,await readJson(req,6000));
+    for(const [key,token] of SESSIONS)if(token.managed&&token.username===username)SESSIONS.delete(key);
+    extras?.record('auth.user.'+(method==='DELETE'?'delete':'update'),username);
+    send(res,200,result);return true
+   }
    if(url.pathname==='/api/admin/ads'&&req.method==='GET'){send(res,200,ads.dashboard());return true}
    if(url.pathname==='/api/admin/ads'&&req.method==='PUT'){if(role!=='owner'){send(res,403,{error:'Лише для власника'});return true}send(res,200,ads.update(await readJson(req,140000)));return true}
    if(url.pathname==='/api/admin/analytics'&&req.method==='GET'){
