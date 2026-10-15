@@ -32,3 +32,20 @@ test('advertising is disabled by default until legal and operator signoff',()=>{
  assert.match(ads,/enabled:false,rotationSeconds:8/);
  assert.match(read('docs/LEGAL_RELEASE_REVIEW.md'),/Статус.*лише проєкт/);
 });
+
+test('fresh Production storage publishes no ads, promo campaigns or payment destination',async()=>{
+ const {createAdsStore}=await import('../push-server/ads.js');
+ const os=await import('node:os');
+ const path=await import('node:path');
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'svitlo-prod-ads-off-'));
+ try{
+  const store=createAdsStore({directory:dir});
+  const pub=store.publicState();
+  assert.equal(pub.enabled,false,'No paid campaigns before signoff');
+  assert.equal(pub.support.enabled,false,'No donation/payment methods before signoff');
+  assert.deepEqual(pub.campaigns,[]);
+  assert.equal(store.event('promo','impression'),false);
+  const client=read('beta-ads.js');
+  assert.match(client,/if\(!config\?\.enabled\)\{host\.hidden=true;return\}/);
+ }finally{fs.rmSync(dir,{recursive:true,force:true})}
+});
