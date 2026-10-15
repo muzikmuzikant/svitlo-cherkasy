@@ -196,3 +196,5 @@
  .maintenance-symbol,.maintenance-art-orbit,.maintenance-art-ring,.maintenance-activity-pulse i,.maintenance-refresh svg{animation:none!important}
  .maintenance-refresh,.maintenance-official{transition:none!important}
 }
+
+body.svitlo-maintenance-active{overflow:hidden}

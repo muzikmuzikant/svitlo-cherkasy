@@ -291,7 +291,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  <div class="ops-panel-head"><span class="ops-panel-kicker">ЗОВНІШНІЙ ВИГЛЯД ТА ДОСТУПНІСТЬ</span><h2>Режим технічних робіт</h2>
  <p>Оформлення, дати й тимчасові обмеження працюють незалежно від редактора повідомлень.</p></div>
   <div class="ops-section ops-workspace-maintenance">
-  <div class="headline"><h2>🛠️ Конструктор технічних робіт</h2><span class="pill">Вимкнено за замовчуванням</span></div>
+  <div class="headline"><h2>🛠️ Конструктор технічних робіт</h2><span class="pill" id="opsMaintenanceModePill">Режим вимкнено</span></div>
   <label class="ops-toggle"><span><strong>Увімкнути технічні роботи</strong><small>Повноекранний режим закриває лише користувацький застосунок. Адмінпанель лишається доступною.</small></span><input type="checkbox" id="opsMaintenance"></label>
   <div class="ops-editor-columns">
    <div class="ops-fields">
@@ -312,7 +312,18 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
      <div class="field"><label for="opsUntil">Орієнтовне завершення</label><input id="opsUntil" type="datetime-local"></div>
     </div>
    </div>
-   <div class="ops-preview" id="opsPreview"><small>ПОПЕРЕДНІЙ ПЕРЕГЛЯД</small><div class="ops-preview-mark" id="opsPreviewIcon">✨</div><strong id="opsPreviewTitle">Ми покращуємо застосунок</strong><p id="opsPreviewMessage">Незабаром усе знову працюватиме.</p></div>
+   <div class="ops-preview" id="opsPreview" aria-label="Попередній перегляд екрана технічних робіт">
+    <div class="ops-preview-header"><div><img src="./assets/icon.svg" alt="" width="25" height="25"><span>Світло Черкаси</span></div><span id="opsPreviewBadge">Технічні роботи</span></div>
+    <div class="ops-preview-visual"><div class="ops-preview-halo"></div><div class="ops-preview-mark" id="opsPreviewIcon">🛠️</div></div>
+    <small class="ops-preview-kicker">ТЕХНІЧНЕ ОБСЛУГОВУВАННЯ</small>
+    <strong id="opsPreviewTitle">Ми покращуємо застосунок</strong>
+    <p id="opsPreviewMessage">Тимчасово працюємо над сервісом.</p>
+    <div class="ops-preview-activity"><i></i><span>Працюємо над відновленням доступу</span></div>
+    <div class="ops-preview-time"><span>Орієнтовне завершення</span><b id="opsPreviewEta">Поки невідоме</b></div>
+    <div class="ops-preview-buttons"><span>Перевірити доступність</span><span>Офіційні графіки</span></div>
+    <div class="ops-preview-foot">Це стосується сервісу, а не електропостачання.</div>
+    <small class="ops-preview-label">ПОПЕРЕДНІЙ ПЕРЕГЛЯД · АДАПТИВНИЙ ЕКРАН</small>
+   </div>
   </div>
  </div>
 

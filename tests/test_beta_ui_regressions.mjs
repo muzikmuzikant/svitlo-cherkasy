@@ -94,3 +94,25 @@ test('iframe in-page anchor links do not add history entries before Back',()=>{
  assert.match(nav,/e\.preventDefault\(\);section\.scrollIntoView/);
  assert.match(nav,/history\.back\(\)/);
 });
+
+
+test('redesigned maintenance page has honest status, recovery controls, official source and original branding',()=>{
+ const ui=read('index.html'),logic=read('site-mode.js'),skin=read('maintenance-ui.css'),build=read('scripts/build_pages.py'),sw=read('sw.js');
+ for(const id of ['maintenanceScreen','maintenanceModeLabel','maintenanceTimeLabel','maintenanceEta','maintenanceRefresh','maintenanceCheckStatus','maintenanceActivityText'])assert.ok(ui.includes('id="'+id+'"'),id);
+ assert.ok(ui.includes('class="maintenance-brand"')&&ui.includes('src="./assets/icon.svg"'));
+ assert.ok(!ui.includes('maintenance-progress'),'fake percent animation is gone');
+ assert.ok(logic.includes('function updateEta(m)')&&logic.includes("timeZone:'Europe/Kyiv'"));
+ assert.ok(logic.includes("function setMaintenanceVisible(visible)")&&logic.includes("classList.add('maintenance-leaving')"));
+ assert.ok(logic.includes('paintMaintenanceSymbol(m)'));
+ assert.ok(logic.includes("addEventListener('click',()=>refresh({manual:true}))"));
+ assert.ok(logic.includes('if(lastConfig)display(lastConfig,{offline:true})'),'offline never locks users behind stale state');
+ assert.ok(skin.includes('prefers-reduced-motion:reduce'));
+ assert.ok(skin.includes('max-width:760px')&&skin.includes('max-width:420px'));
+ assert.ok(build.includes("'maintenance-ui.css'")&&sw.includes('"./maintenance-ui.css"'));
+});
+test('maintenance editor preview mirrors mode, end time and the new layout',()=>{
+ const html=read('admin.html'),js=read('admin-control.js'),css=read('admin-control.css');
+ for(const id of ['opsPreviewBadge','opsPreviewEta','opsMaintenanceModePill','opsPreviewTitle','opsPreviewMessage'])assert.ok(html.includes('id="'+id+'"'));
+ assert.ok(js.includes("opsPreviewEta")&&js.includes("opsPreviewBadge"));
+ assert.ok(css.includes('ops-preview-header')&&css.includes('ops-preview-time')&&css.includes('ops-preview-buttons'));
+});
