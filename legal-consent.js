@@ -3,12 +3,12 @@
  const dialog=document.createElement('dialog');dialog.className='svitlo-legal-dialog';dialog.id='legalRevisionDialog';
  dialog.setAttribute('aria-labelledby','legalDialogTitle');
  const body=document.createElement('div');body.className='legal-content';
- const icon=document.createElement('div');icon.className='legal-icon';icon.textContent='▤';
+ const icon=document.createElement('div');icon.className='legal-icon';icon.textContent='📋';
  const title=document.createElement('h2');title.id='legalDialogTitle';title.textContent='Оновлення умов користування';
  const description=document.createElement('p');description.textContent='Ознайомтеся з актуальною редакцією умов і політики конфіденційності.';
  const links=document.createElement('div');links.className='legal-links';
  for(const [href,label] of [['./terms.html','Умови використання'],['./privacy.html','Політика конфіденційності']]){
-  const a=document.createElement('a');a.href=href;a.textContent=label+' ↗';links.append(a)
+  const a=document.createElement('a');a.href=href;a.textContent=label+' 📄';links.append(a)
  }
  const accept=document.createElement('button');accept.type='button';accept.className='legal-agree';accept.textContent='Погоджуюся з умовами';
  const later=document.createElement('button');later.type='button';later.className='legal-later';later.textContent='Не зараз';
@@ -29,8 +29,8 @@
    dialog.showModal();
   }catch(error){console.warn('Legal revision check:',error.message)}
  }
- accept.onclick=()=>{try{localStorage.setItem(KEY,revision)}catch{}lastRevision=revision;dialog.close()};
- later.onclick=()=>{lastRevision=revision;dialog.close()};
+ accept.onclick=()=>{try{localStorage.setItem(KEY,revision)}catch{}lastRevision=revision;(window.SvitloMotion?.closeDialog||((d)=>d.close()))(dialog)};
+ later.onclick=()=>{lastRevision=revision;(window.SvitloMotion?.closeDialog||((d)=>d.close()))(dialog)};
  dialog.addEventListener('cancel',()=>{lastRevision=revision});
  document.getElementById('betaConsentDialog')?.addEventListener('close',()=>setTimeout(check,550));
  setTimeout(check,10500);

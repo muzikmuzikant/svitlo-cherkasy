@@ -116,7 +116,7 @@
    try{const existing=localStorage.getItem(INSTALL_ID);if(existing)localStorage.setItem(PENDING,existing);localStorage.removeItem(INSTALL_ID)}catch{}
    deletePending();
   }else heartbeat();
-  consentDialog?.close();
+  if(consentDialog?.open)(window.SvitloMotion?.closeDialog||((d)=>d.close()))(consentDialog);
  }
  if(consentDialog){
   accept?.addEventListener('click',()=>setConsentChoice(true));

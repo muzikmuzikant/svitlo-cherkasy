@@ -15,7 +15,7 @@
   if(Math.abs(to-from)<2){details.open=opening;return}
   details.style.overflow='clip';
   details.style.height=from+'px';
-  const anim=details.animate([{height:from+'px',opacity:opening?.86:1},{height:to+'px',opacity:opening?1:.9}],{duration:opening?285:225,easing:opening?'cubic-bezier(.2,.85,.25,1)':'cubic-bezier(.4,0,.7,.3)'});
+  const anim=details.animate([{height:from+'px',opacity:opening ? 0.86 : 1},{height:to+'px',opacity:opening?1:.9}],{duration:opening?285:225,easing:opening?'cubic-bezier(.2,.85,.25,1)':'cubic-bezier(.4,0,.7,.3)'});
   activeDetails.set(details,anim);
   const done=()=>{if(activeDetails.get(details)!==anim)return;activeDetails.delete(details);details.open=opening;details.style.removeProperty('height');details.style.removeProperty('overflow')};
   anim.finished.then(done,()=>{}); // cancelled animation is superseded by the next tap
