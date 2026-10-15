@@ -42,6 +42,8 @@
     const anchor=e.target.closest?.('a[href]');if(!anchor||anchor.hasAttribute('download'))return;
     const target=new URL(anchor.href,frame.contentWindow.location.href);
     if(target.origin!==location.origin)return;
+    // Scroll to a section in the current page without reloading the iframe.
+    if(target.pathname===frame.contentWindow.location.pathname&&target.search===frame.contentWindow.location.search&&target.hash)return;
     if(/(?:\/index\.html|\/)$/.test(target.pathname)){e.preventDefault();dismiss();return}
     const next=internal(target.href);
     if(next){e.preventDefault();display(next.href)}
