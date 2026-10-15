@@ -1,7 +1,5 @@
-/* Source precedence: current official address list > bundled historical fallback.
- * Manual verified admin corrections are intentionally applied separately.
- * Never UNION queue hints from old and current official editions: doing so can
- * suggest queues that the operator has since removed from a street. */
+/* Live official queues take precedence. Preserve old street names when official
+ * importer returns a partial district list, but never auto-apply old queues. */
 (function(root, factory){
  const api=factory();
  if(typeof module==='object' && module.exports) module.exports=api;
@@ -15,16 +13,30 @@
    const live=obj(current), backup=obj(historical);
    function combine(a,b){
      a=obj(a);b=obj(b);
-     // An official source for a locality supersedes its archived hints. Missing
-     // streets in a NEW list must not be silently re-added from the OLD list.
-     if(!manual && hasContent(a))return {
-       ...a,keys:{...obj(a.keys)},streets:{...obj(a.streets)},streetQueues:{...obj(a.streetQueues)}
-     };
+     // A partial official update must not remove previously published street names.
+     // Preserve only labels, not obsolete queue assignments.
+     if(!manual && hasContent(a)){
+       const official=obj(a.streets),previous=obj(b.streets);
+       const missing=Object.fromEntries(Object.entries(previous).filter(([key])=>!(key in official)));
+       const archivedQueues={};
+       for(const key of Object.keys(missing)){
+         const candidates=valid(obj(b.streetQueues)[key]);
+         if(candidates.length)archivedQueues[key]=candidates;
+       }
+       return {...a,keys:{...obj(a.keys)},streets:{...missing,...official},
+         streetQueues:{...obj(a.streetQueues)},
+         archiveOnlyStreets:Object.keys(missing),archivedStreetQueues:archivedQueues};
+     }
      if(!manual)return {...b,keys:{...obj(b.keys)},streets:{...obj(b.streets)},streetQueues:{...obj(b.streetQueues)}};
      // Admin corrections are explicit, not a fuzzy merge of conflicting queues.
      const queues={...obj(a.streetQueues)};
      for(const [street,values] of Object.entries(obj(b.streetQueues)))queues[street]=valid(values);
-     return {...a,...b,keys:{...obj(a.keys),...obj(b.keys)},streets:{...obj(a.streets),...obj(b.streets)},streetQueues:queues};
+     // Admin-verified edits are no longer flagged as archival.
+     const confirmed=new Set([...Object.keys(obj(b.streetQueues)),...Object.keys(obj(b.streets))]);
+     const archiveOnly=(Array.isArray(a.archiveOnlyStreets)?a.archiveOnlyStreets:[]).filter(key=>!confirmed.has(key));
+     return {...a,...b,keys:{...obj(a.keys),...obj(b.keys)},
+       streets:{...obj(a.streets),...obj(b.streets)},streetQueues:queues,
+       archiveOnlyStreets:archiveOnly,archivedStreetQueues:{...obj(a.archivedStreetQueues)}};
    }
    const result=combine(live,backup);
    const places={...obj(backup.localities),...obj(live.localities)};
