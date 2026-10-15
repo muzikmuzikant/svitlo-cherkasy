@@ -421,6 +421,12 @@ function navigate(name){
  const previousStyle=window.getComputedStyle?.(previousSection);
  const currentTransform=previousStyle?.transform&&previousStyle.transform!=='none'?previousStyle.transform:'translate3d(0,0,0)';
  const currentOpacity=Number(previousStyle?.opacity)||1;
+ // When quickly returning to the tab we were just leaving, reuse its actual
+ // outgoing visual position instead of teleporting it to a generic start.
+ const returningToOutgoing=tabMotion?.from===nextSection;
+ const returnStyle=returningToOutgoing?window.getComputedStyle?.(nextSection):null;
+ const returnTransform=returnStyle?.transform&&returnStyle.transform!=='none'?returnStyle.transform:'translate3d(0,0,0)';
+ const returnOpacity=Number(returnStyle?.opacity)||1;
  if(tabMotion){
   tabMotion.incoming?.cancel();tabMotion.outgoing?.cancel();
   if(tabMotion.from){tabMotion.from.hidden=true;tabMotion.from.style.cssText=''}
@@ -465,7 +471,7 @@ function navigate(name){
   {transform:'translate3d('+(-direction*30)+'px,0,0)',opacity:0}
  ],{duration:TAB_MOTION_MS,easing,fill:'forwards'});
  token.incoming=nextSection.animate([
-  {transform:'translate3d('+(direction*34)+'px,0,0)',opacity:0.12},
+  {transform:returningToOutgoing?returnTransform:'translate3d('+(direction*34)+'px,0,0)',opacity:returningToOutgoing?returnOpacity:0.12},
   {transform:'translate3d(0,0,0)',opacity:1}
  ],{duration:TAB_MOTION_MS,easing,fill:'forwards'});
  token.incoming.finished.then(()=>{
