@@ -62,7 +62,7 @@ test('Production commercial lock survives enabled stored config and cannot colle
    contacts:[{label:'Контакт',url:'https://example.com',enabled:true}],
    packages:[{title:'Тариф',price:800,durationDays:30,visible:true}],
    campaigns:[{id:'advert',title:'Оголошення',link:'https://example.com',enabled:true}],
-   support:{...config.support,enabled:true,paymentUrl:'https://example.com/pay',methods:[{title:'Банка',kind:'monobank',url:'https://example.com/donate',enabled:true}]}
+   support:{...config.support,enabled:true,paymentUrl:'https://example.com/pay',details:'PRIVATE-IBAN-NEVER-PUBLISH',provider:'monobank',methods:[{title:'Банка',kind:'monobank',url:'https://example.com/donate',enabled:true}],expenses:[{title:'Private invoice',amount:123,public:true}]}
   });
   const publicConfig=store.publicState();
   assert.equal(publicConfig.enabled,false);
@@ -71,6 +71,9 @@ test('Production commercial lock survives enabled stored config and cannot colle
   assert.deepEqual(publicConfig.contacts,[]);
   assert.equal(publicConfig.support.enabled,false);
   assert.equal(publicConfig.support.paymentUrl,'');
+  assert.deepEqual(publicConfig.support.expenses,[]);
+  assert.deepEqual(Object.keys(publicConfig).sort(),['campaigns','contacts','enabled','packages','support']);
+  assert.doesNotMatch(JSON.stringify(publicConfig),/PRIVATE-IBAN-NEVER-PUBLISH|Private invoice|example.com\/donate/);
   assert.deepEqual(publicConfig.support.methods,[]);
   assert.equal(store.event('advert','impression'),false);
   assert.equal(store.event('promo','impression'),false);
