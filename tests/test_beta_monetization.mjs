@@ -103,3 +103,72 @@ test('beta site only includes ad placement in home and PWA requires privacy opt-
   assert.ok(build.includes("'"+filename+"'"),'beta build is missing '+filename);
  }
 });
+
+
+test('7.9.10: fullscreen ad uses independently customizable content and images',()=>{
+ const {store,dir}=fresh();const s=store.dashboard().settings;
+ s.campaigns=[{...ad('more'),detailEnabled:true,detailTitle:'Великий заголовок',
+ detailSubtitle:'Окремий підзаголовок',detailDescription:'Абзац 1\n\nАбзац 2',
+ detailBanner:'https://example.com/banner.webp',detailImage:'https://example.com/image.webp',
+ cardBackgroundImage:'https://example.com/card.webp',cardStyle:'dark',
+ detailBackground:'#eef2ff',detailForeground:'#102848',detailAccent:'#1456aa',
+ detailButton:'На сайт партнера'}];
+ store.update(s);const adPublic=store.publicState().campaigns[0];
+ assert.equal(adPublic.detailEnabled,true);
+ assert.equal(adPublic.detailTitle,'Великий заголовок');
+ assert.equal(adPublic.detailBanner,'https://example.com/banner.webp');
+ assert.equal(adPublic.detailImage,'https://example.com/image.webp');
+ assert.equal(adPublic.cardBackgroundImage,'https://example.com/card.webp');
+ assert.equal(adPublic.detailBackground,'#eef2ff');
+ assert.equal(adPublic.detailDescription,'Абзац 1\n\nАбзац 2');
+ assert.equal(store.event('more','detailOpen'),true);
+ assert.equal(store.event('more','outbound'),true);
+ assert.equal(store.dashboard().stats.more.detailOpens,1);
+ assert.equal(store.dashboard().stats.more.outboundClicks,1);
+ store.flush();
+ const reopened=createAdsStore({directory:dir});
+ assert.equal(reopened.dashboard().settings.campaigns[0].detailEnabled,true);
+ assert.equal(reopened.dashboard().stats.more.outboundClicks,1);
+ fs.rmSync(dir,{recursive:true,force:true});
+});
+
+test('7.9.10: editable advertising and support designs survive restart',()=>{
+ const {store,dir}=fresh();const s=store.dashboard().settings;
+ s.pageBackground='#edf4ff';s.pageAccent='#2360c5';
+ s.pageHeroImage='https://example.com/hero.webp';
+ s.pageAbout='Переваги сервісу';
+ s.pageBenefits=['Перша','Друга','Третя'];
+ s.support={...s.support,background:'#f0f5fc',accent:'#336699',
+ heroImage:'https://example.com/support.webp',goals:[{icon:'♡',title:'Підтримка',description:'Розвиток проєкту'}],
+ showGoals:true,showAmounts:true,showThanks:false,amounts:[20,50,100]};
+ store.update(s);store.flush();
+ const reload=createAdsStore({directory:dir}).publicState();
+ assert.equal(reload.pageAccent,'#2360c5');
+ assert.equal(reload.pageBenefits.length,3);
+ assert.equal(reload.support.goals[0].title,'Підтримка');
+ assert.equal(reload.support.showThanks,false);
+ assert.equal(reload.support.amounts[1],50);
+ fs.rmSync(dir,{recursive:true,force:true});
+});
+
+test('7.9.10: full screen advertising page and first run consent have shipped assets',()=>{
+ const root=new URL('../',import.meta.url);
+ const index=fs.readFileSync(new URL('index.html',root),'utf8');
+ const beta=fs.readFileSync(new URL('beta-ads.js',root),'utf8');
+ const full=fs.readFileSync(new URL('ad-detail.html',root),'utf8');
+ const adInfo=fs.readFileSync(new URL('advertising.html',root),'utf8');
+ const support=fs.readFileSync(new URL('support-project.html',root),'utf8');
+ const sw=fs.readFileSync(new URL('sw.js',root),'utf8');
+ assert.ok(index.indexOf('id="emergencyBanner"')<index.indexOf('id="betaAd"'));
+ assert.ok(index.indexOf('id="betaAd"')<index.indexOf('Графік на сьогодні',index.indexOf('id="betaAd"')));
+ assert.ok(index.includes('id="betaConsentDialog"'));
+ assert.ok(index.includes('id="betaConsentAccept"')&&index.includes('id="betaConsentDecline"'));
+ assert.ok(beta.includes("consentDialog.showModal()")&&beta.includes("CHOICE"));
+ assert.ok(beta.includes("item.detailEnabled?'./ad-detail.html"));
+ assert.ok(full.includes('detailBanner')&&full.includes('detailImage')&&full.includes("type:'outbound'"));
+ assert.ok(adInfo.includes('pageBenefits')&&adInfo.includes('pageHeroImage'));
+ assert.ok(support.includes('showGoals')&&support.includes('showAmounts'));
+ assert.ok(sw.includes('ad-detail.html'));
+ const build=fs.readFileSync(new URL('scripts/build_pages.py',root),'utf8');
+ assert.ok(build.includes("'ad-detail.html'"));
+});
