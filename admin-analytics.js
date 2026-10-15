@@ -54,6 +54,19 @@
    card('Запуски застосунку',pretty(totals.appOpen),'Запуски PWA, не встановлення','▣'),
    card('З реклами «Черкаси головне»',pretty(own.landing),'Відкриття за спеціальним посиланням','◈')
   );
+  const popular=state['popularity'+period]||{};
+  for(const [dimension,id] of [['queue_sample','analyticsTopQueues'],['locality_sample','analyticsTopLocalities'],['platform_sample','analyticsTopPlatforms'],['version_sample','analyticsTopVersions']]){
+   const holder=$(id);if(!holder)continue;holder.replaceChildren();
+   const data=popular[dimension]||{items:[],other:0},items=Array.isArray(data.items)?data.items:[],highest=Math.max(1,...items.map(x=>x.count));
+   if(!items.length)holder.append(make('p','Ще немає достатньо даних.','analytics-no-data'));
+   for(const item of items){
+    const line=make('div',null,'analytics-popularity-row'),heading=make('div',null,'analytics-popularity-row-head');
+    heading.append(make('span',item.label),make('strong',pretty(item.count)));
+    const track=make('div',null,'analytics-popularity-track'),bar=make('i');
+    bar.style.width=(item.count/highest*100)+'%';track.append(bar);line.append(heading,track);holder.append(line);
+   }
+   if(data.other>0)holder.append(make('p','Інші або приховані: '+pretty(data.other),'analytics-privacy-small'));
+  }
   const campaign=$('analyticsCampaignMetrics');campaign.replaceChildren();
   const stats=[
    ['Переходи за міткою',pretty(own.landing),'Відкриття сторінки'],
