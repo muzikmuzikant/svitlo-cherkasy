@@ -79,7 +79,7 @@ test('The selected day caption is exactly the requested text for missing schedul
  assert.match(css,/opacity:0;transform:translate3d\(0,30px,0\)/);
 });
 
-test('Modern iOS animates both departing and arriving screen using View Transitions',()=>{
+test('Modern iOS animates both fixed-size viewport snapshots using View Transitions',()=>{
  const view=setup({native:true});
  view.navigate('detail');
  assert.equal(view.context.active,'detail');

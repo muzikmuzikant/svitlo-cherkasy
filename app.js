@@ -392,8 +392,16 @@ function renderBar(a){const bar=$('overviewBar');bar.replaceChildren();if(!a){co
 function navigate(name){
  if(!['home','detail','updates','settings'].includes(name))return;
  if(name==='detail'&&!primary()&&!previewQueue){openAddressSheet();return}
- // A repeated tap must not reset scroll or trigger entrance animation again.
+ if(name===navigate.pendingName)return;
+ // A second tap on the active tab keeps its scroll, but cancels any
+ // previous transition that has not committed its DOM update yet.
  if(name===active){
+  if(navigate.runningTransition){
+   navigate.transitionSerial=(navigate.transitionSerial||0)+1;
+   navigate.runningTransition.skipTransition?.();
+   navigate.runningTransition=null;
+   navigate.pendingName=null;
+  }
   if(name==='detail')renderDetail();
   else if(name==='updates')renderUpdates();
   else if(name==='settings')renderSettings();
@@ -402,19 +410,31 @@ function navigate(name){
  }
  if(name!=='detail')previewQueue=null;
  try{sessionStorage.setItem(SCREEN_RETURN,name)}catch{}
- // Prepare content before reveal, to avoid placeholder flashes.
+ // Prepare content before capturing the entering screen.
  if(name==='detail'){daySelected=today();dayStripStart=today();renderDetail()}
  else if(name==='updates')renderUpdates();
  else if(name==='settings')renderSettings();
  else renderHome();
- // Animate the departing and arriving screens together on modern iOS Safari.
- // Fall back to a prominent whole-screen reveal when View Transitions are absent.
  const allowMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches!==true &&
   !document.documentElement.classList.contains('feature-off-animations');
  const screenNames=['home','detail','updates','settings'];
  const previous=active;
+ const token=(navigate.transitionSerial||0)+1;
+ navigate.transitionSerial=token;
+ if(navigate.runningTransition){
+  navigate.runningTransition.skipTransition?.();
+  navigate.runningTransition=null;
+  navigate.pendingName=null;
+ }
  const update=useFallback=>{
-  window.scrollTo({top:0,behavior:'instant'});
+  if(token!==navigate.transitionSerial)return; // Older asynchronous callback.
+  // iOS must NOT perform smooth document scrolling while screenshots move.
+  // A smooth scroll can continue after the transition and create an end snap.
+  const scrollStyle=document.documentElement.style;
+  const previousBehavior=scrollStyle?.scrollBehavior;
+  if(scrollStyle)scrollStyle.scrollBehavior='auto';
+  try{window.scrollTo(0,0)}
+  finally{if(scrollStyle)scrollStyle.scrollBehavior=previousBehavior||''}
   active=name;
   for(const n of screenNames){
    const section=$(n);
@@ -427,12 +447,27 @@ function navigate(name){
   });
  };
  if(allowMotion&&typeof document.startViewTransition==='function'){
-  document.documentElement.dataset.tabDirection=screenNames.indexOf(name)>=screenNames.indexOf(previous)?'forward':'backward';
-  const transition=document.startViewTransition(()=>update(false));
-  transition.finished.catch(()=>{}).finally(()=>{
-   delete document.documentElement.dataset.tabDirection;
-  });
- }else update(allowMotion);
+  // Root screenshots always share the same VIEWPORT dimensions.
+  // Section snapshots have different heights and previously resized at the end.
+  document.documentElement.dataset.tabDirection=
+   screenNames.indexOf(name)>=screenNames.indexOf(previous)?'forward':'backward';
+  try{
+   const transition=document.startViewTransition(()=>update(false));
+   navigate.runningTransition=transition;
+   navigate.pendingName=name;
+   Promise.resolve(transition.finished).catch(()=>{}).then(()=>{
+    if(navigate.runningTransition===transition){
+     navigate.runningTransition=null;
+     navigate.pendingName=null;
+    }
+   });
+  }catch(error){
+   console.warn('Tab transition unavailable:',error);
+   navigate.runningTransition=null;
+   navigate.pendingName=null;
+   update(true);
+  }
+ }else{navigate.pendingName=null;update(allowMotion)}
 }
 function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Підчерга '+previewQueue,settlement:'Черкаси та район'}:primary();
  if(!a)return;
