@@ -53,15 +53,6 @@ const appUrl=new URL('/',APP_ORIGIN).href; // Push opens PWA, never the GitHub r
 const manualPush=createManualPush({subscribers,webpush,appUrl,hash,save});
 const fmtKyiv=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
 function dayInKyiv(d=new Date()){const p=Object.fromEntries(fmtKyiv.formatToParts(d).map(x=>[x.type,x.value]));return {date:`${p.year}-${p.month}-${p.day}`,m:Number(p.hour)*60+Number(p.minute)}}
-const allowedMinutes=new Set([5,10,15,30,60]);
-function minutesFor(value,def){const n=Number(value);return allowedMinutes.has(n)?n:def}
-function quietNow(prefs,minutes){
- if(!prefs?.quietEnabled)return false;
- const parse=value=>/^([01]\d|2[0-3]):[0-5]\d$/.test(String(value))?Number(value.slice(0,2))*60+Number(value.slice(3)):null;
- const start=parse(prefs.quietFrom),end=parse(prefs.quietTo);
- if(start===null||end===null||start===end)return false;
- return start<end?minutes>=start&&minutes<end:minutes>=start||minutes<end;
-}
 function shiftDay(s,n){const d=new Date(s+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
 function response(res,status,json,origin=''){
  const headers={'content-type':'application/json; charset=utf-8','cache-control':'no-store','vary':'Origin','x-content-type-options':'nosniff'};
@@ -120,7 +111,7 @@ async function transitionJob(){
   const current=schedulesSafe?source.days.find(d=>d.date===now.date&&d.verified===true):null;
   const nextDate=shiftDay(now.date,1);
   const tomorrow=schedulesSafe?source.days.find(d=>d.date===nextDate&&d.verified===true):null;
-  const all=Object.values(subscribers).flatMap(rec=>(Array.isArray(rec.rules)&&rec.rules.length?rec.rules:[{queue:rec.queue,settlement:rec.settlement,preferences:rec.preferences}]).map(rule=>({...rec,...rule,automatic:rec.automatic})));
+  const all=Object.values(subscribers);
   const cycle={at:new Date().toISOString(),subscribers:all.length,
    offEnabled:all.filter(x=>x?.preferences?.off).length,
    onEnabled:all.filter(x=>x?.preferences?.on).length,
@@ -129,11 +120,11 @@ async function transitionJob(){
   if(schedulesSafe)await forEachLimited(all,12,async record=>{
    const q=record?.queue,endpoint=record?.subscription?.endpoint;
    if(!QUEUES.has(q)||!endpoint)return;
-   const pref=record.preferences||{},basePrefix=hash(endpoint),prefix=basePrefix+':'+q,minutes=now.m;
+   const pref=record.preferences||{},prefix=hash(endpoint),minutes=now.m;
    const values=schedulesSafe?timeline(current,q):null;
    const valuesTomorrow=schedulesSafe?timeline(tomorrow,q):null;
-   for(const [type,offset,target] of [['off',minutesFor(pref.offMinutes,30),1],['on',minutesFor(pref.onMinutes,15),0]]){
-    if(!pref[type]||quietNow(pref,minutes))continue;
+   for(const [type,offset,target] of [['off',30,1],['on',15,0]]){
+    if(!pref[type])continue;
     // Recover reminders delayed by Railway restarts or temporarily slow schedule imports.
     // The helper never returns transitions that have already started.
     const boundary=dueTransitionAcrossDays(values,valuesTomorrow,minutes,offset,target,offset-2);
@@ -199,29 +190,28 @@ async function job(){
   }
   // The freshest verified bulletin determines whether an emergency is active or ended.
   const event=latestOfficialEvent(bulletin,timestamp);
-  const all=Object.values(subscribers).flatMap(rec=>(Array.isArray(rec.rules)&&rec.rules.length?rec.rules:[{queue:rec.queue,settlement:rec.settlement,preferences:rec.preferences}]).map(rule=>({...rec,...rule,automatic:rec.automatic})));
+  const all=Object.values(subscribers);
   await forEachLimited(all,12,async record=>{
    const q=record?.queue,endpoint=record?.subscription?.endpoint;
    if(!QUEUES.has(q)||!endpoint)return;
-   const pref=record.preferences||{},basePrefix=hash(endpoint),prefix=basePrefix+':'+q,minutes=now.m;
-   const quiet=quietNow(pref,minutes);
+   const pref=record.preferences||{},prefix=hash(endpoint),minutes=now.m;
    const freshChanges=(source.changes||[]).slice(-30).filter(change=>{
     const when=Date.parse(change.detectedAt||change.publishedAt||''),age=timestamp-when;
     return Array.isArray(change.queues)&&change.queues.includes(q)&&change.date>=now.date&&
      Number.isFinite(when)&&age>=0&&age<65*60000;
    });
    const tomorrowRevised=freshChanges.some(change=>isLatestRevision(change,tomorrow,q));
-   if(!quiet&&schedulesSafe&&pref.tomorrow&&tomorrow?.verified===true&&minutes>=19*60&&!(pref.changes&&tomorrowRevised)){
+   if(schedulesSafe&&pref.tomorrow&&tomorrow?.verified===true&&minutes>=19*60&&!(pref.changes&&tomorrowRevised)){
     const revision=firstPublishedAt(tomorrow),msg=tomorrowCopy(q,nextDate,tomorrow);
     await send(record,msg,`${prefix}:tomorrow:${nextDate}:${revision}`,{
      notificationId:dayId(q,tomorrow),at:revision,source:tomorrow.source});
    }
    if(pref.emergency&&freshEvent(event,timestamp)&&(!Array.isArray(event.queues)||!event.queues.length||event.queues.includes(q))){
     const msg=emergencyCopy(event.status);
-    if(msg)await send(record,msg,`${basePrefix}:emergency:${event.status}:${hash(event.id||event.source)}:${event.publishedAt}`,{
+    if(msg)await send(record,msg,`${prefix}:emergency:${event.status}:${hash(event.id||event.source)}:${event.publishedAt}`,{
      notificationId:emergencyId(event),at:event.publishedAt,source:event.source,kind:'emergency',ttl:3600,urgency:'high'});
    }
-   if(!quiet&&schedulesSafe&&pref.changes)for(const change of freshChanges){
+   if(schedulesSafe&&pref.changes)for(const change of freshChanges){
     const msg=changeCopy(q,change.date,source.days.find(d=>d.date===change.date&&d.verified===true));
     await send(record,msg,`${prefix}:change:${change.date}:${change.revisionId||change.publishedAt}`,{
      notificationId:changeId(q,change),at:change.detectedAt||change.publishedAt,source:change.source});
@@ -424,21 +414,10 @@ const server=http.createServer(async(req,res)=>{
   }
   if(!data.subscription.keys?.p256dh||!data.subscription.keys?.auth||!QUEUES.has(data.queue))throw Error('Invalid subscription or queue');
   const prefs=data.preferences||{};
-  const preferences={off:!!prefs.off,on:!!prefs.on,changes:!!prefs.changes,tomorrow:!!prefs.tomorrow,emergency:!!prefs.emergency,offMinutes:minutesFor(prefs.offMinutes,30),onMinutes:minutesFor(prefs.onMinutes,15),quietEnabled:prefs.quietEnabled===true,quietFrom:/^([01]\d|2[0-3]):[0-5]\d$/.test(prefs.quietFrom||'')?prefs.quietFrom:'23:00',quietTo:/^([01]\d|2[0-3]):[0-5]\d$/.test(prefs.quietTo||'')?prefs.quietTo:'07:00'};
+  const preferences={off:!!prefs.off,on:!!prefs.on,changes:!!prefs.changes,tomorrow:!!prefs.tomorrow,emergency:!!prefs.emergency};
   // Store only the locality for opt-in Push targeting. Never store street/house.
   const settlement=typeof data.settlement==='string'?data.settlement.normalize('NFKC').trim().slice(0,70):'';
-  const rules=[],seen=new Set();
-  for(const rule of Array.isArray(data.rules)?data.rules.slice(0,8):[]){
-   if(!rule||!QUEUES.has(rule.queue)||seen.has(rule.queue))continue;
-   seen.add(rule.queue);
-   const p=rule.preferences||{};
-   const prefsRule={off:!!p.off,on:!!p.on,changes:!!p.changes,tomorrow:!!p.tomorrow,emergency:!!p.emergency,
-    offMinutes:minutesFor(p.offMinutes,30),onMinutes:minutesFor(p.onMinutes,15),quietEnabled:p.quietEnabled===true,
-    quietFrom:/^([01]\d|2[0-3]):[0-5]\d$/.test(p.quietFrom||'')?p.quietFrom:'23:00',
-    quietTo:/^([01]\d|2[0-3]):[0-5]\d$/.test(p.quietTo||'')?p.quietTo:'07:00'};
-   rules.push({queue:rule.queue,settlement:typeof rule.settlement==='string'?rule.settlement.normalize('NFKC').trim().slice(0,70):'',preferences:prefsRule})
-  }
-  subscribers[key]={subscription:data.subscription,queue:data.queue,preferences,settlement,rules,
+  subscribers[key]={subscription:data.subscription,queue:data.queue,preferences,settlement,
    automatic:subscribers[key]?.automatic||{}};
   save();response(res,200,{ok:true});
  }catch(e){response(res,e.message?.includes('save failed')?500:400,{error:'Invalid subscription request'})}
