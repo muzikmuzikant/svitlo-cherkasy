@@ -599,3 +599,4 @@ main{max-width:1840px!important;padding-inline:clamp(16px,2.5vw,46px)}
  [data-admin-panel="maintenance"] .ops-panel-footer,
  [data-admin-panel="design"] .control-panel-actions{bottom:5px;gap:8px}
 }
+.schedule-qa{border:1px solid #dfe9f5;border-radius:15px;padding:17px;background:#f9fbff;margin-top:17px}.schedule-qa h3{margin:0 0 12px}.schedule-qa-item{padding:10px 12px;border-radius:10px;margin:7px 0;background:#fff4df;color:#735423;font-size:13px}.schedule-qa-item.error{background:#fff0ed;color:#994132}.schedule-qa p{font-size:13px;line-height:1.5;color:#687b94}
