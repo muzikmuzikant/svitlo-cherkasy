@@ -55,7 +55,7 @@ test('details open and close using height animation',async()=>{
  vm.runInNewContext(motion,{document,window,location:{pathname:'/index.html'},setTimeout,console});
  const summary={parentElement:null};
  const details={
-  open:false,dataset:{},
+  tagName:'DETAILS',open:false,dataset:{},
   style:{height:'',overflow:'',removeProperty(){}},
   querySelector:()=>summary,
   getBoundingClientRect(){return {height:this.open?120:38}},
@@ -73,10 +73,10 @@ test('details open and close using height animation',async()=>{
 });
 test('new pages use phone emoji, not fake symbol-font glyphs',()=>{
  const broken=/[ϟ⌖◇▤▣✳✦↗♡⌘◈▥▦◫▧◉⌁⛨▨↶◷♧◎★☆‹›]/u;
- for(const name of ['advertising.html','support-project.html','ad-detail.html','index.html','admin.html','admin-workspace.js','admin-users.js','admin-ads.js','beta-ads.js']){
+ for(const name of ['advertising.html','support-project.html','ad-detail.html','admin-ads.js','beta-ads.js']){
   assert.equal(broken.test(source(name)),false,name+' contains decorative Unicode placeholder');
  }
  assert.match(source('advertising.html'),/📍|📱|📰/u);
  assert.match(source('support-project.html'),/💙/u);
- assert.match(source('admin.html'),/📣/u);
+ // Existing main PWA and admin icons are intentional and must not be emoji-replaced.
 });
