@@ -42,3 +42,27 @@ test('production PWA, Google proof, and live API routing are consistent',async()
  assert.ok(health.schedulePublisher,'schedulePublisher health unavailable');
  console.log('Verified live Google proof, PWA identity and backend health, no subscriber records read');
 });
+
+
+test('production admin preflight works without exposing a protected panel',async()=>{
+ const pre=await fetch(api+'/api/admin/login',{
+  method:'OPTIONS',headers:{origin:production,
+    'access-control-request-method':'POST','access-control-request-headers':'content-type'},
+  signal:AbortSignal.timeout(12000),cache:'no-store'
+ });
+ assert.equal(pre.status,204,'PWA cannot send owner login to Railway');
+ assert.equal(pre.headers.get('access-control-allow-origin'),production);
+ const status=await fetch(api+'/api/admin/status',{
+  headers:{origin:production},signal:AbortSignal.timeout(12000),cache:'no-store'
+ });
+ assert.equal(status.status,401,'private admin status is readable without authentication');
+ assert.equal(status.headers.get('access-control-allow-origin'),production);
+ const foreign='https://invalid-origin.example';
+ const denied=await fetch(api+'/api/admin/login',{
+  method:'OPTIONS',headers:{origin:foreign,'access-control-request-method':'POST'},
+  signal:AbortSignal.timeout(12000),cache:'no-store'
+ });
+ assert.equal(denied.status,403,'untrusted site could reach admin login');
+ assert.notEqual(denied.headers.get('access-control-allow-origin'),foreign);
+ console.log('Verified Production admin login CORS and unauthorized protection without login attempts');
+});
