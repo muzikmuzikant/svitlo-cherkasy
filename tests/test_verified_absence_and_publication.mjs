@@ -8,12 +8,11 @@ import {createSchedulePublication} from '../push-server/schedule-publication.js'
 const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const source=JSON.parse(read('data/schedules.json')),review=JSON.parse(read('data/source_review.json'));
 
-test('no published schedule is green only with fresh, explicitly certified absence',()=>{
+test('CRITICAL PRODUCT RULE: missing graph always means 24 hours of light in visual schedule',()=>{
  const app=read('app.js');
- assert.match(app,/Array\.isArray\(data\.confirmedNoScheduleDates\)&&data\.confirmedNoScheduleDates\.includes\(date\)/);
- assert.match(app,/if\(sourceFresh\(date\)&&withinPublishedHorizon\(date\)\)return new Int8Array\(1440\)/);
- assert.match(app,/Графік на цей день не підтверджено/);
- assert.match(app,/Немає підтвердженого графіка на цей день/);
+ assert.match(app,/if\(!day\)\{[\s\S]*?return new Int8Array\(1440\)/);
+ assert.match(app,/ГРАФІКА НЕМАЄ · СВІТЛО ВЕСЬ ДЕНЬ/);
+ assert.match(app,/Графік не опубліковано · світло весь день за замовчуванням/);
  assert.match(read('style.css'),/feature-off-quickAddresses #homeQuickPlaces/);
 });
 
