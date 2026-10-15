@@ -27,7 +27,7 @@ jobs:
           import re
           assert re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', release['version'])
           assert release['channel']=='beta'
-          assert 'Beta' in manifest['name']
+          assert 'beta' in manifest['id'].lower()
           assert 'svitlo-cherkasy-production.up.railway.app' not in push.get('apiBase','')
           assert isinstance(push.get('publicKey',''),str)
           PY
@@ -38,7 +38,7 @@ jobs:
           from pathlib import Path
           assert not Path('_site/CNAME').exists()
           assert '-beta' in Path('_site/sw.js').read_text()
-          assert 'Світло Beta' in Path('_site/manifest.webmanifest').read_text()
+          assert 'Світло Черкаси' in Path('_site/manifest.webmanifest').read_text()
           assert 'BETA' in Path('_site/index.html').read_text()
           PY
       - name: Check all Beta additions and server syntax
