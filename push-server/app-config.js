@@ -93,6 +93,9 @@ export function createAppConfig({directory,record=()=>{}}){
  const publicState=()=>{const t=Date.now();return {schemaVersion:1,updatedAt:state.updatedAt,maintenance:{...state.maintenance},site:state.site||defaultSite(),announcements:state.announcements.filter(x=>x.active&&x.delivery!=='push'&&(!x.scheduledAt||Date.parse(x.scheduledAt)<=t)&&(!x.expiresAt||Date.parse(x.expiresAt)>t)).map(({pushSentAt,...visible})=>visible)}};
  const update=value=>{
   const next=validateAppConfig(value),previous=copy(),changed=JSON.stringify({...previous,updatedAt:null})!==JSON.stringify({...next,updatedAt:null});
+  // Two saves in the same millisecond still need distinct revision tokens.
+  if(Date.parse(next.updatedAt)<=Date.parse(previous.updatedAt))
+   next.updatedAt=new Date(Date.parse(previous.updatedAt)+1).toISOString();
   persist(next);
   if(changed&&previous.updatedAt){
    try{
