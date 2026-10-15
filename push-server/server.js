@@ -245,8 +245,13 @@ const server=http.createServer(async(req,res)=>{
   res.writeHead(204,{'access-control-allow-origin':origin,'access-control-allow-methods':'POST, OPTIONS, GET, PUT, PATCH, DELETE','access-control-allow-headers':'content-type, authorization','vary':'Origin'});res.end();return;
  }
  if(requestPath==='/api/ads'&&req.method==='GET'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}response(res,200,ads.publicState());return}
- if(requestPath==='/api/ads/event'&&req.method==='POST'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}try{const body=await readPayload(req,500);response(res,ads.event(String(body.id||'').slice(0,55),body.type)?202:400,{ok:true})}catch{response(res,400,{error:'Bad event'})}return}
+ if(requestPath==='/api/ads/event'&&req.method==='POST'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}try{const body=await readPayload(req,500);response(res,ads.event(String(body.id||'').slice(0,55),body.type,crypto.createHash('sha256').update(String(req.socket.remoteAddress||'')+new Date().toISOString().slice(0,10)).digest('hex').slice(0,20))?202:400,{ok:true})}catch{response(res,400,{error:'Bad event'})}return}
  if(requestPath==='/api/pwa/presence'&&req.method==='POST'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}try{const body=await readPayload(req,500);response(res,ads.activity(body)?202:400,{ok:true})}catch{response(res,400,{error:'Bad presence'})}return}
+ if(requestPath==='/api/pwa/forget'&&req.method==='POST'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  try{const body=await readPayload(req,500);response(res,ads.optOut(body)?200:400,{ok:true})}
+  catch{response(res,400,{error:'Bad request'})}return
+ }
  if(requestPath==='/api/data/status'&&req.method==='GET'){
   response(res,200,officialSchedules.status());return;
  }

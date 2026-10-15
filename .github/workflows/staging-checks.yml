@@ -41,4 +41,12 @@ jobs:
           assert 'Світло Beta' in Path('_site/manifest.webmanifest').read_text()
           assert 'BETA' in Path('_site/index.html').read_text()
           PY
-      - run: node --check app.js && node --check install.js && node --check sw.js
+      - name: Check all Beta additions and server syntax
+        run: |
+          node --check app.js && node --check install.js && node --check sw.js
+          node --check beta-ads.js && node --check admin-ads.js
+          node --check push-server/server.js && node --check push-server/admin.js && node --check push-server/ads.js
+          test -f _site/beta-ads.js && test -f _site/admin-ads.js
+          test -f _site/advertising.html && test -f _site/support-project.html
+      - name: Run Beta advertising contract tests
+        run: node --test tests/test_beta_monetization.mjs

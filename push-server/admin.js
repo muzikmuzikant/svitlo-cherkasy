@@ -112,7 +112,7 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
  const allowed=role==='owner'
   ||role==='viewer'&&method==='GET'
   ||role==='operator'&&(
-   method==='GET'&&(/\/api\/admin\/(?:monitor|audit|status|feedback|help|analytics|security)$/.test(pathName)
+   method==='GET'&&(/\/api\/admin\/(?:monitor|audit|status|feedback|help|analytics|ads|security)$/.test(pathName)
     ||pathName==='/api/admin/push/status')
    ||method==='PATCH'&&pathName.startsWith('/api/admin/feedback/'))
   ||role==='editor'&&!(pathName==='/api/admin/push/send'
@@ -125,7 +125,7 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    if(url.pathname==='/api/admin/ads'&&req.method==='PUT'){if(role!=='owner'){send(res,403,{error:'Лише для власника'});return true}send(res,200,ads.update(await readJson(req,140000)));return true}
    if(url.pathname==='/api/admin/analytics'&&req.method==='GET'){
      if(!analytics){send(res,503,{error:'Аналітика поки недоступна'});return true}
-     send(res,200,analytics.report());return true;
+     send(res,200,{...analytics.report(),betaPwa:ads.dashboard().pwa,betaAdvertising:{stats:ads.dashboard().stats,daily:ads.dashboard().daily}});return true;
    }
    if(url.pathname==='/api/admin/security'&&req.method==='GET'){
      expireSessions();send(res,200,{role,activeSessions:SESSIONS.size,secondFactorEnabled:!!ADMIN_TOTP_SECRET,
