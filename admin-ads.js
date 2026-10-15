@@ -10,4 +10,5 @@ const save=el('button','Зберегти рекламні налаштуванн
 window.betaAdsRender=render;
 const refresh=async()=>{if(!window.betaAdminAdsApi)return;try{render(await window.betaAdminAdsApi('GET'))}catch(e){host.textContent='Реклама: '+e.message}};
 document.addEventListener('svitlo:ads-open',refresh);
+document.querySelector('[data-admin-tab="ads"]')?.addEventListener('click',()=>setTimeout(refresh,0));
 })();
