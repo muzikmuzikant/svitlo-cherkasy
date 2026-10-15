@@ -1,0 +1,51 @@
+/* SVITLO 7.9.8 MOTION SYSTEM
+ * Use for every new disclosure, menu, editor, popover, dialog and page.
+ * Short, non-blocking animations; automatic reduced-motion support.
+ */
+:root{--svitlo-ease-out:cubic-bezier(.2,.85,.25,1);--svitlo-ease-in:cubic-bezier(.4,0,.7,.3);--svitlo-motion-fast:190ms;--svitlo-motion-medium:300ms}
+@media(prefers-reduced-motion:no-preference){
+ button,a,.plan,.method,.benefit,.format,.contact,.goal,.account-entry,.support-category-card,.ad-subcard,.admin-search-result,.admin-favorites>button{
+  -webkit-tap-highlight-color:transparent;
+  transition:background-color var(--svitlo-motion-fast) ease,color var(--svitlo-motion-fast) ease,border-color var(--svitlo-motion-fast) ease,box-shadow var(--svitlo-motion-medium) ease,filter var(--svitlo-motion-fast) ease,transform var(--svitlo-motion-medium) var(--svitlo-ease-out);
+ }
+ button:active:not(:disabled),a:active,.contact:active,.plan-cta:active,.method-actions a:active{
+  transform:scale(.982);
+ }
+ details[open] > summary{transition:color var(--svitlo-motion-fast) ease}
+ .svitlo-motion-ready .motion-reveal.motion-visible{animation:svitloElementAppear .56s var(--svitlo-ease-out) both;animation-delay:var(--motion-delay,0ms)}
+ .svitlo-motion-ready .motion-reveal.motion-visible:is(.hero){animation-duration:.56s}
+ .svitlo-motion-ready .admin-search-results:not([hidden]),.svitlo-motion-ready .admin-favorites:not(:empty){
+  animation:svitloDropdownEnter .24s var(--svitlo-ease-out) both;
+ }
+ .svitlo-motion-ready .account-info,.svitlo-motion-ready .account-error,.svitlo-motion-ready .account-alert{
+  animation:svitloElementAppear .3s var(--svitlo-ease-out) both;
+ }
+ .svitlo-motion-ready [data-admin-panel]:not([hidden]):not(.motion-panel-no-animate){
+  animation:svitloAdminEnter .27s var(--svitlo-ease-out) both;
+ }
+ .svitlo-motion-ready dialog[open]:not(.share-preview-dialog):not(.sheet):not(.svitlo-motion-closing){
+  animation:svitloDialogEnter .36s var(--svitlo-ease-out) both;
+ }
+ .svitlo-motion-ready dialog[open]:not(.share-preview-dialog):not(.sheet):not(.svitlo-motion-closing)::backdrop{
+  animation:svitloBackdropEnter .26s ease-out both;
+ }
+ .svitlo-motion-ready dialog[open].svitlo-motion-closing:not(.share-preview-dialog):not(.sheet){
+  animation:svitloDialogExit .21s var(--svitlo-ease-in) both;
+  pointer-events:none;
+ }
+ .svitlo-motion-ready dialog[open].svitlo-motion-closing:not(.share-preview-dialog):not(.sheet)::backdrop{
+  animation:svitloBackdropExit .21s ease-in both;
+ }
+ @keyframes svitloElementAppear{from{opacity:0;transform:translate3d(0,13px,0) scale(.989)}to{opacity:1;transform:translate3d(0,0,0) scale(1)}}
+ @keyframes svitloDropdownEnter{from{opacity:.2;transform:translate3d(0,-9px,0) scale(.99)}to{opacity:1;transform:translate3d(0,0,0) scale(1)}}
+ @keyframes svitloAdminEnter{from{opacity:.24;transform:translate3d(12px,0,0) scale(.992)}to{opacity:1;transform:translate3d(0,0,0) scale(1)}}
+ @keyframes svitloDialogEnter{from{opacity:0;transform:translate3d(0,23px,0) scale(.958)}to{opacity:1;transform:translate3d(0,0,0) scale(1)}}
+ @keyframes svitloDialogExit{from{opacity:1;transform:translate3d(0,0,0) scale(1)}to{opacity:0;transform:translate3d(0,15px,0) scale(.975)}}
+ @keyframes svitloBackdropEnter{from{opacity:0}to{opacity:1}}
+ @keyframes svitloBackdropExit{from{opacity:1}to{opacity:0}}
+}
+@media(prefers-reduced-motion:reduce){
+ .svitlo-motion-ready .motion-reveal,.svitlo-motion-ready [data-admin-panel],.svitlo-motion-ready dialog{animation:none!important}
+ html:focus-within{scroll-behavior:auto!important}
+ .motion-reveal{opacity:1!important;transform:none!important}
+}
