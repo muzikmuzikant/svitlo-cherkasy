@@ -844,7 +844,12 @@ async function refreshData(manual=false){
  })();
  try{return await refreshInFlight}finally{refreshInFlight=null;if(refreshButton)refreshButton.disabled=false}
 }
-function notify(title,body,key){if(pushActive||notified.has(key)||!('Notification' in window)||Notification.permission!=='granted')return;notified.add(key);localStorage.setItem(SEEN,JSON.stringify([...notified].slice(-400)));navigator.serviceWorker?.ready.then(r=>r.showNotification(title,{body,icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',tag:key})).catch(()=>{try{new Notification(title,{body})}catch{}})}
+function notify(title,body,key){
+ // Never let the foreground PWA duplicate the server's Push delivery.
+ // A transient failed status check does NOT mean an existing server
+ // subscription has disappeared. Also respect an explicit Push opt-out.
+ if(localStorage.getItem(PUSH_CONSENT)==='yes'||localStorage.getItem(PUSH_CONSENT)==='no')return;
+ if(pushActive||notified.has(key)||!('Notification' in window)||Notification.permission!=='granted')return;notified.add(key);localStorage.setItem(SEEN,JSON.stringify([...notified].slice(-400)));navigator.serviceWorker?.ready.then(r=>r.showNotification(title,{body,icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',tag:key})).catch(()=>{try{new Notification(title,{body})}catch{}})}
 function announceChanges(previous,current){if(!prefs.changes||!previous?.lastChecked)return;const a=primary();if(!a?.queue)return;for(const c of current.changes||[])if(c.queues?.includes(a.queue)&&!previous.changes?.some(x=>x.date===c.date&&(x.revisionId||x.publishedAt)===(c.revisionId||c.publishedAt))){notify('🔄 Графік оновлено',`Підчерга ${a.queue} · Змінено години на ${formatDate(c.date)}. Перевірте розклад.`, `change:${c.date}:${c.revisionId||c.publishedAt}:${a.queue}`)}}
 function checkNotifications(){
  // In-app reminders must work even when Web Push is denied, disabled or delayed.
@@ -894,7 +899,7 @@ function checkNotifications(){
  if(nativeAllowed&&prefs.tomorrow){
   const nextDate=shiftDay(date,1),published=currentDay(nextDate);
   if(published?.queues?.[a.queue]&&m>=19*60)
-   notify('🗓️ Графік на завтра',`Підчерга ${a.queue} · На ${formatDate(nextDate)}. Перегляньте години відключень.`,`tomorrow:${nextDate}:${a.id}`);
+   notify('🗓️ Графік на завтра',`Підчерга ${a.queue} · На ${formatDate(nextDate)}. Перегляньте години відключень.`,`tomorrow:${nextDate}`);
  }
 }
 
