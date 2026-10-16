@@ -101,6 +101,18 @@
   options('opsColorForeground',m.colors?.foreground||'#ffffff');
   options('opsColorAccent',m.colors?.accent||'#78aaff');
   check('opsMaintenanceWarn',m.noticeBefore!==false);
+   check('opsPlannedInbox',m.noticeInInbox!==false);
+   check('opsPlannedCountdown',m.plannedBanner?.showCountdown!==false);
+   check('opsPlannedEnd',m.plannedBanner?.showEnd!==false);
+   check('opsPlannedButtonVisible',m.plannedBanner?.showButton!==false);
+   options('opsPlannedBackground',m.plannedBanner?.background||'#eaf3ff');
+   options('opsPlannedForeground',m.plannedBanner?.foreground||'#22496f');
+   options('opsPlannedAccent',m.plannedBanner?.accent||'#347af0');
+   options('opsPlannedTitle',m.plannedBanner?.title||'Заплановані технічні роботи');
+   options('opsPlannedBody',m.plannedBanner?.body||'У цей час застосунок може тимчасово не працювати.');
+   options('opsPlannedStyle',m.plannedBanner?.style||'expanded');
+   options('opsPlannedButton',m.plannedBanner?.button||'Офіційні графіки');
+   options('opsPlannedUrl',m.plannedBanner?.url||'https://www.cherkasyoblenergo.com/news');
   check('opsDisableInbox',m.disabledModules?.includes('inbox'));
   check('opsDisableSearch',m.disabledModules?.includes('address-search'));
   check('opsDisableHelp',m.disabledModules?.includes('help'));
@@ -113,7 +125,12 @@
   const disabledModules=[['inbox','opsDisableInbox'],['address-search','opsDisableSearch'],['help','opsDisableHelp'],['sharing','opsDisableSharing'],['push-settings','opsDisablePushSettings'],['quick-addresses','opsDisableQuickAddresses'],['manual-refresh','opsDisableManualRefresh'],['feedback','opsDisableFeedback'],['copy-schedule','opsDisableCopySchedule']]
    .filter(([,id])=>$(id).checked).map(([name])=>name);
   return {colors:{background:read('opsColorBackground'),foreground:read('opsColorForeground'),
-   accent:read('opsColorAccent')},noticeBefore:$('opsMaintenanceWarn').checked,disabledModules};
+   accent:read('opsColorAccent')},noticeBefore:$('opsMaintenanceWarn').checked,
+   noticeInInbox:$('opsPlannedInbox').checked,
+   plannedBanner:{title:read('opsPlannedTitle'),body:read('opsPlannedBody'),style:read('opsPlannedStyle'),button:read('opsPlannedButton'),
+    url:read('opsPlannedUrl'),showCountdown:$('opsPlannedCountdown').checked,showEnd:$('opsPlannedEnd').checked,
+    showButton:$('opsPlannedButtonVisible').checked,background:read('opsPlannedBackground'),
+    foreground:read('opsPlannedForeground'),accent:read('opsPlannedAccent')},disabledModules};
  }
  function renderFormatted(target,text){
   target.replaceChildren();
@@ -180,6 +197,26 @@
   $('opsPreview').style.backgroundColor=read('opsTheme')==='custom'?(read('opsColorBackground')||'#143463'):'';
   $('opsPreview').style.color=read('opsTheme')==='custom'?(read('opsColorForeground')||'#ffffff'):'';
   $('opsStatusPill').textContent=$('opsMaintenance').checked?'Зміни до техробіт':'Режим неактивний';
+   const planned=$('opsPlannedPreview');
+   if(planned){
+    planned.dataset.style=read('opsPlannedStyle')||'expanded';
+    planned.style.setProperty('--planned-bg',read('opsPlannedBackground')||'#eaf3ff');
+    planned.style.setProperty('--planned-ink',read('opsPlannedForeground')||'#22496f');
+    planned.style.setProperty('--planned-accent',read('opsPlannedAccent')||'#347af0');
+    $('opsPlannedPreviewButton').hidden=!$('opsPlannedButtonVisible').checked;
+    $('opsPlannedPreviewIcon').textContent=read('opsIcon')||'🛠️';
+    $('opsPlannedPreviewTitle').textContent=read('opsPlannedTitle')||'Заплановані технічні роботи';
+    $('opsPlannedPreviewBody').textContent=read('opsPlannedBody')||'У цей час застосунок може тимчасово не працювати.';
+    $('opsPlannedPreviewButton').textContent=read('opsPlannedButton')||'Офіційні графіки';
+    const start=$('opsStartsAt').value,finish=$('opsUntil').value;
+    const fmt=v=>new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Kyiv'}).format(new Date(v));
+    const times=[];
+    if(start&&Number.isFinite(Date.parse(start)))times.push('Початок: '+fmt(start));
+    if(finish&&$('opsPlannedEnd').checked&&Number.isFinite(Date.parse(finish)))times.push('Завершення: '+fmt(finish));
+    $('opsPlannedPreviewDates').textContent=times.join('\n')||'Вкажіть час початку для планування.';
+    const minutes=Math.ceil((new Date(start).getTime()-Date.now())/60000);
+    $('opsPlannedPreviewCountdown').textContent=$('opsPlannedCountdown').checked&&start&&Number.isFinite(minutes)&&minutes>0?'До початку: '+(minutes>=60?Math.floor(minutes/60)+' год. '+minutes%60+' хв.':minutes+' хв.'):'';
+   }
  }
  function fillMaintenance(m){
   check('opsMaintenance',m.enabled);options('opsTitle',m.title);options('opsMessage',m.message);
@@ -312,7 +349,7 @@
    }
   });
  }
- for(const id of ['opsTitle','opsMessage','opsStartsAt','opsUntil','opsMode','opsTheme','opsLayout','opsIcon','opsImageUrl','opsMaintenance','opsColorBackground','opsColorForeground','opsColorAccent'])$(id).addEventListener('input',previewMaintenance);
+ for(const id of ['opsTitle','opsMessage','opsStartsAt','opsUntil','opsMode','opsTheme','opsLayout','opsIcon','opsImageUrl','opsMaintenance','opsColorBackground','opsColorForeground','opsColorAccent','opsPlannedTitle','opsPlannedBody','opsPlannedStyle','opsPlannedButton','opsPlannedUrl','opsPlannedCountdown','opsPlannedEnd','opsPlannedButtonVisible','opsPlannedBackground','opsPlannedForeground','opsPlannedAccent','opsPlannedInbox','opsMaintenanceWarn'])$(id).addEventListener('input',previewMaintenance);
  $('opsPhotoUpload').onchange=async()=>{
   const files=[...$('opsPhotoUpload').files||[]];$('opsPhotoUpload').value='';
   if(!target())return status('Спочатку створіть повідомлення',true);
@@ -385,6 +422,38 @@
  document.querySelector('[data-admin-tab="operations"]')?.addEventListener('click',reload);
  document.querySelector('[data-admin-tab="maintenance"]')?.addEventListener('click',reload);
  $('opsMaintenanceSave')?.addEventListener('click',()=>saveConfig({scope:'maintenance'}).catch(console.warn));
+  $('opsTestPlanned')?.addEventListener('click',()=>{
+   previewMaintenance();
+   const panel=$('opsPlannedPreview').cloneNode(true);
+   panel.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
+   const dialog=document.createElement('dialog');dialog.className='ops-planned-test-dialog';
+   const info=document.createElement('p');info.className='hint';info.textContent='Тестовий перегляд. Користувачі нічого не отримають.';
+   const close=document.createElement('button');close.type='button';close.className='secondary';close.textContent='Закрити';
+   close.onclick=()=>dialog.close();dialog.append(panel,info,close);
+   dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+   document.body.append(dialog);dialog.showModal();
+  });
+  $('opsTestUpdate')?.addEventListener('click',async()=>{
+   const preview=$('opsUpdatePreview'),button=$('opsTestUpdate');button.disabled=true;
+   try{
+    const response=await fetch('./release.json?preview='+Date.now(),{cache:'no-store'});
+    if(!response.ok)throw Error('Не вдалося завантажити опис версії');
+    const release=await response.json();
+    if(!/^\d+\.\d+\.\d+$/.test(release.version||''))throw Error('Некоректний опис версії');
+    $('opsUpdatePreviewTitle').textContent='Версія '+release.version+' · '+(release.title||'Що нового');
+    $('opsUpdatePreviewBody').textContent=release.description||'Виправлення помилок';
+    const notes=$('opsUpdatePreviewNotes');notes.replaceChildren();
+    for(const line of (Array.isArray(release.notes)?release.notes:[])){
+     const li=document.createElement('li');li.textContent=String(line).slice(0,160);notes.append(li);
+    }
+    preview.hidden=false;preview.scrollIntoView({block:'nearest',behavior:'smooth'});
+    try{const channel=new BroadcastChannel('svitlo-content-v1');
+     channel.postMessage({type:'SVITLO_PREVIEW_UPDATE_BANNER',release});channel.close()}catch{}
+    status('Тестовий банер показано в адмінці. Для відчиненої бета-PWA цього браузера також відправлено попередній перегляд.');
+   }catch(error){status(error.message,true)}
+   finally{button.disabled=false}
+  });
+  $('opsCloseUpdatePreview')?.addEventListener('click',()=>{$('opsUpdatePreview').hidden=true});
  document.querySelector('[data-admin-tab="revisions"]')?.addEventListener('click',()=>refreshHistory().catch(console.warn));
  document.addEventListener('svitlo:admin-logout',()=>{state=null;status('Для керування потрібен вхід.')});
 })();

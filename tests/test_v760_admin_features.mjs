@@ -95,7 +95,8 @@ test('site settings, features and previews are accessible in CMS and client',()=
 test('managed controls do not alter official schedule data or change blank drafts',()=>{
  const server=read('push-server/app-config.js');
  assert.match(server,/site:defaultSite\(\)/);
- assert.match(server,/announcements:state\.announcements\.filter/);
+ assert.match(server,/const announcements=state\.announcements\.filter/);
+ assert.match(server,/site:state\.site\|\|defaultSite\(\),announcements/);
  assert.equal(validateAppConfig({...input(),announcements:[{id:'empty_draft1',title:'',body:'',active:false}]}).announcements[0].active,false);
 });
 

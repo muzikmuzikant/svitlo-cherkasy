@@ -672,3 +672,37 @@ main{max-width:1840px!important;padding-inline:clamp(16px,2.5vw,46px)}
 #opsPreview[data-layout="split"]{display:flex!important;grid-template-columns:none;align-items:stretch;text-align:left;gap:12px}
 #opsPreview[data-layout="split"] #opsPreviewIcon{grid-area:auto;grid-row:auto;grid-column:auto}
 @media(max-width:760px){.ops-editor-columns>.ops-preview#opsPreview{position:static}}
+
+/* Beta 7.9.9 editorial workspace */
+.ops-planned-builder{display:grid;gap:16px;padding:19px;border:1px solid #cddff8;border-radius:20px;background:linear-gradient(130deg,#f1f7ff,#fff)}
+.ops-planned-heading h2{margin:6px 0}.ops-planned-heading p{margin:5px 0 0}
+.ops-planned-options{display:flex;flex-wrap:wrap;gap:11px}.ops-planned-options label{display:flex;align-items:center;gap:7px;padding:9px 12px;border-radius:11px;background:#eaf2ff;font-size:11px}
+.ops-planned-options input{width:18px;height:18px;accent-color:#347dff}
+.ops-planned-preview{display:flex;align-items:flex-start;gap:14px;padding:20px;border:1px solid #bdd7fc;border-radius:20px;background:linear-gradient(128deg,#e5f1ff,#fff 78%);color:#204875;box-shadow:0 10px 20px #3179ea12}
+.ops-planned-preview[data-style="highlight"]{border-color:#f0c78f;background:linear-gradient(120deg,#fff1d5,#fff)}
+.ops-planned-preview[data-style="compact"]{padding:13px;border-radius:15px}
+.ops-planned-preview-icon{display:grid;place-items:center;width:46px;height:46px;flex:none;background:#d0e5ff;border-radius:14px;font-size:23px}
+.ops-planned-preview-content{display:grid;gap:7px;min-width:0;flex:1}
+.ops-planned-preview-content small{font-size:10px;letter-spacing:.12em;color:#6489ba;font-weight:850}
+.ops-planned-preview-content strong{font-size:17px;line-height:1.28}
+.ops-planned-preview-content p{font-size:12px;color:#4a6584;line-height:1.5;margin:0}
+#opsPlannedPreviewDates{font-size:11px;color:#3f668c;font-weight:700;white-space:pre-line}
+#opsPlannedPreviewCountdown{font-size:11px;color:#2e6db5;font-weight:800}
+.ops-planned-preview-action{justify-self:start;padding:10px 13px;border-radius:10px;background:#347dff;color:#fff;font-size:11px;font-weight:750}
+.ops-update-test[hidden]{display:none!important}
+.ops-update-test{display:grid;gap:10px;padding:20px;border-radius:20px;background:linear-gradient(135deg,#e7f2ff,#fff);border:1px solid #bcd8ff}
+.ops-update-test>span{font-size:10px;letter-spacing:.17em;font-weight:800;color:#3a7bda}
+.ops-update-test>strong{font-size:21px;letter-spacing:-.5px}.ops-update-test p{font-size:13px;margin:0}
+.ops-update-test ul{display:grid;gap:6px;margin:4px 0;padding-left:21px;font-size:12px}
+.ops-update-test button{justify-self:start}.ops-update-test small{font-size:11px;color:#6482a7}
+@media(max-width:680px){.ops-planned-builder{padding:13px}.ops-planned-preview{padding:15px}.ops-planned-options{display:grid}}
+
+/* Beta 7.9.9: the builder faithfully mirrors the live banner palette. */
+.ops-planned-colors input[type="color"]{width:100%;min-height:48px;padding:5px;cursor:pointer}
+.ops-planned-preview{background:linear-gradient(110deg,var(--planned-bg,#eaf3ff),#fff 130%)!important;color:var(--planned-ink,#22496f)}
+.ops-planned-preview-content strong,.ops-planned-preview-content p,
+#opsPlannedPreviewDates{color:var(--planned-ink,#22496f)}
+.ops-planned-preview-content small,#opsPlannedPreviewCountdown{color:var(--planned-accent,#347af0)}
+.ops-planned-preview-action{background:var(--planned-accent,#347af0)}
+.ops-planned-preview-icon{color:var(--planned-accent,#347af0);background:color-mix(in srgb,var(--planned-accent,#347af0) 14%,white)}
+.ops-planned-preview-action[hidden]{display:none!important}
