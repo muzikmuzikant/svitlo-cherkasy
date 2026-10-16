@@ -213,8 +213,8 @@ test('audience panels count unique consented installations, not repeated visits'
   store.activity({id:ids[0],mode:'standalone',consent:true,platform:'Android',
    queue:'3.2',locality:'Черкaси',version:'7.9.9'});
   const revised=store.dashboard().pwa.audience7;
-  assert.equal(revised.queues.items[0].label,'3.2');
-  assert.equal(revised.queues.items[0].count,3);
+  assert.equal(revised.queues.items.find(x=>x.label==='3.2').count,3);
+  assert.equal(revised.queues.items.find(x=>x.label==='2.1').count,3);
   assert.equal(revised.queues.total,6);
   assert.equal(revised.localities.items[0].count,5);
   assert.equal(revised.localities.other,1,'small localities remain suppressed');
