@@ -12,6 +12,13 @@
   const dismiss = document.getElementById('appUpdateDismiss');
   const manual = document.getElementById('checkAppUpdate');
   const versionText = document.getElementById('appVersion');
+  // Never display developer notes in a public release announcement.
+  const devWording = /адмін(?:ка|панел|істратор)|сервер|бекенд|backend|GitHub|Railway|WebSocket|Socket|service worker|cron\b|\bAPI\b|база даних|\bdev\b/i;
+  const publicText = (value, fallback, limit) => {
+    const text = typeof value === 'string' ? value.trim().slice(0, limit) : '';
+    return text && !devWording.test(text) ? text : fallback;
+  };
+  let installedUpgrade = false;
   if (!banner || !apply || !dismiss) return;
   if (versionText) versionText.textContent = `v${current}`;
 
@@ -45,7 +52,8 @@
   // The installed app's preferences live under different, stable keys in app.js.
   try {
     const previous = localStorage.getItem(storageKey);
-    if (previous && newer(current, previous)) {
+    installedUpgrade = Boolean(previous && newer(current, previous));
+    if (installedUpgrade) {
       // Show release confirmation once, never on every launch.
       window.addEventListener('load', () => message(`«Світло Черкаси» оновлено до v${current}`), {once:true});
       if (document.readyState === 'complete') message(`«Світло Черкаси» оновлено до v${current}`);
@@ -53,19 +61,22 @@
     localStorage.setItem(storageKey, current);
   } catch { /* Apps work normally even with storage blocked. */ }
 
-  function showRelease(data, preview = false) {
-    title.textContent = preview ? 'Перевірка банера оновлення' : 'Доступна версія ' + data.version;
-    description.textContent = typeof data.description === 'string' ? data.description.slice(0, 260) : 'Оновіть застосунок без перевстановлення.';
+  function showRelease(data, preview = false, installed = false) {
+    const name = publicText(data.title, 'Що нового', 90);
+    title.textContent = preview ? 'Тест · ' + name : installed ? 'Оновлено до ' + data.version : 'Версія ' + data.version + ' · ' + name;
+    description.textContent = publicText(data.description, 'Покращення роботи застосунку та виправлення помилок.', 260);
     notes?.replaceChildren();
-    if (notes) for (const line of (Array.isArray(data.notes) ? data.notes : []).slice(0, 5)) {
-      if (typeof line !== 'string' || !line.trim()) continue;
+    if (notes) for (const line of (Array.isArray(data.notes) ? data.notes : []).slice(0, 7)) {
+      const safe = publicText(line, '', 150);
+      if (!safe) continue;
       const entry = document.createElement('li');
-      entry.textContent = line.slice(0, 150);
+      entry.textContent = safe;
       notes.append(entry);
     }
     banner.dataset.preview = String(preview);
-    apply.textContent = preview ? 'Тестовий перегляд' : 'Оновити застосунок ↗';
-    apply.disabled = preview;
+    banner.dataset.installed = String(installed);
+    apply.textContent = preview ? 'Закрити тестовий перегляд' : installed ? 'Зрозуміло' : 'Оновити застосунок ↗';
+    apply.disabled = false;
     banner.hidden = false;
   }
   if (document.body.dataset.deploymentChannel === 'beta') {
@@ -109,7 +120,10 @@
           }
         } else {
           release = null;
-          if (banner.dataset.preview !== 'true') banner.hidden = true;
+          if (installedUpgrade && data.version === current && !manualCheck) {
+            showRelease(data, false, true);
+            installedUpgrade = false;
+          } else if (banner.dataset.preview !== 'true') banner.hidden = true;
           if (manualCheck) message(`У вас уже остання версія: ${current}`);
         }
       } catch (error) {
@@ -127,7 +141,7 @@
     banner.hidden = true;
   });
   apply.addEventListener('click', async () => {
-    if (banner.dataset.preview === 'true') return;
+    if (banner.dataset.preview === 'true' || banner.dataset.installed === 'true') { banner.hidden = true; return; }
     if (!release || !navigator.onLine) return message('Для оновлення потрібен інтернет.');
     apply.disabled = true;
     apply.textContent = 'Оновлюємо…';
