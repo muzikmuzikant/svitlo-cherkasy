@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 const html=read('index.html'),app=read('app.js'),server=read('push-server/server.js');
-test('7.9.8 rollback: no new user settings or paid app controls',()=>{
- for(const id of ['offMinutes','onMinutes','quietEnabled','quietFrom','quietTo','favoriteQueues','favoriteSelect','favoriteAdd','offlineDetails','addressNotificationRules','checkAppRelease','appBuildDetails','appPwaDetails','appPushDetails','betaAnalyticsConsent']){
+test('legacy notification settings stay stable; opt-in analytics is user-controlled',()=>{
+ for(const id of ['offMinutes','onMinutes','quietEnabled','quietFrom','quietTo','favoriteQueues','favoriteSelect','favoriteAdd','offlineDetails','addressNotificationRules','checkAppRelease','appBuildDetails','appPwaDetails','appPushDetails']){
   assert.ok(!html.includes('id="'+id+'"'),'retired user setting '+id);
  }
+ assert.ok(html.includes('id="betaAnalyticsConsent"'),'analytics choice is accessible in Settings');
  assert.ok(html.includes('id="notifyOff"'));
  assert.ok(html.includes('id="notifyOn"'));
  assert.ok(html.includes('id="quickQueueSelect"'),'existing quick queue remains');
@@ -22,7 +23,7 @@ test('PWA shell contains one top-level back, and only the embedded page legacy b
  assert.match(nav,/svitlo-embedded-back-cleanup/);
  assert.match(nav,/doc\.documentElement\.classList\.add\('svitlo-embedded'\)/);
  assert.match(nav,/doc\.head\.append\(style\)/);
- assert.ok(html.includes('id="betaConsentDialog"'),'standalone opt-in consent request is not an ordinary settings control');
+ assert.ok(html.includes('id="betaConsentDialog"'),'first-run consent request is retained alongside the persistent Settings control');
 });
 test('full redesigned advertising and support pages retain dynamic API integration',()=>{
  const ads=read('advertising.html'),support=read('support-project.html');
