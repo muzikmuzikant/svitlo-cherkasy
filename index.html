@@ -85,10 +85,11 @@
 <div class="viewport"><div class="ambient" aria-hidden="true"></div>
 <header class="topbar"><div class="brand"><span class="brand-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><rect width="48" height="48" rx="15" fill="url(#bgrad)"/><defs><linearGradient id="bgrad" x2="1" y2="1"><stop stop-color="#76baff"/><stop offset="1" stop-color="#3475f6"/></linearGradient></defs><path d="M27 7 14.5 26h9l-1.8 15L35 20h-9Z" fill="white"/></svg></span><span>світло<span class="brand-period">.</span><small>Черкаси та район</small></span></div><button class="icon-btn" id="refreshTop" aria-label="Оновити графіки"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.35 6M20 4v7h-7"/></svg></button></header>
 <div id="appUpdateBanner" class="app-update-banner" role="status" aria-live="polite" hidden>
-  <span class="app-update-symbol" aria-hidden="true">↻</span>
-  <div class="app-update-copy"><strong id="appUpdateTitle">Доступна нова версія</strong><p id="appUpdateText">Оновіть застосунок без перевстановлення.</p></div>
-  <button type="button" id="appUpdateAction" class="app-update-action">Оновити</button>
-  <button type="button" id="appUpdateDismiss" class="app-update-close" aria-label="Пізніше">×</button>
+ <div class="app-update-head"><span class="app-update-symbol" aria-hidden="true">✨</span>
+  <div class="app-update-heading"><span class="app-update-eyebrow">ЩО НОВОГО</span><strong id="appUpdateTitle">Доступна нова версія</strong></div>
+  <button type="button" id="appUpdateDismiss" class="app-update-close" aria-label="Пізніше">×</button></div>
+ <div class="app-update-copy"><p id="appUpdateText">Оновіть застосунок без перевстановлення.</p><ul id="appUpdateNotes" class="app-update-notes"></ul></div>
+ <button type="button" id="appUpdateAction" class="app-update-action">Оновити застосунок ↗</button>
 </div>
 <div id="offlineChip" class="offline-chip" role="status" hidden>📶 Немає зв’язку. Показуємо збережені дані.</div>
 <main id="main" class="main-content">
