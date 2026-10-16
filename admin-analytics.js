@@ -75,18 +75,28 @@
     card('Рекламний CTR',pct(value.clicks,value.impressions),'Частка кліків від показів','%')
    )
   }
-  const popular=state['popularity'+period]||{};
-  for(const [dimension,id] of [['queue_sample','analyticsTopQueues'],['locality_sample','analyticsTopLocalities'],['platform_sample','analyticsTopPlatforms'],['version_sample','analyticsTopVersions']]){
+  // Popularity panels are about consented unique PWA installations, never events.
+  // Repeated launches of the same installation do not increase these counts.
+  const audience=(pwa['audience'+period]||{});
+  for(const [dimension,id] of [['queues','analyticsTopQueues'],['localities','analyticsTopLocalities'],
+   ['platforms','analyticsTopPlatforms'],['versions','analyticsTopVersions']]){
    const holder=$(id);if(!holder)continue;holder.replaceChildren();
-   const data=popular[dimension]||{items:[],other:0},items=Array.isArray(data.items)?data.items:[],highest=Math.max(1,...items.map(x=>x.count));
-   if(!items.length)holder.append(make('p','Ще немає достатньо даних.','analytics-no-data'));
-   for(const item of items){
+   const data=audience[dimension]||{items:[],total:0,other:0,unknown:0};
+   const rows=Array.isArray(data.items)?data.items:[];
+   const base=make('p',null,'analytics-privacy-small');
+   base.textContent='Унікальних активних інсталяцій із відомою категорією: '+pretty(data.total||0);
+   holder.append(base);
+   if(!rows.length)holder.append(make('p','Поки немає достатньо даних зі згодою. Старі події не враховуємо.','analytics-no-data'));
+   for(const item of rows){
     const line=make('div',null,'analytics-popularity-row'),heading=make('div',null,'analytics-popularity-row-head');
-    heading.append(make('span',item.label),make('strong',pretty(item.count)));
+    const percent=Number.isFinite(Number(item.percent))?Number(item.percent):0;
+    heading.append(make('span',item.label),make('strong',pretty(item.count)+' · '+percent.toLocaleString('uk-UA',{maximumFractionDigits:1})+'%'));
     const track=make('div',null,'analytics-popularity-track'),bar=make('i');
-    bar.style.width=(item.count/highest*100)+'%';track.append(bar);line.append(heading,track);holder.append(line);
+    bar.style.width=Math.max(0,Math.min(100,percent))+'%';
+    track.append(bar);line.append(heading,track);holder.append(line);
    }
-   if(data.other>0)holder.append(make('p','Інші або приховані: '+pretty(data.other),'analytics-privacy-small'));
+   if(data.other>0)holder.append(make('p','Інші або приховані з міркувань приватності: '+pretty(data.other),'analytics-privacy-small'));
+   if(data.unknown>0)holder.append(make('p','Не вказано або ще не оновлено: '+pretty(data.unknown),'analytics-privacy-small'));
   }
   const campaign=$('analyticsCampaignMetrics');campaign.replaceChildren();
   const stats=[
@@ -131,7 +141,7 @@
   }
   $('analyticsSince').textContent=state.since?'Дані з '+new Date(state.since).toLocaleString('uk-UA',{timeZone:'Europe/Kyiv',dateStyle:'short',timeStyle:'short'}):'Поки немає зафіксованих подій';
   $('analyticsUpdated').textContent=state.lastUpdated?'Остання подія '+new Date(state.lastUpdated).toLocaleString('uk-UA',{timeZone:'Europe/Kyiv',dateStyle:'short',timeStyle:'short'}):'';
-  $('analyticsStatus').textContent='Метрики анонімні. Дані не означають унікальних відвідувачів чи підтверджених встановлень. Облік починається лише після ввімкнення лічильника.';
+  $('analyticsStatus').textContent='Підчерги, населені пункти, пристрої та версії: унікальні активні інсталяції PWA за згодою. Це наближення до кількості людей, а не точний підрахунок фізичних осіб. Історичні події не перетворюємо на користувачів.';
  }
  async function refresh(){
   if(busy||typeof remote==='undefined'||!remote)return;busy=true;

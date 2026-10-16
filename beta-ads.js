@@ -3,7 +3,7 @@
  const host=document.getElementById('betaAd'),home=document.getElementById('home');
  if(!host||!home)return;
  const consent=document.getElementById('betaAnalyticsConsent');
- const STATS_OPT='svitlo-beta-analytics-opt-in',INSTALL_ID='svitlo-beta-install-id',PENDING='svitlo-beta-analytics-delete-pending',CHOICE='svitlo-beta-analytics-choice',CHOICE_REV='svitlo-beta-analytics-consent-revision',REVISION='7.9.8';
+ const STATS_OPT='svitlo-beta-analytics-opt-in',INSTALL_ID='svitlo-beta-install-id',PENDING='svitlo-beta-analytics-delete-pending',CHOICE='svitlo-beta-analytics-choice',CHOICE_REV='svitlo-beta-analytics-consent-revision',REVISION='7.9.9-audience';
  let api='',config=null,items=[],index=0,timer=null,impressionTimer=null,refreshAt=0;
  let lastInteraction=Date.now(),swipeStart=null,counted=false;
  const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
@@ -96,11 +96,28 @@
  }
  for(const name of ['pointerdown','touchstart','keydown','scroll'])document.addEventListener(name,()=>{lastInteraction=Date.now()},{passive:true});
  function platform(){const ua=navigator.userAgent||'';return /iPad/i.test(ua)?'iPad':/iPhone|iPod/i.test(ua)?'iPhone':/Android/i.test(ua)?'Android':/Windows/i.test(ua)?'Windows':/Macintosh|Mac OS/i.test(ua)?'macOS':/Linux/i.test(ua)?'Linux':'Інше'}
+ // Only the user-selected *primary* locality and queue. Never send street,
+ // building, GPS, full address, or any identifier besides the opt-in install ID.
+ function audience(){
+  try{
+   const saved=JSON.parse(localStorage.getItem('svitlo-addresses-v6')||'[]');
+   const prefs=JSON.parse(localStorage.getItem('svitlo-prefs-v6')||'{}');
+   const places=Array.isArray(saved)?saved:[];
+   const place=places.find(p=>p.id===prefs.primaryId)||places[0]||{};
+   const queue=/^[1-6]\.[12]$/.test(String(place.queue||''))?place.queue:'';
+   const locality=String(place.settlement||'').trim().replace(/\s+/g,' ').slice(0,55);
+   return {queue,locality};
+  }catch{return {queue:'',locality:''}}
+ }
+ function version(){
+  const value=document.querySelector('meta[name="svitlo-version"]')?.content||'';
+  return /^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(value)?value:'';
+ }
  async function heartbeat(){
   if(!enabled()||!standalone()||document.visibilityState!=='visible'||Date.now()-lastInteraction>90000)return;
   try{if(!api){const c=await fetch('./push-config.json',{cache:'no-store'}).then(r=>r.json());api=String(c.apiBase||'')}
    const id=key();if(!id)return;
-   await fetch(api+'/api/pwa/presence',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,mode:'standalone',consent:true,platform:platform()}),keepalive:true});
+   await fetch(api+'/api/pwa/presence',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,mode:'standalone',consent:true,platform:platform(),version:version(),...audience()}),keepalive:true});
   }catch{}
  }
  setInterval(heartbeat,15000);setTimeout(heartbeat,1200);

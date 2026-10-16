@@ -179,7 +179,13 @@ export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed
   const id=text(data.id,64);if(!/^[0-9a-f]{8}-[0-9a-f-]{27,56}$/i.test(id))return false;
   const now=clock(),key=crypto.createHash('sha256').update('beta-install:'+id).digest('hex');
   prune();online.set(key,now);
-  const old=installed[key];installed[key]={at:now,first:old?.first||now,platform:kinds.includes(data.platform)?data.platform:'Інше'};
+  const old=installed[key];
+  const queue=typeof data.queue==='string'&&/^[1-6]\.[12]$/.test(data.queue)?data.queue:null;
+  const rawTown=typeof data.locality==='string'?data.locality.normalize('NFKC').trim().replace(/\s+/g,' '):'';
+  const locality=/^[\p{L}][\p{L} .'’\-]{1,54}$/u.test(rawTown)?rawTown:null;
+  const version=typeof data.version==='string'&&/^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(data.version)?data.version:null;
+  installed[key]={at:now,first:old?.first||now,platform:kinds.includes(data.platform)?data.platform:'Інше',
+   queue,locality,version};
   scheduleVisitors();return true;
  }
  function optOut(data){
@@ -187,14 +193,39 @@ export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed
   const key=crypto.createHash('sha256').update('beta-install:'+id).digest('hex');
   online.delete(key);delete installed[key];scheduleVisitors();return true;
  }
+ // Group only distinct opt-in installation hashes, never raw open events.
+ // Historic installation rows missing queue/version stay unattributed.
+ function audiencePeriod(rows){
+  const result={known:rows.length};
+  for(const [field,name] of [['queue','queues'],['locality','localities'],['platform','platforms'],['version','versions']]){
+   const counts=new Map();
+   for(const [,entry] of rows){
+    const value=entry?.[field];
+    if(typeof value==='string'&&value)counts.set(value,(counts.get(value)||0)+1);
+   }
+   const total=[...counts.values()].reduce((a,b)=>a+b,0);
+   const all=[...counts.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'uk'));
+   const visible=(field==='locality'?all.filter(([,count])=>count>=5):all).slice(0,15);
+   result[name]={
+    items:visible.map(([label,count])=>({label,count,percent:total?Number((100*count/total).toFixed(1)):0})),
+    total,unknown:rows.length-total,
+    other:total-visible.reduce((n,[,count])=>n+count,0)
+   };
+  }
+  return result;
+ }
  function dashboard(){
-  prune();const now=clock(),keys=Object.entries(installed),pwa={
+  prune();const now=clock(),keys=Object.entries(installed),
+  audience48=audiencePeriod(keys.filter(([,v])=>now-v.at<48*3600000)),
+  audience7=audiencePeriod(keys.filter(([,v])=>now-v.at<7*86400000)),
+  audience30=audiencePeriod(keys.filter(([,v])=>now-v.at<30*86400000)),pwa={
    online:online.size,known:keys.length,active24h:keys.filter(([,v])=>now-v.at<86400000).length,
    active7d:keys.filter(([,v])=>now-v.at<7*86400000).length,
    active30d:keys.filter(([,v])=>now-v.at<30*86400000).length,
    new7d:keys.filter(([,v])=>now-v.first>=now-7*86400000).length,
    byPlatform:Object.fromEntries(kinds.map(k=>[k,keys.filter(([,v])=>v.platform===k).length])),
-   note:'Тільки встановлені PWA зі згодою на аналітику. Онлайн: сигнал за 45 с. Відомі інсталяції не дорівнюють точній кількості встановлень чи людей.'
+   audience48,audience7,audience30,
+   note:'Унікальні встановлені PWA зі згодою, а не точна кількість фізичних осіб. Старі лічильники подій не конвертуються в інсталяції.'
   };
   const totals={},daily={};
   for(const [key,s] of Object.entries(stats)){
