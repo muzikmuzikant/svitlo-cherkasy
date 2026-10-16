@@ -64,7 +64,7 @@ async function github(path,method='GET',payload){
  return data;
 }
 async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
-export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal,auditSchedules,errorCounts,dailyReports,noticeMetrics){
+export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal,auditSchedules,errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(!originPolicy.isAllowed(req.headers.origin)){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const url=new URL(req.url,'http://localhost');
@@ -149,6 +149,23 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
     send(res,200,errorCounts.report());return true
    }
     if(pathName==='/api/admin/schedule/quality'&&method==='GET'){send(res,200,auditSchedules());return true}
+    if(pathName==='/api/admin/schedule/review'&&method==='GET'){
+     send(res,200,scheduleReview.list(officialSchedules.rawSchedule(),officialSchedules.rawReview()));return true;
+    }
+    if(pathName==='/api/admin/schedule/review/approve'&&method==='POST'){
+     if(role!=='owner'){send(res,403,{error:'Тільки власник може підтверджувати офіційні графіки'});return true}
+     const input=await readJson(req,5000);
+     const result=scheduleReview.approve(input,officialSchedules.rawSchedule(),officialSchedules.rawReview());
+     extras?.record('schedule.review.approve',result.date);
+     send(res,200,{...result,status:officialSchedules.status()});return true;
+    }
+    if(pathName==='/api/admin/schedule/review/approval'&&method==='DELETE'){
+     if(role!=='owner'){send(res,403,{error:'Тільки власник може скасовувати підтвердження'});return true}
+     const input=await readJson(req,350);
+     const result=scheduleReview.revoke(input?.date);
+     extras?.record('schedule.review.revoke',result.date);
+     send(res,200,{...result,status:officialSchedules.status()});return true;
+    }
     if(pathName==='/api/admin/legal'&&method==='GET'){send(res,200,legal.publicState());return true}
    if(pathName==='/api/admin/legal'&&method==='PUT'){
     if(role!=='owner'||session.managed){send(res,403,{error:'Лише власник може публікувати нову редакцію'});return true}
