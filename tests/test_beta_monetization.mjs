@@ -191,3 +191,42 @@ test('7.9.8: badges and supported donation methods expose only enabled configure
  assert.ok(!JSON.stringify(a).includes('https://example.com/private'));
  fs.rmSync(dir,{recursive:true,force:true});
 });
+
+
+test('audience panels count unique consented installations, not repeated visits',()=>{
+ const {store,dir,advance}=fresh();
+ const ids=Array.from({length:6},(_,i)=>'c92659db-d68e-4f58-9f90-'+String(100000000001+i));
+ try{
+  for(let i=0;i<6;i++){
+   assert.equal(store.activity({id:ids[i],mode:'standalone',consent:true,platform:'iPhone',
+    queue:i<4?'2.1':'3.2',locality:'Слобода',version:'7.9.9'}),true);
+  }
+  const first=store.dashboard().pwa.audience7;
+  assert.equal(first.known,6);
+  assert.deepEqual(first.queues.items.map(x=>[x.label,x.count]),[['2.1',4],['3.2',2]]);
+  assert.equal(first.queues.items[0].percent,66.7);
+  assert.equal(first.localities.items[0].count,6);
+  assert.equal(first.versions.items[0].count,6);
+  for(let i=0;i<30;i++)store.activity({id:ids[0],mode:'standalone',consent:true,
+   platform:'iPhone',queue:'2.1',locality:'Слобода',version:'7.9.9'});
+  assert.equal(store.dashboard().pwa.audience7.queues.items[0].count,4,'no multiplication from reloads');
+  store.activity({id:ids[0],mode:'standalone',consent:true,platform:'Android',
+   queue:'3.2',locality:'Черкaси',version:'7.9.9'});
+  const revised=store.dashboard().pwa.audience7;
+  assert.equal(revised.queues.items[0].label,'3.2');
+  assert.equal(revised.queues.items[0].count,3);
+  assert.equal(revised.queues.total,6);
+  assert.equal(revised.localities.items[0].count,5);
+  assert.equal(revised.localities.other,1,'small localities remain suppressed');
+  assert.equal(revised.platforms.items.find(x=>x.label==='Android').count,1);
+  assert.equal(store.optOut({id:ids[0]}),true);
+  assert.equal(store.dashboard().pwa.audience7.known,5);
+  store.flushVisitors();
+  const raw=fs.readFileSync(path.join(dir,'beta-pwa-installations.json'),'utf8');
+  assert.ok(!raw.includes(ids[0]));
+  assert.ok(!raw.includes('street')&&!raw.includes('house'));
+  advance(8*86400000);
+  assert.equal(store.dashboard().pwa.audience7.known,0);
+  assert.equal(store.dashboard().pwa.audience30.known,5);
+ } finally{fs.rmSync(dir,{recursive:true,force:true})}
+});
