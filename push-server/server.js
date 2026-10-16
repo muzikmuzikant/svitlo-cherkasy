@@ -18,6 +18,7 @@ import {createNoticeMetrics} from './notice-metrics.js';
 import {createAppConfig} from './app-config.js';
 import {createMediaStore} from './media-store.js';
 import {createSchedulePublication} from './schedule-publication.js';
+import {createScheduleReview} from './schedule-review.js';
 import {createScheduleMirror} from './schedule-mirror.js';
 import {tomorrowKey,alreadySentTomorrow} from './tomorrow-dedupe.js';
 import {originPolicy} from './origins.js';
@@ -54,7 +55,9 @@ const dailyReports=createDailyReports({directory:path.dirname(DATA_FILE)});
 const siteControls=createAppConfig({directory:path.dirname(DATA_FILE),record:extras.record});
 const mediaStore=createMediaStore(path.dirname(DATA_FILE));
 const noticeMetrics=createNoticeMetrics({directory:path.dirname(DATA_FILE)});
-const officialSchedules=createSchedulePublication({directory:path.dirname(DATA_FILE),token:process.env.SCHEDULE_INGEST_SECRET||''});
+const scheduleReview=createScheduleReview({directory:path.dirname(DATA_FILE)});
+const officialSchedules=createSchedulePublication({directory:path.dirname(DATA_FILE),
+ token:process.env.SCHEDULE_INGEST_SECRET||'',reviewApprovals:scheduleReview});
 const betaScheduleMirror=createScheduleMirror({publisher:officialSchedules,sourceOrigin:process.env.SCHEDULE_MIRROR_API_BASE||''});
 const appUrl=new URL('/',APP_ORIGIN).href; // Push opens PWA, never the GitHub raw JSON host.
 const manualPush=createManualPush({subscribers,webpush,appUrl,hash,save,
@@ -380,7 +383,7 @@ const server=http.createServer(async(req,res)=>{
     const tickets=feedback.list().items;
     result.feedback={total:tickets.length,new:tickets.filter(t=>t.status==='new').length,inProgress:tickets.filter(t=>t.status==='in_progress').length};
     return result;
-  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule(officialSchedules.schedule()||lastLoadedSchedule),errorCounts,dailyReports,noticeMetrics);return}
+  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule(officialSchedules.schedule()||lastLoadedSchedule),errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules);return}
  if(req.url?.startsWith('/api/media/')&&req.method==='GET'){
    const id=req.url.slice('/api/media/'.length).split('?')[0],file=mediaStore.read(id);
    if(!file){response(res,404,{error:'Фото не знайдене'});return}
