@@ -278,6 +278,13 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
      <div class="field"><label for="opsNoticeImageUrl">Або додати HTTPS-посилання</label><div class="flex"><input id="opsNoticeImageUrl" type="url" placeholder="https://..."><button type="button" class="secondary" id="opsAddImageUrl">+</button></div></div>
     </div><div id="opsPhotoGallery" class="ops-photo-grid"></div>
    </div>
+   <section class="ops-notice-metrics" aria-labelledby="opsNoticeMetricsTitle">
+    <div class="ops-notice-metrics-head"><div><h3 id="opsNoticeMetricsTitle">Статистика повідомлення</h3>
+     <p class="hint">За унікальними встановленнями PWA з добровільною згодою, починаючи з версії 7.9.11. Менше 5 переглядів не деталізуємо.</p></div>
+     <button type="button" class="secondary" id="opsMetricsRefresh">Оновити</button></div>
+    <div id="opsNoticeMetrics" class="ops-notice-metrics-grid" role="status" aria-live="polite">Оберіть повідомлення для перегляду статистики.</div>
+    <p class="hint">«Push прийнято»: підтвердження від провайдера, не факт появи на екрані. «Прочитано»: відкрите повідомлення було на екрані хоча б 2 секунди. Показники доступні лише для інсталяцій зі згодою, тому не відображають повне охоплення аудиторії.</p>
+   </section>
    <div class="ops-message-preview"><div class="panel-eyebrow">ПЕРЕГЛЯД У «ВХІДНИХ»</div><strong id="opsEditorPreviewTitle">Заголовок</strong><p id="opsEditorPreviewBody">Короткий текст повідомлення</p>
  <div class="ops-ios-push"><span>⚡ СВІТЛО ЧЕРКАСИ · ТЕПЕР</span><strong id="opsPreviewPushTitle">Назва сповіщення</strong><p id="opsPreviewPushBody">Текст Push для пристрою</p></div>
  <div class="ops-rich-preview"><strong>Повний текст</strong><div id="opsRichContentPreview"></div></div>
