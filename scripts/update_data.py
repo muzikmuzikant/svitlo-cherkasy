@@ -121,6 +121,10 @@ def parse_article(html,url,reference=None):
     # so BeautifulSoup may produce "08 :00" instead of "08:00".
     # Join only numeric clock colons, never merge unrelated table tokens.
     full=re.sub(r'(?<=\d)\s*:\s*(?=\d{2}\b)', ':', full)
+    # Operator CMS can split a leading zero into separate text nodes:
+    # '1.2 0 0:00 - 02:00'. Without joining this clock, QUEUE_START misses
+    # 1.2 and mistakenly merges all later subqueues into 1.1.
+    full=re.sub(r'(?<![\w.])([012])\s+([0-9]):([0-5]\d)\b', r'\1\2:\3', full)
     time_hit=PUB_TS.search(full)
     if not time_hit:return reject('publication timestamp missing')
     pub=datetime.strptime(' '.join(time_hit.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
@@ -143,6 +147,7 @@ def parse_article(html,url,reference=None):
         container=soup.select_one('article, .article-content, .news-article, main') or soup
         text=container.get_text(' ', strip=True).replace('\xa0',' ').replace('−','-')
         text=re.sub(r'(?<=\d)\s*:\s*(?=\d{2}\b)', ':', text)
+        text=re.sub(r'(?<![\w.])([012])\s+([0-9]):([0-5]\d)\b', r'\1\2:\3', text)
         heading_pos=text.lower().find(heading)
         table_text=text[heading_pos+len(heading):] if heading_pos>=0 else text
         if len(set(m.group(1) for m in QUEUE_START.finditer(table_text))) < 3:
@@ -157,7 +162,7 @@ def parse_article(html,url,reference=None):
         periods=[]
         for a,am,b,bm in INTERVAL.findall(part):
             start,end=int(a)*60+int(am),int(b)*60+int(bm)
-            if not 0<=start<end<=1440 or periods and periods[-1][1]>start:return reject('invalid or overlapping intervals for '+m.group(1)+' raw='+repr(INTERVAL.findall(part)[:18])+' context='+repr(part[:420]))
+            if not 0<=start<end<=1440 or periods and periods[-1][1]>start:return reject('invalid or overlapping time intervals for queue '+m.group(1))
             periods.append((start,end))
         # Explicit 'not disconnected' text means known schedule with no outages.
         explicitly_none=bool(re.search(r'не\s+відключ|без\s+відключ|відключення\s+не\s+передбач',part,re.I))
