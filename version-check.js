@@ -73,6 +73,7 @@
       entry.textContent = safe;
       notes.append(entry);
     }
+    if (!banner.dataset) banner.dataset = {};
     banner.dataset.preview = String(preview);
     banner.dataset.installed = String(installed);
     apply.textContent = preview ? 'Закрити тестовий перегляд' : installed ? 'Зрозуміло' : 'Оновити застосунок ↗';
@@ -123,7 +124,7 @@
           if (installedUpgrade && data.version === current && !manualCheck) {
             showRelease(data, false, true);
             installedUpgrade = false;
-          } else if (banner.dataset.preview !== 'true') banner.hidden = true;
+          } else if (banner.dataset?.preview !== 'true') banner.hidden = true;
           if (manualCheck) message(`У вас уже остання версія: ${current}`);
         }
       } catch (error) {
@@ -141,7 +142,7 @@
     banner.hidden = true;
   });
   apply.addEventListener('click', async () => {
-    if (banner.dataset.preview === 'true' || banner.dataset.installed === 'true') { banner.hidden = true; return; }
+    if (banner.dataset?.preview === 'true' || banner.dataset?.installed === 'true') { banner.hidden = true; return; }
     if (!release || !navigator.onLine) return message('Для оновлення потрібен інтернет.');
     apply.disabled = true;
     apply.textContent = 'Оновлюємо…';
