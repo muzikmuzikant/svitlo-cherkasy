@@ -32,10 +32,10 @@
  }catch{return false}};
  async function trackNotice(id,type){
   if(!/^notice:[A-Za-z0-9_-]{6,64}$/.test(id||'')||!['seen','opened','read','pushClick'].includes(type)||!analyticsReady())return;
-  const key=id+':'+type;
-  if(reported.has(key)||pendingMetrics.has(key))return;
   const installId=localStorage.getItem('svitlo-beta-install-id')||'';
   if(!/^[0-9a-f]{8}-[0-9a-f-]{27,56}$/i.test(installId))return;
+  const key=installId+':'+id+':'+type;
+  if(reported.has(key)||pendingMetrics.has(key))return;
   pendingMetrics.add(key);
   try{
    if(!metricApi){const cfg=await fetch('./push-config.json',{cache:'no-store'}).then(x=>x.json());metricApi=String(cfg.apiBase||'')}
