@@ -3,11 +3,41 @@
  const host=document.getElementById('betaAd'),home=document.getElementById('home');
  if(!host||!home)return;
  const consent=document.getElementById('betaAnalyticsConsent');
- const STATS_OPT='svitlo-beta-analytics-opt-in',INSTALL_ID='svitlo-beta-install-id',PENDING='svitlo-beta-analytics-delete-pending',CHOICE='svitlo-beta-analytics-choice',CHOICE_REV='svitlo-beta-analytics-consent-revision',REVISION='7.9.11-notices';
+ const STATS_OPT='svitlo-beta-analytics-opt-in',INSTALL_ID='svitlo-beta-install-id',PENDING='svitlo-beta-analytics-delete-pending',CHOICE='svitlo-beta-analytics-choice',CHOICE_REV='svitlo-beta-analytics-consent-revision',NOTICE_SCOPE='notice-engagement-v1';
  let api='',config=null,items=[],index=0,timer=null,impressionTimer=null,refreshAt=0;
  let lastInteraction=Date.now(),swipeStart=null,counted=false;
  const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
- const enabled=()=>{try{return localStorage.getItem(STATS_OPT)==='yes'&&localStorage.getItem(CHOICE_REV)===REVISION}catch{return false}};
+ // Consent is a persistent user decision, NOT a build-version flag.
+ // Old explicit decisions are migrated without prompting the user again.
+ const choice=()=>{try{
+  const recorded=localStorage.getItem(CHOICE);
+  if(recorded==='accepted'||recorded==='declined')return recorded;
+  const legacy=localStorage.getItem(STATS_OPT);
+  return legacy==='yes'?'accepted':legacy==='no'?'declined':null;
+ }catch{return null}};
+ const enabled=()=>{try{return choice()==='accepted'&&localStorage.getItem(STATS_OPT)==='yes'}catch{return false}};
+ // The new notice-engagement purpose is not silently added to earlier opt-ins.
+ const noticeScopeAllowed=()=>{try{
+  return enabled()&&[NOTICE_SCOPE,'7.9.11-notices'].includes(localStorage.getItem(CHOICE_REV));
+ }catch{return false}};
+ function paintConsent(){
+  if(consent)consent.checked=enabled();
+  const scope=document.getElementById('betaAnalyticsScopeNotice');
+  if(scope)scope.hidden=!enabled()||noticeScopeAllowed();
+  const state=document.getElementById('betaAnalyticsState');
+  if(state)state.textContent=enabled()?
+   (noticeScopeAllowed()?'Аналітику дозволено. Ви можете вимкнути її будь-коли.':'Основну аналітику дозволено. Статистика взаємодії з повідомленнями поки вимкнена.'):
+   (choice()==='declined'?'Аналітику вимкнено. Дані встановлення не збираються.':'Аналітику ще не налаштовано.');
+ }
+ function persistChoice(granted){
+  try{
+   localStorage.setItem(CHOICE,granted?'accepted':'declined');
+   localStorage.setItem(STATS_OPT,granted?'yes':'no');
+   if(granted)localStorage.setItem(CHOICE_REV,NOTICE_SCOPE);
+  }catch{}
+  paintConsent();
+  window.dispatchEvent(new Event('svitlo:analytics-consent-updated'));
+ }
  const key=()=>{try{let id=localStorage.getItem(INSTALL_ID);if(!id){id=crypto.randomUUID();localStorage.setItem(INSTALL_ID,id)}return id}catch{return ''}};
  const make=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e};
  const homeOpen=()=>!home.hidden&&getComputedStyle(home).display!=='none';
@@ -86,14 +116,24 @@
  document.addEventListener('visibilitychange',onVisible);
  new MutationObserver(()=>{if(canDisplay()){render();schedule()}else stop()}).observe(home,{attributes:true,attributeFilter:['hidden','class','style']});
  if(consent){
-  consent.checked=enabled();consent.addEventListener('change',async()=>{
-   try{localStorage.setItem(STATS_OPT,consent.checked?'yes':'no');localStorage.setItem(CHOICE_REV,REVISION);localStorage.setItem(CHOICE,consent.checked?'accepted':'declined')}catch{}
-   if(!consent.checked){
+  paintConsent();
+  consent.addEventListener('change',async()=>{
+   const granted=consent.checked;
+   persistChoice(granted);
+   if(!granted){
     try{const id=localStorage.getItem(INSTALL_ID);if(id)localStorage.setItem(PENDING,id);localStorage.removeItem(INSTALL_ID)}catch{}
-    deletePending();
+    await deletePending();
    }else{await deletePending();heartbeat()}
   });
  }
+ document.getElementById('betaAnalyticsEnableNotice')?.addEventListener('click',()=>{
+  if(!enabled())return;
+  try{localStorage.setItem(CHOICE_REV,NOTICE_SCOPE)}catch{}
+  paintConsent();
+  window.dispatchEvent(new Event('svitlo:analytics-consent-updated'));
+ });
+ window.addEventListener('pageshow',paintConsent);
+
  for(const name of ['pointerdown','touchstart','keydown','scroll'])document.addEventListener(name,()=>{lastInteraction=Date.now()},{passive:true});
  function platform(){const ua=navigator.userAgent||'';return /iPad/i.test(ua)?'iPad':/iPhone|iPod/i.test(ua)?'iPhone':/Android/i.test(ua)?'Android':/Windows/i.test(ua)?'Windows':/Macintosh|Mac OS/i.test(ua)?'macOS':/Linux/i.test(ua)?'Linux':'Інше'}
  // Only the user-selected *primary* locality and queue. Never send street,
@@ -127,8 +167,7 @@
  const accept=document.getElementById('betaConsentAccept');
  const decline=document.getElementById('betaConsentDecline');
  function setConsentChoice(granted){
-  try{localStorage.setItem(CHOICE,granted?'accepted':'declined');localStorage.setItem(STATS_OPT,granted?'yes':'no');localStorage.setItem(CHOICE_REV,REVISION)}catch{}
-  if(consent)consent.checked=granted;
+  persistChoice(granted);
   if(!granted){
    try{const existing=localStorage.getItem(INSTALL_ID);if(existing)localStorage.setItem(PENDING,existing);localStorage.removeItem(INSTALL_ID)}catch{}
    deletePending();
@@ -143,8 +182,7 @@
    if(!standalone()||document.visibilityState!=='visible'||!homeOpen())return;
    if(document.getElementById('emergencyBanner')?.hidden===false)return;
    if(document.getElementById('maintenanceScreen')?.hidden===false)return;
-   try{if(localStorage.getItem(CHOICE_REV)===REVISION)return}
-   catch{return}
+   if(choice()!==null)return;
    if(!consentDialog.open){consentDialog.showModal()}
   };
   setTimeout(tryPrompt,6500);
