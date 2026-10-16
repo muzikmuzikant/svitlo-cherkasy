@@ -49,8 +49,9 @@
   by('reviewApprovalCancel').disabled=!owner()||!existing;
   msg('Натисніть «Підтвердити» лише після звірки із сайтом оператора.');
  }
- function open(selected){
+ async function open(selected){
   if(!remote){return}
+  if(!state)await load();
   opened=true;issue=selected;
   const panel=by('reviewApprovalPanel');panel.hidden=false;
   by('reviewApprovalSource').value=issue?.source||'';
