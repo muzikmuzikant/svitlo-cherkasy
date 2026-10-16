@@ -6,7 +6,7 @@ const defaultSite=()=>({links:{help:'./help.html',feedback:'./feedback.html',off
  flags:{inbox:true,inboxFilters:true,inboxHistory:true,sharing:true,sharePreview:true,copySchedule:true,help:true,feedback:true,addressSearch:true,pushPrompt:true,pushSettings:true,tomorrowPreview:true,quickAddresses:true,homePlaces:true,dailyStats:true,overviewTimeline:true,statusCountdown:true,weekNavigation:true,dayStats:true,scheduleLegend:true,offlineStatus:true,scheduleSource:true,manualRefresh:true,homeQuickActions:true,animations:true,quickQueueLookup:true,nextChangeCard:true,dayShortcuts:true,detailSourceLink:true,hourlyLabels:true,inboxMarkAll:true,inboxClearRead:true,appUpdateCheck:true,editAddressFromGraph:true,syncStatus:true,settingsFooter:true,tomorrowOpenShortcut:true,scheduleOpenShortcut:true},
  banner:{enabled:false,title:'Нові можливості',body:'Оновлення застосунку доступне.',url:'',button:'Детальніше'},
  appearance:{accent:'#377dff',background:'#f6f8fc',surface:'#ffffff',density:'comfortable',rounded:true}});
-const defaults=()=>({schemaVersion:1,updatedAt:null,maintenance:{enabled:false,title:'Ми покращуємо застосунок',message:'Незабаром усе знову працюватиме. Актуальні графіки можна перевірити на сайті оператора.',until:null,startsAt:null,mode:'full',theme:'blue',layout:'centered',icon:'✨',imageUrl:'',colors:{background:'#143463',foreground:'#ffffff',accent:'#78aaff'},noticeBefore:true,noticeInInbox:true,plannedBanner:{title:'Заплановані технічні роботи',body:'Під час робіт застосунок може тимчасово бути недоступним.',style:'expanded',button:'Офіційні графіки',url:'https://www.cherkasyoblenergo.com/news',showCountdown:true,showEnd:true},disabledModules:[]},site:defaultSite(),announcements:[]});
+const defaults=()=>({schemaVersion:1,updatedAt:null,maintenance:{enabled:false,title:'Ми покращуємо застосунок',message:'Незабаром усе знову працюватиме. Актуальні графіки можна перевірити на сайті оператора.',until:null,startsAt:null,mode:'full',theme:'blue',layout:'centered',icon:'✨',imageUrl:'',colors:{background:'#143463',foreground:'#ffffff',accent:'#78aaff'},noticeBefore:true,noticeInInbox:true,plannedBanner:{title:'Заплановані технічні роботи',body:'Під час робіт застосунок може тимчасово бути недоступним.',style:'expanded',button:'Офіційні графіки',url:'https://www.cherkasyoblenergo.com/news',showCountdown:true,showEnd:true,showButton:true,background:'#eaf3ff',foreground:'#22496f',accent:'#347af0'},disabledModules:[]},site:defaultSite(),announcements:[]});
 const str=(v,max)=>String(v??'').trim().slice(0,max+1);
 function date(v){if(v==null||v==='')return null;if(typeof v!=='string'||v.length>36||!Number.isFinite(Date.parse(v)))throw Error('Неправильна дата');return new Date(v).toISOString()}
 function image(v){const url=str(v,900);if(!url)return '';try{const u=new URL(url);if(u.protocol!=='https:'||u.username||u.password||url.length>900)throw Error();return u.href}catch{throw Error('Фото повинне мати HTTPS-посилання')}}
@@ -36,8 +36,12 @@ export function validateAppConfig(input){
    button:str(pb.button,38)||'Офіційні графіки',
    url:safeLink(pb.url??'', ''),
    showCountdown:pb.showCountdown!==false,
-   showEnd:pb.showEnd!==false
-  };
+   showEnd:pb.showEnd!==false,
+    showButton:pb.showButton!==false,
+    background:validColor(pb.background)||'#eaf3ff',
+    foreground:validColor(pb.foreground)||'#22496f',
+    accent:validColor(pb.accent)||'#347af0'
+   };
   const links=Object.fromEntries(Object.entries(defaultsSite.links).map(([key,value])=>[key,safeLink(rawSite.links?.[key],value)]));
  const flags=Object.fromEntries(Object.entries(defaultsSite.flags).map(([key,value])=>[key,rawSite.flags?.[key]===undefined?value:rawSite.flags[key]===true]));
  const rawBanner=rawSite.banner||{},banner={enabled:rawBanner.enabled===true,title:str(rawBanner.title??defaultsSite.banner.title,90),
@@ -104,14 +108,21 @@ export function createAppConfig({directory,record=()=>{}}){
    const t=Date.now(),m=state.maintenance||{};
    const announcements=state.announcements.filter(x=>x.active&&x.delivery!=='push'&&(!x.scheduledAt||Date.parse(x.scheduledAt)<=t)&&(!x.expiresAt||Date.parse(x.expiresAt)>t)).map(({pushSentAt,...visible})=>visible);
    const start=Date.parse(m.startsAt||''),end=Date.parse(m.until||'');
-   if(m.enabled&&m.noticeBefore!==false&&m.noticeInInbox!==false&&Number.isFinite(start)&&start>t){
+   // Keep the automatic announcement during the scheduled window, then retain
+   // its completed state for one day so users do not lose it mid-reading.
+   const finished=Number.isFinite(end)&&end<=t;
+   if(m.enabled&&m.noticeBefore!==false&&m.noticeInInbox!==false&&Number.isFinite(start)
+      &&(!finished||t-end<24*60*60*1000)){
     const fmt=v=>new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Kyiv'}).format(new Date(v));
     const details='Початок: '+fmt(start)+(Number.isFinite(end)&&end>start?'\nОрієнтовне завершення: '+fmt(end):'');
-    announcements.push({id:'maint_'+m.startsAt.replace(/\D/g,'').slice(0,14),title:m.plannedBanner?.title||'Заплановані технічні роботи',
-     body:m.plannedBanner?.body||'У цей час застосунок може тимчасово не працювати.',
-     content:'## Планові роботи\n'+(m.plannedBanner?.body||m.message)+'\n\n'+details,
-     kind:'important',priority:'important',queue:'all',delivery:'inbox',settlement:'',images:[],
-     icon:m.icon||'🛠️',active:true,pinned:true,publishedAt:state.updatedAt||new Date().toISOString(),
+    const upcoming=start>t;
+    const body=finished?'Заплановані технічні роботи завершилися. Доступ до застосунку відновлено.'
+     :m.plannedBanner?.body||'У цей час застосунок може тимчасово не працювати.';
+    announcements.push({id:'maint_'+m.startsAt.replace(/\D/g,'').slice(0,14),
+     title:finished?'Технічні роботи завершено':upcoming?(m.plannedBanner?.title||'Заплановані технічні роботи'):'Технічні роботи тривають',
+     body,content:'## '+(finished?'Завершення робіт':upcoming?'Заплановані роботи':'Технічні роботи')+'\n'+body+'\n\n'+details,
+     kind:'important',priority:finished?'normal':'important',queue:'all',delivery:'inbox',settlement:'',images:[],
+     icon:m.icon||'🛠️',active:true,pinned:!finished,publishedAt:state.updatedAt||new Date().toISOString(),
      updatedAt:null,scheduledAt:null,expiresAt:null});
    }
    return {schemaVersion:1,updatedAt:state.updatedAt,maintenance:{...m},site:state.site||defaultSite(),announcements};
