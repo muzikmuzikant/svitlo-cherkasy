@@ -257,7 +257,7 @@
   const el=banner.querySelector('[data-maintenance-start]');
   if(!el)return;
   const distance=Date.parse(el.dataset.maintenanceStart)-Date.now();
-  if(distance<=0){el.textContent='Роботи розпочинаються';refresh();return}
+  if(distance<=0){el.textContent='Роботи розпочинаються';return}
   const mins=Math.ceil(distance/60000),days=Math.floor(mins/1440),hrs=Math.floor(mins%1440/60),left=mins%60;
   el.textContent=days>0?'До початку: '+days+' дн. '+hrs+' год.':hrs>0?'До початку: '+hrs+' год. '+left+' хв.':'До початку: '+mins+' хв.';
  }
