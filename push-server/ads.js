@@ -136,10 +136,14 @@ export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed
    if(key.endsWith('|'+day))today=Number(v.impressions)||0;
   }return {all,today,clicks}}
  function publicState(){
-  // Fail closed on Production. Do not expose saved advertiser contact data,
-  // payment instructions, pricing or partner content through a public endpoint.
-  if(!commercialAllowed)return {enabled:false,campaigns:[],contacts:[],packages:[],
-   support:{enabled:false,methods:[],expenses:[],paymentUrl:''}};
+  // Advertising is release-locked on Production. Voluntary support is separate.
+  // Only expose payment destinations when the operator explicitly enabled support.
+  const supportMethods=state.support.methods.filter(m=>m.enabled&&!!(m.url||m.details));
+  const supportEnabled=state.support.enabled&&!!(state.support.paymentUrl||supportMethods.length);
+  const support=supportEnabled?{...state.support,enabled:true,methods:supportMethods,
+   expenses:state.support.expenses.filter(e=>e.public)}:
+   {enabled:false,methods:[],expenses:[],paymentUrl:''};
+  if(!commercialAllowed)return {enabled:false,campaigns:[],contacts:[],packages:[],support};
   const now=new Date(clock()).toISOString(),day=now.slice(0,10),weekday=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Kyiv',weekday:'short'}).format(new Date(clock())));
   return {enabled:commercialAllowed&&state.enabled,rotationSeconds:state.rotationSeconds,promoEvery:state.promoEvery,
    showPromo:state.showPromo,manualSwipe:state.manualSwipe,animation:state.animation,
@@ -149,11 +153,7 @@ export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed
    pageAbout:state.pageAbout,pageContactText:state.pageContactText,pageBenefits:state.pageBenefits,
    contacts:(commercialAllowed?state.contacts:[]).filter(c=>c.enabled&&c.url).map(({label,url})=>({label,url})),
    packages:(commercialAllowed?state.packages:[]).filter(p=>p.visible).map(({title,description,price,durationDays,badge,badgeBackground,badgeForeground,featured,features})=>({title,description,price,durationDays,badge,badgeBackground,badgeForeground,featured,features})),
-   support:{...state.support,paymentUrl:commercialAllowed?state.support.paymentUrl:'',
-    methods:(commercialAllowed?state.support.methods:[]).filter(m=>m.enabled&&!!(m.url||m.details)),
-    expenses:state.support.expenses.filter(e=>e.public),
-    enabled:commercialAllowed&&state.support.enabled&&!!(state.support.paymentUrl||state.support.methods.some(m=>m.enabled&&(m.url||m.details)))
-   },
+   support,
    campaigns:commercialAllowed&&state.enabled?state.campaigns.filter(c=>{
     if(!c.enabled||!c.title||c.start&&c.start>now||c.end&&c.end<=now)return false;
     if(c.days.length&&!c.days.includes(weekday))return false;
