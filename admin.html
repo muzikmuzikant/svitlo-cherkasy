@@ -334,6 +334,28 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
   <div class="field"><label for="opsColorForeground">Колір тексту</label><input id="opsColorForeground" type="color" value="#ffffff"></div>
  </div>
  <div class="field"><label for="opsColorAccent">Акцентний колір</label><input id="opsColorAccent" type="color" value="#78aaff"></div>
+ <div class="ops-planned-builder">
+  <div class="ops-planned-heading"><div><span class="panel-eyebrow">ПОПЕРЕДЖЕННЯ ДЛЯ КОРИСТУВАЧІВ</span><h2>Банер запланованих техробіт</h2><p>Окремий дизайн, текст і кнопка. Налаштування банера не змінюють сам екран техробіт.</p></div></div>
+  <div class="two">
+   <div class="field"><label for="opsPlannedTitle">Заголовок банера</label><input id="opsPlannedTitle" maxlength="90" placeholder="Заплановані технічні роботи"></div>
+   <div class="field"><label for="opsPlannedStyle">Стиль банера</label><select id="opsPlannedStyle"><option value="expanded">Розгорнутий (рекомендовано)</option><option value="highlight">З акцентом</option><option value="compact">Компактний</option></select></div>
+  </div>
+  <div class="field"><label for="opsPlannedBody">Опис</label><textarea id="opsPlannedBody" rows="3" maxlength="280" placeholder="Під час робіт деякі можливості можуть бути недоступні."></textarea></div>
+  <div class="two">
+   <div class="field"><label for="opsPlannedButton">Напис на кнопці</label><input id="opsPlannedButton" maxlength="38" placeholder="Офіційні графіки"></div>
+   <div class="field"><label for="opsPlannedUrl">Адреса кнопки (HTTPS або ./)</label><input id="opsPlannedUrl" placeholder="https://www.cherkasyoblenergo.com/news"></div>
+  </div>
+  <div class="ops-planned-options">
+   <label><input id="opsPlannedCountdown" type="checkbox" checked> Показувати зворотний відлік до початку</label>
+   <label><input id="opsPlannedEnd" type="checkbox" checked> Показувати орієнтовне завершення</label>
+   <label><input id="opsPlannedInbox" type="checkbox" checked> Автоматичне повідомлення у «Вхідних»</label>
+  </div>
+  <div id="opsPlannedPreview" class="ops-planned-preview" aria-live="polite">
+   <span class="ops-planned-preview-icon" id="opsPlannedPreviewIcon">🛠️</span>
+   <div class="ops-planned-preview-content"><small>ЗАПЛАНОВАНІ РОБОТИ</small><strong id="opsPlannedPreviewTitle">Заплановані технічні роботи</strong><p id="opsPlannedPreviewBody">Деталі з’являться тут.</p><span id="opsPlannedPreviewDates"></span><span id="opsPlannedPreviewCountdown"></span><span class="ops-planned-preview-action" id="opsPlannedPreviewButton">Офіційні графіки</span></div>
+  </div>
+  <div class="flex"><button type="button" class="secondary" id="opsTestPlanned">Перевірити банер без публікації</button><span class="hint">Перегляд відбувається лише у цій адмінці.</span></div>
+ </div>
  <label class="ops-toggle"><span><strong>Попереджати про заплановані роботи</strong><small>Якщо час початку в майбутньому, користувач побачить попереджувальний банер.</small></span><input id="opsMaintenanceWarn" type="checkbox" checked></label>
  <div class="ops-flags">
   <label><input id="opsDisableInbox" type="checkbox"> Призупинити «Вхідні»</label>
@@ -380,6 +402,15 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  </div>
  <div class="field"><label for="opsBannerBody">Опис</label><textarea id="opsBannerBody" rows="2" maxlength="260"></textarea></div>
  <div class="field"><label for="opsBannerUrl">Посилання з кнопки (HTTPS або ./)</label><input id="opsBannerUrl" placeholder="./help.html"></div>
+  <section class="ops-planned-builder ops-update-preview-workspace">
+   <div class="headline"><div><strong>Тестування банера оновлення (Beta)</strong><p>Перевіряє вигляд і текст релізу без розсилання користувачам та без зміни версії.</p></div><button type="button" id="opsTestUpdate" class="secondary">Показати тестовий банер</button></div>
+   <div id="opsUpdatePreview" class="ops-update-test" hidden aria-live="polite">
+    <span>ЩО НОВОГО</span><strong id="opsUpdatePreviewTitle">Нові можливості</strong>
+    <p id="opsUpdatePreviewBody"></p><ul id="opsUpdatePreviewNotes"></ul>
+    <small>Тільки локальний попередній перегляд. Оновлення не запускається.</small>
+    <button type="button" class="secondary" id="opsCloseUpdatePreview">Закрити перегляд</button>
+   </div>
+  </section>
  </section>
 
  <div class="ops-panel-footer"><span id="featuresStatus" role="status">Зміни ще не збережено.</span>
