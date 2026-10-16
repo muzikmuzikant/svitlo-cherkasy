@@ -247,6 +247,23 @@ async function readPayload(req,limit=12000){
  return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 const statusAttempts=new Map();
+// Real-time one-way updates for iOS/Android/desktop without extra dependencies.
+const liveConnections=new Set();
+function publishLive(kind,stamp){
+ const message='event: '+kind+'\ndata: '+JSON.stringify({revision:stamp})+'\n\n';
+ for(const res of liveConnections){
+  try{if(res.writableEnded||res.destroyed)liveConnections.delete(res);else res.write(message)}
+  catch{liveConnections.delete(res)}
+ }
+}
+let lastConfigWire=JSON.stringify(siteControls.publicState());
+let lastScheduleWire=JSON.stringify(officialSchedules.status());
+setInterval(()=>{
+ const configWire=JSON.stringify(siteControls.publicState());
+ if(configWire!==lastConfigWire){lastConfigWire=configWire;publishLive('config',siteControls.get().updatedAt)}
+ const scheduleWire=JSON.stringify(officialSchedules.status());
+ if(scheduleWire!==lastScheduleWire){lastScheduleWire=scheduleWire;publishLive('schedules',officialSchedules.status().lastChecked)}
+},1000).unref?.();
 
 const server=http.createServer(async(req,res)=>{
  // Routing must ignore cache-busting query strings, e.g. ?t=timestamp from the PWA.
@@ -257,7 +274,30 @@ const server=http.createServer(async(req,res)=>{
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   res.writeHead(204,{'access-control-allow-origin':origin,'access-control-allow-methods':'POST, OPTIONS, GET, PUT, PATCH, DELETE','access-control-allow-headers':'content-type, authorization','vary':'Origin'});res.end();return;
  }
- if(requestPath==='/api/diagnostics/event'&&req.method==='POST'){
+ if(requestPath==='/api/events'&&req.method==='GET'){
+   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+   if(liveConnections.size>=500){response(res,503,{error:'Спробуйте знову пізніше'});return}
+   res.writeHead(200,{
+    'content-type':'text/event-stream; charset=utf-8',
+    'cache-control':'no-cache, no-transform',
+    'connection':'keep-alive',
+    'x-accel-buffering':'no',
+    'access-control-allow-origin':res._allowedAppOrigin||APP_ORIGIN,
+    'vary':'Origin',
+    'x-content-type-options':'nosniff'
+   });
+   res.write('retry: 2500\n\n');
+   liveConnections.add(res);
+   const keepalive=setInterval(()=>{
+    if(res.writableEnded||res.destroyed){cleanup();return}
+    try{res.write(': still connected\n\n')}catch{cleanup()}
+   },20000);
+   keepalive.unref?.();
+   function cleanup(){clearInterval(keepalive);liveConnections.delete(res)}
+   req.on('close',cleanup);res.on('close',cleanup);
+   return;
+  }
+  if(requestPath==='/api/diagnostics/event'&&req.method==='POST'){
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   try{const data=await readPayload(req);const addr=req.socket.remoteAddress||'';
    const ok=errorCounts.event(data,addr);response(res,ok?200:202,{ok:true})}
@@ -440,7 +480,7 @@ function refreshDailyReport(){try{dailyReports.capture(reportSources)}catch(erro
 setTimeout(refreshDailyReport,15_000).unref?.();
 setInterval(refreshDailyReport,60*60_000).unref?.();
 betaScheduleMirror.sync().catch(error=>console.warn('[beta-schedule-mirror]',error.message));
-if(betaScheduleMirror.enabled)setInterval(()=>betaScheduleMirror.sync().catch(error=>console.warn('[beta-schedule-mirror]',error.message)),5*60_000).unref?.();
+if(betaScheduleMirror.enabled)setInterval(()=>betaScheduleMirror.sync().catch(error=>console.warn('[beta-schedule-mirror]',error.message)),60_000).unref?.();
 job().catch(console.error);
 transitionJob().catch(console.error);
 setInterval(()=>job().catch(console.error),60_000);
