@@ -20,6 +20,47 @@
  })();
  if(!store||!$('inboxList'))return;
  let selected='all',rows=[],notices=window.SvitloPublicConfig?.announcements||[],busy=false,lastSync=0,activeDetail=null,noticeFeedConfirmed=window.SvitloPublicConfig?.serverVerified===true,needsResync=false;
+ // Only voluntary opt-in PWA installations count toward custom notice engagement.
+ // "Read" is an approximation: detail stayed in the foreground for two seconds.
+ let metricApi='',readTimer=null,seenObserver=null;
+ const reported=new Set(),pendingMetrics=new Set();
+ const analyticsReady=()=>{try{
+  return (matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)
+   &&localStorage.getItem('svitlo-beta-analytics-opt-in')==='yes'
+   &&localStorage.getItem('svitlo-beta-analytics-consent-revision')==='7.9.9-audience'
+   &&localStorage.getItem('svitlo-beta-analytics-choice')==='accepted';
+ }catch{return false}};
+ async function trackNotice(id,type){
+  if(!/^notice:[A-Za-z0-9_-]{6,64}$/.test(id||'')||!['seen','opened','read','pushClick'].includes(type)||!analyticsReady())return;
+  const key=id+':'+type;
+  if(reported.has(key)||pendingMetrics.has(key))return;
+  const installId=localStorage.getItem('svitlo-beta-install-id')||'';
+  if(!/^[0-9a-f]{8}-[0-9a-f-]{27,56}$/i.test(installId))return;
+  pendingMetrics.add(key);
+  try{
+   if(!metricApi){const cfg=await fetch('./push-config.json',{cache:'no-store'}).then(x=>x.json());metricApi=String(cfg.apiBase||'')}
+   if(!metricApi)return;
+   const result=await fetch(metricApi+'/api/notice/engagement',{method:'POST',
+    headers:{'content-type':'application/json'},keepalive:true,
+    body:JSON.stringify({noticeId:id.slice(7),installId,type})});
+   if(result.ok)reported.add(key);
+  }catch{}finally{pendingMetrics.delete(key)}
+ }
+ function observeNoticeCards(){
+  seenObserver?.disconnect();
+  const screen=$('updates');
+  if(!screen||screen.hidden||document.hidden||!analyticsReady())return;
+  const cards=[...document.querySelectorAll('#inboxList [data-notice-id]')];
+  if(!('IntersectionObserver' in window))return;
+  seenObserver=new IntersectionObserver(entries=>{
+   if(screen.hidden||document.hidden)return;
+   for(const entry of entries)if(entry.isIntersecting&&entry.intersectionRatio>=.5){
+    trackNotice(entry.target.dataset.noticeId,'seen');
+    seenObserver.unobserve(entry.target);
+   }
+  },{threshold:.5});
+  cards.forEach(card=>seenObserver.observe(card));
+ }
  const time=s=>new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Kyiv'}).format(new Date(s));
  const date=s=>new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(s+'T12:00:00Z'));
  const el=(tag,text,cls)=>{const node=document.createElement(tag);node.textContent=String(text??'');if(cls)node.className=cls;return node};
@@ -63,6 +104,7 @@
  dialog.addEventListener('click',event=>{if(event.target===dialog)closeDetail()});
  dialog.addEventListener('cancel',event=>{event.preventDefault();closeDetail()});
  dialog.addEventListener('close',()=>{
+  clearTimeout(readTimer);readTimer=null;
   clearTimeout(detailCloseTimer);detailCloseTimer=null;detailClosing=false;
   dialog.classList.remove('is-leaving');activeDetail=null;
   const next=afterDetailClose;afterDetailClose=null;if(next)next();
@@ -92,7 +134,9 @@
  function open(id){
   const item=rows.find(x=>x.id===id);if(!item)return false;
   if(detailClosing){clearTimeout(detailCloseTimer);detailCloseTimer=null;detailClosing=false;afterDetailClose=null;dialog.classList.remove('is-leaving')}
+  clearTimeout(readTimer);readTimer=null;
   activeDetail=id;content.replaceChildren();
+  trackNotice(id,'opened');
   const top=el('div','','inbox-detail-top');
   top.append(el('span',({schedule:'Графіки',emergency:'Важливо',announcement:'Повідомлення',push:'Push'})[item.kind]||'Повідомлення','inbox-detail-category'),el('time',time(item.at)));
   content.append(top,el('h2',item.title),el('p',item.body,'inbox-detail-summary'));
@@ -113,6 +157,9 @@
   if(validUrl(item.url)){const a=el('a','Офіційне джерело ↗');a.href=validUrl(item.url);a.target='_blank';a.rel='noopener noreferrer';buttons.append(a)}
   content.append(buttons);
   if(!dialog.open)try{dialog.showModal()}catch{dialog.setAttribute('open','')}
+  if(id.startsWith('notice:'))readTimer=setTimeout(()=>{
+   if(activeDetail===id&&dialog.open&&!document.hidden&&!detailClosing)trackNotice(id,'read');
+  },2000);
   if(!item.read)store.mark([id]).then(refresh).catch(console.warn);
   return true;
  }
@@ -126,6 +173,7 @@
   if(!visible.length){const empty=el('div','Тут поки тихо ✨','inbox-empty');empty.append(el('p',selected==='unread'?'Нових повідомлень немає.':'Важливі оновлення з’являться тут.'));root.append(empty)}
   for(const item of visible){
    const card=el('article','','inbox-item inbox-interactive'+(!item.read?' is-unread':'')+(item.pinned?' is-pinned':''));
+   if(item.id.startsWith('notice:'))card.dataset.noticeId=item.id;
    card.tabIndex=0;card.setAttribute('role','button');card.setAttribute('aria-label','Відкрити повідомлення: '+item.title);
    card.onclick=()=>open(item.id);card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open(item.id)}};
    const head=el('div','','inbox-item-head');head.append(el('span',item.pinned?'📌 Закріплено':({schedule:'Графіки',emergency:'Важливе',announcement:'Оголошення',push:'Push'})[item.kind],'inbox-kind'),el('time',time(item.at),'inbox-time'));
@@ -136,6 +184,7 @@
   }
   document.querySelectorAll('[data-inbox-filter]').forEach(b=>{const state=b.dataset.inboxFilter===selected;b.classList.toggle('selected',state);b.setAttribute('aria-pressed',String(state))});
   if(activeDetail&&dialog.open&&!rows.some(x=>x.id===activeDetail))dialog.close();
+  observeNoticeCards();
  }
  async function sync(){
   if(busy){needsResync=true;return}busy=true;
@@ -193,7 +242,8 @@
    await refresh().catch(console.warn);
   }finally{busy=false;if(needsResync){needsResync=false;queueMicrotask(()=>sync().catch(console.warn))}}
  }
- function routePush(id){
+ function routePush(id,pushClick=false){
+  if(pushClick)trackNotice(id,'pushClick');
   document.querySelector('[data-go="updates"]')?.click();
   // Push tap should always request a fresh authoritative server snapshot.
   window.dispatchEvent(new CustomEvent('svitlo:refresh-content'));
@@ -222,9 +272,10 @@
    window.dispatchEvent(new CustomEvent('svitlo:refresh-content'));
    sync().catch(console.warn);
   }
-  if(event.data?.type==='SVITLO_OPEN_INBOX')routePush(event.data.id);
+  if(event.data?.type==='SVITLO_OPEN_INBOX')routePush(event.data.id,event.data.pushClick===true);
+  if(event.data?.type==='SVITLO_NOTICE_PUSH_CLICK')trackNotice(event.data.id,'pushClick');
  });
- document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync().catch(console.warn)});
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync().catch(console.warn);else clearTimeout(readTimer)});
  window.addEventListener('online',()=>sync().catch(console.warn));
  window.addEventListener('focus',()=>{
   window.dispatchEvent(new CustomEvent('svitlo:refresh-content'));
@@ -243,8 +294,12 @@
    noticeFeedConfirmed=true;
   }
   await sync();window.dispatchEvent(new CustomEvent('svitlo:refresh-content'));
-  const id=new URL(location.href).searchParams.get('inbox');
-  if(id){history.replaceState(null,'',location.pathname+location.hash);routePush(id)}
+  const params=new URL(location.href).searchParams;
+  const pushClick=params.get('pushclick');
+  if(pushClick)trackNotice(pushClick,'pushClick');
+  const id=params.get('inbox');
+  if(id||pushClick)history.replaceState(null,'',location.pathname+location.hash);
+  if(id)routePush(id);
  }).catch(console.warn);
  setInterval(()=>{if(!document.hidden)sync().catch(console.warn)},5*60000);
 })();
