@@ -34,6 +34,7 @@
   if(before!==after)n.updatedAt=now();
  }
  function metricNumber(value){
+  if(value==='<5')return 'менше 5';
   if(!Number.isSafeInteger(value)||value<0)return '—';
   if(value>0&&value<5)return 'менше 5';
   return new Intl.NumberFormat('uk-UA').format(value);
@@ -54,13 +55,13 @@
   ]){
    const card=document.createElement('div');card.className='ops-notice-metric';
    const head=document.createElement('span');head.textContent=label;
-   const number=document.createElement('strong');number.textContent=metricNumber(stats[key]||0);
+   const number=document.createElement('strong');number.textContent=metricNumber(stats[key]??0);
    const small=document.createElement('small');small.textContent=detail;
    card.append(head,number,small);root.append(card);
   }
-  if((stats.opened||0)>=5){
+  if(Number.isInteger(stats.readOfOpened)){
    const footer=document.createElement('p');footer.className='hint ops-metrics-foot';
-   footer.textContent='Переглянули понад 2 секунди серед тих, хто відкрив: '+Math.round(100*(stats.read||0)/stats.opened)+'%';
+   footer.textContent='Переглянули понад 2 секунди серед тих, хто відкрив: '+stats.readOfOpened+'%';
    root.append(footer);
   }
  }
