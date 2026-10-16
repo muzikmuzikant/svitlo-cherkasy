@@ -119,8 +119,24 @@ def parse_article(html,url,reference=None):
     # Join only numeric clock colons, never merge unrelated table tokens.
     full=re.sub(r'(?<=\d)\s*:\s*(?=\d{2}\b)', ':', full)
     time_hit=PUB_TS.search(full)
-    if not time_hit:return None
-    pub=datetime.strptime(' '.join(time_hit.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
+    if time_hit:
+        pub=datetime.strptime(' '.join(time_hit.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
+    else:
+        # CMS editors can change visible date markup while its structured
+        # publication date remains authoritative. Do not infer today's date.
+        raw_time=None
+        for selector,attribute in [('meta[property="article:published_time"]','content'),
+                                   ('meta[itemprop="datePublished"]','content'),
+                                   ('time[datetime]','datetime')]:
+            el=soup.select_one(selector)
+            if el and el.get(attribute):
+                raw_time=el.get(attribute)
+                break
+        try:
+            pub=datetime.fromisoformat(raw_time.replace('Z','+00:00')).astimezone(TZ) if raw_time else None
+        except (ValueError,TypeError):
+            pub=None
+        if pub is None:return None
     year=pub.year
     month=UA_MONTHS[date_hit.group(2).lower()]
     if pub.month==12 and month==1:year+=1
@@ -203,6 +219,14 @@ def compose(revisions):
                              for r in revs]}
 
 
+def publication_fingerprint(html):
+    """Hash visible article content to invalidate approvals after real edits."""
+    soup=BeautifulSoup(html,'html.parser')
+    node=soup.select_one('article, .article-content, .news-article, main') or soup
+    content=re.sub(r'\s+', ' ',node.get_text(' ',strip=True)).strip()
+    return hashlib.sha256(content.encode('utf-8')).hexdigest()[:24]
+
+
 def parse_news_links(html):
     soup=BeautifulSoup(html,'html.parser');urls=[]
     for a in soup.select('a[href]'):
@@ -265,13 +289,16 @@ def update_schedules(session, now=None):
     warnings = []
     for u in urls:
         try:
-            rev = parse_article(fetch(session, u), u)
+            html=fetch(session, u)
+            fingerprint=publication_fingerprint(html)
+            rev = parse_article(html, u)
             if rev and rev['date'] in wanted:
                 grouped[rev['date']].append(rev)
             elif rev is None:
                 warnings.append({'code': 'UNREADABLE_ARTICLE', 'source': u,
                                  'targetDate': advertised_dates.get(u),
-                                 'reason': 'Графік у новині не вдалося розпізнати.'})
+                                 'sourceHash': fingerprint,
+                                 'reason': 'Редаговану офіційну новину не вдалося розпізнати. Перевірте її години вручну; попередній підтверджений графік збережено.'})
                 LOG.warning('Could not parse schedule article %s', u)
         except ScheduleDateConflict as e:
             review.append({'code': 'HEADLINE_DATE_CONFLICT', 'source': e.url,
@@ -306,13 +333,13 @@ def update_schedules(session, now=None):
         prev = existing.get(day)
         # A newer previously verified edition must not be rolled back if an
         # earlier article is temporarily the only one visible in the news list.
-        if prev and prev.get('publishedAt', '') > latest['publishedAt']:
+        if prev and not prev.get('manualReview') and prev.get('publishedAt', '') > latest['publishedAt']:
             continue
         if prev:
             diffs = [q for q in QUEUE if prev.get('queues', {}).get(q, {}) != latest['queues'].get(q, {})]
             # Same URL and same publication minute may contain different hours!
             # Keep lastChecked heartbeat for no-op checks, but publish a true edit.
-            if not diffs and prev.get('publishedAt') == latest['publishedAt'] and prev.get('source') == latest['source']:
+            if not diffs and prev.get('publishedAt') == latest['publishedAt'] and prev.get('source') == latest['source'] and not prev.get('manualReview'):
                 continue
             if diffs:
                 changed.append({'date': day, 'publishedAt': latest['publishedAt'],
