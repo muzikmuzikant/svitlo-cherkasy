@@ -19,6 +19,7 @@ import {createAppConfig} from './app-config.js';
 import {createMediaStore} from './media-store.js';
 import {createSchedulePublication} from './schedule-publication.js';
 import {createScheduleMirror} from './schedule-mirror.js';
+import {tomorrowKey,alreadySentTomorrow} from './tomorrow-dedupe.js';
 import {originPolicy} from './origins.js';
 import webpush from 'web-push';
 import {adminRouter} from './admin.js';
@@ -211,8 +212,15 @@ async function job(){
    const tomorrowRevised=freshChanges.some(change=>isLatestRevision(change,tomorrow,q));
    if(schedulesSafe&&pref.tomorrow&&tomorrow?.verified===true&&minutes>=19*60&&!(pref.changes&&tomorrowRevised)){
     const revision=firstPublishedAt(tomorrow),msg=tomorrowCopy(q,nextDate,tomorrow);
-    await send(record,msg,`${prefix}:tomorrow:${nextDate}:${revision}`,{
-     notificationId:dayId(q,tomorrow),at:revision,source:tomorrow.source});
+    // One daily preview per subscriber and calendar date. Revisions are handled
+    // separately by 'change' notifications, not repeated 'tomorrow' pushes.
+    // Recognize previous timestamp-qualified keys so upgrading mid-evening
+    // does not cause one more duplicate notification.
+    if(!alreadySentTomorrow(sent,prefix,nextDate)){
+     const outcome=await send(record,msg,tomorrowKey(prefix,nextDate),{
+      notificationId:dayId(q,tomorrow),at:revision,source:tomorrow.source});
+     if(outcome==='accepted')console.info('[auto-push] tomorrow accepted (once per day) queue='+q+' day='+nextDate);
+    }
    }
    if(pref.emergency&&freshEvent(event,timestamp)&&(!Array.isArray(event.queues)||!event.queues.length||event.queues.includes(q))){
     const msg=emergencyCopy(event.status);
