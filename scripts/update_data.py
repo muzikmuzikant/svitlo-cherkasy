@@ -284,6 +284,33 @@ def update_schedules(session, now=None):
                              'reason': 'Не вдалося отримати або прочитати публікацію.'})
             LOG.warning('Article error %s: %s', u, e)
 
+    # The operator sometimes exposes a newer/revised news link whose body is
+    # unreadable while the original official full-day article is still live.
+    # Recover from that original article rather than publishing an empty day.
+    # The fallback is ONLY an official dated article; parse_article validates
+    # its headline, publication date, queue numbers and outage time ranges.
+    month_slugs = ('sichnya', 'lyutoho', 'bereznya', 'kvitnya', 'travnya',
+                   'chervnya', 'lypnya', 'serpnya', 'veresnya', 'zhovtnya',
+                   'lystopada', 'hrudnya')
+    for target in (now.date(), (now + timedelta(days=1)).date()):
+        iso_day = target.isoformat()
+        if grouped.get(iso_day):
+            continue
+        canonical = (f'{BASE}/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-'
+                     f'{target.day}-{month_slugs[target.month - 1]}')
+        if any(urlparse(u).path == urlparse(canonical).path for u in urls):
+            continue
+        try:
+            recovered = parse_article(fetch(session, canonical), canonical)
+        except (requests.RequestException, ValueError, RuntimeError) as error:
+            LOG.info('Official canonical schedule unavailable for %s (%s)',
+                     iso_day, type(error).__name__)
+            continue
+        if recovered and recovered['date'] == iso_day:
+            grouped[iso_day].append(recovered)
+            LOG.warning('Recovered official %s schedule from canonical article %s',
+                        iso_day, canonical)
+
     # Never claim that an absent graph means power is planned all day while
     # an official publication is unresolved. Publishing a *verified* other
     # day's graph is nevertheless safe and useful.
