@@ -200,11 +200,13 @@ class Storage:
                 new_full = new_states[0] if len(set(new_states)) == 1 else None
                 old_full = old_states[0] if len(set(old_states)) == 1 else None
                 if new_full in ('Y', 'R') or (new_full == 'N' and old_full in ('Y', 'R')):
-                    # New warning anywhere requires a ping, but an upgrade or
-                    # an all-clear alone must NOT ping the editorial group.
+                    # Preserve start and yellow-to-red escalation signals even
+                    # when several raion changes become one oblast-wide post.
                     new_start = any(old == 'N' and new in ('Y', 'R', 'P')
                                     for _, _, old, new, _ in changes)
-                    previous = ('N' if new_start else (old_full or 'P'))
+                    escalated = any(old == 'Y' and new == 'R'
+                                    for _, _, old, new, _ in changes)
+                    previous = ('N' if new_start else 'Y' if escalated else (old_full or 'P'))
                     changes = [(OBLAST_UID, 'Уся Черкаська область', previous,
                                 new_full, changes[0][4])]
                     LOG.info('Consolidated four districts into one oblast notice: %s -> %s',
@@ -321,12 +323,11 @@ def member_mentions(store, tg, group_id):
 
 
 def should_ping(previous, current):
-    """Ping the editor team only when an alert starts in a previously clear district.
+    """Ping on an alert start or a yellow-to-red escalation.
 
-    N -> Y / R / P is a new alert. Escalations, downgrades and all-clears
-    still publish, but must not cause another team-wide ping.
+    Never ping on an all-clear, downgrade or unchanged alert.
     """
-    return previous == 'N' and current in ('Y', 'R', 'P')
+    return (previous == 'N' and current in ('Y', 'R', 'P')) or (previous == 'Y' and current == 'R')
 
 
 def send_pending(store, tg, channel_id, group_id, mode):
