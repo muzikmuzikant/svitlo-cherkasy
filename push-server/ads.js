@@ -187,7 +187,7 @@ export function createAdsStore({directory,clock=()=>Date.now()}){
  function optOut(data){
   const id=text(data?.id,64);if(!/^[0-9a-f]{8}-[0-9a-f-]{27,56}$/i.test(id))return false;
   const key=crypto.createHash('sha256').update('beta-install:'+id).digest('hex');
-  online.delete(key);delete installed[key];scheduleVisitors();return true;
+  online.delete(key);delete installed[key];flushVisitors();return true;
  }
  // Group only distinct opt-in installation hashes, never raw open events.
  // Historic installation rows missing queue/version stay unattributed.
