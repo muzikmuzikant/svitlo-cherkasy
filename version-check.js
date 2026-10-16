@@ -7,6 +7,7 @@
   const banner = document.getElementById('appUpdateBanner');
   const title = document.getElementById('appUpdateTitle');
   const description = document.getElementById('appUpdateText');
+  const notes = document.getElementById('appUpdateNotes');
   const apply = document.getElementById('appUpdateAction');
   const dismiss = document.getElementById('appUpdateDismiss');
   const manual = document.getElementById('checkAppUpdate');
@@ -52,6 +53,36 @@
     localStorage.setItem(storageKey, current);
   } catch { /* Apps work normally even with storage blocked. */ }
 
+  function showRelease(data, preview = false) {
+    title.textContent = preview ? 'Перевірка банера оновлення' : 'Доступна версія ' + data.version;
+    description.textContent = typeof data.description === 'string' ? data.description.slice(0, 260) : 'Оновіть застосунок без перевстановлення.';
+    notes?.replaceChildren();
+    if (notes) for (const line of (Array.isArray(data.notes) ? data.notes : []).slice(0, 5)) {
+      if (typeof line !== 'string' || !line.trim()) continue;
+      const entry = document.createElement('li');
+      entry.textContent = line.slice(0, 150);
+      notes.append(entry);
+    }
+    banner.dataset.preview = String(preview);
+    apply.textContent = preview ? 'Тестовий перегляд' : 'Оновити застосунок ↗';
+    apply.disabled = preview;
+    banner.hidden = false;
+  }
+  if (document.body.dataset.deploymentChannel === 'beta') {
+    const showPreview = data => {
+      if (!data || typeof data.version !== 'string') return;
+      release = null;
+      showRelease(data, true);
+    };
+    window.SvitloUpdatePreview = showPreview;
+    try {
+      const channel = new BroadcastChannel('svitlo-content-v1');
+      channel.addEventListener('message', event => {
+        if (event.data?.type === 'SVITLO_PREVIEW_UPDATE_BANNER') showPreview(event.data.release);
+      });
+      window.addEventListener('pagehide', () => channel.close(), {once: true});
+    } catch {}
+  }
   let release = null;
   let checking = null;
   async function checkRelease(manualCheck = false) {
@@ -70,8 +101,7 @@
         if (!data || typeof data.version !== 'string') throw new Error('invalid release manifest');
         if (newer(data.version, current)) {
           release = data;
-          title.textContent = `Доступна версія ${data.version}`;
-          description.textContent = typeof data.description === 'string' ? data.description.slice(0, 200) : 'Оновіть застосунок без перевстановлення.';
+          showRelease(data);
           banner.hidden = readSession(dismissedKey) === data.version;
           if (manualCheck && banner.hidden) {
             banner.hidden = false;
@@ -79,7 +109,7 @@
           }
         } else {
           release = null;
-          banner.hidden = true;
+          if (banner.dataset.preview !== 'true') banner.hidden = true;
           if (manualCheck) message(`У вас уже остання версія: ${current}`);
         }
       } catch (error) {
@@ -97,6 +127,7 @@
     banner.hidden = true;
   });
   apply.addEventListener('click', async () => {
+    if (banner.dataset.preview === 'true') return;
     if (!release || !navigator.onLine) return message('Для оновлення потрібен інтернет.');
     apply.disabled = true;
     apply.textContent = 'Оновлюємо…';
@@ -115,7 +146,7 @@
       console.warn('Application update could not start:', error);
       message('Оновлення не вдалося. Перевірте з’єднання й спробуйте ще раз.');
       apply.disabled = false;
-      apply.textContent = 'Оновити';
+      apply.textContent = 'Оновити застосунок ↗';
     }
   });
   manual?.addEventListener('click', () => checkRelease(true));
