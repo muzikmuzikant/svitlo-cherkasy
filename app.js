@@ -543,7 +543,43 @@ function updatePushInvite(){
  action.firstChild.textContent=denied?'Відкрити налаштування сповіщень ':'Увімкнути сповіщення ';
  action.onclick=denied?()=>navigate('settings'):()=>enableNotifications();
 }
-function renderSettings(){for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).checked=!!prefs[key];const connected=!!pushConfig?.apiBase&&!!pushConfig?.publicKey;setText('pushHeadline','Сповіщення');setText('pushDescription',connected?'Отримуйте нагадування про відключення та зміни графіків, навіть коли застосунок закритий.':'Наразі нагадування доступні тільки під час використання застосунку.');setText('enableNotifications',connected?'Увімкнути сповіщення':'Дозволити нагадування');$('disableNotifications').hidden=!connected;}
+let pushControlBusy=false;
+function renderSettings(){
+ const categories=[['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']];
+ const supported='Notification' in window&&'serviceWorker' in navigator;
+ const configured=!!pushConfig?.apiBase&&!!pushConfig?.publicKey;
+ const permission=supported?Notification.permission:'unsupported';
+ const optedOut=localStorage.getItem(PUSH_CONSENT)==='no';
+ const connected=supported&&configured&&permission==='granted'&&!optedOut&&pushActive;
+ const hasAddress=!!primary()?.queue;
+ const blocked=!supported||(!connected&&(!configured||permission==='denied'||!hasAddress));
+ const master=$('pushMaster');
+ if(master){
+  master.checked=connected;
+  master.disabled=pushControlBusy||blocked;
+  master.setAttribute('aria-busy',pushControlBusy?'true':'false');
+ }
+ for(const [key,field] of categories){
+  const input=$(field);if(!input)continue;
+  input.checked=!!prefs[key];
+  input.disabled=!connected||pushControlBusy;
+ }
+ const categoryBox=$('pushCategorySettings');
+ if(categoryBox){
+  categoryBox.classList.toggle('push-categories-disabled',!connected);
+  categoryBox.setAttribute('aria-disabled',connected?'false':'true');
+ }
+ let title='Вимкнено',description='Увімкніть головний перемикач, щоб налаштувати категорії повідомлень.';
+ if(!supported){title='Недоступно';description='Цей браузер не підтримує Push. На iPhone відкрийте встановлений PWA.'}
+ else if(!configured){title='Немає з’єднання';description='Не вдалося отримати налаштування Push-сервера. Перевірте інтернет.'}
+ else if(permission==='denied'){title='Заборонено';description='Дозвольте сповіщення для PWA у системних налаштуваннях пристрою.'}
+ else if(!hasAddress){title='Потрібна адреса';description='Додайте адресу з підчергою, щоб налаштувати Push.'}
+ else if(pushControlBusy){title='Застосовуємо…';description='Оновлюємо Push-підписку. Збережені категорії не скидаються.'}
+ else if(connected){title='Підключено';description='Системні Push увімкнені. Оберіть категорії, які хочете отримувати.'}
+ else if(!optedOut){title='Не підключено';description='Натисніть головний перемикач, щоб підключити Push.'}
+ setText('pushHeadline',title);setText('pushDescription',description);
+ const status=$('pushHeadline');if(status)status.dataset.status=connected?'connected':title==='Застосовуємо…'?'pending':'disconnected';
+}
 function fillQueueSelect(){const root=$('manualQueue');root.replaceChildren(new Option('Оберіть підчергу',''),...QUEUES.map(q=>new Option(q,q)))}
 function town(){return $('settlement').value==='Інше'?$('customSettlement').value.trim():$('settlement').value}
 function localIndex(){const k=normTown(town());return k===normTown('Черкаси')?{keys:index.keys||{},streets:index.streets||{},streetQueues:index.streetQueues||{}}:index.localities?.[k]||{keys:{},streets:{},streetQueues:{}}}
@@ -889,7 +925,7 @@ async function checkPushDelivery(force=false){
    if(!subscription){
     pushActive=false;
     if(localStorage.getItem(PUSH_CONSENT)!=='yes'){
-     pushHealthMessage('Push ще не підключено. Натисніть «Увімкнути сповіщення».');return
+     pushHealthMessage('Push ще не підключено. Скористайтеся головним перемикачем у «Опціях».');return
     }
     await updatePushSubscription();
     subscription=await registration.pushManager.getSubscription();
@@ -932,7 +968,7 @@ async function checkPushDelivery(force=false){
    pushHealthMessage('Не вдалося перевірити Push на сервері. Перевірте інтернет і спробуйте ще раз.');
   }
  })();
- try{return await pushHealthBusy}finally{pushHealthBusy=null}
+ try{return await pushHealthBusy}finally{pushHealthBusy=null;renderSettings()}
 }
 async function getPushConfig(){
  try{
@@ -1015,7 +1051,18 @@ $('closeSheet').onclick=()=>closeSheet($('addressSheet'));$('closePlaces').oncli
 for(const dialog of [$('addressSheet'),$('placesSheet')])dialog.addEventListener('close',unlockSheet);
 $('settlement').onchange=()=>{$('manualQueue').value='';$('customSettlement').hidden=$('settlement').value!=='Інше';suggestion=null;suggestions();checkLookup()};$('customSettlement').oninput=()=>{$('manualQueue').value='';checkLookup()};$('street').oninput=()=>{$('manualQueue').value='';suggestion=null;suggestions();checkLookup()};$('house').onfocus=()=>{$('streetSuggestions').hidden=true};$('house').oninput=()=>{$('streetSuggestions').hidden=true;checkLookup()};$('manualQueue').onchange=checkLookup;$('addressForm').onsubmit=saveAddress;$('deleteAddress').onclick=deleteAddress;$('goOfficial').onclick=officialOpen;
 for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).onchange=e=>{prefs[key]=e.target.checked;savePrefs();updatePushSubscription().catch(console.warn)};
-$('enableNotifications').onclick=enableNotifications;$('disableNotifications').onclick=disableNotifications;
+$('pushMaster').onchange=async event=>{
+ if(pushControlBusy)return;
+ const want=event.target.checked;
+ pushControlBusy=true;renderSettings();
+ try{
+  if(want)await enableNotifications();
+  else await disableNotifications();
+ }finally{
+  pushControlBusy=false;
+  renderSettings();
+ }
+};
 fillQueueSelect();
  const requestedScreen=new URL(location.href).searchParams.get('screen');
  let restore=null;
