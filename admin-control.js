@@ -104,6 +104,10 @@
    check('opsPlannedInbox',m.noticeInInbox!==false);
    check('opsPlannedCountdown',m.plannedBanner?.showCountdown!==false);
    check('opsPlannedEnd',m.plannedBanner?.showEnd!==false);
+   check('opsPlannedButtonVisible',m.plannedBanner?.showButton!==false);
+   options('opsPlannedBackground',m.plannedBanner?.background||'#eaf3ff');
+   options('opsPlannedForeground',m.plannedBanner?.foreground||'#22496f');
+   options('opsPlannedAccent',m.plannedBanner?.accent||'#347af0');
    options('opsPlannedTitle',m.plannedBanner?.title||'Заплановані технічні роботи');
    options('opsPlannedBody',m.plannedBanner?.body||'У цей час застосунок може тимчасово не працювати.');
    options('opsPlannedStyle',m.plannedBanner?.style||'expanded');
@@ -124,7 +128,9 @@
    accent:read('opsColorAccent')},noticeBefore:$('opsMaintenanceWarn').checked,
    noticeInInbox:$('opsPlannedInbox').checked,
    plannedBanner:{title:read('opsPlannedTitle'),body:read('opsPlannedBody'),style:read('opsPlannedStyle'),button:read('opsPlannedButton'),
-    url:read('opsPlannedUrl'),showCountdown:$('opsPlannedCountdown').checked,showEnd:$('opsPlannedEnd').checked},disabledModules};
+    url:read('opsPlannedUrl'),showCountdown:$('opsPlannedCountdown').checked,showEnd:$('opsPlannedEnd').checked,
+    showButton:$('opsPlannedButtonVisible').checked,background:read('opsPlannedBackground'),
+    foreground:read('opsPlannedForeground'),accent:read('opsPlannedAccent')},disabledModules};
  }
  function renderFormatted(target,text){
   target.replaceChildren();
@@ -194,6 +200,10 @@
    const planned=$('opsPlannedPreview');
    if(planned){
     planned.dataset.style=read('opsPlannedStyle')||'expanded';
+    planned.style.setProperty('--planned-bg',read('opsPlannedBackground')||'#eaf3ff');
+    planned.style.setProperty('--planned-ink',read('opsPlannedForeground')||'#22496f');
+    planned.style.setProperty('--planned-accent',read('opsPlannedAccent')||'#347af0');
+    $('opsPlannedPreviewButton').hidden=!$('opsPlannedButtonVisible').checked;
     $('opsPlannedPreviewIcon').textContent=read('opsIcon')||'🛠️';
     $('opsPlannedPreviewTitle').textContent=read('opsPlannedTitle')||'Заплановані технічні роботи';
     $('opsPlannedPreviewBody').textContent=read('opsPlannedBody')||'У цей час застосунок може тимчасово не працювати.';
@@ -339,7 +349,7 @@
    }
   });
  }
- for(const id of ['opsTitle','opsMessage','opsStartsAt','opsUntil','opsMode','opsTheme','opsLayout','opsIcon','opsImageUrl','opsMaintenance','opsColorBackground','opsColorForeground','opsColorAccent','opsPlannedTitle','opsPlannedBody','opsPlannedStyle','opsPlannedButton','opsPlannedUrl','opsPlannedCountdown','opsPlannedEnd','opsPlannedInbox','opsMaintenanceWarn'])$(id).addEventListener('input',previewMaintenance);
+ for(const id of ['opsTitle','opsMessage','opsStartsAt','opsUntil','opsMode','opsTheme','opsLayout','opsIcon','opsImageUrl','opsMaintenance','opsColorBackground','opsColorForeground','opsColorAccent','opsPlannedTitle','opsPlannedBody','opsPlannedStyle','opsPlannedButton','opsPlannedUrl','opsPlannedCountdown','opsPlannedEnd','opsPlannedButtonVisible','opsPlannedBackground','opsPlannedForeground','opsPlannedAccent','opsPlannedInbox','opsMaintenanceWarn'])$(id).addEventListener('input',previewMaintenance);
  $('opsPhotoUpload').onchange=async()=>{
   const files=[...$('opsPhotoUpload').files||[]];$('opsPhotoUpload').value='';
   if(!target())return status('Спочатку створіть повідомлення',true);
