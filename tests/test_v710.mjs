@@ -23,10 +23,10 @@ test('queue auto-refresh ignores identical data, missing old data, other queue a
  assert.equal(diff(before,snapshot({off:[['11:00','12:00']]},'2026-10-11'), '2.1'),false);
  assert.equal(diff(before,snapshot({off:[['11:00','12:00']]}), '3.1'),false);
 });
-test('installed app visibly reports update timing and checks in the background',()=>{
+test('installed app visibly reports update timing and checks once per minute when visible',()=>{
  const html=read('index.html');
  assert.match(html,/id="syncStatus"/);assert.match(html,/id="syncNow"/);
- assert.match(app,/setInterval\(\(\)=>\{if\(!document\.hidden\)refreshData\(\)\},5\*60_000\)/);
+ assert.match(app,/setInterval\(\(\)=>\{if\(!document\.hidden\)refreshData\(\)\},AUTO_SCHEDULE_CHECK_MS\)/);
  assert.match(app,/visibilitychange/);assert.match(app,/lastDownloadAt/);assert.match(app,/lastSyncFailed/);
 });
 test('GitHub schedule importer publishes independently from address refresh',()=>{
