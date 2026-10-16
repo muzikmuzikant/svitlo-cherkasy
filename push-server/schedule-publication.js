@@ -42,7 +42,7 @@ function validate(schedule,review){
  if(bytes>MAX_BYTES)throw Error('Schedule snapshot too large');
  return bytes;
 }
-export function createSchedulePublication({directory,token}){
+export function createSchedulePublication({directory,token,reviewApprovals=null}){
  const file=path.join(directory,'railway-official-schedules.json');
  let current=null;
  try{
@@ -70,15 +70,19 @@ export function createSchedulePublication({directory,token}){
   current=snapshot;
   return status();
  };
- const schedule=()=>current?.schedule||null;
- const review=()=>current?.review||null;
+ const effective=()=>reviewApprovals?reviewApprovals.effective(current?.schedule||null,current?.review||null):
+  {schedule:current?.schedule||null,review:current?.review||null};
+ const schedule=()=>effective().schedule;
+ const review=()=>effective().review;
+ const rawSchedule=()=>current?.schedule||null;
+ const rawReview=()=>current?.review||null;
  const status=()=>({
   ready:!!current,
   lastChecked:current?.schedule.lastChecked||null,
   publishedAt:current?.publishedAt||null,
-  verifiedDays:current?.schedule.days?.map(x=>x.date)||[],
-  reviewPending:current?.schedule.reviewPending===true,
+  verifiedDays:schedule()?.days?.map(x=>x.date)||[],
+  reviewPending:schedule()?.reviewPending===true,
   source:'railway-cron'
  });
- return {schedule,review,status,update,authorized,file};
+ return {schedule,review,rawSchedule,rawReview,status,update,authorized,file};
 }
