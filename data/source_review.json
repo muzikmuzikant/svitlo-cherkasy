@@ -1,7 +1,20 @@
 {
   "schemaVersion": 1,
-  "lastChecked": "2026-10-16T21:57:35+03:00",
+  "lastChecked": "2026-10-17T00:51:34+03:00",
   "rejectedCount": 0,
-  "warningCount": 0,
-  "items": []
+  "warningCount": 2,
+  "items": [
+    {
+      "code": "UNREADABLE_ARTICLE",
+      "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-17-zhovtnya?lang=uk",
+      "targetDate": "2026-10-17",
+      "reason": "Графік у новині не вдалося розпізнати."
+    },
+    {
+      "code": "UNREADABLE_ARTICLE",
+      "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-17-zhovtnya-1?lang=uk",
+      "targetDate": "2026-10-17",
+      "reason": "Графік у новині не вдалося розпізнати."
+    }
+  ]
 }
