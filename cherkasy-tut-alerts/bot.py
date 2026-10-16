@@ -93,27 +93,28 @@ def normalize_raions(statuses):
 
 
 def compose(label, previous, current, when=None, mode='oblast'):
+    """Short user-facing notices; titles describe threat LEVEL, not confirmed objects."""
     when = when or now_local()
     escaped = html.escape(label)
     if current == 'Y':
-        title, explanation = '🟡 ЖОВТИЙ РІВЕНЬ ЗАГРОЗИ', 'За даними Alerts.in.ua, зафіксовано жовтий рівень (попередня загроза). Перевіряйте офіційні повідомлення.'
+        title = '🟡 ДРОНОВА ЗАГРОЗА'
+        detail = 'Жовтий рівень повітряної тривоги.'
     elif current == 'R':
-        title, explanation = '🔴 ЧЕРВОНИЙ РІВЕНЬ ТРИВОГИ', 'Оголошено червоний рівень повітряної тривоги. Негайно прямуйте в укриття.'
+        title = '🔴 РАКЕТНА НЕБЕЗПЕКА'
+        detail = 'Червоний рівень тривоги. Негайно в укриття.'
     elif current == 'P':
-        title, explanation = '🟠 ЧАСТКОВА ТРИВОГА', ('Тривога діє в окремих громадах району. Це не означає, що тривога оголошена на всій території району.' if mode == 'raions' else 'Тривога діє в окремих районах чи громадах області. Уточнюйте статус своєї місцевості.')
+        title = '🟠 ЧАСТКОВА ТРИВОГА'
+        detail = ('Тривога в окремих громадах району.' if mode == 'raions'
+                  else 'Тривога в окремих громадах або районах.')
     elif current == 'N':
-        title, explanation = '🟢 ВІДБІЙ ТРИВОГИ', ('Загальнообласна тривога завершилася. Уточнюйте статус своєї громади.' if label == OBLAST_NAME else 'За даними Alerts.in.ua, тривогу в районі завершено. Уточнюйте також статус своєї громади.')
+        title = '🟢 ВІДБІЙ ТРИВОГИ'
+        detail = 'Тривогу завершено.'
     else:
         raise ValueError('Invalid alert status')
-    movement = {
-        ('Y', 'R'): '⬆️ Рівень підвищено з жовтого до червоного.',
-        ('R', 'Y'): '⬇️ Рівень знижено з червоного до жовтого.',
-    }.get((previous, current))
-    parts = [f'<b>{title}</b>', f'📍 <b>{escaped}</b>', '', explanation]
-    if movement:
-        parts.extend(['', movement])
-    parts.extend(['', f'🕒 Виявлено: {when}', 'Джерело: alerts.in.ua', '', 'Стежте за офіційними повідомленнями та сигналами оповіщення.'])
-    return '\n'.join(parts)
+    return '\n'.join((
+        f'<b>{title}</b>', f'📍 <b>{escaped}</b>', '',
+        detail, '', f'🕒 {when}', 'Джерело: alerts.in.ua',
+    ))
 
 
 class Storage:
@@ -177,7 +178,9 @@ class Storage:
                 db.execute("INSERT INTO kv(key,value) VALUES('primed','1')")
                 LOG.info('Initial state captured without sending old alerts: %r', snapshot)
                 return 0
-            count = 0
+            # Collect all changes from the same API snapshot before publishing.
+            # An oblast-wide event must replace four individual raion messages.
+            changes = []
             for uid in sorted(set(current) | set(snapshot)):
                 label, new = snapshot.get(uid, (current.get(uid, (OBLAST_NAME, 'N', 0))[0], 'N'))
                 if uid not in current:
@@ -196,10 +199,29 @@ class Storage:
                     continue
                 when = now_local()
                 db.execute('INSERT OR REPLACE INTO locations(uid,label,status,ending_checks) VALUES(?,?,?,0)', (uid, label, new))
-                db.execute('INSERT INTO outbox(uid,label,previous,current,detected_at) VALUES(?,?,?,?,?)', (uid, label, old, new, when))
-                count += 1
+                changes.append((uid, label, old, new, when))
                 LOG.info('Transition: %s: %s -> %s', label, old, new)
-            return count
+
+            if mode == 'raions' and changes and all(uid in snapshot for uid in RAIONS):
+                new_states = [snapshot[uid][1] for uid in RAIONS]
+                old_states = [current.get(uid, (RAIONS[uid], 'N', 0))[1] for uid in RAIONS]
+                new_full = new_states[0] if len(set(new_states)) == 1 else None
+                old_full = old_states[0] if len(set(old_states)) == 1 else None
+                if new_full in ('Y', 'R') or (new_full == 'N' and old_full in ('Y', 'R')):
+                    # New warning anywhere requires a ping, but an upgrade or
+                    # an all-clear alone must NOT ping the editorial group.
+                    new_start = any(old == 'N' and new in ('Y', 'R', 'P')
+                                    for _, _, old, new, _ in changes)
+                    previous = ('N' if new_start else (old_full or 'P'))
+                    changes = [(OBLAST_UID, 'Уся Черкаська область', previous,
+                                new_full, changes[0][4])]
+                    LOG.info('Consolidated four districts into one oblast notice: %s -> %s',
+                             previous, new_full)
+
+            for uid, label, old, new, when in changes:
+                db.execute('INSERT INTO outbox(uid,label,previous,current,detected_at) VALUES(?,?,?,?,?)',
+                           (uid, label, old, new, when))
+            return len(changes)
 
     def subscribe(self, user_id, name):
         with self.connection() as db:
