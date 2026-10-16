@@ -159,6 +159,19 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="quick-queue-controls"><select id="quickQueueSelect" aria-label="Оберіть підчергу"><option value="">Оберіть підчергу</option></select>
   <button id="quickQueueOpen" type="button">Показати графік →</button></div>
  </section>
+ <h2 class="subsection-title">Приватність і аналітика</h2>
+ <div class="surface settings-card" id="analyticsSettings">
+  <div class="setting-line"><div><strong>Допомагати покращувати застосунок</strong>
+   <p>Добровільна статистика встановлень, пристроїв і технічних помилок. Вибір зберігається після оновлень.</p></div>
+   <label class="switch"><input type="checkbox" id="betaAnalyticsConsent" aria-label="Дозволити добровільну аналітику"><span></span></label>
+  </div>
+  <div class="setting-line" id="betaAnalyticsScopeNotice" hidden><div><strong>Статистика переглядів повідомлень</strong>
+   <p>Цей новий тип аналітики не входив до вашої попередньої згоди. Можна дозволити тут, без повторного вікна при запуску.</p>
+   <button type="button" class="secondary-action" id="betaAnalyticsEnableNotice">Дозволити статистику повідомлень</button></div>
+  </div>
+  <p id="betaAnalyticsState" class="analytics-consent-status" role="status">Перевіряємо ваш вибір…</p>
+  <a class="setting-action" href="./privacy.html">Про дані та відкликання згоди <span>›</span></a>
+ </div>
  <h2 class="subsection-title">Застосунок</h2><div class="surface settings-card"><button class="setting-action" id="addFromSettings">Додати адресу <span>›</span></button><button class="setting-action" id="manualRefresh">Оновити офіційні графіки <span>›</span></button><button class="setting-action" id="checkAppUpdate">Перевірити оновлення застосунку <span>↻</span></button><a class="setting-action" href="./help.html?from=settings">Центр допомоги · Запитання та відповіді <span>›</span></a><a class="setting-action" href="./feedback.html?from=settings">Зв’язок із нами · Повідомити про помилку <span>›</span></a><a class="setting-action" href="./support-project.html">Підтримати проєкт <span>♡</span></a><a class="setting-action" href="./advertising.html">Реклама у Світло Черкаси <span>›</span></a><a class="setting-action" href="https://www.cherkasyoblenergo.com/off" target="_blank" rel="noopener">Знайти чергу на сайті оператора <span>↗</span></a></div><p class="settings-foot">Світло Черкаси <span id="appVersion">v7.9.11</span> · Неофіційний інформаційний сервіс. <a href="./feedback.html?from=settings">Зв’язок із нами</a> · <a href="./privacy.html" target="_blank" rel="noopener">Конфіденційність</a> · <a href="./about.html" target="_blank" rel="noopener">Джерела</a></p></section>
 </main>
 <nav class="bottom-nav" aria-label="Навігація" style="--tab-offset:0px"><button class="nav-item active" data-go="home" aria-current="page"><svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg><span>Головна</span></button><button class="nav-item" data-go="detail"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M7 2v4M17 2v4M3 10h18"/></svg><span>Графік</span></button><button class="nav-item" data-go="updates"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h11"/></svg><span>Вхідні</span><span id="navUnread" class="nav-unread" hidden aria-label="Непрочитані повідомлення"></span></button><button class="nav-item" data-go="settings"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 17h16M8 3v8M16 13v8"/></svg><span>Опції</span></button></nav></div>
