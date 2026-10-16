@@ -48,8 +48,30 @@ class GroupingTests(unittest.TestCase):
             store.apply_snapshot(statuses({}), 'raions')
             self.assertEqual(store.apply_snapshot(statuses({'152':'Y'}), 'raions'), 1)
             self.assertEqual(store.pending()[-1][2], 'Черкаський район')
-        self.assertIn('ДРОНОВА ЗАГРОЗА', compose('Черкаський район', 'N', 'Y'))
-        self.assertIn('РАКЕТНА НЕБЕЗПЕКА', compose('Уся Черкаська область', 'Y', 'R'))
+        self.assertEqual(compose('Черкаський район', 'N', 'Y'),
+                         '🟡🚨 Черкаський район — жовта тривога!')
+        self.assertEqual(compose('Уманський район', 'N', 'R'),
+                         '🔴🚨 Уманський район — червона тривога!')
+        self.assertEqual(compose('Уся Черкаська область', 'N', 'R'),
+                         '🔴🚨 Область — червона тривога!')
+        self.assertEqual(compose('Уся Черкаська область', 'N', 'Y'),
+                         '🟡🚨 Область — жовта тривога!')
+        self.assertEqual(compose('Черкаський район', 'Y', 'N'),
+                         '🟢 Черкаський район — Відбій жовтої тривоги')
+        self.assertEqual(compose('Уманський район', 'R', 'N'),
+                         '🟢 Уманський район — Відбій червоної тривоги')
+        self.assertEqual(compose('Уся Черкаська область', 'R', 'N'),
+                         '🟢 Область — Відбій червоної тривоги')
+        self.assertEqual(compose('Черкаський район', 'P', 'N'),
+                         '🟢 Черкаський район — Відбій тривоги')
+        for previous in ('N', 'Y', 'R', 'P'):
+            for current in ('Y', 'R', 'N', 'P'):
+                text = compose('Звенигородський район', previous, current)
+                self.assertNotIn('Джерело', text)
+                self.assertNotIn('🕒', text)
+                self.assertNotIn('\\n', text)
+        for raion in ('Черкаський район', 'Уманський район', 'Золотоніський район', 'Звенигородський район'):
+            self.assertEqual(compose(raion, 'N', 'Y'), f'🟡🚨 {raion} — жовта тривога!')
 
 
 if __name__ == '__main__':
