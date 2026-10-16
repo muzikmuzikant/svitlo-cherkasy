@@ -57,7 +57,7 @@
   }
   if(reducedDetailMotion()){dialog.close();return}
   detailClosing=true;dialog.classList.add('is-leaving');
-  detailCloseTimer=setTimeout(()=>{detailCloseTimer=null;if(dialog.open)dialog.close()},260);
+  detailCloseTimer=setTimeout(()=>{detailCloseTimer=null;if(dialog.open)dialog.close()},300);
  }
  close.onclick=()=>closeDetail();
  dialog.addEventListener('click',event=>{if(event.target===dialog)closeDetail()});

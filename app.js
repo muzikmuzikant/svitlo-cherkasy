@@ -1046,6 +1046,7 @@ fillQueueSelect();
  getPushConfig();
 setInterval(()=>{renderHome();if(active==='detail')renderDetail();checkNotifications()},30_000);
 setInterval(()=>{if(!document.hidden)refreshData()},AUTO_SCHEDULE_CHECK_MS);
+window.addEventListener('svitlo:live-schedules',()=>{lastRefresh=0;refreshData().catch(console.warn)});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();refreshData();checkNotifications()}});
 window.addEventListener('online',()=>{
   renderFreshness();flash('Зв’язок відновлено. Оновлюємо графіки та повідомлення…');

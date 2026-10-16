@@ -579,3 +579,27 @@ html:not([data-app-mode="standalone"]) #appBootScreen,.app-boot-screen[hidden]{d
 /* Explicitly match the neutral day/hour cell colors in the legend. */
 .legend .dot-light{background:#fff!important;border-color:#c8d5e5}
 .legend .dot-mixed{background:linear-gradient(90deg,#29384f 50%,#fff 50%)!important;border-color:#c8d5e5}
+
+/* 7.9.9 planned maintenance: clear timing, actionable warning, iPhone-safe. */
+.maintenance-inline[hidden]{display:none!important}
+.maintenance-inline.is-planned,.maintenance-inline.is-active{display:flex!important;align-items:flex-start;gap:14px;padding:20px;margin:12px 0 18px;border:1px solid #bfd9ff;border-radius:23px;background:linear-gradient(125deg,#eaf3ff 0%,#fff 72%);box-shadow:0 14px 32px #3776bd19;color:#22496f}
+.maintenance-inline.is-planned.planned-highlight{border-color:#facb87;background:linear-gradient(115deg,#fff1d9,#fff 75%)}
+.maintenance-inline.is-planned.planned-compact{padding:15px;border-radius:18px;box-shadow:none}
+.maintenance-inline-icon{display:grid;place-items:center;flex:none;width:49px;height:49px;border-radius:15px;background:#dceaff;color:#2c74d6;font-size:24px}
+.maintenance-inline-content{display:grid;gap:8px;min-width:0;flex:1}
+.maintenance-inline-eyebrow{font-size:10px;letter-spacing:.13em;color:#5688c6;font-weight:850}
+.maintenance-inline-title{display:block;font-size:clamp(16px,4.2vw,20px);letter-spacing:-.4px;line-height:1.3}
+.maintenance-inline-summary{font-size:13px;color:#4b6582;line-height:1.55;margin:0}
+.maintenance-inline-dates{display:grid;gap:5px;font-size:12px;font-weight:680;color:#335d88}
+.maintenance-inline-countdown{display:inline-flex;justify-self:start;padding:7px 10px;border-radius:10px;background:#dceafe;color:#2265b2;font-size:11px;font-weight:850}
+.maintenance-inline-action{justify-self:start;display:inline-flex;align-items:center;justify-content:center;margin-top:3px;padding:11px 14px;border-radius:12px;background:#347af0;color:#fff!important;text-decoration:none;font-size:12px;font-weight:750}
+@media(max-width:380px){.maintenance-inline.is-planned,.maintenance-inline.is-active{gap:10px;padding:15px}.maintenance-inline-icon{width:40px;height:40px;font-size:21px}}
+@media(prefers-reduced-motion:no-preference){
+ .maintenance-inline.is-planned:not([hidden]){animation:plannedMaintenanceIn .36s cubic-bezier(.2,.85,.25,1) both}
+ @keyframes plannedMaintenanceIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+ html:not(.feature-off-animations) .inbox-detail[open].is-leaving{pointer-events:none;animation:inboxReaderDismiss .3s cubic-bezier(.34,0,.8,1) both!important}
+ html:not(.feature-off-animations) .inbox-detail[open].is-leaving .inbox-detail-content,
+ html:not(.feature-off-animations) .inbox-detail[open].is-leaving .inbox-detail-close{animation:inboxContentsDismiss .24s ease-in both!important}
+ html:not(.feature-off-animations) .inbox-detail[open].is-leaving::backdrop{animation:inboxBackdropDismiss .3s ease-in both!important}
+ @keyframes inboxContentsDismiss{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(9px)}}
+}
