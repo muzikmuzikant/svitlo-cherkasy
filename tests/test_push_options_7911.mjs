@@ -5,7 +5,7 @@ import vm from 'node:vm';
 
 const read=name=>fs.readFileSync(new URL('../'+name,import.meta.url),'utf8');
 const app=read('app.js'),html=read('index.html'),css=read('style.css');
-const begin=app.indexOf('let pushControlBusy=false;\nfunction renderSettings(){');
+const begin=app.indexOf('let pushControlBusy=false,pushControlWanted=null;\nfunction renderSettings(){');
 const end=app.indexOf('\nfunction fillQueueSelect()',begin);
 assert.ok(begin>=0&&end>begin,'Extract the actual Settings renderer');
 const actual=app.slice(begin,end);
