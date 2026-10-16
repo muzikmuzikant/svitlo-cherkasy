@@ -345,9 +345,15 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
    <div class="field"><label for="opsPlannedButton">Напис на кнопці</label><input id="opsPlannedButton" maxlength="38" placeholder="Офіційні графіки"></div>
    <div class="field"><label for="opsPlannedUrl">Адреса кнопки (HTTPS або ./)</label><input id="opsPlannedUrl" placeholder="https://www.cherkasyoblenergo.com/news"></div>
   </div>
+  <div class="two ops-planned-colors">
+   <div class="field"><label for="opsPlannedBackground">Колір фону банера</label><input id="opsPlannedBackground" type="color" value="#eaf3ff"></div>
+   <div class="field"><label for="opsPlannedForeground">Колір тексту банера</label><input id="opsPlannedForeground" type="color" value="#22496f"></div>
+  </div>
+  <div class="field ops-planned-colors"><label for="opsPlannedAccent">Акцентний колір і кнопка</label><input id="opsPlannedAccent" type="color" value="#347af0"></div>
   <div class="ops-planned-options">
    <label><input id="opsPlannedCountdown" type="checkbox" checked> Показувати зворотний відлік до початку</label>
    <label><input id="opsPlannedEnd" type="checkbox" checked> Показувати орієнтовне завершення</label>
+   <label><input id="opsPlannedButtonVisible" type="checkbox" checked> Показувати кнопку в банері</label>
    <label><input id="opsPlannedInbox" type="checkbox" checked> Автоматичне повідомлення у «Вхідних»</label>
   </div>
   <div id="opsPlannedPreview" class="ops-planned-preview" aria-live="polite">
