@@ -201,9 +201,15 @@ export function createAdsStore({directory,clock=()=>Date.now()}){
    }
    const total=[...counts.values()].reduce((a,b)=>a+b,0);
    const all=[...counts.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'uk'));
-   const visible=(field==='locality'?all.filter(([,count])=>count>=5):all).slice(0,15);
+   // Show every opt-in locality with activity, including small villages.
+   // Small groups use a range; no exact values or percentages for 1–4 installs.
+   // Other dimensions retain their compact top-15 shortlist.
+   const visible=field==='locality'?all:all.slice(0,15);
    result[name]={
-    items:visible.map(([label,count])=>({label,count,percent:total?Number((100*count/total).toFixed(1)):0})),
+    items:visible.map(([label,count])=>({
+     label,count:field==='locality'&&count<5?'1–4':count,
+     percent:field==='locality'&&count<5?null:(total?Number((100*count/total).toFixed(1)):0)
+    })),
     total,unknown:rows.length-total,
     other:total-visible.reduce((n,[,count])=>n+count,0)
    };
