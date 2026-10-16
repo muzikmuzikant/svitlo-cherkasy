@@ -108,9 +108,10 @@ test('favorite places persist without losing selection and restore online refres
  assert.match(app,/Зв’язок відновлено\. Оновлюємо графіки та повідомлення/);
  assert.match(css,/\.favorite-btn\.selected/);
 });
-test('inbox detail occupies full mobile screen and changes are marked promptly',()=>{
+test('inbox detail occupies full mobile screen without stale updated badges',()=>{
  const css=read('style.css'),ui=read('inbox-ui.js');
  assert.match(css,/\.inbox-detail\{inset:0!important;margin:0!important/);
  assert.match(css,/height:100dvh!important/);
- assert.match(ui,/Date\.parse\(item\.updatedAt\)>Date\.parse\(item\.at\)\+1000/);
+ assert.doesNotMatch(ui,/Оновлено ✨/);
+ assert.match(ui,/updatedAt:a\.updatedAt/,'editing still synchronizes message content');
 });
