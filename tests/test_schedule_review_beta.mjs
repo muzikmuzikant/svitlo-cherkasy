@@ -78,6 +78,20 @@ test('reject unverified or incomplete schedules, invalid dates, spoofed sources,
  }finally{fs.rmSync(directory,{recursive:true,force:true})}
 });
 
+test('legacy feed without content hash requires fresh approval after importer adds a hash',()=>{
+ const directory=dir();
+ try{
+  const approvals=createScheduleReview({directory});
+  const legacy=review();delete legacy.items[0].sourceHash;
+  const input={date,source:article,queues:approved(),confirmed:true};
+  approvals.approve(input,snap(),legacy);
+  assert.equal(approvals.list(snap(),legacy).approvals[0].active,true);
+  assert.equal(approvals.list(snap(),review()).approvals[0].active,false,
+   'do not silently trust unversioned approval once a content fingerprint is available');
+  assert.equal(approvals.effective(snap(),review()).schedule.reviewPending,true);
+ }finally{fs.rmSync(directory,{recursive:true,force:true})}
+});
+
 test('client publishes only after explicit owner review; parser records source hash',()=>{
  const client=source('admin-source-review.js'),html=source('admin.html');
  const importer=source('scripts/update_data.py'),server=source('push-server/server.js');
