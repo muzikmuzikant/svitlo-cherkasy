@@ -355,10 +355,15 @@ def admin_command_loop(store, tg, group_id, status):
                 if not text or not text[0].startswith('/'):
                     continue
                 command = text[0].lower().split('@')[0]
+                if command in ('/chatid', '/subscribe', '/unsubscribe', '/status', '/test', '/help', '/start'):
+                    LOG.info('Telegram command received: %s; chat_id=%s; configured_admin=%s',
+                             command, chat.get('id'), group_id)
                 if command == '/chatid':
                     tg.send(chat['id'], f'ID цієї групи: <code>{chat["id"]}</code>')
                     continue
                 if str(chat.get('id')) != str(group_id):
+                    if command == '/test' and chat.get('type') in ('group', 'supergroup'):
+                        tg.send(chat['id'], '⚠️ Ця група не збігається з ADMIN_GROUP_ID. Надішліть /chatid та перевірте ID у Railway.', notify=False)
                     continue
                 user = msg.get('from') or {}
                 uid = user.get('id')
@@ -384,6 +389,31 @@ def admin_command_loop(store, tg, group_id, status):
             time.sleep(5)
 
 
+def verify_admin_group(store, tg, group_id):
+    """Probe the configured group once without posting any alert to the channel."""
+    try:
+        chat = tg.call('getChat', {'chat_id': group_id})
+        resolved = str(chat.get('id', ''))
+        kind = chat.get('type', '')
+        LOG.info('Admin group check: configured=%s resolved=%s type=%s title=%r',
+                 group_id, resolved, kind, chat.get('title', ''))
+        if kind not in ('group', 'supergroup') or resolved != str(group_id):
+            LOG.error('ADMIN_GROUP_ID is not the correct numeric ID of a Telegram group')
+            return
+        key = 'admin_group_probe_v1:' + resolved
+        with store.connection() as conn:
+            already_sent = conn.execute('SELECT value FROM kv WHERE key=?', (key,)).fetchone()
+        if not already_sent:
+            tg.send(group_id,
+                    '🧪 <b>ДІАГНОСТИКА БОТА</b>\nЦе одноразове тестове повідомлення в адмінгрупу. Моніторинг тривог запущено.\nКоманди: /test, /status, /subscribe, /chatid.',
+                    notify=False)
+            with store.connection() as conn:
+                conn.execute('INSERT OR REPLACE INTO kv(key,value) VALUES(?,?)', (key, 'sent'))
+            LOG.info('Diagnostic Telegram message sent successfully to configured admin group')
+    except Exception as exc:
+        LOG.exception('Admin group diagnostic failed: %s', exc)
+
+
 def main():
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
     token = setting('TELEGRAM_BOT_TOKEN')
@@ -398,6 +428,7 @@ def main():
         sys.exit('Missing TELEGRAM_BOT_TOKEN, ALERTS_API_TOKEN, CHANNEL_ID or ADMIN_GROUP_ID. See README.md')
     db = Storage(setting('DB_PATH', './data/alerts.sqlite3'))
     tg = Telegram(token)
+    verify_admin_group(db, tg, group)
     source = AlertsSource(api, mode)
     status = {'last_ok': 'ще не було'}
     thread = threading.Thread(target=admin_command_loop, args=(db, tg, group, status), daemon=True)
