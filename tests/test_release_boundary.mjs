@@ -62,7 +62,7 @@ test('Production commercial lock survives enabled stored config and cannot colle
    contacts:[{label:'Контакт',url:'https://example.com',enabled:true}],
    packages:[{title:'Тариф',price:800,durationDays:30,visible:true}],
    campaigns:[{id:'advert',title:'Оголошення',link:'https://example.com',enabled:true}],
-   support:{...config.support,enabled:true,paymentUrl:'https://example.com/pay',details:'PRIVATE-IBAN-NEVER-PUBLISH',provider:'monobank',methods:[{title:'Банка',kind:'monobank',url:'https://example.com/donate',enabled:true}],expenses:[{title:'Private invoice',amount:123,public:true}]}
+   support:{...config.support,enabled:true,paymentUrl:'https://example.com/pay',details:'PRIVATE-IBAN-NEVER-PUBLISH',provider:'monobank',methods:[{title:'Банка',kind:'monobank',url:'https://example.com/donate',enabled:true}],expenses:[{title:'Private invoice',amount:123,public:false}]}
   });
   assert.equal(store.dashboard().commercialLocked,true,'Production must visibly warn admin that ad drafts are non-public');
   const publicConfig=store.publicState();
@@ -70,16 +70,37 @@ test('Production commercial lock survives enabled stored config and cannot colle
   assert.deepEqual(publicConfig.campaigns,[]);
   assert.deepEqual(publicConfig.packages,[]);
   assert.deepEqual(publicConfig.contacts,[]);
-  assert.equal(publicConfig.support.enabled,false);
-  assert.equal(publicConfig.support.paymentUrl,'');
+  assert.equal(publicConfig.support.enabled,true,'Voluntary support is independent of advertising');
+  assert.equal(publicConfig.support.paymentUrl,'https://example.com/pay');
+  assert.equal(publicConfig.support.methods.length,1);
+  assert.equal(publicConfig.support.methods[0].url,'https://example.com/donate');
   assert.deepEqual(publicConfig.support.expenses,[]);
   assert.deepEqual(Object.keys(publicConfig).sort(),['campaigns','contacts','enabled','packages','support']);
-  assert.doesNotMatch(JSON.stringify(publicConfig),/PRIVATE-IBAN-NEVER-PUBLISH|Private invoice|example.com\/donate/);
-  assert.deepEqual(publicConfig.support.methods,[]);
+  assert.doesNotMatch(JSON.stringify(publicConfig),/Private invoice|Оголошення|Тариф/);
+  assert.equal(publicConfig.support.methods[0].kind,'monobank');
   assert.equal(store.event('advert','impression'),false);
   assert.equal(store.event('promo','impression'),false);
   assert.ok(read('admin-ads.js').includes('report.commercialLocked'),'Admin must label Production advertising drafts');
+  assert.ok(read('index.html').includes('href="./support-project.html"'));
   assert.ok(read('advertising.html').includes('if(!data.enabled)'));
   assert.ok(read('support-project.html').includes('if(!s.enabled)'));
+ }finally{fs.rmSync(dir,{recursive:true,force:true})}
+});
+
+test('Owner can disable support independently and private payment fields never leak',async()=>{
+ const {createAdsStore}=await import('../push-server/ads.js');
+ const os=await import('node:os'),path=await import('node:path');
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'svitlo-disabled-support-'));
+ try{
+  const store=createAdsStore({directory:dir,commercialAllowed:false});
+  const original=store.dashboard().settings;
+  store.update({...original,support:{...original.support,enabled:false,paymentUrl:'https://example.com/private',methods:[{title:'IBAN',details:'PRIVATE_IBAN_TEST',enabled:true}]}});
+  const publicView=store.publicState();
+  assert.equal(publicView.enabled,false);
+  assert.deepEqual(publicView.campaigns,[]);
+  assert.equal(publicView.support.enabled,false);
+  assert.equal(publicView.support.paymentUrl,'');
+  assert.deepEqual(publicView.support.methods,[]);
+  assert.doesNotMatch(JSON.stringify(publicView),/PRIVATE_IBAN_TEST|example.com\/private/);
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });
