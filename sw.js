@@ -1,5 +1,5 @@
 importScripts('./notification-center.js');
-const VERSION='svitlo-cherkasy-shell-v7.9.9-beta-live-controls-r2';
+const VERSION='svitlo-cherkasy-shell-v7.9.11-notice-metrics-r1';
 const SHELL=["./","./index.html","./app.js","./address-lookup.js","./notification-center.js","./notification-text.js","./inbox-ui.js","./site-mode.js","./admin-control.js","./admin-richtext.js","./admin-help-richtext.js","./admin-control.css","./admin-feedback.css","./admin-dashboard.js","./admin-analytics.js","./admin-ads.js","./admin-ads.css","./client-errors.js","./admin-errors.js","./admin-reports.js","./motion.js","./motion.css","./internal-pages.js","./internal-pages.css","./legal-consent.js","./legal-consent.css","./admin-legal.js","./beta-ads.js","./ad-detail.html","./advertising.html","./support-project.html","./admin-security-ui.js","./admin-users.js","./admin-users.css","./admin-workspace.js","./admin-workspace.css","./admin-quality.js","./admin-schedule-diff.js","./admin-categories.js","./admin-features.js","./admin-command.js","./data-merge.js","./hour-paint.js","./admin.html","./admin.js","./style.css","./maintenance-ui.css","./install.css","./install.js","./version-check.js","./release.json","./manifest.webmanifest","./privacy.html","./terms.html","./about.html","./feedback.html","./feedback.js","./feedback.css","./help.html","./help.css","./help.js","./admin-extra.js","./admin-planner.js","./schedule-planner.js","./favicon.ico","./favicon-16.png","./favicon-32.png","./favicon-48.png","./assets/icon.svg","./assets/icon-192-v692.png","./assets/icon-512-v692.png","./assets/icon-512-maskable-v692.png","./apple-touch-icon-v692.png","./apple-touch-icon.png"];
 const CACHE_DATA='svitlo-cherkasy-data-v6.7';
 const CACHE_IMAGES='svitlo-cherkasy-media-v74';
@@ -57,7 +57,7 @@ self.addEventListener('push',event=>{
  const inboxAllowed=msg.inbox!==false;
  const kind=['schedule','emergency','announcement','push'].includes(msg.kind)?msg.kind:(id.startsWith('notice:')?'announcement':'push');
  event.waitUntil(Promise.all([
-  self.registration.showNotification(String(msg.title).slice(0,85),{body:String(msg.body).slice(0,220),icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',tag,data:{url:msg.url||self.registration.scope,inboxId:inboxAllowed?id:null,inbox:inboxAllowed}}),
+  self.registration.showNotification(String(msg.title).slice(0,85),{body:String(msg.body).slice(0,220),icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',tag,data:{url:msg.url||self.registration.scope,inboxId:inboxAllowed?id:null,noticeId:canonical,inbox:inboxAllowed}}),
   (inboxAllowed?self.SvitloInbox.add({id,title:msg.title,body:msg.body,content:msg.content||'',kind,at:msg.at||new Date().toISOString(),url:msg.url||self.registration.scope}):Promise.resolve())
    .then(()=>self.clients.matchAll({type:'window',includeUncontrolled:true}))
    .then(clients=>clients.forEach(client=>client.postMessage({type:'SVITLO_INBOX_UPDATED'})))
@@ -68,15 +68,18 @@ self.addEventListener('notificationclick',event=>{
  event.notification.close();
  event.waitUntil((async()=>{
   const id=String(event.notification.data?.inboxId||'').slice(0,150);
+  const noticeId=String(event.notification.data?.noticeId||'').slice(0,150);
   const inboxAllowed=event.notification.data?.inbox!==false;
   const tabs=await self.clients.matchAll({type:'window',includeUncontrolled:true});
   for(const tab of tabs){if(tab.url.startsWith(self.registration.scope)){
    await tab.focus();
+   if(/^notice:[A-Za-z0-9_-]{6,64}$/.test(noticeId))tab.postMessage({type:'SVITLO_NOTICE_PUSH_CLICK',id:noticeId});
    if(inboxAllowed)tab.postMessage({type:'SVITLO_OPEN_INBOX',id});
    return;
   }}
   const link=new URL(self.registration.scope);
   if(id)link.searchParams.set('inbox',id);
+  if(/^notice:[A-Za-z0-9_-]{6,64}$/.test(noticeId))link.searchParams.set('pushclick',noticeId);
   await self.clients.openWindow(link.href);
  })());
 });
