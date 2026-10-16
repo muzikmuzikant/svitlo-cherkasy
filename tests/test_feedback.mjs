@@ -85,3 +85,38 @@ test('secure two-way messages persist and cannot be forged without token',()=>{
   assert.throws(()=>store.reply(id,token,'Ще одне повідомлення','127'),e=>e.statusCode===429);
  }finally{cleanup()}
 });
+
+
+test('configurable support categories enforce custom text and select fields',()=>{
+ const temp=fs.mkdtempSync(path.join(os.tmpdir(),'svitlo-feedback-config-'));
+ try{
+  const config=createFeedbackStore({filePath:path.join(temp,'feedback.json')});
+  config.setCategories([{id:'energy',title:'Електропостачання',hint:'Уточніть дату',enabled:true,fields:[
+   {id:'date',label:'Дата події',type:'text',required:true,options:[]},
+   {id:'severity',label:'Рівень',type:'select',required:true,options:['Звичайний','Важливий']}
+  ]}]);
+  assert.equal(config.getCategories()[0].id,'energy');
+  const updated=config.getCategories().map(c=>({...c,priority:'high'}));
+  config.setCategories(updated);
+  assert.throws(()=>config.submit({topic:'energy',message:'Проблема із графіками',extra:{severity:'Звичайний'}},'127.0.0.2'),/Заповніть поле/);
+  assert.throws(()=>config.submit({topic:'energy',message:'Проблема із графіками',extra:{date:'15.10.2026',severity:'недопустимо'}},'127.0.0.3'),/Невірний варіант/);
+  const result=config.submit({topic:'energy',message:'Проблема із графіками',extra:{date:'15.10.2026',severity:'Важливий'}},'127.0.0.4');
+  assert.ok(result.id.startsWith('SC-'));
+  assert.equal(config.list().items[0].extra.date.value,'15.10.2026');
+  assert.equal(config.list().items[0].priority,'high');
+ }finally{fs.rmSync(temp,{recursive:true,force:true})}
+});
+
+test('resolved ticket accepts one voluntary rating using private token',()=>{
+ const {store,cleanup}=makeStore();
+ try{
+  const receipt=store.submit(sample,'198.51.100.41');
+  assert.throws(()=>store.rate(receipt.id,receipt.token,5),/після закриття/);
+  store.change(receipt.id,{status:'resolved'});
+  assert.throws(()=>store.rate(receipt.id,'invalid-private-token',4));
+  assert.throws(()=>store.rate(receipt.id,receipt.token,6),/від 1 до 5/);
+  assert.deepEqual(store.rate(receipt.id,receipt.token,5),{ok:true,rating:5});
+  assert.equal(store.getStatus(receipt.id,receipt.token).rating,5);
+  assert.throws(()=>store.rate(receipt.id,receipt.token,2),/вже збережено/);
+ }finally{cleanup()}
+});

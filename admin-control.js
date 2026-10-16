@@ -164,9 +164,17 @@
  function previewMaintenance(){
   $('opsPreviewTitle').textContent=read('opsTitle')||'Технічні роботи';
   $('opsPreviewMessage').textContent=read('opsMessage')||'Незабаром повернемося';
+  $('opsPreviewBadge').textContent=read('opsMode')==='incident'?'Терміново':'Технічні роботи';
+  $('opsPreview').dataset.mode=read('opsMode')||'full';
+  const until=$('opsUntil').value,untilDate=until?new Date(until):null;
+  $('opsPreviewEta').textContent=untilDate&&Number.isFinite(untilDate.getTime())&&untilDate.getTime()>Date.now()
+   ?new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Kyiv'}).format(untilDate)
+   :'Поки невідоме';
+  $('opsMaintenanceModePill').textContent=$('opsMaintenance').checked?'Режим увімкнено':'Режим вимкнено';
   const graphic=$('opsPreviewIcon'),url=read('opsImageUrl');graphic.replaceChildren();
   if(/^https:\/\//.test(url)){const img=document.createElement('img');img.src=url;img.alt='Ілюстрація техробіт';graphic.append(img)}
-  else graphic.textContent=read('opsIcon')||'✨';
+  else if(read('opsIcon')&&read('opsIcon')!=='✨')graphic.textContent=read('opsIcon');
+  else graphic.innerHTML='<svg viewBox="0 0 24 24" width="47" height="47" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-3 3-3-3 3-3Z"/></svg>';
   $('opsPreview').dataset.theme=read('opsTheme')||'blue';
   $('opsPreview').dataset.layout=read('opsLayout')||'centered';
   $('opsPreview').style.backgroundColor=read('opsTheme')==='custom'?(read('opsColorBackground')||'#143463'):'';

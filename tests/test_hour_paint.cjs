@@ -5,11 +5,11 @@ const late=t(19*60+30,21*60); // light 19:00–19:30, off 19:30–20:00
 const a=paintHour(late,19);
 assert.equal(a.kind,'mixed');
 assert.deepEqual(a.parts,[{start:0,end:30,state:0},{start:30,end:60,state:1}]);
-assert.ok(a.background.indexOf('#f7fafc') < a.background.indexOf('#29384f'));
+assert.ok(a.background.indexOf('#ffffff') < a.background.indexOf('#29384f'));
 const early=t(18*60,19*60+30); // off 19:00–19:30, light after 19:30
 const b=paintHour(early,19);
 assert.deepEqual(b.parts,[{start:0,end:30,state:1},{start:30,end:60,state:0}]);
-assert.ok(b.background.indexOf('#29384f') < b.background.indexOf('#f7fafc'));
+assert.ok(b.background.indexOf('#29384f') < b.background.indexOf('#ffffff'));
 const whole=paintHour(t(19*60,20*60),19);
 assert.equal(whole.kind,'off');
 assert.equal(paintHour(t(19*60+30,20*60),18).kind,'on');

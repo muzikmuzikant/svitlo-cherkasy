@@ -1,9 +1,10 @@
 <!doctype html>
 <html lang="uk"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="svitlo-version" content="7.9.7"><meta name="theme-color" content="#f6f8fc"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Світло"><meta name="description" content="Дізнавайтеся графік відключень за адресою у Черкасах та районі. Безкоштовний застосунок зі сповіщеннями про зміни.">
-<meta property="og:type" content="website"><meta property="og:site_name" content="Світло Черкаси"><meta property="og:title" content="Світло Черкаси | Графік відключень за вашою адресою"><meta property="og:description" content="Графіки світла, зміни та нагадування. Безкоштовно, без реєстрації."><meta property="og:image" content="https://svitlo-cherkasy.pp.ua/assets/icon-512-v692.png"><meta property="og:url" content="https://svitlo-cherkasy.pp.ua/">
+<meta name="svitlo-version" content="7.9.8"><meta name="theme-color" content="#f6f8fc"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Світло Черкаси"><meta name="description" content="Графіки відключень світла у Черкасах та Черкаському районі за адресою. Перевіряйте підчергу, час відключень та отримуйте сповіщення про зміни.">
+<meta name="robots" content="index,follow"><link rel="canonical" href="https://svitlo-cherkasy.pp.ua/">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Світло Черкаси"><meta property="og:title" content="Світло Черкаси | Графік відключень за вашою адресою"><meta property="og:description" content="Графіки відключень світла у Черкасах та Черкаському районі за адресою. Перевіряйте підчергу, час відключень та отримуйте сповіщення про зміни."><meta property="og:image" content="https://svitlo-cherkasy.pp.ua/assets/icon-512-v692.png"><meta property="og:url" content="https://svitlo-cherkasy.pp.ua/">
 
 
 
@@ -12,15 +13,15 @@
 
 <script>document.documentElement.dataset.appMode=(window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true)?'standalone':'browser';</script>
 <style>html:not([data-app-mode="standalone"]) .viewport{display:none!important}html[data-app-mode="standalone"] #installLanding{display:none!important}</style>
-<link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./install.css"><title>Світло Черкаси</title>
+<link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./internal-pages.css"><link rel="stylesheet" href="./legal-consent.css"><link rel="stylesheet" href="./install.css"><title>Графік відключень світла в Черкасах та районі | Світло Черкаси</title>
 
 <link rel="manifest" href="./manifest.webmanifest?v=6.9.2">
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-v692.png">
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png?v=692">
 <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192-v692.png">
 <link rel="icon" type="image/svg+xml" href="./assets/icon.svg">
-</head>
-<body>
+<link rel="stylesheet" href="./maintenance-ui.css"><link rel="stylesheet" href="./motion.css"><script defer src="./motion.js"></script></head>
+<body data-deployment-channel="production">
 <section id="installLanding" class="install-landing" aria-labelledby="installHeading">
   <div class="install-shell">
     <header class="install-top">
@@ -68,7 +69,7 @@
       </aside>
     </main>
     <div class="install-bottom-note"><span aria-hidden="true">ⓘ</span> Інформаційний сервіс. Час відключень — прогноз за даними оператора, а не фактичний стан електромережі.</div>
-    <footer class="install-footer"><span>© Світло Черкаси · Неофіційний застосунок</span><nav aria-label="Посилання"><a href="./privacy.html">Конфіденційність</a><a href="./about.html">Джерела</a><a href="./help.html?from=settings">Допомога</a><a href="./feedback.html?from=settings">Зв’язок із нами</a></nav></footer>
+    <footer class="install-footer"><span>© Світло Черкаси · Неофіційний застосунок</span><nav aria-label="Посилання"><a href="./privacy.html">Конфіденційність</a><a href="./terms.html">Умови користування</a><a href="./about.html">Джерела</a><a href="./help.html?from=settings">Допомога</a><a href="./feedback.html?from=settings">Зв’язок із нами</a></nav></footer>
   </div>
 </section>
 <div id="appBootScreen" class="app-boot-screen" role="status" aria-live="polite" aria-label="Завантаження Світло Черкаси">
@@ -101,6 +102,7 @@
  </aside>
 <div id="dataFreshness" class="freshness-warning" role="status" hidden></div><div class="status-panel status-unknown" id="heroStatus"><div class="status-decor"></div><div class="status-head"><span id="stateIcon" class="state-icon"></span><span id="stateCaption">ПЕРЕВІРЯЄМО ГРАФІК</span></div><div class="status-title" id="heroTitle">Немає даних</div><div class="status-count" id="heroCountdown">Додайте адресу, щоб побачити свій графік</div><div class="status-footer"><span id="sourceStamp">За офіційним графіком</span><span id="queueChip" class="queue-chip">—</span></div></div>
 <section class="emergency-banner" id="emergencyBanner" hidden aria-live="polite"><span class="emergency-icon">!</span><div><strong id="emergencyTitle">Повідомлення оператора</strong><p id="emergencyText"></p><a id="emergencySource" target="_blank" rel="noopener">Джерело ↗</a></div></section>
+<section class="beta-ad" id="betaAd" aria-label="Рекламна інформація" hidden></section>
 <div class="section-head"><h2>Графік на сьогодні</h2><button class="inline-link" id="openDetail">Детальніше <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button></div>
 <div class="surface overview-card"><div class="overview-top"><span id="overviewDate">Сьогодні</span><span class="small-source" id="overviewLabel">—</span></div><div class="bar-track" id="overviewBar"></div><div class="bar-time"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div><div class="legend"><span><i class="dot dot-light"></i> Є світло</span><span><i class="dot dot-off"></i> Немає</span><span><i class="dot dot-unknown"></i> Без даних</span></div></div>
 <div class="stats-row"><div class="surface stat-card"><div class="stat-top"><span class="stat-icon sun-icon">☀</span> Зі світлом</div><div class="stat-val" id="hoursOn">—</div><div class="stat-caption">год за графіком</div></div><div class="surface stat-card"><div class="stat-top"><span class="stat-icon moon-icon">◕</span> Без світла</div><div class="stat-val" id="hoursOff">—</div><div class="stat-caption">год за графіком</div></div></div>
@@ -120,6 +122,7 @@
  <button type="button" id="shareToday" hidden>Поділитися графіком</button>
  <button type="button" id="copyToday" hidden>Скопіювати години</button>
 </div>
+
 </section>
 <section id="detail" class="screen" hidden><div class="screen-header"><button class="back-btn" data-go="home" aria-label="Назад">‹</button><div><h1>Графік відключень</h1><p id="detailAddress">Моя адреса</p></div><button class="icon-btn" id="editActive" aria-label="Редагувати адресу"><svg viewBox="0 0 24 24"><path d="m16 5 3 3M4 20l4.5-1 11-11a2.12 2.12 0 0 0-3-3l-11 11L4 20z"/></svg></button></div>
 <div class="detail-status" id="detailStatus"></div>
@@ -147,18 +150,52 @@
   <div class="quick-queue-controls"><select id="quickQueueSelect" aria-label="Оберіть підчергу"><option value="">Оберіть підчергу</option></select>
   <button id="quickQueueOpen" type="button">Показати графік →</button></div>
  </section>
- <h2 class="subsection-title">Застосунок</h2><div class="surface settings-card"><button class="setting-action" id="addFromSettings">Додати адресу <span>›</span></button><button class="setting-action" id="manualRefresh">Оновити офіційні графіки <span>›</span></button><button class="setting-action" id="checkAppUpdate">Перевірити оновлення застосунку <span>↻</span></button><a class="setting-action" href="./help.html?from=settings">Центр допомоги · Запитання та відповіді <span>›</span></a><a class="setting-action" href="./feedback.html?from=settings">Зв’язок із нами · Повідомити про помилку <span>›</span></a><a class="setting-action" href="https://www.cherkasyoblenergo.com/off" target="_blank" rel="noopener">Знайти чергу на сайті оператора <span>↗</span></a></div><p class="settings-foot">Світло Черкаси <span id="appVersion">v7.9.6</span> · Неофіційний інформаційний сервіс. <a href="./feedback.html?from=settings">Зв’язок із нами</a> · <a href="./privacy.html" target="_blank" rel="noopener">Конфіденційність</a> · <a href="./about.html" target="_blank" rel="noopener">Джерела</a></p></section>
+ <h2 class="subsection-title">Застосунок</h2><div class="surface settings-card"><button class="setting-action" id="addFromSettings">Додати адресу <span>›</span></button><button class="setting-action" id="manualRefresh">Оновити офіційні графіки <span>›</span></button><button class="setting-action" id="checkAppUpdate">Перевірити оновлення застосунку <span>↻</span></button><a class="setting-action" href="./help.html?from=settings">Центр допомоги · Запитання та відповіді <span>›</span></a><a class="setting-action" href="./feedback.html?from=settings">Зв’язок із нами · Повідомити про помилку <span>›</span></a><a class="setting-action" href="https://www.cherkasyoblenergo.com/off" target="_blank" rel="noopener">Знайти чергу на сайті оператора <span>↗</span></a></div><p class="settings-foot">Світло Черкаси <span id="appVersion">v7.9.8</span> · Неофіційний інформаційний сервіс. <a href="./feedback.html?from=settings">Зв’язок із нами</a> · <a href="./privacy.html" target="_blank" rel="noopener">Конфіденційність</a> · <a href="./about.html" target="_blank" rel="noopener">Джерела</a></p></section>
 </main>
-<nav class="bottom-nav" aria-label="Навігація"><button class="nav-item active" data-go="home"><svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg><span>Головна</span></button><button class="nav-item" data-go="detail"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M7 2v4M17 2v4M3 10h18"/></svg><span>Графік</span></button><button class="nav-item" data-go="updates"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h11"/></svg><span>Вхідні</span><span id="navUnread" class="nav-unread" hidden aria-label="Непрочитані повідомлення"></span></button><button class="nav-item" data-go="settings"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 17h16M8 3v8M16 13v8"/></svg><span>Опції</span></button></nav></div>
+<nav class="bottom-nav" aria-label="Навігація" style="--tab-offset:0px"><button class="nav-item active" data-go="home" aria-current="page"><svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg><span>Головна</span></button><button class="nav-item" data-go="detail"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M7 2v4M17 2v4M3 10h18"/></svg><span>Графік</span></button><button class="nav-item" data-go="updates"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h11"/></svg><span>Вхідні</span><span id="navUnread" class="nav-unread" hidden aria-label="Непрочитані повідомлення"></span></button><button class="nav-item" data-go="settings"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 17h16M8 3v8M16 13v8"/></svg><span>Опції</span></button></nav></div>
 <dialog id="addressSheet" class="sheet"><form id="addressForm" method="dialog" novalidate><div class="sheet-handle"></div><div class="sheet-top"><div><h2 id="sheetTitle">Нова адреса</h2><p>Виберіть населений пункт і вулицю — спробуємо визначити підчергу</p></div><button type="button" class="sheet-close" id="closeSheet" aria-label="Закрити">×</button></div><div class="sheet-inner"><label class="field-label" for="settlement">Населений пункт</label><select id="settlement"><option value="Черкаси">Черкаси</option><option value="Білозір’я">Білозір’я</option><option value="Хацьки">Хацьки</option><option value="Слобода">Слобода</option><option value="Руська Поляна">Руська Поляна</option><option value="Геронимівка">Геронимівка</option><option value="Дубіївка">Дубіївка</option><option value="Свидівок">Свидівок</option><option value="Сокирна">Сокирна</option><option value="Мошни">Мошни</option><option value="Леськи">Леськи</option><option value="Худяки">Худяки</option><option value="Степанки">Степанки</option><option value="Будище">Будище</option><option value="Інше">Інше місто / село</option></select><input id="customSettlement" type="text" placeholder="Назва населеного пункту" maxlength="80" hidden><label class="field-label" for="street">Вулиця</label><div class="suggest-wrap"><input id="street" type="text" placeholder="Почніть вводити назву" maxlength="100" autocomplete="off"><div class="suggestions" id="streetSuggestions" hidden></div></div><label class="field-label" for="house">Номер будинку <span>Для точного пошуку, якщо є в базі</span></label><input id="house" type="text" placeholder="Наприклад, 12-А" maxlength="20" autocomplete="off" inputmode="text"><div id="houseCoverage" class="house-coverage" role="status" aria-live="polite" hidden></div><div id="houseChoices" class="house-choices" hidden></div><div id="lookupFeedback" class="lookup-feedback" role="status" aria-live="polite">Вкажіть адресу, щоб знайти підчергу.</div><div id="possibleQueues" class="possible-queues" hidden></div><div id="manualLookup" class="manual-lookup" hidden><p id="manualExplanation">Якщо ви вже знаєте свою підчергу, виберіть її нижче. За потреби звірте адресу з оператором.</p><button type="button" class="official-btn" id="goOfficial">Перевірити на сайті обленерго ↗</button><label class="field-label" for="manualQueue">Підтвердіть вашу підчергу</label><select id="manualQueue"><option value="">Оберіть 1.1–6.2</option></select></div><label class="field-label" for="nickname">Назва місця <span>Необов'язково</span></label><input id="nickname" type="text" placeholder="Наприклад, Дім" maxlength="35"><button type="submit" class="primary-action" id="saveAddress" disabled>Зберегти адресу</button><button class="delete-action" id="deleteAddress" type="button" hidden>Видалити цю адресу</button></div></form></dialog>
 <dialog id="placesSheet" class="sheet small-sheet"><div class="sheet-handle"></div><div class="sheet-top"><div><h2>Оберіть місце</h2><p>Ваші збережені адреси</p></div><button id="closePlaces" class="sheet-close" aria-label="Закрити">×</button></div><div id="placesOptions" class="place-options"></div><button class="secondary-action sheet-add" id="sheetAddPlace">+ Додати адресу</button></dialog>
-<div id="maintenanceScreen" class="maintenance-screen" role="dialog" aria-modal="true" aria-labelledby="maintenanceTitle" hidden>
+<div id="maintenanceScreen" class="maintenance-screen" role="dialog" aria-modal="true" aria-labelledby="maintenanceTitle" aria-describedby="maintenanceMessage" hidden>
  <div class="maintenance-glow" aria-hidden="true"></div>
- <div class="maintenance-content"><div class="maintenance-symbol" aria-hidden="true">✨</div><span class="maintenance-kicker">СВІТЛО ЧЕРКАСИ</span>
- <h1 id="maintenanceTitle">Ми покращуємо застосунок</h1><p id="maintenanceMessage">Незабаром усе знову працюватиме.</p>
- <div class="maintenance-progress" aria-hidden="true"><i></i></div><p id="maintenanceEta" class="maintenance-eta"></p>
- <a class="maintenance-official" href="https://www.cherkasyoblenergo.com/news" target="_blank" rel="noopener">Перевірити графіки в оператора ↗</a>
- <span class="maintenance-foot">Дякуємо за розуміння. Невдовзі повернемося.</span></div></div>
+ <div class="maintenance-shell">
+  <header class="maintenance-top">
+   <div class="maintenance-brand"><img src="./assets/icon.svg" width="42" height="42" alt=""><div><strong>Світло Черкаси</strong><span>Черкаси та район</span></div></div>
+   <div class="maintenance-state"><span class="maintenance-state-dot" aria-hidden="true"></span><span id="maintenanceModeLabel">Технічні роботи</span></div>
+  </header>
+  <main class="maintenance-content">
+   <div class="maintenance-copy">
+    <div class="maintenance-kicker"><span class="maintenance-kicker-line" aria-hidden="true"></span> ТЕХНІЧНЕ ОБСЛУГОВУВАННЯ</div>
+    <h1 id="maintenanceTitle">Ми покращуємо застосунок</h1>
+    <p id="maintenanceMessage">Тимчасово працюємо над сервісом, щоб зробити його надійнішим.</p>
+    <div class="maintenance-activity" aria-label="Проводяться технічні роботи">
+     <span class="maintenance-activity-pulse" aria-hidden="true"><i></i><i></i><i></i></span>
+     <span id="maintenanceActivityText">Працюємо над відновленням доступу</span>
+    </div>
+    <div class="maintenance-timecard">
+     <div class="maintenance-time-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+     <div class="maintenance-time-text"><span id="maintenanceTimeLabel">Орієнтовне завершення</span><strong id="maintenanceEta">Час поки невідомий</strong></div>
+    </div>
+    <div class="maintenance-actions">
+     <button type="button" id="maintenanceRefresh" class="maintenance-refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg><span>Перевірити доступність</span></button>
+     <a class="maintenance-official" href="https://www.cherkasyoblenergo.com/off" target="_blank" rel="noopener noreferrer">Офіційні графіки <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+    </div>
+    <p id="maintenanceCheckStatus" class="maintenance-check-status" role="status" aria-live="polite" aria-atomic="true"></p>
+   </div>
+   <div class="maintenance-art" aria-hidden="true">
+    <div class="maintenance-art-grid"></div>
+    <div class="maintenance-art-orbit maintenance-art-orbit-one"></div>
+    <div class="maintenance-art-orbit maintenance-art-orbit-two"></div>
+    <div class="maintenance-art-ring"><span class="maintenance-ring-dot"></span></div>
+    <div class="maintenance-symbol"><svg viewBox="0 0 80 80" fill="none"><path d="M45 8 22 43h17l-3 29 24-39H43l2-25Z" fill="currentColor"/></svg></div>
+    <div class="maintenance-art-caption"><span class="maintenance-caption-indicator"></span><span>Світло Черкаси</span><small>Ми працюємо над сервісом</small></div>
+   </div>
+  </main>
+  <footer class="maintenance-bottom">
+   <span>Це повідомлення стосується роботи застосунку, а не наявності світла у вашому будинку.</span>
+   <a href="https://www.cherkasyoblenergo.com/news" target="_blank" rel="noopener noreferrer">Новини оператора <span aria-hidden="true">↗</span></a>
+  </footer>
+ </div>
+</div>
 <dialog class="share-preview-dialog" id="sharePreviewDialog" aria-labelledby="sharePreviewHeading">
  <div class="share-preview-head"><div><span class="share-preview-eyebrow">ВАША КАРТКА</span><h2 id="sharePreviewHeading">Попередній перегляд</h2><p>Саме так картинка виглядатиме після збереження або надсилання.</p></div>
  <button id="sharePreviewClose" type="button" class="share-preview-x" aria-label="Закрити">×</button></div>
@@ -167,4 +204,13 @@
  <button type="button" id="sharePreviewShare" class="share-preview-send">Поділитися ↗</button></div>
  </dialog>
  <div class="toast" id="toast" role="status" hidden></div>
-<script defer src="./install.js"></script><script defer src="./site-mode.js"></script></body></html>
+<dialog id="betaConsentDialog" class="beta-consent-dialog" aria-labelledby="betaConsentTitle" aria-describedby="betaConsentDesc">
+ <div class="beta-consent-illustration" aria-hidden="true"><span>▥</span></div>
+ <div class="beta-consent-eyebrow">ПРИВАТНІСТЬ · СВІТЛО ЧЕРКАСИ</div>
+ <h2 id="betaConsentTitle">Допоможіть нам ставати кращими</h2>
+ <p id="betaConsentDesc">Дозвольте рахувати активність встановленого застосунку й агреговані типи технічних помилок. Це допоможе знаходити проблеми та покращувати роботу PWA.</p>
+ <div class="beta-consent-points"><p>✓ Не збираємо вашу адресу</p><p>✓ Не передаємо список користувачів рекламодавцям</p><p>✅ Згоду можна відкликати на сторінці конфіденційності</p></div>
+ <p class="beta-consent-detail">Для активності використовується випадковий ідентифікатор встановлення й категорія пристрою. Для помилок передається лише тип і версія застосунку. <a href="./privacy.html" target="_blank" rel="noopener">Докладніше</a></p>
+ <div class="beta-consent-actions"><button type="button" id="betaConsentAccept">Дозволити аналітику</button><button type="button" id="betaConsentDecline">Ні, дякую</button></div>
+ </dialog>
+<script defer src="./client-errors.js"></script><script defer src="./internal-pages.js"></script><script defer src="./legal-consent.js"></script><script defer src="./beta-ads.js"></script><script defer src="./install.js"></script><script defer src="./site-mode.js"></script></body></html>

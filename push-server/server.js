@@ -8,6 +8,12 @@ import path from 'node:path';
 import {createFeedbackStore,readFeedbackBody} from './feedback-store.js';
 import {createAdminExtras} from './admin-extras.js';
 import {createAnalyticsStore} from './analytics.js';
+import {createAdsStore} from './ads.js';
+import {createAdminUserStore} from './admin-users.js';
+import {createLegalStore} from './legal-store.js';
+import {auditSchedule} from './schedule-quality.js';
+import {createDiagnosticsStore} from './diagnostics.js';
+import {createDailyReports} from './daily-reports.js';
 import {createAppConfig} from './app-config.js';
 import {createMediaStore} from './media-store.js';
 import {createSchedulePublication} from './schedule-publication.js';
@@ -37,6 +43,11 @@ function save(){
 const feedback=createFeedbackStore({filePath:process.env.FEEDBACK_FILE||path.join(path.dirname(DATA_FILE),'feedback.json')});
 const extras=createAdminExtras({directory:path.dirname(DATA_FILE)});
 const analytics=createAnalyticsStore({filePath:path.join(path.dirname(DATA_FILE),'analytics.json')});
+const ads=createAdsStore({directory:path.dirname(DATA_FILE)});
+const adminUsers=createAdminUserStore({directory:path.dirname(DATA_FILE)});
+const legal=createLegalStore({directory:path.dirname(DATA_FILE)});
+const errorCounts=createDiagnosticsStore({directory:path.dirname(DATA_FILE)});
+const dailyReports=createDailyReports({directory:path.dirname(DATA_FILE)});
 const siteControls=createAppConfig({directory:path.dirname(DATA_FILE),record:extras.record});
 const mediaStore=createMediaStore(path.dirname(DATA_FILE));
 const officialSchedules=createSchedulePublication({directory:path.dirname(DATA_FILE),token:process.env.SCHEDULE_INGEST_SECRET||''});
@@ -60,8 +71,10 @@ const deliveryStats={
  lastAttempt:null,lastAccepted:null,lastFailure:null,
  lastCycle:null,totalAcceptedSinceBoot:0,totalFailedSinceBoot:0
 };
+const pendingPushKeys=new Set();
 async function send(rec,message,key,options={}){
- if(sent[key])return 'already-sent';
+ if(sent[key]||pendingPushKeys.has(key))return 'already-sent';
+ pendingPushKeys.add(key);
  const category=String(options.notificationId||'').split(':')[0]||'automatic';
  const payload=JSON.stringify({title:message.title,body:message.body,content:message.content||'',
   url:appUrl,notificationId:options.notificationId,kind:options.kind||'schedule',
@@ -80,7 +93,7 @@ async function send(rec,message,key,options={}){
   if([404,410].includes(e?.statusCode))delete subscribers[hash(rec.subscription.endpoint)];
   else console.warn('Auto Push failed:',e?.statusCode||e?.message);
   return 'failed';
- }
+ }finally{pendingPushKeys.delete(key)}
 }
 async function forEachLimited(items,limit,fn){
  let next=0;
@@ -242,6 +255,22 @@ const server=http.createServer(async(req,res)=>{
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   res.writeHead(204,{'access-control-allow-origin':origin,'access-control-allow-methods':'POST, OPTIONS, GET, PUT, PATCH, DELETE','access-control-allow-headers':'content-type, authorization','vary':'Origin'});res.end();return;
  }
+ if(requestPath==='/api/diagnostics/event'&&req.method==='POST'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  try{const data=await readPayload(req);const addr=req.socket.remoteAddress||'';
+   const ok=errorCounts.event(data,addr);response(res,ok?200:202,{ok:true})}
+  catch{response(res,400,{error:'Invalid diagnostics event'})}
+  return
+ }
+  if(requestPath==='/api/legal'&&req.method==='GET'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}response(res,200,legal.publicState());return}
+ if(requestPath==='/api/ads'&&req.method==='GET'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}response(res,200,ads.publicState());return}
+ if(requestPath==='/api/ads/event'&&req.method==='POST'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}try{const body=await readPayload(req,500);response(res,ads.event(String(body.id||'').slice(0,55),body.type,crypto.createHash('sha256').update(String(req.socket.remoteAddress||'')+new Date().toISOString().slice(0,10)).digest('hex').slice(0,20))?202:400,{ok:true})}catch{response(res,400,{error:'Bad event'})}return}
+ if(requestPath==='/api/pwa/presence'&&req.method==='POST'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}try{const body=await readPayload(req,500);response(res,ads.activity(body)?202:400,{ok:true})}catch{response(res,400,{error:'Bad presence'})}return}
+ if(requestPath==='/api/pwa/forget'&&req.method==='POST'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  try{const body=await readPayload(req,500);response(res,ads.optOut(body)?200:400,{ok:true})}
+  catch{response(res,400,{error:'Bad request'})}return
+ }
  if(requestPath==='/api/data/status'&&req.method==='GET'){
   response(res,200,officialSchedules.status());return;
  }
@@ -264,8 +293,8 @@ const server=http.createServer(async(req,res)=>{
  if(requestPath==='/api/telemetry'&&req.method==='POST'){
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   try{
-   const body=await readPayload(req,256);
-   if(!analytics.record(body?.event,body?.source)){response(res,400,{error:'Unknown aggregate event'});return}
+   const body=await readPayload(req,320);
+   if(!analytics.record(body?.event,body?.source,body?.value)){response(res,400,{error:'Unknown aggregate event'});return}
    response(res,202,{ok:true});
   }catch{response(res,400,{error:'Invalid aggregate event'})}
   return;
@@ -284,7 +313,7 @@ const server=http.createServer(async(req,res)=>{
     const tickets=feedback.list().items;
     result.feedback={total:tickets.length,new:tickets.filter(t=>t.status==='new').length,inProgress:tickets.filter(t=>t.status==='in_progress').length};
     return result;
-  },siteControls,mediaStore,analytics);return}
+  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule(officialSchedules.schedule()||lastLoadedSchedule),errorCounts,dailyReports);return}
  if(req.url?.startsWith('/api/media/')&&req.method==='GET'){
    const id=req.url.slice('/api/media/'.length).split('?')[0],file=mediaStore.read(id);
    if(!file){response(res,404,{error:'Фото не знайдене'});return}
@@ -313,7 +342,15 @@ const server=http.createServer(async(req,res)=>{
   }catch(e){response(res,e.statusCode||400,{error:e.statusCode?e.message:'Не вдалося перевірити номер.'})}
   return;
  }
- if(req.url==='/api/ticket/reply'&&req.method==='POST'){
+ if(requestPath==='/api/ticket/rate'&&req.method==='POST'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  try{const data=await readPayload(req,1200),id=String(data.id||'').trim().toUpperCase();
+   if(!/^SC-[0-9A-F]{10}$/.test(id)){response(res,400,{error:'Некоректний номер звернення'});return}
+   response(res,200,feedback.rate(id,data.token,data.rating))}
+  catch(e){response(res,e.statusCode||400,{error:e.message||'Помилка збереження оцінки'})}
+  return
+ }
+  if(req.url==='/api/ticket/reply'&&req.method==='POST'){
    if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
    try{
     const data=await readPayload(req,3500);
@@ -324,7 +361,11 @@ const server=http.createServer(async(req,res)=>{
    }catch(e){response(res,e.statusCode||500,{error:e.statusCode?e.message:'Не вдалося надіслати відповідь.'})}
    return;
  }
- if(req.url==='/api/feedback'){
+ if(requestPath==='/api/feedback/categories'&&req.method==='GET'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  response(res,200,{categories:feedback.getCategories().filter(c=>c.enabled)});return
+ }
+  if(req.url==='/api/feedback'){
   if(req.method!=='POST'){response(res,405,{error:'Method not allowed'});return}
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   try{
@@ -392,6 +433,10 @@ const server=http.createServer(async(req,res)=>{
  }catch(e){response(res,e.message?.includes('save failed')?500:400,{error:'Invalid subscription request'})}
 });
 server.listen(Number(PORT),()=>console.log('Push companion listening on port '+PORT));
+const reportSources={feedback,ads,push:manualPush,diagnostics:errorCounts,audit:()=>auditSchedule(officialSchedules.schedule()||lastLoadedSchedule)};
+function refreshDailyReport(){try{dailyReports.capture(reportSources)}catch(error){console.warn('Daily reports update:',error.message)}}
+setTimeout(refreshDailyReport,15_000).unref?.();
+setInterval(refreshDailyReport,60*60_000).unref?.();
 job().catch(console.error);
 transitionJob().catch(console.error);
 setInterval(()=>job().catch(console.error),60_000);

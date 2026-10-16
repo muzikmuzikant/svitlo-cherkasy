@@ -49,17 +49,51 @@
   const days=period==='48'?(state.hours48||state.hours||[]):(state.days||[]).slice(-Number(period));
   $('analyticsPeriod').textContent=period==='48'?'48 годин':period+' днів';
   root.replaceChildren(
-   card('Відкриття сторінки',pretty(totals.landing),'Один підрахунок на вкладку за день','↗'),
+   card('Відкриття сторінки',pretty(totals.landing),'Один підрахунок на вкладку за день','🔗'),
    card('Намір встановити',pretty(totals.installGuide),'Натискання кнопки встановлення','↓'),
-   card('Запуски застосунку',pretty(totals.appOpen),'Запуски PWA, не встановлення','▣'),
-   card('З реклами «Черкаси головне»',pretty(own.landing),'Відкриття за спеціальним посиланням','◈')
+   card('Запуски застосунку',pretty(totals.appOpen),'Запуски PWA, не встановлення','📱'),
+   card('З реклами «Черкаси головне»',pretty(own.landing),'Відкриття за спеціальним посиланням','💝')
   );
+
+  const pwa=state.betaPwa||{},advertising=state.betaAdvertising||{};
+  const pwaBox=$('betaPwaMetrics');
+  if(pwaBox){pwaBox.replaceChildren(
+    card('Зараз у встановленому PWA',pretty(pwa.online),'Активні за останні 45 секунд, зі згодою','●'),
+    card('Відомі інсталяції PWA',pretty(pwa.known),'Не точна кількість встановлень або людей','📱'),
+    card('Активні PWA за 24 год',pretty(pwa.active24h),'Унікальні інсталяції зі згодою','📡'),
+    card('Активні PWA за 7 днів',pretty(pwa.active7d),'За псевдонімними ідентифікаторами','🔗'),
+    card('Активні PWA за 30 днів',pretty(pwa.active30d),'За псевдонімними ідентифікаторами','📋'),
+    card('Нові інсталяції PWA за 7 днів',pretty(pwa.new7d),'Вперше зафіксовані інсталяції','＋')
+  )}
+  const adBox=$('betaAdsMetrics');
+  if(adBox){
+   const raw=advertising.stats||{};
+   const value=Object.values(raw).reduce((s,v)=>({impressions:s.impressions+(Number(v.impressions)||0),clicks:s.clicks+(Number(v.clicks)||0)}),{impressions:0,clicks:0});
+   adBox.replaceChildren(
+    card('Покази рекламних карток',pretty(value.impressions),'Облік видимих карток','📱'),
+    card('Переходи по рекламі',pretty(value.clicks),'Натискання користувачів','🔗'),
+    card('Рекламний CTR',pct(value.clicks,value.impressions),'Частка кліків від показів','%')
+   )
+  }
+  const popular=state['popularity'+period]||{};
+  for(const [dimension,id] of [['queue_sample','analyticsTopQueues'],['locality_sample','analyticsTopLocalities'],['platform_sample','analyticsTopPlatforms'],['version_sample','analyticsTopVersions']]){
+   const holder=$(id);if(!holder)continue;holder.replaceChildren();
+   const data=popular[dimension]||{items:[],other:0},items=Array.isArray(data.items)?data.items:[],highest=Math.max(1,...items.map(x=>x.count));
+   if(!items.length)holder.append(make('p','Ще немає достатньо даних.','analytics-no-data'));
+   for(const item of items){
+    const line=make('div',null,'analytics-popularity-row'),heading=make('div',null,'analytics-popularity-row-head');
+    heading.append(make('span',item.label),make('strong',pretty(item.count)));
+    const track=make('div',null,'analytics-popularity-track'),bar=make('i');
+    bar.style.width=(item.count/highest*100)+'%';track.append(bar);line.append(heading,track);holder.append(line);
+   }
+   if(data.other>0)holder.append(make('p','Інші або приховані: '+pretty(data.other),'analytics-privacy-small'));
+  }
   const campaign=$('analyticsCampaignMetrics');campaign.replaceChildren();
   const stats=[
    ['Переходи за міткою',pretty(own.landing),'Відкриття сторінки'],
    ['Натискання встановлення',pretty(own.installGuide),'Дії з інструкцією'],
    ['Співвідношення дій',pct(own.installGuide,own.landing),'Не конверсія в інсталяції'],
-   ['Вартість за зафіксоване відкриття',own.landing?(700/own.landing).toLocaleString('uk-UA',{maximumFractionDigits:2})+' грн':'немає даних','700 грн / події переходів']
+   ['Відкриття за 48 годин',pretty((state.sources48||{})['telegram-cherkasy-golovne']?.landing||0),'Фіксація за параметром src']
   ];
   for(const [name,value,desc] of stats){
    const c=make('div',null,'analytics-campaign-stat');
@@ -109,11 +143,13 @@
  $('analyticsRange')?.addEventListener('change',render);
  $('analyticsReload')?.addEventListener('click',refresh);
  $('analyticsCopyLink')?.addEventListener('click',async()=>{
-  try{await navigator.clipboard.writeText(campaignURL);$('analyticsCopyLink').textContent='Скопійовано ✓'}
+  try{await navigator.clipboard.writeText(campaignURL);$('analyticsCopyLink').textContent='Скопійовано ✅'}
   catch{$('analyticsCopyLink').textContent='Скопіюйте адресу поруч'}
  });
  document.querySelector('[data-admin-tab="insights"]')?.addEventListener('click',refresh);
+ // The 15-second live refresh runs only while the Insights panel is visible.
+ setInterval(()=>{const panel=document.querySelector('[data-admin-panel="insights"]');if(panel&&!panel.hidden&&!document.hidden)refresh()},15000);
  document.addEventListener('svitlo:admin-ready',refresh);
- document.addEventListener('svitlo:admin-logout',()=>{state=null;root.replaceChildren();$('analyticsTrendChart').replaceChildren();$('analyticsHourlyChart').replaceChildren();$('analyticsCampaignMetrics').replaceChildren();$('analyticsFunnel').replaceChildren()});
+ document.addEventListener('svitlo:admin-logout',()=>{state=null;root.replaceChildren();$('betaPwaMetrics')?.replaceChildren();$('betaAdsMetrics')?.replaceChildren();$('analyticsTrendChart').replaceChildren();$('analyticsHourlyChart').replaceChildren();$('analyticsCampaignMetrics').replaceChildren();$('analyticsFunnel').replaceChildren()});
  window.SvitloAdminAnalytics={refresh};
 })();
