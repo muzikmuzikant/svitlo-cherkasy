@@ -64,7 +64,7 @@ export function createScheduleReview({directory,clock=Date.now}){
   const days=Array.isArray(schedule?.days)?schedule.days:[];
   return {issues:issues(review),approvals:Object.values(approvals)
    .filter(x=>x&&typeof x.date==='string')
-   .map(x=>({date:x.date,source:x.source,approvedAt:x.approvedAt,active:active(x,review),sourceHash:x.sourceHash||null})),
+   .map(x=>({date:x.date,source:x.source,approvedAt:x.approvedAt,active:active(x,review),sourceHash:x.sourceHash||null,queues:x.queues})),
    days:days.map(x=>({date:x.date,source:x.source,queues:x.queues,verified:x.verified,publishedAt:x.publishedAt})),
    lastChecked:schedule?.lastChecked||null};
  }
