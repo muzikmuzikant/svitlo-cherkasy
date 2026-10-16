@@ -10,7 +10,7 @@ const end=app.indexOf('\nfunction fillQueueSelect()',begin);
 assert.ok(begin>=0&&end>begin,'Extract the actual Settings renderer');
 const actual=app.slice(begin,end);
 
-function simulate({pushActive=false,consent='no',configured=true,permission='granted',queue='2.1',busy=false,supported=true}={}){
+function simulate({pushActive=false,consent='no',configured=true,permission='granted',queue='2.1',busy=false,wanted=null,supported=true}={}){
  const ids=['pushMaster','notifyOff','notifyOn','notifyChanges','notifyTomorrow','notifyEmergency','pushCategorySettings','pushHeadline','pushDescription'];
  const elements=Object.fromEntries(ids.map(id=>[id,{
   checked:false,disabled:false,textContent:'',dataset:{},attributes:{},
@@ -25,7 +25,7 @@ function simulate({pushActive=false,consent='no',configured=true,permission='gra
   primary:()=>queue?{queue}:null,$:id=>elements[id],
   setText:(id,text)=>{elements[id].textContent=text}};
  if(!supported)delete context.Notification;
- vm.runInNewContext(actual+'\n pushControlBusy='+JSON.stringify(busy)+'; globalThis.run=renderSettings;',context);
+ vm.runInNewContext(actual+'\n pushControlBusy='+JSON.stringify(busy)+'; pushControlWanted='+JSON.stringify(wanted)+'; globalThis.run=renderSettings;',context);
  context.run();
  return {elements,prefs};
 }
@@ -70,6 +70,15 @@ test('while a subscription is being changed, the master and category toggles loc
  assert.equal(elements.pushHeadline.textContent,'Застосовуємо…');
  for(const name of notifications)assert.equal(elements[name].disabled,true);
 });
+test('switch keeps the intended position during connection and disconnection',()=>{
+ const enabling=simulate({pushActive:false,consent:'no',busy:true,wanted:true}).elements;
+ assert.equal(enabling.pushMaster.checked,true);
+ assert.equal(enabling.pushMaster.disabled,true);
+ const disabling=simulate({pushActive:true,consent:'yes',busy:true,wanted:false}).elements;
+ assert.equal(disabling.pushMaster.checked,false);
+ assert.equal(disabling.pushMaster.disabled,true);
+});
+
 test('Options title matches the tab; Push UI has exactly one master control',()=>{
  assert.match(html,/<section id="settings"[\s\S]*?<h1>Опції<\/h1>/);
  assert.match(html,/data-go="settings"[\s\S]*?<span>Опції<\/span>/);
@@ -81,5 +90,5 @@ test('Options title matches the tab; Push UI has exactly one master control',()=
  assert.match(app,/\$\('pushMaster'\)\.onchange=async event=>/);
  assert.match(app,/if\(want\)await enableNotifications\(\)/);
  assert.match(app,/else await disableNotifications\(\)/);
- assert.match(app,/finally\{\s*pushControlBusy=false;\s*renderSettings\(\)/);
+ assert.match(app,/finally\{\s*pushControlBusy=false;\s*pushControlWanted=null;\s*renderSettings\(\)/);
 });
