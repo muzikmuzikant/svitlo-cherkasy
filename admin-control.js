@@ -412,6 +412,38 @@
  document.querySelector('[data-admin-tab="operations"]')?.addEventListener('click',reload);
  document.querySelector('[data-admin-tab="maintenance"]')?.addEventListener('click',reload);
  $('opsMaintenanceSave')?.addEventListener('click',()=>saveConfig({scope:'maintenance'}).catch(console.warn));
+  $('opsTestPlanned')?.addEventListener('click',()=>{
+   previewMaintenance();
+   const panel=$('opsPlannedPreview').cloneNode(true);
+   panel.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
+   const dialog=document.createElement('dialog');dialog.className='ops-planned-test-dialog';
+   const info=document.createElement('p');info.className='hint';info.textContent='Тестовий перегляд. Користувачі нічого не отримають.';
+   const close=document.createElement('button');close.type='button';close.className='secondary';close.textContent='Закрити';
+   close.onclick=()=>dialog.close();dialog.append(panel,info,close);
+   dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+   document.body.append(dialog);dialog.showModal();
+  });
+  $('opsTestUpdate')?.addEventListener('click',async()=>{
+   const preview=$('opsUpdatePreview'),button=$('opsTestUpdate');button.disabled=true;
+   try{
+    const response=await fetch('./release.json?preview='+Date.now(),{cache:'no-store'});
+    if(!response.ok)throw Error('Не вдалося завантажити опис версії');
+    const release=await response.json();
+    if(!/^\d+\.\d+\.\d+$/.test(release.version||''))throw Error('Некоректний опис версії');
+    $('opsUpdatePreviewTitle').textContent='Версія '+release.version+' · '+(release.title||'Що нового');
+    $('opsUpdatePreviewBody').textContent=release.description||'Виправлення помилок';
+    const notes=$('opsUpdatePreviewNotes');notes.replaceChildren();
+    for(const line of (Array.isArray(release.notes)?release.notes:[])){
+     const li=document.createElement('li');li.textContent=String(line).slice(0,160);notes.append(li);
+    }
+    preview.hidden=false;preview.scrollIntoView({block:'nearest',behavior:'smooth'});
+    try{const channel=new BroadcastChannel('svitlo-content-v1');
+     channel.postMessage({type:'SVITLO_PREVIEW_UPDATE_BANNER',release});channel.close()}catch{}
+    status('Тестовий банер показано в адмінці. Для відчиненої бета-PWA цього браузера також відправлено попередній перегляд.');
+   }catch(error){status(error.message,true)}
+   finally{button.disabled=false}
+  });
+  $('opsCloseUpdatePreview')?.addEventListener('click',()=>{$('opsUpdatePreview').hidden=true});
  document.querySelector('[data-admin-tab="revisions"]')?.addEventListener('click',()=>refreshHistory().catch(console.warn));
  document.addEventListener('svitlo:admin-logout',()=>{state=null;status('Для керування потрібен вхід.')});
 })();
