@@ -58,7 +58,10 @@ export function createScheduleReview({directory,clock=Date.now}){
   const issue=issueFor(review,approval.source,approval.date);
   // Importer supplies the source hash for newly detected unreadable articles.
   // A changed article must be reviewed again, not silently approved forever.
-  return !approval.sourceHash||!issue.sourceHash||approval.sourceHash===issue.sourceHash;
+  if(issue.sourceHash)return approval.sourceHash===issue.sourceHash;
+  // When the feed cannot supply a fingerprint, do not accept a previously
+  // fingerprinted approval for a different or downgraded source response.
+  return !approval.sourceHash;
  }
  function list(schedule,review){
   const days=Array.isArray(schedule?.days)?schedule.days:[];
@@ -74,7 +77,7 @@ export function createScheduleReview({directory,clock=Date.now}){
   if(typeof input.source!=='string'||!OFFICIAL.test(input.source))throw Error('Потрібне посилання на офіційну новину');
   const issue=issueFor(review,input.source,date);
   if(!issue)throw Error('Таку публікацію вже розпізнано або її немає серед актуальних проблем');
-  if(!!input.sourceHash&&input.sourceHash!==issue.sourceHash)throw Error('Публікацію змінено. Оновіть перевірку');
+  if(issue.sourceHash&&input.sourceHash!==issue.sourceHash)throw Error('Публікацію змінено. Оновіть перевірку');
   const queues=validateSlots(input.queues);
   approvals[date]={date,source:input.source,queues,sourceHash:issue.sourceHash||null,
    approvedAt:new Date(clock()).toISOString(),fingerprint:digest(queues)};
