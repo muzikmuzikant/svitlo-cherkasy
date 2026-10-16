@@ -142,7 +142,7 @@ export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed
   const supportEnabled=state.support.enabled&&!!(state.support.paymentUrl||supportMethods.length);
   const support=supportEnabled?{...state.support,enabled:true,methods:supportMethods,
    expenses:state.support.expenses.filter(e=>e.public)}:
-   {enabled:false,methods:[],expenses:[],paymentUrl:''};
+   {...state.support,enabled:false,methods:[],expenses:[],paymentUrl:'',details:'',provider:''};
   if(!commercialAllowed)return {enabled:false,campaigns:[],contacts:[],packages:[],support};
   const now=new Date(clock()).toISOString(),day=now.slice(0,10),weekday=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Kyiv',weekday:'short'}).format(new Date(clock())));
   return {enabled:commercialAllowed&&state.enabled,rotationSeconds:state.rotationSeconds,promoEvery:state.promoEvery,
