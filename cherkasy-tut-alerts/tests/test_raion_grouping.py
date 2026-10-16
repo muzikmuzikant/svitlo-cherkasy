@@ -27,7 +27,7 @@ class GroupingTests(unittest.TestCase):
             escalation = store.pending()[-1]
             self.assertEqual(escalation[1], '24')
             self.assertEqual((escalation[3], escalation[4]), ('Y', 'R'))
-            self.assertFalse(should_ping(escalation[3], escalation[4]))
+            self.assertTrue(should_ping(escalation[3], escalation[4]))
             self.assertEqual(store.apply_snapshot(blank, 'raions'), 0)
             self.assertEqual(store.apply_snapshot(blank, 'raions'), 1)
             clear = store.pending()[-1]
@@ -41,6 +41,34 @@ class GroupingTests(unittest.TestCase):
             store.apply_snapshot(statuses({}), 'raions')
             self.assertEqual(store.apply_snapshot(statuses({'150':'Y', '151':'R', '152':'P', '153':'Y'}), 'raions'), 4)
             self.assertEqual({event[1] for event in store.pending()}, set(RAIONS))
+
+    def test_admin_pings_start_and_escalation_only(self):
+        self.assertTrue(should_ping('N', 'Y'))
+        self.assertTrue(should_ping('N', 'R'))
+        self.assertTrue(should_ping('N', 'P'))
+        self.assertTrue(should_ping('Y', 'R'))
+        for old, new in [('Y','N'), ('R','N'), ('R','Y'),
+                         ('P','N'), ('Y','Y'), ('R','R'), ('P','Y')]:
+            self.assertFalse(should_ping(old, new), (old, new))
+
+    def test_district_escalation_keeps_separate_ping(self):
+        with tempfile.TemporaryDirectory() as folder:
+            store = Storage(os.path.join(folder, 'alerts.db'))
+            store.apply_snapshot(statuses({}), 'raions')
+            store.apply_snapshot(statuses({'152': 'Y'}), 'raions')
+            self.assertEqual(store.apply_snapshot(statuses({'152': 'R'}), 'raions'), 1)
+            last = store.pending()[-1]
+            self.assertEqual((last[1], last[3], last[4]), ('152', 'Y', 'R'))
+            self.assertTrue(should_ping(last[3], last[4]))
+
+    def test_mixed_districts_merged_to_red_still_ping(self):
+        with tempfile.TemporaryDirectory() as folder:
+            store = Storage(os.path.join(folder, 'alerts.db'))
+            store.apply_snapshot(statuses({'150':'Y', '151':'R', '152':'R', '153':'R'}), 'raions')
+            self.assertEqual(store.apply_snapshot(statuses({'24':'R'}), 'raions'), 1)
+            last = store.pending()[-1]
+            self.assertEqual((last[1],last[3],last[4]), ('24','Y','R'))
+            self.assertTrue(should_ping(last[3], last[4]))
 
     def test_one_district_and_short_text(self):
         with tempfile.TemporaryDirectory() as folder:
