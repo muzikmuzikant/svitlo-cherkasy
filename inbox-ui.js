@@ -27,7 +27,7 @@
  const analyticsReady=()=>{try{
   return (matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)
    &&localStorage.getItem('svitlo-beta-analytics-opt-in')==='yes'
-   &&localStorage.getItem('svitlo-beta-analytics-consent-revision')==='7.9.11-notices'
+   &&['notice-engagement-v1','7.9.11-notices'].includes(localStorage.getItem('svitlo-beta-analytics-consent-revision'))
    &&localStorage.getItem('svitlo-beta-analytics-choice')==='accepted';
  }catch{return false}};
  async function trackNotice(id,type){
@@ -276,6 +276,7 @@
   if(event.data?.type==='SVITLO_NOTICE_PUSH_CLICK')trackNotice(event.data.id,'pushClick');
  });
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync().catch(console.warn);else clearTimeout(readTimer)});
+ window.addEventListener('svitlo:analytics-consent-updated',()=>{if(!analyticsReady())seenObserver?.disconnect();else observeNoticeCards()});
  window.addEventListener('online',()=>sync().catch(console.warn));
  window.addEventListener('focus',()=>{
   window.dispatchEvent(new CustomEvent('svitlo:refresh-content'));
