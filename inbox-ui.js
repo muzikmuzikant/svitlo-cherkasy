@@ -27,7 +27,7 @@
  const analyticsReady=()=>{try{
   return (matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)
    &&localStorage.getItem('svitlo-beta-analytics-opt-in')==='yes'
-   &&localStorage.getItem('svitlo-beta-analytics-consent-revision')==='7.9.9-audience'
+   &&localStorage.getItem('svitlo-beta-analytics-consent-revision')==='7.9.11-notices'
    &&localStorage.getItem('svitlo-beta-analytics-choice')==='accepted';
  }catch{return false}};
  async function trackNotice(id,type){
