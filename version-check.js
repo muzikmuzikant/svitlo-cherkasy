@@ -65,7 +65,7 @@
     const name = publicText(data.title, 'Що нового', 90);
     title.textContent = preview ? 'Тест · ' + name : installed ? 'Оновлено до ' + data.version : 'Версія ' + data.version + ' · ' + name;
     description.textContent = publicText(data.description, 'Покращення роботи застосунку та виправлення помилок.', 260);
-    notes?.replaceChildren();
+    notes?.replaceChildren?.();
     if (notes) for (const line of (Array.isArray(data.notes) ? data.notes : []).slice(0, 7)) {
       const safe = publicText(line, '', 150);
       if (!safe) continue;
@@ -79,7 +79,7 @@
     apply.disabled = false;
     banner.hidden = false;
   }
-  if (document.body.dataset.deploymentChannel === 'beta') {
+  if (document.body?.dataset?.deploymentChannel === 'beta') {
     const showPreview = data => {
       if (!data || typeof data.version !== 'string') return;
       release = null;
