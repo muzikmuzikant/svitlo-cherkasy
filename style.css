@@ -603,3 +603,19 @@ html:not([data-app-mode="standalone"]) #appBootScreen,.app-boot-screen[hidden]{d
  html:not(.feature-off-animations) .inbox-detail[open].is-leaving::backdrop{animation:inboxBackdropDismiss .3s ease-in both!important}
  @keyframes inboxContentsDismiss{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(9px)}}
 }
+
+/* Beta 7.9.9: generous update card and individually themed planned notices. */
+.app-update-banner{padding:27px 24px 25px;gap:17px;margin:13px 0 24px;min-height:222px;border-radius:27px;box-shadow:0 19px 44px #316bbf25}
+.app-update-heading strong{font-size:clamp(20px,5vw,25px);line-height:1.24}
+.app-update-copy p{font-size:14px;line-height:1.65}
+.app-update-notes{gap:10px}
+.app-update-notes li{font-size:13px;line-height:1.55}
+.app-update-action{padding:16px 18px;font-size:14px;min-height:50px}
+.maintenance-inline.is-planned{background:linear-gradient(110deg,var(--planned-bg,#eaf3ff),#fff 130%)!important;color:var(--planned-ink,#22496f)}
+.maintenance-inline.is-planned .maintenance-inline-title{color:var(--planned-ink,#22496f)}
+.maintenance-inline.is-planned .maintenance-inline-summary,
+.maintenance-inline.is-planned .maintenance-inline-dates{color:var(--planned-ink,#22496f);opacity:.89}
+.maintenance-inline.is-planned .maintenance-inline-icon{color:var(--planned-accent,#347af0);background:color-mix(in srgb,var(--planned-accent,#347af0) 14%,white)}
+.maintenance-inline.is-planned .maintenance-inline-eyebrow{color:var(--planned-accent,#347af0)}
+.maintenance-inline.is-planned .maintenance-inline-action{background:var(--planned-accent,#347af0)}
+@media(max-width:420px){.app-update-banner{min-height:0;padding:22px 19px}.app-update-heading strong{font-size:20px}}
