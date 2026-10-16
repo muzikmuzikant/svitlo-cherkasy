@@ -29,15 +29,17 @@ export function createNoticeMetrics({directory,clock=Date.now}){
  const validId=id=>typeof id==='string'&&NOTE.test(id);
  function prune(){
   const cutoff=clock()-KEEP_MS;
+  let removed=false;
   for(const [id,r] of Object.entries(records)){
-   if(!r||!Number.isFinite(r.last)||r.last<cutoff){delete records[id];continue}
+   if(!r||!Number.isFinite(r.last)||r.last<cutoff){delete records[id];removed=true;continue}
    for(const type of TYPES){
     if(!r[type]||typeof r[type]!=='object')r[type]={};
-    for(const [key,at] of Object.entries(r[type]))if(!Number.isFinite(at)||at<cutoff)delete r[type][key];
+    for(const [key,at] of Object.entries(r[type]))if(!Number.isFinite(at)||at<cutoff){delete r[type][key];removed=true}
    }
   }
   const sorted=Object.entries(records).sort((a,b)=>a[1].last-b[1].last);
-  for(const [id] of sorted.slice(0,Math.max(0,sorted.length-MAX_NOTICES)))delete records[id];
+  for(const [id] of sorted.slice(0,Math.max(0,sorted.length-MAX_NOTICES))){delete records[id];removed=true}
+  if(removed)save();
  }
  function entry(id){
   if(!records[id])records[id]={last:clock(),push:{attempted:0,accepted:0,failed:0,expired:0},seen:{},opened:{},read:{},pushClick:{}};
@@ -64,21 +66,23 @@ export function createNoticeMetrics({directory,clock=Date.now}){
   prune();for(const [id,r] of Object.entries(records)){
    const key=identity(id,installId);for(const type of TYPES)delete r[type]?.[key];
   }
-  save();return true;
+  flush();return true;
  }
  function report(ids){
   prune();
   const list=Array.isArray(ids)?ids.filter(validId):[];
   const items={};
+  const mask=v=>v===0?0:v<5?'<5':v;
   for(const id of list){
-   const r=records[id];
-   const push=r?.push||{};
-   const counts=Object.fromEntries(TYPES.map(type=>[type,Object.keys(r?.[type]||{}).length]));
+   const r=records[id],push=r?.push||{};
+   const raw=Object.fromEntries(TYPES.map(type=>[type,Object.keys(r?.[type]||{}).length]));
    const attempted=validCount(push.attempted),accepted=validCount(push.accepted);
-   items[id]={...counts,pushAttempted:attempted,pushAccepted:accepted,pushFailed:validCount(push.failed),
-    pushExpired:validCount(push.expired),consentedOnly:true,
-    readOfOpened:counts.opened?Math.round(100*counts.read/counts.opened):null,
-    openedOfSeen:counts.seen?Math.round(100*counts.opened/counts.seen):null};
+   const counts=Object.fromEntries(TYPES.map(type=>[type,mask(raw[type])]));
+   items[id]={...counts,pushAttempted:mask(attempted),pushAccepted:mask(accepted),
+    pushFailed:mask(validCount(push.failed)),pushExpired:mask(validCount(push.expired)),
+    consentedOnly:true,
+    readOfOpened:raw.opened>=5&&raw.read>=5?Math.round(100*raw.read/raw.opened):null,
+    openedOfSeen:raw.seen>=5&&raw.opened>=5?Math.round(100*raw.opened/raw.seen):null};
   }
   return {items,note:'Одна подія на одну інсталяцію зі згодою. «Прочитано» = повідомлення відкрите на екрані принаймні 2 секунди. Push прийнято провайдером, а не підтверджено доставку. Показники не охоплюють користувачів без згоди.',retentionDays:60};
  }
