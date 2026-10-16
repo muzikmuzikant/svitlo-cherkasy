@@ -217,7 +217,11 @@ test('audience panels count unique consented installations, not repeated visits'
   assert.equal(revised.queues.items.find(x=>x.label==='2.1').count,3);
   assert.equal(revised.queues.total,6);
   assert.equal(revised.localities.items[0].count,5);
-  assert.equal(revised.localities.other,1,'small localities remain suppressed');
+  assert.equal(revised.localities.other,0,'all nonzero towns are listed');
+  const smallTown=revised.localities.items.find(x=>x.label==='Черкaси');
+  assert.equal(smallTown.count,'1–4','small localities are listed using a privacy-safe range');
+  assert.equal(smallTown.percent,null,'do not disclose small cohorts by percent');
+  assert.equal(revised.localities.total,6);
   assert.equal(revised.platforms.items.find(x=>x.label==='Android').count,1);
   assert.equal(store.optOut({id:ids[0]}),true);
   assert.equal(store.dashboard().pwa.audience7.known,5);
@@ -229,4 +233,28 @@ test('audience panels count unique consented installations, not repeated visits'
   assert.equal(store.dashboard().pwa.audience7.known,0);
   assert.equal(store.dashboard().pwa.audience30.known,5);
  } finally{fs.rmSync(dir,{recursive:true,force:true})}
+});
+
+
+test('all tiny villages with positive opt-in audience are listed, including after the top 15',()=>{
+ const {store,dir}=fresh();
+ try{
+  const ids=Array.from({length:22},(_,i)=>'d0a8236d-39a6-47a1-8d0c-'+String(110000000001+i));
+  for(let i=0;i<ids.length;i++){
+   const name='Село'+String.fromCharCode(1040+i);
+   assert.equal(store.activity({id:ids[i],mode:'standalone',consent:true,platform:'iPhone',
+    locality:name,queue:'2.1',version:'7.9.11'}),true);
+  }
+  const report=store.dashboard().pwa.audience7.localities;
+  assert.equal(report.items.length,22,'no arbitrary top-15 cutoff for villages');
+  assert.equal(report.total,22);
+  assert.equal(report.other,0);
+  assert.ok(report.items.every(x=>x.count==='1–4'&&x.percent===null),'none is mislabeled as zero');
+  assert.ok(report.items.every(x=>x.label.startsWith('Село')));
+  assert.equal(store.activity({id:ids[0],mode:'standalone',consent:true,platform:'iPhone',
+   locality:'',queue:'2.1',version:'7.9.11'}),true);
+  const changed=store.dashboard().pwa.audience7.localities;
+  assert.equal(changed.items.length,21,'missing town is not displayed as zero');
+  assert.equal(changed.unknown,1,'unknown town stays separate, not a zero-value village');
+ }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });
