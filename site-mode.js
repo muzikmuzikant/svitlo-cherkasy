@@ -4,7 +4,7 @@
 (()=>{'use strict';
  const overlay=document.getElementById('maintenanceScreen');if(!overlay)return;
  const $=id=>document.getElementById(id),viewport=document.querySelector('.viewport');
- let apiBase='',busy=false,lastConfig=null,maintenanceExitTimer=null,maintenanceFocus=null,live=null;
+ let apiBase='',busy=false,pendingRefresh=false,lastConfig=null,maintenanceExitTimer=null,maintenanceFocus=null,live=null,lastPhase='';
  const banner=document.createElement('aside');banner.className='maintenance-inline';banner.hidden=true;
  banner.setAttribute('role','status');banner.setAttribute('aria-live','polite');
  if(viewport)viewport.prepend(banner);
@@ -173,6 +173,7 @@
  }
  function display(data,{offline=false}={}){
   const m=data?.maintenance||{},active=!offline&&timed(m),full=active&&m.mode!=='limited';
+  lastPhase=offline?'offline':active?'active':m?.enabled&&m.startsAt&&Date.parse(m.startsAt)>Date.now()?'planned':'idle';
   if(offline)finishMaintenanceClose();else setMaintenanceVisible(full);
   banner.hidden=!(active&&!full);
   for(const part of [document.getElementById('installLanding'),viewport])if(part)part.inert=full;
@@ -201,6 +202,10 @@
    &&Number.isFinite(Date.parse(m.startsAt))&&Date.parse(m.startsAt)>Date.now();
   if((active&&!full)||planned){
    const config=m.plannedBanner||{};
+   for(const [prop,key] of [['--planned-bg','background'],['--planned-ink','foreground'],['--planned-accent','accent']]){
+    const value=config[key];if(planned&&typeof value==='string'&&/^#[0-9a-fA-F]{6}$/.test(value))banner.style.setProperty(prop,value);
+    else banner.style.removeProperty(prop);
+   }
    banner.hidden=false;
    banner.className='maintenance-inline'+(planned?' is-planned planned-'+(['expanded','compact','highlight'].includes(config.style)?config.style:'expanded'):' is-active');
    banner.replaceChildren();
@@ -226,7 +231,7 @@
     }
    }
    const url=safePublicLink(planned?config.url:'',data?.site?.links?.official||'https://www.cherkasyoblenergo.com/news');
-   if(url){
+   if(url&&(!planned||config.showButton!==false)){
     const action=document.createElement('a');action.className='maintenance-inline-action';action.href=url;
     action.textContent=planned?(config.button||'Офіційні графіки'):'Офіційні графіки';
     if(!url.startsWith('./')){action.target='_blank';action.rel='noopener noreferrer'}
@@ -262,7 +267,7 @@
   el.textContent=days>0?'До початку: '+days+' дн. '+hrs+' год.':hrs>0?'До початку: '+hrs+' год. '+left+' хв.':'До початку: '+mins+' хв.';
  }
  async function refresh({manual=false}={}){
-  if(busy)return false;busy=true;
+  if(busy){pendingRefresh=true;return false}busy=true;
   const button=$('maintenanceRefresh'),status=$('maintenanceCheckStatus');
   if(manual){
    button.disabled=true;button.classList.add('is-checking');
@@ -288,12 +293,17 @@
   }finally{
    busy=false;
    if(manual){button.disabled=false;button.classList.remove('is-checking')}
+   if(pendingRefresh){pendingRefresh=false;queueMicrotask(()=>refresh())}
   }
   return success;
  }
  $('maintenanceRefresh').addEventListener('click',()=>refresh({manual:true}));
  refresh();setInterval(()=>{if(!document.hidden)refresh()},12000);
- setInterval(()=>{if(!document.hidden&&lastConfig?.maintenance){updateEta(lastConfig.maintenance);updatePlannedCountdown()}},1000);
+ setInterval(()=>{if(!document.hidden&&lastConfig?.maintenance){
+  const m=lastConfig.maintenance,phase=timed(m)?'active':m?.enabled&&m.startsAt&&Date.parse(m.startsAt)>Date.now()?'planned':'idle';
+  if(phase!==lastPhase)display(lastConfig);
+  updateEta(m);updatePlannedCountdown();
+ }},1000);
  try{const channel=new BroadcastChannel('svitlo-content-v1');
   channel.addEventListener('message',event=>{if(event.data?.type==='REFRESH_APP_CONFIG')refresh()});
   window.addEventListener('pagehide',()=>channel.close(),{once:true});
