@@ -233,5 +233,10 @@ export function createAdsStore({directory,clock=()=>Date.now()}){
   }
   return {settings:state,stats:totals,statsByCampaignDay:stats,daily,pwa,lastModified};
  }
- return {publicState,update,event,activity,optOut,dashboard,flush,flushVisitors};
+ function hasInstallation(id){
+  if(typeof id!=='string'||!/^[0-9a-f]{8}-[0-9a-f-]{27,56}$/i.test(id))return false;
+  prune();const key=crypto.createHash('sha256').update('beta-install:'+id).digest('hex');
+  return Object.hasOwn(installed,key);
+ }
+ return {publicState,update,event,activity,optOut,hasInstallation,dashboard,flush,flushVisitors};
 }
