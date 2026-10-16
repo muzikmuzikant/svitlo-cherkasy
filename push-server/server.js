@@ -375,9 +375,9 @@ const server=http.createServer(async(req,res)=>{
     await Promise.all([['schedules',SCHEDULE_URL],['emergency',new URL('emergency.json',SCHEDULE_URL).href],['review',new URL('source_review.json',SCHEDULE_URL).href]].map(async([name,url])=>{
       try{
         const data=(name==='schedules'?officialSchedules.schedule():name==='review'?officialSchedules.review():null)||await loadJson(url);
-        result.sources[name]=name==='schedules'?{lastChecked:data.lastChecked,days:(data.days||[]).map(d=>({date:d.date,verified:d.verified,source:d.source,publishedAt:d.publishedAt})),changes:(data.changes||[]).length}:
+        result.sources[name]=name==='schedules'?{lastChecked:data.lastChecked,days:(data.days||[]).map(d=>({date:d.date,verified:d.verified,source:d.source,publishedAt:d.publishedAt})),changes:(data.changes||[]).length,reviewPending:data.reviewPending===true,unresolvedDates:data.unresolvedDates||[]}:
           name==='emergency'?{lastChecked:data.lastChecked,count:(data.events||[]).length,latest:data.events?.[0]?.status||null}:
-          {lastChecked:data.lastChecked,rejectedCount:data.rejectedCount||0,items:(data.items||[]).slice(0,30)};
+          {lastChecked:data.lastChecked,rejectedCount:data.rejectedCount||0,warningCount:data.warningCount||0,items:(data.items||[]).slice(0,30)};
       }catch(e){result.sources[name]={error:e.message}}
     }));
     const tickets=feedback.list().items;
