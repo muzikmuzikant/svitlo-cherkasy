@@ -15,6 +15,9 @@ let addresses=safeJSON(STORE,Array.isArray(legacy)?legacy:[]), prefs=Object.assi
 let previewQueue=null;
 let pushHealthLast=0,pushHealthBusy=null;
 let pushActive=('Notification' in window&&Notification.permission==='granted'&&localStorage.getItem(PUSH_CONSENT)==='yes'), emergency={events:[],lastChecked:null},overrides={schedules:{days:[]},addresses:{},emergency:{events:[]}},data={days:[],changes:[]},index={keys:{},streets:{},localities:{}},active='home',daySelected=null,dayStripStart=null,editId=null,suggestion=null,toastTimeout=null,lastPub=null,pushConfig=null,swRegistration=null,notified=new Set(safeJSON(SEEN,[])),lastRefresh=0,hasCheckedOnce=false,lastDownloadAt=null,lastSyncFailed=false,refreshInFlight=null;
+// Lightweight Railway snapshot checks run once a minute while the app is visible.
+const AUTO_SCHEDULE_CHECK_MS=60_000,AUXILIARY_REFRESH_MS=5*60_000;
+let lastAuxiliaryRefresh=0;
 if(!Array.isArray(addresses))addresses=[];
 const byId=id=>addresses.find(x=>x.id===id);
 const primary=()=>byId(prefs.primaryId)||addresses[0]||null;
@@ -766,6 +769,9 @@ async function refreshData(manual=false){
        if(saved?.days?.length)data=normalizeData(saved);
      }catch(e){console.warn('Offline schedule recovery:',e)}
    }
+   const refreshAuxiliary=manual||!lastAuxiliaryRefresh||Date.now()-lastAuxiliaryRefresh>=AUXILIARY_REFRESH_MS;
+   if(refreshAuxiliary){
+   lastAuxiliaryRefresh=Date.now();
    try{
      const [remote,seed]=await Promise.allSettled([
        fetch(`./data/addresses.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}),
@@ -792,6 +798,7 @@ async function refreshData(manual=false){
      if(overrideRes.status==='fulfilled'&&overrideRes.value.ok){const parsed=await overrideRes.value.json();if(parsed.schemaVersion===1)overrides=parsed}
      applyOverrides();
    }catch(error){console.warn('Bulletin or admin overrides:',error)}
+   }
    hasCheckedOnce=true;render();checkNotifications();
    if(manual)flash(schedulesOk?'Графіки оновлено':'Немає з’єднання. Показуємо збережений графік.');
    if(schedulesOk){
@@ -973,7 +980,7 @@ async function disableNotifications(){
 }
 async function enableNotifications(){if(!('Notification' in window)){flash('Цей браузер не підтримує сповіщення');return}if(Notification.permission==='denied'){flash('Дозвольте сповіщення у налаштуваннях iPhone');return}const granted=await Notification.requestPermission();if(granted!=='granted'){flash('Дозвіл на сповіщення не надано');return}if(pushConfig){try{await updatePushSubscription();flash('Сповіщення увімкнено')}catch(e){console.warn(e);flash('Не вдалося ввімкнути сповіщення. Спробуйте пізніше')}}else flash('Нагадування увімкнено для відкритого застосунку');renderSettings();updatePushInvite()}
 // An iOS permission change can happen in system Settings while the PWA is suspended.
-window.addEventListener('focus',()=>{updatePushInvite();checkPushDelivery().catch(console.warn)});
+window.addEventListener('focus',()=>{updatePushInvite();checkPushDelivery().catch(console.warn);if(!document.hidden)refreshData().catch(console.warn)});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){updatePushInvite();checkNotifications();checkPushDelivery().catch(console.warn)}});
 // Event wiring
 // Inbox uses the existing screen and date picker; no external navigation.
@@ -1038,7 +1045,7 @@ fillQueueSelect();
  finishInitialLoad();
  getPushConfig();
 setInterval(()=>{renderHome();if(active==='detail')renderDetail();checkNotifications()},30_000);
-setInterval(()=>{if(!document.hidden)refreshData()},5*60_000);
+setInterval(()=>{if(!document.hidden)refreshData()},AUTO_SCHEDULE_CHECK_MS);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();refreshData();checkNotifications()}});
 window.addEventListener('online',()=>{
   renderFreshness();flash('Зв’язок відновлено. Оновлюємо графіки та повідомлення…');
