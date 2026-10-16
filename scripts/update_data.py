@@ -107,26 +107,29 @@ def check_schedule_date(day, pub, url):
 
 def parse_article(html,url,reference=None):
     soup=BeautifulSoup(html,'html.parser')
+    def reject(reason):
+        LOG.warning('Schedule parser rejected %s: %s', url, reason)
+        return None
     header=soup.find('h1')
-    if not header:return None
+    if not header:return reject('missing h1')
     heading=header.get_text(' ',strip=True).lower()
-    if 'погодинн' not in heading or 'відключен' not in heading:return None
+    if 'погодинн' not in heading or 'відключен' not in heading:return reject('h1 is not a blackout heading: '+heading[:110])
     date_hit=HEADLINE_DATE.search(heading)
-    if not date_hit:return None
+    if not date_hit:return reject('headline date missing: '+heading[:110])
     full=soup.get_text(' ',strip=True).replace('\xa0',' ').replace('−','-')
     # The operator's CMS wraps parts of a clock in separate HTML spans,
     # so BeautifulSoup may produce "08 :00" instead of "08:00".
     # Join only numeric clock colons, never merge unrelated table tokens.
     full=re.sub(r'(?<=\d)\s*:\s*(?=\d{2}\b)', ':', full)
     time_hit=PUB_TS.search(full)
-    if not time_hit:return None
+    if not time_hit:return reject('publication timestamp missing')
     pub=datetime.strptime(' '.join(time_hit.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
     year=pub.year
     month=UA_MONTHS[date_hit.group(2).lower()]
     if pub.month==12 and month==1:year+=1
     if pub.month==1 and month==12:year-=1
     try:day=datetime(year,month,int(date_hit.group(1)),tzinfo=TZ).date().isoformat()
-    except ValueError:return None
+    except ValueError:return reject('invalid headline date')
     check_schedule_date(day,pub,url)
     # Operator edits are separate official news posts and sometimes change
     # the wording before the queue table. A fixed introductory phrase must not
@@ -143,23 +146,23 @@ def parse_article(html,url,reference=None):
         heading_pos=text.lower().find(heading)
         table_text=text[heading_pos+len(heading):] if heading_pos>=0 else text
         if len(set(m.group(1) for m in QUEUE_START.finditer(table_text))) < 3:
-            return None
+            return reject('fallback queue count under three; sample='+repr(table_text[:210]))
     body=re.split(r'Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|Відключення\s+електроенергії\s+можуть',table_text,maxsplit=1,flags=re.I)[0]
     found=list(QUEUE_START.finditer(body))
-    if not found:return None
-    if len({x.group(1) for x in found})!=len(found):return None
+    if not found:return reject('no queue tokens; sample='+repr(body[:210]))
+    if len({x.group(1) for x in found})!=len(found):return reject('duplicate queue tokens: '+repr([x.group(1) for x in found]))
     queues={}
     for i,m in enumerate(found):
         part=body[m.end():found[i+1].start() if i+1<len(found) else len(body)]
         periods=[]
         for a,am,b,bm in INTERVAL.findall(part):
             start,end=int(a)*60+int(am),int(b)*60+int(bm)
-            if not 0<=start<end<=1440 or periods and periods[-1][1]>start:return None
+            if not 0<=start<end<=1440 or periods and periods[-1][1]>start:return reject('invalid or overlapping time intervals for queue '+m.group(1))
             periods.append((start,end))
         # Explicit 'not disconnected' text means known schedule with no outages.
         explicitly_none=bool(re.search(r'не\s+відключ|без\s+відключ|відключення\s+не\s+передбач',part,re.I))
         if periods or explicitly_none:queues[m.group(1)]=periods
-        else:return None
+        else:return reject('missing intervals for queue '+m.group(1)+'; sample='+repr(part[:150]))
     return {'date':day,'publishedAt':pub.isoformat(timespec='minutes'),'source':url,'queues':queues}
 
 
