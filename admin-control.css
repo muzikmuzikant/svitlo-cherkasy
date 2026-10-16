@@ -696,3 +696,13 @@ main{max-width:1840px!important;padding-inline:clamp(16px,2.5vw,46px)}
 .ops-update-test ul{display:grid;gap:6px;margin:4px 0;padding-left:21px;font-size:12px}
 .ops-update-test button{justify-self:start}.ops-update-test small{font-size:11px;color:#6482a7}
 @media(max-width:680px){.ops-planned-builder{padding:13px}.ops-planned-preview{padding:15px}.ops-planned-options{display:grid}}
+
+/* Beta 7.9.9: the builder faithfully mirrors the live banner palette. */
+.ops-planned-colors input[type="color"]{width:100%;min-height:48px;padding:5px;cursor:pointer}
+.ops-planned-preview{background:linear-gradient(110deg,var(--planned-bg,#eaf3ff),#fff 130%)!important;color:var(--planned-ink,#22496f)}
+.ops-planned-preview-content strong,.ops-planned-preview-content p,
+#opsPlannedPreviewDates{color:var(--planned-ink,#22496f)}
+.ops-planned-preview-content small,#opsPlannedPreviewCountdown{color:var(--planned-accent,#347af0)}
+.ops-planned-preview-action{background:var(--planned-accent,#347af0)}
+.ops-planned-preview-icon{color:var(--planned-accent,#347af0);background:color-mix(in srgb,var(--planned-accent,#347af0) 14%,white)}
+.ops-planned-preview-action[hidden]{display:none!important}
