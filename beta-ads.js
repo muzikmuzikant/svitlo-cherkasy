@@ -3,7 +3,7 @@
  const host=document.getElementById('betaAd'),home=document.getElementById('home');
  if(!host||!home)return;
  const consent=document.getElementById('betaAnalyticsConsent');
- const STATS_OPT='svitlo-beta-analytics-opt-in',INSTALL_ID='svitlo-beta-install-id',PENDING='svitlo-beta-analytics-delete-pending',CHOICE='svitlo-beta-analytics-choice',CHOICE_REV='svitlo-beta-analytics-consent-revision',REVISION='7.9.9-audience';
+ const STATS_OPT='svitlo-beta-analytics-opt-in',INSTALL_ID='svitlo-beta-install-id',PENDING='svitlo-beta-analytics-delete-pending',CHOICE='svitlo-beta-analytics-choice',CHOICE_REV='svitlo-beta-analytics-consent-revision',REVISION='7.9.11-notices';
  let api='',config=null,items=[],index=0,timer=null,impressionTimer=null,refreshAt=0;
  let lastInteraction=Date.now(),swipeStart=null,counted=false;
  const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
