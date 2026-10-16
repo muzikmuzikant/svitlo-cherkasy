@@ -41,7 +41,7 @@
    const label=document.createElement('label');label.textContent='Підчерга '+q;label.htmlFor='approvalQueue'+q.replace('.','_');
    const input=document.createElement('input');input.id=label.htmlFor;input.dataset.reviewQueue=q;
    input.placeholder='Напр. 08:00-10:00, 17:30-19:00';
-   input.value=(prior?.queues?.[q]?.off||[]).map(x=>x.join('-')).join(', ');
+   input.value=(existing?.queues?.[q]?.off||prior?.queues?.[q]?.off||[]).map(x=>x.join('-')).join(', ');
    input.disabled=!owner();field.append(label,input);list.append(field);
   }
   by('reviewApprovalConfirmed').checked=false;by('reviewApprovalConfirmed').disabled=!owner();
@@ -55,7 +55,7 @@
   opened=true;issue=selected;
   const panel=by('reviewApprovalPanel');panel.hidden=false;
   by('reviewApprovalSource').value=issue?.source||'';
-  by('reviewApprovalDate').value=issue?.targetDate||issue?.headlineDate||'';
+  by('reviewApprovalDate').value=issue?.targetDate||issue?.headlineDate||issue?.date||'';
   by('reviewApprovalDate').max=''; // calendar remains available for headline date mistakes
   showReport();panel.scrollIntoView({behavior:'smooth',block:'start'});
  }
@@ -63,6 +63,23 @@
   if(!remote)return;
   try{
    state=await api('schedule/review');
+   const approvals=by('reviewSavedApprovals');
+   if(approvals){
+    approvals.replaceChildren();
+    if(!state.approvals.length){
+     const empty=document.createElement('p');empty.className='hint';
+     empty.textContent='Наразі ручних підтверджень немає.';approvals.append(empty);
+    }
+    for(const item of state.approvals){
+     const card=document.createElement('article');card.className='review-item';
+     const title=document.createElement('strong');title.textContent='Графік на '+item.date+(item.active?' · Діє':' · Неактивне підтвердження');
+     const description=document.createElement('p');description.textContent='Підтверджено: '+new Date(item.approvedAt).toLocaleString('uk-UA');
+     const action=document.createElement('button');action.type='button';action.className='secondary';
+     action.textContent='Переглянути / скасувати';
+     action.onclick=()=>open({date:item.date,source:item.source,sourceHash:item.sourceHash});
+     card.append(title,description,action);approvals.append(card);
+    }
+   }
    if(opened&&issue){
     const updated=state.issues.find(x=>x.source===issue.source);
     if(updated)issue=updated;
