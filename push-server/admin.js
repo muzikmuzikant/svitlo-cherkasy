@@ -64,7 +64,7 @@ async function github(path,method='GET',payload){
  return data;
 }
 async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
-export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal,auditSchedules,errorCounts,dailyReports){
+export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal,auditSchedules,errorCounts,dailyReports,noticeMetrics){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(!originPolicy.isAllowed(req.headers.origin)){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const url=new URL(req.url,'http://localhost');
@@ -194,6 +194,10 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    }
    if(url.pathname==='/api/admin/push/status'&&req.method==='GET'){send(res,200,manualPush.stats());return true}
    if(url.pathname==='/api/admin/push/test'&&req.method==='POST'){const output=await manualPush.test(await readJson(req));extras?.record('push.test','test notification');send(res,200,output);return true}
+   if(url.pathname==='/api/admin/notices/metrics'&&req.method==='GET'){
+     const ids=siteControls.get().announcements.map(x=>x.id);
+     send(res,200,noticeMetrics.report(ids));return true;
+   }
    if(url.pathname==='/api/admin/notices/test'&&req.method==='POST'){
      const result=await manualPush.preview(await readJson(req,1200));
      extras?.record('push.preview','test to current device');send(res,200,result);return true;
