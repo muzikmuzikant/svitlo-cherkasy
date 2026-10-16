@@ -21,6 +21,7 @@ function setTab(tab){
   catch{apply()}
  }else{adminTabMotion?.skipTransition?.();apply()}
  if(tab==='overview'||tab==='sources')refreshMonitor();
+ if(tab==='sources')window.SvitloSourceReview?.load();
  if(tab==='feedback')refreshTickets();
  if(tab==='push')refreshPushStatus();
  if(tab==='help')refreshHelp();
@@ -53,11 +54,16 @@ async function refreshMonitor(){
   if(!Array.isArray(review.items)||!review.items.length){issues.append(extraText('p',review.error?'Не вдалося отримати журнал перевірок: '+review.error:'Підозрілих дат під час останньої перевірки не виявлено.','hint'))}
   else review.items.forEach(item=>{
    const card=document.createElement('article');card.className='review-item';
-   card.append(extraText('strong','Потрібна перевірка: '+(item.headlineDate||'дата невідома')));
+   card.append(extraText('strong','Потрібна перевірка: '+(item.targetDate||item.headlineDate||'дата невідома')));
    card.append(extraText('p','Опубліковано: '+extraDate(item.publishedAt)));
    card.append(extraText('p',item.reason));
    if(/^https:\/\/(?:www\.)?cherkasyoblenergo\.com\//.test(item.source||'')){
-    const a=document.createElement('a');a.href=item.source;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Відкрити оригінал на сайті оператора ↗';card.append(a)
+    const a=document.createElement('a');a.href=item.source;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Відкрити оригінал на сайті оператора ↗';card.append(a);
+    const action=document.createElement('button');action.type='button';action.className='secondary';
+    action.textContent='Перевірити та підтвердити графік';
+    action.style.marginLeft='9px';action.style.marginTop='8px';
+    action.addEventListener('click',()=>window.SvitloSourceReview?.open(item));
+    card.append(action)
    }issues.append(card)
   });
  }catch(e){status.className='push-state error';status.textContent='Не вдалося перевірити систему: '+e.message}
