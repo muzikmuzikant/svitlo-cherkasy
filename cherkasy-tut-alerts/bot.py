@@ -93,28 +93,20 @@ def normalize_raions(statuses):
 
 
 def compose(label, previous, current, when=None, mode='oblast'):
-    """Short user-facing notices; titles describe threat LEVEL, not confirmed objects."""
-    when = when or now_local()
-    escaped = html.escape(label)
+    """One-line Telegram alert: no timestamps, source credits or extra description."""
+    place = 'Область' if label in ('Уся Черкаська область', 'Черкаська область') else label
+    place = html.escape(place)
     if current == 'Y':
-        title = '🟡 ДРОНОВА ЗАГРОЗА'
-        detail = 'Жовтий рівень повітряної тривоги.'
-    elif current == 'R':
-        title = '🔴 РАКЕТНА НЕБЕЗПЕКА'
-        detail = 'Червоний рівень тривоги. Негайно в укриття.'
-    elif current == 'P':
-        title = '🟠 ЧАСТКОВА ТРИВОГА'
-        detail = ('Тривога в окремих громадах району.' if mode == 'raions'
-                  else 'Тривога в окремих громадах або районах.')
-    elif current == 'N':
-        title = '🟢 ВІДБІЙ ТРИВОГИ'
-        detail = 'Тривогу завершено.'
-    else:
-        raise ValueError('Invalid alert status')
-    return '\n'.join((
-        f'<b>{title}</b>', f'📍 <b>{escaped}</b>', '',
-        detail, '', f'🕒 {when}', 'Джерело: alerts.in.ua',
-    ))
+        return f'🟡🚨 {place} — жовта тривога!'
+    if current == 'R':
+        return f'🔴🚨 {place} — червона тривога!'
+    if current == 'N':
+        level = {'Y': 'жовтої', 'R': 'червоної'}.get(previous)
+        return f'🟢 {place} — Відбій {level} тривоги' if level else f'🟢 {place} — Відбій тривоги'
+    if current == 'P':
+        # A partial alert cannot reliably be classified yellow/red at raion level.
+        return f'🟠🚨 {place} — часткова тривога!'
+    raise ValueError('Invalid alert status')
 
 
 class Storage:
@@ -352,7 +344,7 @@ def send_pending(store, tg, channel_id, group_id, mode):
                 ping = should_ping(previous, current)
                 if ping:
                     mentions = member_mentions(store, tg, group_id)
-                    extra = ('\n\n👥 <b>Увага, команда:</b>\n' + mentions) if mentions else '\n\nℹ️ Щоб отримувати персональний пінг, скористайтеся /subscribe.'
+                    extra = ('\n' + mentions) if mentions else ''
                 else:
                     extra = ''
                 tg.send(group_id, body + extra, notify=ping)
