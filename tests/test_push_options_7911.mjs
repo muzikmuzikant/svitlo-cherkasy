@@ -21,7 +21,7 @@ function simulate({pushActive=false,consent='no',configured=true,permission='gra
  const localStorage={getItem(key){return key==='svitlo-push-consent-v6'?consent:null}};
  const context={prefs,pushActive,localStorage,PUSH_CONSENT:'svitlo-push-consent-v6',
   pushConfig:configured?{apiBase:'https://example.test',publicKey:'test'}:null,
-  Notification:{permission},window:{},navigator:supported?{serviceWorker:{}}:{},
+  Notification:{permission},window:supported?{Notification:{permission}}:{},navigator:supported?{serviceWorker:{}}:{},
   primary:()=>queue?{queue}:null,$:id=>elements[id],
   setText:(id,text)=>{elements[id].textContent=text}};
  if(!supported)delete context.Notification;
