@@ -624,3 +624,26 @@ html:not([data-app-mode="standalone"]) #appBootScreen,.app-boot-screen[hidden]{d
 .analytics-consent-status{font-size:12px;color:var(--muted);line-height:1.5;margin:8px 14px 13px}
 #betaAnalyticsScopeNotice[hidden]{display:none!important}
 #betaAnalyticsEnableNotice{margin-top:10px;max-width:100%;min-height:40px;white-space:normal;text-align:center}
+
+
+/* Opt-in Push connection: one primary switch and dependent categories */
+.push-master-card{padding:17px 17px 14px;overflow:hidden}
+.push-master-line{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.push-master-copy{min-width:0;flex:1}
+.push-master-copy>strong{display:flex;align-items:center;flex-wrap:wrap;gap:7px;font-size:14px;line-height:1.35}
+.push-master-copy>p{font-size:12px;color:var(--muted);margin:7px 0 0;line-height:1.55}
+.push-state-label{display:inline-flex;align-items:center;gap:5px;max-width:100%;border-radius:9px;padding:4px 8px;font-size:10px;font-weight:800;color:#64758d;background:#edf1f7}
+.push-state-label::before{content:"";width:6px;height:6px;flex:none;border-radius:50%;background:currentColor}
+.push-state-label[data-status="connected"]{background:#e4f7ec;color:#147c4b}
+.push-state-label[data-status="pending"]{background:#e9f1ff;color:#276fdd}
+.push-delivery-status{color:var(--muted);font-size:11px;line-height:1.55;white-space:normal;overflow-wrap:anywhere;margin:8px 0 0}
+.push-delivery-status:empty{display:none}
+.push-categories{margin-top:12px}
+.push-categories .setting-line{transition:opacity .2s ease}
+.push-categories.push-categories-disabled .setting-line{opacity:.58}
+.push-categories .switch input:disabled+span{cursor:not-allowed;background:#dfe5ee}
+.push-categories .switch input:disabled:checked+span{background:#a7c8ba}
+.push-master-card .switch input:disabled+span{opacity:.62;cursor:not-allowed}
+.push-master-card .switch{flex-shrink:0}
+@media(max-width:370px){.push-master-card{padding:15px 13px}.push-master-line{gap:10px}}
+@media(prefers-reduced-motion:reduce){.push-categories .setting-line{transition:none}}
