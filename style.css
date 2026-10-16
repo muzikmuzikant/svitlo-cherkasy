@@ -619,3 +619,8 @@ html:not([data-app-mode="standalone"]) #appBootScreen,.app-boot-screen[hidden]{d
 .maintenance-inline.is-planned .maintenance-inline-eyebrow{color:var(--planned-accent,#347af0)}
 .maintenance-inline.is-planned .maintenance-inline-action{background:var(--planned-accent,#347af0)}
 @media(max-width:420px){.app-update-banner{min-height:0;padding:22px 19px}.app-update-heading strong{font-size:20px}}
+
+/* Stable first-run opt-in: privacy controls live in Settings. */
+.analytics-consent-status{font-size:12px;color:var(--muted);line-height:1.5;margin:8px 14px 13px}
+#betaAnalyticsScopeNotice[hidden]{display:none!important}
+#betaAnalyticsEnableNotice{margin-top:10px;max-width:100%;min-height:40px;white-space:normal;text-align:center}
