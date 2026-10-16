@@ -543,7 +543,7 @@ function updatePushInvite(){
  action.firstChild.textContent=denied?'Відкрити налаштування сповіщень ':'Увімкнути сповіщення ';
  action.onclick=denied?()=>navigate('settings'):()=>enableNotifications();
 }
-let pushControlBusy=false;
+let pushControlBusy=false,pushControlWanted=null;
 function renderSettings(){
  const categories=[['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']];
  const supported='Notification' in window&&'serviceWorker' in navigator;
@@ -555,7 +555,7 @@ function renderSettings(){
  const blocked=!supported||(!connected&&(!configured||permission==='denied'||!hasAddress));
  const master=$('pushMaster');
  if(master){
-  master.checked=connected;
+  master.checked=pushControlBusy&&pushControlWanted!==null?pushControlWanted:connected;
   master.disabled=pushControlBusy||blocked;
   master.setAttribute('aria-busy',pushControlBusy?'true':'false');
  }
@@ -1054,12 +1054,13 @@ for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','noti
 $('pushMaster').onchange=async event=>{
  if(pushControlBusy)return;
  const want=event.target.checked;
- pushControlBusy=true;renderSettings();
+ pushControlWanted=want;pushControlBusy=true;renderSettings();
  try{
   if(want)await enableNotifications();
   else await disableNotifications();
  }finally{
   pushControlBusy=false;
+  pushControlWanted=null;
   renderSettings();
  }
 };
