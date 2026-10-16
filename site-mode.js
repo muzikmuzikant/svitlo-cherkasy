@@ -4,7 +4,7 @@
 (()=>{'use strict';
  const overlay=document.getElementById('maintenanceScreen');if(!overlay)return;
  const $=id=>document.getElementById(id),viewport=document.querySelector('.viewport');
- let apiBase='',busy=false,lastConfig=null,maintenanceExitTimer=null,maintenanceFocus=null;
+ let apiBase='',busy=false,lastConfig=null,maintenanceExitTimer=null,maintenanceFocus=null,live=null;
  const banner=document.createElement('aside');banner.className='maintenance-inline';banner.hidden=true;
  banner.setAttribute('role','status');banner.setAttribute('aria-live','polite');
  if(viewport)viewport.prepend(banner);
@@ -199,15 +199,42 @@
   updateEta(m);
   const planned=m?.enabled===true&&m.noticeBefore!==false&&m.startsAt
    &&Number.isFinite(Date.parse(m.startsAt))&&Date.parse(m.startsAt)>Date.now();
-  if((active&&!full)||planned){banner.hidden=false;
+  if((active&&!full)||planned){
+   const config=m.plannedBanner||{};
+   banner.hidden=false;
+   banner.className='maintenance-inline'+(planned?' is-planned planned-'+(['expanded','compact','highlight'].includes(config.style)?config.style:'expanded'):' is-active');
    banner.replaceChildren();
-   const icon=document.createElement('strong');icon.textContent=String(m.icon||'🛠️').slice(0,18);
-   const text=document.createElement('span');
-   text.textContent=planned?('Планові роботи: '+(m.title||'Технічні роботи')+'. Початок: '+
-    new Date(m.startsAt).toLocaleString('uk-UA',{dateStyle:'short',timeStyle:'short',timeZone:'Europe/Kyiv'})):
-    ((m.title||'Технічні роботи')+'. '+(m.message||'Деякі функції можуть бути тимчасово недоступні.'));
-   banner.append(icon,text);
-  }
+   const artwork=document.createElement('span');artwork.className='maintenance-inline-icon';artwork.textContent=String(m.icon||'🛠️').slice(0,18);
+   const content=document.createElement('div');content.className='maintenance-inline-content';
+   const eyebrow=document.createElement('small');eyebrow.className='maintenance-inline-eyebrow';eyebrow.textContent=planned?'ЗАПЛАНОВАНІ РОБОТИ':'ТИМЧАСОВЕ ОБМЕЖЕННЯ';
+   const heading=document.createElement('strong');heading.className='maintenance-inline-title';
+   heading.textContent=planned?(config.title||'Заплановані технічні роботи'):(m.title||'Технічні роботи');
+   const summary=document.createElement('p');summary.className='maintenance-inline-summary';
+   summary.textContent=planned?(config.body||m.message||'У цей час застосунок може тимчасово не працювати.'):(m.message||'Деякі функції тимчасово недоступні.');
+   content.append(eyebrow,heading,summary);
+   if(planned){
+    const format=d=>new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Kyiv'}).format(new Date(d));
+    const dates=document.createElement('div');dates.className='maintenance-inline-dates';
+    const starts=document.createElement('span');starts.textContent='Початок: '+format(m.startsAt);dates.append(starts);
+    if(config.showEnd!==false&&m.until&&Date.parse(m.until)>Date.now()){
+     const ends=document.createElement('span');ends.textContent='Орієнтовне завершення: '+format(m.until);dates.append(ends);
+    }
+    content.append(dates);
+    if(config.showCountdown!==false){
+     const countdown=document.createElement('span');countdown.className='maintenance-inline-countdown';
+     countdown.dataset.maintenanceStart=m.startsAt;content.append(countdown);
+    }
+   }
+   const url=safePublicLink(planned?config.url:'',data?.site?.links?.official||'https://www.cherkasyoblenergo.com/news');
+   if(url){
+    const action=document.createElement('a');action.className='maintenance-inline-action';action.href=url;
+    action.textContent=planned?(config.button||'Офіційні графіки'):'Офіційні графіки';
+    if(!url.startsWith('./')){action.target='_blank';action.rel='noopener noreferrer'}
+    content.append(action);
+   }
+   banner.append(artwork,content);
+  }else banner.className='maintenance-inline';
+
   if(!offline){
    // EVERY successful server snapshot must reach Inbox, including the empty list.
    // On iPhone the first event can fire before inbox-ui.js loads. It must also
@@ -216,6 +243,23 @@
     maintenance:active,site:data.site||null,updatedAt:data.updatedAt||null,serverVerified:true};
    window.dispatchEvent(new CustomEvent('svitlo:public-config',{detail:window.SvitloPublicConfig}));
   }
+ }
+ function connectLive(){
+  if(live||!apiBase||!('EventSource' in window))return;
+  try {
+   live=new EventSource(apiBase+'/api/events');
+   live.addEventListener('config',()=>refresh());
+   live.addEventListener('schedules',()=>window.dispatchEvent(new Event('svitlo:live-schedules')));
+   live.addEventListener('open',()=>{if(!document.hidden)refresh()});
+  }catch(error){console.warn('Live updates unavailable:',error.message);live=null}
+ }
+ function updatePlannedCountdown(){
+  const el=banner.querySelector('[data-maintenance-start]');
+  if(!el)return;
+  const distance=Date.parse(el.dataset.maintenanceStart)-Date.now();
+  if(distance<=0){el.textContent='Роботи розпочинаються';refresh();return}
+  const mins=Math.ceil(distance/60000),days=Math.floor(mins/1440),hrs=Math.floor(mins%1440/60),left=mins%60;
+  el.textContent=days>0?'До початку: '+days+' дн. '+hrs+' год.':hrs>0?'До початку: '+hrs+' год. '+left+' хв.':'До початку: '+mins+' хв.';
  }
  async function refresh({manual=false}={}){
   if(busy)return false;busy=true;
@@ -232,7 +276,7 @@
    }
    const response=await fetch(apiBase+'/api/app-config',{cache:'no-store',signal:AbortSignal.timeout(9000)});
    if(!response.ok)throw Error('Public config HTTP '+response.status);
-   const data=await response.json();lastConfig=data;display(data);
+   const data=await response.json();lastConfig=data;display(data);connectLive();updatePlannedCountdown();
    success=true;
    if(manual&&status)status.textContent=!timed(data.maintenance)||data.maintenance?.mode==='limited'?'Доступ до застосунку відновлюється.':'Роботи ще тривають. Перевірка успішна.';
   }catch(e){
@@ -249,7 +293,7 @@
  }
  $('maintenanceRefresh').addEventListener('click',()=>refresh({manual:true}));
  refresh();setInterval(()=>{if(!document.hidden)refresh()},12000);
- setInterval(()=>{if(!document.hidden&&lastConfig?.maintenance)updateEta(lastConfig.maintenance)},1000);
+ setInterval(()=>{if(!document.hidden&&lastConfig?.maintenance){updateEta(lastConfig.maintenance);updatePlannedCountdown()}},1000);
  try{const channel=new BroadcastChannel('svitlo-content-v1');
   channel.addEventListener('message',event=>{if(event.data?.type==='REFRESH_APP_CONFIG')refresh()});
   window.addEventListener('pagehide',()=>channel.close(),{once:true});
@@ -258,4 +302,5 @@
  window.addEventListener('svitlo:refresh-content',refresh);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
  window.addEventListener('online',refresh);
+  window.addEventListener('pagehide',()=>live?.close(),{once:true});
 })();
