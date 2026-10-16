@@ -157,7 +157,7 @@ def parse_article(html,url,reference=None):
         periods=[]
         for a,am,b,bm in INTERVAL.findall(part):
             start,end=int(a)*60+int(am),int(b)*60+int(bm)
-            if not 0<=start<end<=1440 or periods and periods[-1][1]>start:return reject('invalid or overlapping time intervals for queue '+m.group(1))
+            if not 0<=start<end<=1440 or periods and periods[-1][1]>start:return reject('invalid or overlapping intervals for '+m.group(1)+' raw='+repr(INTERVAL.findall(part)[:18])+' context='+repr(part[:420]))
             periods.append((start,end))
         # Explicit 'not disconnected' text means known schedule with no outages.
         explicitly_none=bool(re.search(r'не\s+відключ|без\s+відключ|відключення\s+не\s+передбач',part,re.I))
