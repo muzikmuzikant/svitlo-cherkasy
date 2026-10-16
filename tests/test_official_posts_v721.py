@@ -55,3 +55,33 @@ def test_operator_html_splits_clock_at_inline_tag():
     assert parsed is not None
     assert parsed['queues']['1.2']==[(480,600)]
     assert parsed['queues']['2.1']==[(1200,1320)]
+
+
+def test_operator_cms_splits_midnight_zero_and_next_queues_are_not_lost():
+    # Actual 17 October news style: CMS rendered 00:00 as "0 0:00".
+    raw = article(
+        'Оновлено графік погодинних відключень (ГПВ) на 12 жовтня',
+        'Години відсутності електропостачання:',
+        '1.1 10:00 - 12:00, 16:00 - 18:00, 20:00 - 22:00 '
+        '1.2 0 0:00 - 02:00, 10:00 - 12:00, 14:00 - 16:00, 20:00 - 22:00 '
+        '2.1 0 0:00 - 02:00, 08:00 - 10:00, 14:00 - 16:00, 18:00 - 20:00 '
+        '2.2 0 1:00 - 02:00, 08:00 - 10:00, 14:00 - 16:00'
+    )
+    parsed = u.parse_article(raw, BASE+'onovleno-na-12-zhovtnya')
+    assert parsed is not None
+    assert len(parsed['queues']) == 4
+    assert parsed['queues']['1.1'] == [(600,720),(960,1080),(1200,1320)]
+    assert parsed['queues']['1.2'][0] == (0,120)
+    assert parsed['queues']['2.1'][0] == (0,120)
+    assert parsed['queues']['2.2'][0] == (60,120)
+
+
+def test_single_digit_midnight_clock_does_not_consume_subqueue_number():
+    raw = article(
+        'Графік погодинних відключень на 12 жовтня',
+        'Години відсутності електропостачання:',
+        '1.1 08:00 - 10:00 1.2 0:00 - 02:00 2.1 10:00 - 12:00'
+    )
+    parsed = u.parse_article(raw, BASE+'hrafik-na-12-zhovtnya')
+    assert parsed is not None
+    assert parsed['queues']['1.2'] == [(0,120)]
