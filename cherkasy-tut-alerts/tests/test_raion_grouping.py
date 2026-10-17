@@ -1,7 +1,9 @@
 import os
+import json
+from unittest import mock
 import tempfile
 import unittest
-from bot import Storage, normalize_raions, compose, should_ping, send_pending, Telegram, send_channel_pending, send_group_pending
+from bot import Storage, normalize_raions, compose, should_ping, send_pending, Telegram, send_channel_pending, send_group_pending, AlertsSource
 
 RAIONS = ('150', '151', '152', '153')
 
@@ -186,6 +188,33 @@ class GroupingTests(unittest.TestCase):
             self.assertTrue(send_group_pending(store, tg, -100123456, 'raions'))
             self.assertEqual(len(tg.calls), 1)
             self.assertEqual(store.pending()[0][6:], (1, 0))
+
+    def test_source_does_not_request_conditional_cached_304(self):
+        class FakeResponse:
+            headers = {'Age': '0', 'Last-Modified': 'Wed, 14 Oct 2026 12:00:00 GMT',
+                       'Date': 'Wed, 14 Oct 2026 12:00:02 GMT'}
+            def __init__(self, payload):
+                self.payload = payload
+            def __enter__(self):
+                return self
+            def __exit__(self, exc_type, exc, tb):
+                return False
+            def read(self, size=-1):
+                return json.dumps(self.payload).encode('utf-8')
+        sent = []
+        data = ['N'] * 200
+        def fake_open(request, timeout=12):
+            sent.append(request)
+            return FakeResponse(''.join(data))
+        source = AlertsSource('redacted-test-token', 'raions')
+        with mock.patch('bot.urllib.request.urlopen', side_effect=fake_open):
+            self.assertEqual(source.get()['152'][1], 'N')
+            data[152] = 'Y'
+            self.assertEqual(source.get()['152'][1], 'Y')
+        self.assertEqual(len(sent), 2)
+        for req in sent:
+            self.assertIsNone(req.get_header('If-modified-since'))
+            self.assertIn('no-cache', req.get_header('Cache-control'))
 
     def test_one_district_and_short_text(self):
         with tempfile.TemporaryDirectory() as folder:
