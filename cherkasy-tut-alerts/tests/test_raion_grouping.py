@@ -1,7 +1,7 @@
 import os
 import tempfile
 import unittest
-from bot import Storage, normalize_raions, compose, should_ping, send_pending, Telegram
+from bot import Storage, normalize_raions, compose, should_ping, send_pending, Telegram, send_channel_pending, send_group_pending
 
 RAIONS = ('150', '151', '152', '153')
 
@@ -142,6 +142,50 @@ class GroupingTests(unittest.TestCase):
         self.assertEqual(calls[0][1]['message_thread_id'], 2468)
         tg.send('@cherkasy_tut', '<b>Тривога!</b>')
         self.assertNotIn('message_thread_id', calls[1][1])
+
+    def test_channel_sender_does_not_wait_for_admin_group_errors(self):
+        with tempfile.TemporaryDirectory() as folder:
+            store = Storage(os.path.join(folder, 'alerts.db'))
+            store.apply_snapshot(statuses({}), 'raions')
+            store.apply_snapshot(statuses({'152': 'Y'}), 'raions')
+            store.bind_alerts_thread(48)
+            class TelegramStub:
+                def __init__(self):
+                    self.calls = []
+                def send(self, chat_id, message, notify=True, thread_id=None):
+                    self.calls.append((chat_id, message, thread_id))
+                    if isinstance(chat_id, int):
+                        raise TimeoutError('Simulated slow admin destination')
+                def call(self, method, data):
+                    if method == 'getChatAdministrators':
+                        return []
+                    return {}
+            tg = TelegramStub()
+            self.assertTrue(send_channel_pending(store, tg, '@cherkasy_tut', 'raions'))
+            self.assertEqual(len(tg.calls), 1)
+            self.assertEqual(tg.calls[0][0], '@cherkasy_tut')
+            self.assertTrue(tg.calls[0][1].startswith('<b>'))
+            # Admin failures may happen, but must not roll back channel delivery.
+            self.assertFalse(send_group_pending(store, tg, -100123456, 'raions'))
+            self.assertEqual(store.pending()[0][6:], (1, 0))
+            self.assertTrue(send_channel_pending(store, tg, '@cherkasy_tut', 'raions'))
+            self.assertEqual(len([x for x in tg.calls if x[0] == '@cherkasy_tut']), 1)
+
+    def test_no_group_topic_leaves_channel_independent(self):
+        with tempfile.TemporaryDirectory() as folder:
+            store = Storage(os.path.join(folder, 'alerts.db'))
+            store.apply_snapshot(statuses({}), 'raions')
+            store.apply_snapshot(statuses({'150': 'R'}), 'raions')
+            class TelegramStub:
+                def __init__(self):
+                    self.calls = []
+                def send(self, chat_id, message, notify=True, thread_id=None):
+                    self.calls.append((chat_id, message))
+            tg = TelegramStub()
+            self.assertTrue(send_channel_pending(store, tg, '@cherkasy_tut', 'raions'))
+            self.assertTrue(send_group_pending(store, tg, -100123456, 'raions'))
+            self.assertEqual(len(tg.calls), 1)
+            self.assertEqual(store.pending()[0][6:], (1, 0))
 
     def test_one_district_and_short_text(self):
         with tempfile.TemporaryDirectory() as folder:
