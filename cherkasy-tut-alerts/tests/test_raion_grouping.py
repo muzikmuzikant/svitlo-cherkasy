@@ -1,7 +1,7 @@
 import os
 import tempfile
 import unittest
-from bot import Storage, normalize_raions, compose, should_ping, send_pending
+from bot import Storage, normalize_raions, compose, should_ping, send_pending, Telegram
 
 RAIONS = ('150', '151', '152', '153')
 
@@ -79,18 +79,69 @@ class GroupingTests(unittest.TestCase):
                 return [(1, '152', 'Черкаський район', 'R', 'N', '00:00', 0, 0)]
             def done(self, event_id, destination):
                 self.completed.append((event_id, destination))
+            def alerts_thread_id(self):
+                return 9012
         class FakeTelegram:
             def __init__(self):
                 self.messages = []
-            def send(self, dest, message, notify=True):
-                self.messages.append((dest, message, notify))
+            def send(self, dest, message, notify=True, thread_id=None):
+                self.messages.append((dest, message, notify, thread_id))
         store, tg = FakeStore(), FakeTelegram()
         send_pending(store, tg, '@cherkasy_tut', -100123456789, 'raions')
         self.assertEqual(tg.messages, [
-            ('@cherkasy_tut', '<b>🟢 Черкаський район — Відбій червоної тривоги</b>', True),
-            (-100123456789, '🟢 Черкаський район — Відбій червоної тривоги', False),
+            ('@cherkasy_tut', '<b>🟢 Черкаський район — Відбій червоної тривоги</b>', True, None),
+            (-100123456789, '🟢 Черкаський район — Відбій червоної тривоги', False, 9012),
         ])
         self.assertEqual(store.completed, [(1, 'channel_done'), (1, 'group_done')])
+
+    def test_unbound_thread_does_not_post_to_general(self):
+        class FakeStore:
+            def __init__(self):
+                self.completed = []
+            def pending(self):
+                return [(1, '152', 'Черкаський район', 'N', 'Y', '00:00', 0, 0)]
+            def done(self, event_id, destination):
+                self.completed.append((event_id, destination))
+            def alerts_thread_id(self):
+                return None
+        class FakeTelegram:
+            def __init__(self):
+                self.messages = []
+            def send(self, dest, message, notify=True, thread_id=None):
+                self.messages.append((dest, thread_id))
+        store, tg = FakeStore(), FakeTelegram()
+        send_pending(store, tg, '@cherkasy_tut', -100123456789, 'raions')
+        self.assertEqual(tg.messages, [('@cherkasy_tut', None)])
+        self.assertEqual(store.completed, [(1, 'channel_done')])
+
+    def test_topic_binding_is_persistent_and_discards_stale_group_items(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = os.path.join(folder, 'alerts.db')
+            store = Storage(path)
+            store.apply_snapshot(statuses({}), 'raions')
+            store.apply_snapshot(statuses({'152': 'Y'}), 'raions')
+            self.assertIsNone(store.alerts_thread_id())
+            self.assertEqual(len(store.pending()), 1)
+            store.bind_alerts_thread(2468)
+            self.assertEqual(Storage(path).alerts_thread_id(), 2468)
+            pending = store.pending()
+            self.assertEqual(len(pending), 1)
+            self.assertEqual(pending[0][6:], (0, 1))
+            with self.assertRaises(ValueError):
+                store.bind_alerts_thread(1)
+
+    def test_telegram_send_includes_thread_only_when_provided(self):
+        tg = Telegram('fake-secret')
+        calls = []
+        def capture(method, payload, timeout=20):
+            calls.append((method, payload))
+            return {}
+        tg.call = capture
+        tg.send(-1001234, 'Тривога!', notify=True, thread_id=2468)
+        self.assertEqual(calls[0][0], 'sendMessage')
+        self.assertEqual(calls[0][1]['message_thread_id'], 2468)
+        tg.send('@cherkasy_tut', '<b>Тривога!</b>')
+        self.assertNotIn('message_thread_id', calls[1][1])
 
     def test_one_district_and_short_text(self):
         with tempfile.TemporaryDirectory() as folder:
