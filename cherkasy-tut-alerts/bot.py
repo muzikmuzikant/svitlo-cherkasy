@@ -299,30 +299,32 @@ class Telegram:
 class AlertsSource:
     def __init__(self, token, mode):
         self.token, self.mode = token, mode
-        self.last_modified = None
         self.cached = None
+        self.last_report = 0.0
 
     def get(self):
         suffix = ('v2/iot/active_air_raid_alerts/24.json' if self.mode == 'oblast' else
                   'v2/iot/active_air_raid_alerts.json' if self.mode == 'raions' else
                   'v1/alerts/active.json')
-        headers = {'Authorization': f'Bearer {self.token}', 'User-Agent': 'CherkasyTutAlertsBot/1.0', 'Cache-Control': 'no-cache'}
-        if self.last_modified:
-            headers['If-Modified-Since'] = self.last_modified
+        # Do not use If-Modified-Since: when an intermediary reports 304,
+        # we cannot tell if its cached region status is behind the origin.
+        # Each poll gets the current API representation at the same rate.
+        headers = {
+            'Authorization': f'Bearer {self.token}',
+            'User-Agent': 'CherkasyTutAlertsBot/1.1',
+            'Cache-Control': 'no-cache, no-store',
+            'Pragma': 'no-cache',
+        }
         req = urllib.request.Request('https://api.alerts.in.ua/' + suffix, headers=headers)
-        fetch_start = time.monotonic()
+        started = time.monotonic()
         try:
             with urllib.request.urlopen(req, timeout=12) as response:
                 body = json.load(response)
-                response_seconds = time.monotonic() - fetch_start
-                if response_seconds > 3.0:
-                    LOG.warning('Slow Alerts.in.ua API response: %.1fs', response_seconds)
-                new_modified = response.headers.get('Last-Modified')
-                if new_modified:
-                    self.last_modified = new_modified
+                request_seconds = time.monotonic() - started
+                cache_age = response.headers.get('Age')
+                modified = response.headers.get('Last-Modified')
+                server_date = response.headers.get('Date')
         except urllib.error.HTTPError as e:
-            if e.code == 304 and self.cached is not None:
-                return self.cached
             if e.code == 429:
                 raise RuntimeError('Alerts API rate limit 429; reduce polling frequency') from e
             raise
@@ -336,6 +338,25 @@ class AlertsSource:
             if not isinstance(body, dict) or not isinstance(body.get('alerts'), list):
                 raise ValueError('Unexpected active alerts payload (do not publish)')
             snapshot = normalize_alerts(body, mode='all')
+
+        changed = snapshot != self.cached
+        if changed or time.monotonic() - self.last_report >= 60:
+            if self.mode == 'raions':
+                state_summary = ', '.join(f'{uid}:{snapshot[uid][1]}' for uid in RAIONS)
+            elif self.mode == 'oblast':
+                state_summary = snapshot[OBLAST_UID][1]
+            else:
+                state_summary = f'{len(snapshot)} active localities'
+            LOG.info('Alerts source response: changed=%s states=[%s] request=%.2fs cache_age=%r last_modified=%r server_date=%r',
+                     changed, state_summary, request_seconds, cache_age, modified, server_date)
+            self.last_report = time.monotonic()
+        if request_seconds > 3.0:
+            LOG.warning('Slow Alerts.in.ua API response: %.1fs', request_seconds)
+        try:
+            if cache_age is not None and float(cache_age) >= 10:
+                LOG.warning('Upstream/CDN response may be cached: Age=%ss', cache_age)
+        except (TypeError, ValueError):
+            pass
         self.cached = snapshot
         return snapshot
 
