@@ -220,8 +220,10 @@ class GroupingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             store = Storage(os.path.join(folder, 'alerts.db'))
             store.apply_snapshot(statuses({}), 'raions')
-            store.apply_snapshot(statuses({'152': 'Y'}), 'raions')
+            # Bind before creating this event, since binding intentionally
+            # marks already-pending editor messages as stale.
             store.bind_alerts_thread(48)
+            store.apply_snapshot(statuses({'152': 'Y'}), 'raions')
             class TelegramStub:
                 def __init__(self):
                     self.calls = []
