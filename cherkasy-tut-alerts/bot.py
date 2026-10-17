@@ -97,6 +97,9 @@ def compose(label, previous, current, when=None, mode='oblast'):
     place = 'Область' if label in ('Уся Черкаська область', 'Черкаська область') else label
     place = html.escape(place)
     if current == 'Y':
+        if previous == 'R':
+            # Red danger ended, but the yellow warning is still active.
+            return f'🟡🚨 {place} — Відбій червоної тривоги, жовта триває!'
         return f'🟡🚨 {place} — жовта тривога!'
     if current == 'R':
         return f'🔴🚨 {place} — червона тривога!'
@@ -107,6 +110,50 @@ def compose(label, previous, current, when=None, mode='oblast'):
         # A partial alert cannot reliably be classified yellow/red at raion level.
         return f'🟠🚨 {place} — часткова тривога!'
     raise ValueError('Invalid alert status')
+
+
+def grouped_raion_label(uids):
+    """Natural Ukrainian list of 2-3 names, omitting repeated word «район»."""
+    district_names = [RAIONS[uid].removesuffix(' район') for uid in sorted(uids)]
+    if len(district_names) == 2:
+        return ' та '.join(district_names) + ' райони'
+    return ', '.join(district_names[:-1]) + ' та ' + district_names[-1] + ' райони'
+
+
+def consolidate_simultaneous_changes(changes):
+    """One notice for 2-3 districts with the same transition in one API snapshot.
+
+    Only group actual transitions, not districts whose alert status was already
+    active. No waiting window: this must not introduce publishing latency.
+    """
+    buckets = {}
+    for change in changes:
+        uid, label, old, new, when = change
+        if uid in RAIONS:
+            buckets.setdefault((old, new), []).append(change)
+    seen = set()
+    result = []
+    for change in changes:
+        uid, label, old, new, when = change
+        key = (old, new)
+        group = buckets.get(key, [])
+        if uid in RAIONS and len(group) >= 2:
+            if key in seen:
+                continue
+            seen.add(key)
+            uids = [entry[0] for entry in group]
+            if len(uids) == 4:
+                label = 'Уся Черкаська область'
+                synthetic_uid = OBLAST_UID
+            else:
+                label = grouped_raion_label(uids)
+                synthetic_uid = 'group:' + ','.join(sorted(uids))
+            result.append((synthetic_uid, label, old, new, when))
+            LOG.info('Grouped %s raions in one notice: %s %s -> %s',
+                     len(uids), label, old, new)
+        else:
+            result.append(change)
+    return result
 
 
 class Storage:
@@ -211,6 +258,8 @@ class Storage:
                                 new_full, changes[0][4])]
                     LOG.info('Consolidated four districts into one oblast notice: %s -> %s',
                              previous, new_full)
+                else:
+                    changes = consolidate_simultaneous_changes(changes)
 
             for uid, label, old, new, when in changes:
                 db.execute('INSERT INTO outbox(uid,label,previous,current,detected_at) VALUES(?,?,?,?,?)',
