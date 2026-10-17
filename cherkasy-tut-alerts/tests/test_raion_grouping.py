@@ -41,8 +41,79 @@ class GroupingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             store = Storage(os.path.join(folder, 'alerts.db'))
             store.apply_snapshot(statuses({}), 'raions')
-            self.assertEqual(store.apply_snapshot(statuses({'150':'Y', '151':'R', '152':'P', '153':'Y'}), 'raions'), 4)
-            self.assertEqual({event[1] for event in store.pending()}, set(RAIONS))
+            self.assertEqual(store.apply_snapshot(statuses({'150':'Y', '151':'R', '152':'P', '153':'Y'}), 'raions'), 3)
+            alerts = store.pending()
+            self.assertEqual({event[1] for event in alerts}, {'group:150,153','151','152'})
+            self.assertEqual(next(e[2] for e in alerts if e[1]=='group:150,153'),
+                             'Звенигородський та Золотоніський райони')
+
+    def test_two_simultaneous_yellow_alerts_generate_one_message(self):
+        with tempfile.TemporaryDirectory() as folder:
+            store = Storage(os.path.join(folder,'alerts.db'))
+            store.apply_snapshot(statuses({}), 'raions')
+            self.assertEqual(store.apply_snapshot(statuses({'150':'Y','152':'Y'}), 'raions'), 1)
+            event = store.pending()[0]
+            self.assertEqual((event[1], event[2], event[3], event[4]),
+                             ('group:150,152','Звенигородський та Черкаський райони','N','Y'))
+            self.assertEqual(compose(event[2],event[3],event[4]),
+                             '🟡🚨 Звенигородський та Черкаський райони — жовта тривога!')
+            self.assertTrue(should_ping(event[3],event[4]))
+            self.assertEqual(store.apply_snapshot(statuses({'150':'Y','152':'Y'}),'raions'),0)
+            self.assertEqual(len(store.pending()),1)
+
+    def test_three_red_districts_group_without_falsely_announcing_oblast(self):
+        with tempfile.TemporaryDirectory() as folder:
+            store=Storage(os.path.join(folder,'alerts.db'))
+            store.apply_snapshot(statuses({}),'raions')
+            self.assertEqual(store.apply_snapshot(statuses({'150':'R','151':'R','153':'R'}),'raions'),1)
+            event=store.pending()[0]
+            self.assertEqual(event[1],'group:150,151,153')
+            self.assertEqual(event[2],'Звенигородський, Уманський та Золотоніський райони')
+            self.assertNotIn('Область',compose(event[2],event[3],event[4]))
+            self.assertEqual(event[4],'R')
+
+    def test_simultaneous_red_to_yellow_means_red_clear_not_total_clear(self):
+        with tempfile.TemporaryDirectory() as folder:
+            store=Storage(os.path.join(folder,'alerts.db'))
+            store.apply_snapshot(statuses({'150':'R','152':'R'}),'raions')
+            self.assertEqual(store.apply_snapshot(statuses({'150':'Y','152':'Y'}),'raions'),1)
+            event=store.pending()[0]
+            self.assertEqual((event[1],event[3],event[4]),('group:150,152','R','Y'))
+            self.assertEqual(compose(event[2],event[3],event[4]),
+                             '🟡🚨 Звенигородський та Черкаський райони — Відбій червоної тривоги, жовта триває!')
+            self.assertFalse(should_ping(event[3],event[4]))
+            self.assertEqual(store.apply_snapshot(statuses({}),'raions'),0)
+            self.assertEqual(store.apply_snapshot(statuses({}),'raions'),1)
+            clear=store.pending()[-1]
+            self.assertEqual(clear[1],'group:150,152')
+            self.assertEqual(clear[3:5],('Y','N'))
+            self.assertEqual(compose(clear[2],clear[3],clear[4]),
+                             '🟢 Звенигородський та Черкаський райони — Відбій жовтої тривоги')
+
+    def test_grouped_escalation_keeps_admin_ping(self):
+        with tempfile.TemporaryDirectory() as folder:
+            store=Storage(os.path.join(folder,'alerts.db'))
+            store.apply_snapshot(statuses({'151':'Y','152':'Y','153':'Y'}),'raions')
+            self.assertEqual(store.apply_snapshot(statuses({'151':'R','152':'R','153':'R'}),'raions'),1)
+            event=store.pending()[0]
+            self.assertEqual(event[1],'group:151,152,153')
+            self.assertEqual((event[3],event[4]),('Y','R'))
+            self.assertTrue(should_ping(event[3],event[4]))
+
+    def test_four_districts_still_use_single_oblast_notice(self):
+        with tempfile.TemporaryDirectory() as folder:
+            store=Storage(os.path.join(folder,'alerts.db'))
+            store.apply_snapshot(statuses({}),'raions')
+            self.assertEqual(store.apply_snapshot(statuses({key:'R' for key in RAIONS}),'raions'),1)
+            self.assertEqual(store.pending()[0][1:5],('24','Уся Черкаська область','N','R'))
+
+    def test_updates_from_separate_snapshots_are_not_held_or_merged(self):
+        with tempfile.TemporaryDirectory() as folder:
+            store=Storage(os.path.join(folder,'alerts.db'))
+            store.apply_snapshot(statuses({}),'raions')
+            self.assertEqual(store.apply_snapshot(statuses({'151':'Y'}),'raions'),1)
+            self.assertEqual(store.apply_snapshot(statuses({'151':'Y','153':'Y'}),'raions'),1)
+            self.assertEqual([event[1] for event in store.pending()],['151','153'])
 
     def test_admin_pings_start_and_escalation_only(self):
         self.assertTrue(should_ping('N', 'Y'))
@@ -230,6 +301,10 @@ class GroupingTests(unittest.TestCase):
                          '🔴🚨 Область — червона тривога!')
         self.assertEqual(compose('Уся Черкаська область', 'N', 'Y'),
                          '🟡🚨 Область — жовта тривога!')
+        self.assertEqual(compose('Уманський район', 'R', 'Y'),
+                         '🟡🚨 Уманський район — Відбій червоної тривоги, жовта триває!')
+        self.assertEqual(compose('Уся Черкаська область', 'R', 'Y'),
+                         '🟡🚨 Область — Відбій червоної тривоги, жовта триває!')
         self.assertEqual(compose('Черкаський район', 'Y', 'N'),
                          '🟢 Черкаський район — Відбій жовтої тривоги')
         self.assertEqual(compose('Уманський район', 'R', 'N'),
