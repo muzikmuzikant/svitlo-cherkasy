@@ -306,13 +306,17 @@ class AlertsSource:
         suffix = ('v2/iot/active_air_raid_alerts/24.json' if self.mode == 'oblast' else
                   'v2/iot/active_air_raid_alerts.json' if self.mode == 'raions' else
                   'v1/alerts/active.json')
-        headers = {'Authorization': f'Bearer {self.token}', 'User-Agent': 'CherkasyTutAlertsBot/1.0'}
+        headers = {'Authorization': f'Bearer {self.token}', 'User-Agent': 'CherkasyTutAlertsBot/1.0', 'Cache-Control': 'no-cache'}
         if self.last_modified:
             headers['If-Modified-Since'] = self.last_modified
         req = urllib.request.Request('https://api.alerts.in.ua/' + suffix, headers=headers)
+        fetch_start = time.monotonic()
         try:
             with urllib.request.urlopen(req, timeout=12) as response:
                 body = json.load(response)
+                response_seconds = time.monotonic() - fetch_start
+                if response_seconds > 3.0:
+                    LOG.warning('Slow Alerts.in.ua API response: %.1fs', response_seconds)
                 new_modified = response.headers.get('Last-Modified')
                 if new_modified:
                     self.last_modified = new_modified
@@ -359,35 +363,81 @@ def should_ping(previous, current):
     return (previous == 'N' and current in ('Y', 'R', 'P')) or (previous == 'Y' and current == 'R')
 
 
-def send_pending(store, tg, channel_id, group_id, mode):
+def seconds_since_detected(when):
+    """Observed bot-side lag. Official source publication time may be earlier."""
+    try:
+        detected = datetime.strptime(when, '%d.%m.%Y, %H:%M:%S').replace(tzinfo=TZ)
+        return max(0.0, (datetime.now(TZ) - detected).total_seconds())
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def send_channel_pending(store, tg, channel_id, mode):
+    """Fast path for public posts. Never wait for Telegram group operations."""
     for row in store.pending():
         event_id, uid, label, previous, current, when, channel_done, group_done = row
-        body = compose(label, previous, current, when, mode)
-        if not channel_done:
-            try:
-                # Telegram Bot API HTML parse mode is enabled in Telegram.send.
-                # Bold the entire public-channel notice, but not the admin-group ping list.
-                tg.send(channel_id, f'<b>{body}</b>')
-                store.done(event_id, 'channel_done')
-            except Exception as exc:
-                LOG.exception('Channel post failed; will retry: %s', exc)
-        if not group_done:
-            # Never send alert notices to the group's General topic by accident.
-            # Keep group notifications pending until /setalerts configures a topic.
-            thread_id = store.alerts_thread_id()
-            if thread_id is None:
-                continue
-            try:
-                ping = should_ping(previous, current)
-                if ping:
-                    mentions = member_mentions(store, tg, group_id)
-                    extra = ('\n' + mentions) if mentions else ''
-                else:
-                    extra = ''
-                tg.send(group_id, body + extra, notify=ping, thread_id=thread_id)
-                store.done(event_id, 'group_done')
-            except Exception as exc:
-                LOG.exception('Admin group post failed; will retry: %s', exc)
+        if channel_done:
+            continue
+        try:
+            body = compose(label, previous, current, when, mode)
+            tg.send(channel_id, f'<b>{body}</b>')
+            store.done(event_id, 'channel_done')
+            LOG.info('Delivered channel alert: id=%s uid=%s %s->%s lag=%.1fs',
+                     event_id, uid, previous, current, seconds_since_detected(when))
+        except Exception as exc:
+            LOG.exception('Channel post failed (retry later): id=%s %s', event_id, exc)
+            return False
+    return True
+
+
+def send_group_pending(store, tg, group_id, mode):
+    """Independent editor-topic sender. Admin pings never slow down polling."""
+    thread_id = store.alerts_thread_id()
+    if thread_id is None:
+        return True
+    for row in store.pending():
+        event_id, uid, label, previous, current, when, channel_done, group_done = row
+        if group_done:
+            continue
+        try:
+            body = compose(label, previous, current, when, mode)
+            ping = should_ping(previous, current)
+            if ping:
+                mentions = member_mentions(store, tg, group_id)
+                extra = ('\\n' + mentions) if mentions else ''
+            else:
+                extra = ''
+            tg.send(group_id, body + extra, notify=ping, thread_id=thread_id)
+            store.done(event_id, 'group_done')
+            LOG.info('Delivered admin topic alert: id=%s uid=%s %s->%s ping=%s lag=%.1fs',
+                     event_id, uid, previous, current, ping, seconds_since_detected(when))
+        except Exception as exc:
+            LOG.exception('Admin topic post failed (retry later): id=%s %s', event_id, exc)
+            return False
+    return True
+
+
+def send_pending(store, tg, channel_id, group_id, mode):
+    """Compatibility entrypoint for synchronous tests and manual diagnostics."""
+    send_channel_pending(store, tg, channel_id, mode)
+    send_group_pending(store, tg, group_id, mode)
+
+
+def publisher_loop(store, tg, destination, target_id, mode, wake):
+    """One worker per destination to prevent slow Telegram calls blocking API polling."""
+    while True:
+        try:
+            if destination == 'channel':
+                succeeded = send_channel_pending(store, tg, target_id, mode)
+            else:
+                succeeded = send_group_pending(store, tg, target_id, mode)
+        except Exception as exc:
+            LOG.exception('Publisher %s error: %s', destination, exc)
+            succeeded = False
+        # Do not hammer Telegram if it rejects requests. A fresh transition
+        # wakes the sender immediately even during normal idle time.
+        wake.wait(timeout=1.0 if succeeded else 10.0)
+        wake.clear()
 
 
 def admin_command_loop(store, tg, group_id, status):
@@ -497,7 +547,7 @@ def main():
     channel = setting('CHANNEL_ID', '@cherkasy_tut')
     group = setting('ADMIN_GROUP_ID')
     mode = setting('MONITOR_MODE', 'raions')
-    interval = max(10.0, float(setting('POLL_SECONDS', '12')))
+    interval = max(8.0, float(setting('POLL_SECONDS', '9')))
     if mode not in ('oblast', 'raions', 'all'):
         sys.exit('MONITOR_MODE must be oblast, raions or all')
     if not all((token, api, channel, group)):
@@ -507,8 +557,19 @@ def main():
     verify_admin_group(db, tg, group)
     source = AlertsSource(api, mode)
     status = {'last_ok': 'ще не було'}
-    thread = threading.Thread(target=admin_command_loop, args=(db, tg, group, status), daemon=True)
-    thread.start()
+    # Isolate polling from Telegram delivery; each destination has its own
+    # worker, while SQLite outbox keeps retries and restart safety.
+    channel_wake = threading.Event()
+    group_wake = threading.Event()
+    threading.Thread(target=publisher_loop,
+                     args=(db, tg, 'channel', channel, mode, channel_wake),
+                     daemon=True, name='channel-publisher').start()
+    threading.Thread(target=publisher_loop,
+                     args=(db, tg, 'group', group, mode, group_wake),
+                     daemon=True, name='group-publisher').start()
+    threading.Thread(target=admin_command_loop,
+                     args=(db, tg, group, status),
+                     daemon=True, name='admin-commands').start()
     LOG.info('Starting alerts bot: %s, %ss, channel=%s', mode, interval, channel)
     while True:
         start = time.monotonic()
@@ -516,11 +577,17 @@ def main():
             snapshot = source.get()
             # Successful API response only; failures never count as an all-clear.
             status['last_ok'] = now_local()
-            db.apply_snapshot(snapshot, mode)
-            send_pending(db, tg, channel, group, mode)
+            count = db.apply_snapshot(snapshot, mode)
+            if count:
+                # Signal delivery immediately. Never await admin mentions here.
+                channel_wake.set()
+                group_wake.set()
         except Exception as exc:
             LOG.exception('Alerts loop error (no state changes published): %s', exc)
-        time.sleep(max(0.1, interval - (time.monotonic() - start)))
+        elapsed = time.monotonic() - start
+        if elapsed > interval:
+            LOG.warning('Polling cycle exceeded target interval: %.1fs > %.1fs', elapsed, interval)
+        time.sleep(max(0.1, interval - elapsed))
 
 
 if __name__ == '__main__':
