@@ -336,7 +336,9 @@ def send_pending(store, tg, channel_id, group_id, mode):
         body = compose(label, previous, current, when, mode)
         if not channel_done:
             try:
-                tg.send(channel_id, body)
+                # Telegram Bot API HTML parse mode is enabled in Telegram.send.
+                # Bold the entire public-channel notice, but not the admin-group ping list.
+                tg.send(channel_id, f'<b>{body}</b>')
                 store.done(event_id, 'channel_done')
             except Exception as exc:
                 LOG.exception('Channel post failed; will retry: %s', exc)
