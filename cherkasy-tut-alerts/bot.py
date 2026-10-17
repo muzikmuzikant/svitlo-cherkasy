@@ -217,6 +217,32 @@ class Storage:
                            (uid, label, old, new, when))
             return len(changes)
 
+    def alerts_thread_id(self):
+        """Return the bound forum topic, or None until an admin selects one."""
+        with self.connection() as db:
+            item = db.execute("SELECT value FROM kv WHERE key='alerts_thread_id'").fetchone()
+        if not item:
+            return None
+        try:
+            thread_id = int(item[0])
+            return thread_id if thread_id > 1 else None
+        except (ValueError, TypeError):
+            return None
+
+    def bind_alerts_thread(self, thread_id):
+        """Bind a topic and discard stale group-only notifications atomically.
+
+        Previously published channel messages remain unaffected. Notifications
+        queued before configuration must not flood the topic upon binding.
+        """
+        if isinstance(thread_id, bool) or not isinstance(thread_id, int) or thread_id <= 1:
+            raise ValueError('A non-General Telegram forum topic ID is required')
+        with self.connection() as db:
+            db.execute('UPDATE outbox SET group_done=1 WHERE group_done=0')
+            db.execute("INSERT OR REPLACE INTO kv(key,value) VALUES('alerts_thread_id',?)",
+                       (str(thread_id),))
+        LOG.info('Alerts forum topic bound: message_thread_id=%s', thread_id)
+
     def subscribe(self, user_id, name):
         with self.connection() as db:
             db.execute('INSERT OR REPLACE INTO subscribers(user_id,display_name) VALUES(?,?)', (user_id, name[:100]))
@@ -261,10 +287,13 @@ class Telegram:
             raise RuntimeError(f'Telegram {method}: {result}')
         return result['result']
 
-    def send(self, chat_id, text, notify=True):
-        return self.call('sendMessage', {'chat_id': chat_id, 'text': text,
-                                         'parse_mode': 'HTML', 'disable_notification': not notify,
-                                         'link_preview_options': {'is_disabled': True}})
+    def send(self, chat_id, text, notify=True, thread_id=None):
+        payload = {'chat_id': chat_id, 'text': text,
+                   'parse_mode': 'HTML', 'disable_notification': not notify,
+                   'link_preview_options': {'is_disabled': True}}
+        if thread_id is not None:
+            payload['message_thread_id'] = int(thread_id)
+        return self.call('sendMessage', payload)
 
 
 class AlertsSource:
@@ -343,6 +372,11 @@ def send_pending(store, tg, channel_id, group_id, mode):
             except Exception as exc:
                 LOG.exception('Channel post failed; will retry: %s', exc)
         if not group_done:
+            # Never send alert notices to the group's General topic by accident.
+            # Keep group notifications pending until /setalerts configures a topic.
+            thread_id = store.alerts_thread_id()
+            if thread_id is None:
+                continue
             try:
                 ping = should_ping(previous, current)
                 if ping:
@@ -350,7 +384,7 @@ def send_pending(store, tg, channel_id, group_id, mode):
                     extra = ('\n' + mentions) if mentions else ''
                 else:
                     extra = ''
-                tg.send(group_id, body + extra, notify=ping)
+                tg.send(group_id, body + extra, notify=ping, thread_id=thread_id)
                 store.done(event_id, 'group_done')
             except Exception as exc:
                 LOG.exception('Admin group post failed; will retry: %s', exc)
@@ -372,11 +406,14 @@ def admin_command_loop(store, tg, group_id, status):
                 if not text or not text[0].startswith('/'):
                     continue
                 command = text[0].lower().split('@')[0]
-                if command in ('/chatid', '/subscribe', '/unsubscribe', '/status', '/test', '/help', '/start'):
+                if command in ('/chatid', '/subscribe', '/unsubscribe', '/status', '/test', '/help', '/start', '/setalerts'):
                     LOG.info('Telegram command received: %s; chat_id=%s; configured_admin=%s',
                              command, chat.get('id'), group_id)
+                reply_thread = (msg.get('message_thread_id')
+                                if msg.get('is_topic_message') else None)
                 if command == '/chatid':
-                    tg.send(chat['id'], f'ID цієї групи: <code>{chat["id"]}</code>')
+                    tg.send(chat['id'], f'ID цієї групи: <code>{chat["id"]}</code>',
+                            thread_id=reply_thread)
                     continue
                 if str(chat.get('id')) != str(group_id):
                     if command == '/test' and chat.get('type') in ('group', 'supergroup'):
@@ -387,20 +424,42 @@ def admin_command_loop(store, tg, group_id, status):
                 if not uid or user.get('is_bot'):
                     continue
                 name = user.get('first_name') or 'Учасник'
+                if command == '/setalerts':
+                    if chat.get('type') != 'supergroup' or not isinstance(reply_thread, int) or reply_thread <= 1:
+                        tg.send(group_id, '⚠️ Надішліть /setalerts безпосередньо в темі «Тривоги».',
+                                notify=False, thread_id=reply_thread)
+                        continue
+                    try:
+                        member = tg.call('getChatMember', {'chat_id': group_id, 'user_id': uid})
+                    except Exception as exc:
+                        LOG.warning('Could not verify /setalerts admin rights: %s', exc)
+                        tg.send(group_id, '⚠️ Не вдалося перевірити права адміністратора. Спробуйте ще раз.',
+                                notify=False, thread_id=reply_thread)
+                        continue
+                    if member.get('status') not in ('creator', 'administrator'):
+                        tg.send(group_id, '🔒 Прив’язати тему може лише адміністратор групи.',
+                                notify=False, thread_id=reply_thread)
+                        continue
+                    # Verify that Telegram accepts a message in this topic before
+                    # persisting it, so an incorrect/closed thread is not activated.
+                    tg.send(group_id, '✅ Тему підключено. Наступні сповіщення про тривоги та пінги будуть тут.',
+                            notify=False, thread_id=reply_thread)
+                    store.bind_alerts_thread(reply_thread)
+                    continue
                 if command == '/subscribe':
                     store.subscribe(uid, name)
-                    tg.send(group_id, f'✅ {html.escape(name)}, сповіщення для вас увімкнено.')
+                    tg.send(group_id, f'✅ {html.escape(name)}, сповіщення для вас увімкнено.', thread_id=reply_thread)
                 elif command == '/unsubscribe':
                     store.unsubscribe(uid)
-                    tg.send(group_id, f'✅ {html.escape(name)}, персональні згадки вимкнено.')
+                    tg.send(group_id, f'✅ {html.escape(name)}, персональні згадки вимкнено.', thread_id=reply_thread)
                 elif command == '/status':
                     states = store.latest()
                     statuses = ', '.join(f'{html.escape(label)}: {s}' for label, s in states) or 'ще немає даних'
-                    tg.send(group_id, f'📡 <b>Стан бота</b>\n{statuses}\nОстання успішна перевірка: {html.escape(status["last_ok"])}')
+                    tg.send(group_id, f'📡 <b>Стан бота</b>\n{statuses}\nОстання успішна перевірка: {html.escape(status["last_ok"])}', thread_id=reply_thread)
                 elif command == '/test':
-                    tg.send(group_id, '🧪 <b>ТЕСТ</b>\nБот може писати в адмінгрупу. Це НЕ повідомлення про реальну тривогу.')
+                    tg.send(group_id, '🧪 <b>ТЕСТ</b>\nБот може писати в адмінгрупу. Це НЕ повідомлення про реальну тривогу.', thread_id=reply_thread)
                 elif command in ('/help', '/start'):
-                    tg.send(group_id, 'Команди: /subscribe, /unsubscribe, /status, /test, /chatid, /help')
+                    tg.send(group_id, 'Команди: /setalerts, /subscribe, /unsubscribe, /status, /test, /chatid, /help', thread_id=reply_thread)
         except Exception as exc:
             LOG.exception('Telegram command receiver failed: %s', exc)
             time.sleep(5)
