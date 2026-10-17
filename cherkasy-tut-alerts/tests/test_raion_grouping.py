@@ -1,7 +1,7 @@
 import os
 import tempfile
 import unittest
-from bot import Storage, normalize_raions, compose, should_ping
+from bot import Storage, normalize_raions, compose, should_ping, send_pending
 
 RAIONS = ('150', '151', '152', '153')
 
@@ -69,6 +69,28 @@ class GroupingTests(unittest.TestCase):
             last = store.pending()[-1]
             self.assertEqual((last[1],last[3],last[4]), ('24','Y','R'))
             self.assertTrue(should_ping(last[3], last[4]))
+
+    def test_channel_post_bold_group_post_unchanged(self):
+        class FakeStore:
+            def __init__(self):
+                self.completed = []
+            def pending(self):
+                # End-of-alert does not require fetching administrator mentions.
+                return [(1, '152', 'Черкаський район', 'R', 'N', '00:00', 0, 0)]
+            def done(self, event_id, destination):
+                self.completed.append((event_id, destination))
+        class FakeTelegram:
+            def __init__(self):
+                self.messages = []
+            def send(self, dest, message, notify=True):
+                self.messages.append((dest, message, notify))
+        store, tg = FakeStore(), FakeTelegram()
+        send_pending(store, tg, '@cherkasy_tut', -100123456789, 'raions')
+        self.assertEqual(tg.messages, [
+            ('@cherkasy_tut', '<b>🟢 Черкаський район — Відбій червоної тривоги</b>', True),
+            (-100123456789, '🟢 Черкаський район — Відбій червоної тривоги', False),
+        ])
+        self.assertEqual(store.completed, [(1, 'channel_done'), (1, 'group_done')])
 
     def test_one_district_and_short_text(self):
         with tempfile.TemporaryDirectory() as folder:
