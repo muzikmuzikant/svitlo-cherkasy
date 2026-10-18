@@ -372,7 +372,7 @@
   if(open(target)){pendingLinkId=null;return}
   // Cross-device links must not depend on this device's own queue or old Inbox cache.
   sync().catch(console.warn);
-  restoreSharedMessage(target).catch(console.warn);
+  if(typeof restoreSharedMessage==='function')restoreSharedMessage(target).catch(console.warn);
  }
  function routePush(id,pushClick=false){
   if(pushClick)trackNotice(id,'pushClick');
