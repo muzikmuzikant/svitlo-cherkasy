@@ -267,7 +267,9 @@ function renderTomorrowPreview(){
  const root=$('tomorrowCard'),summary=$('tomorrowSummary'),details=$('tomorrowDetails');
  if(!root||!summary||!details)return;
  const t=queue?timeline(date,queue):null,day=queue?currentDay(date):null,st=stats(t);
- root.disabled=!queue;
+ const outsideWeek=weekStart(date)!==weekStart(today());
+ root.disabled=!queue||outsideWeek;
+ const tomorrowLink=$('tomorrowOpen');if(tomorrowLink){tomorrowLink.disabled=outsideWeek;tomorrowLink.title=outsideWeek?'Графік нового тижня відкриється в понеділок':''}
  root.classList.toggle('tomorrow-unknown',!t||st.unknown>0);
  if(!queue){summary.textContent='Спочатку додайте адресу';details.textContent='Після цього покажемо графік на завтра';return}
  if(!day||!t){summary.textContent=isOfflineMode()?'Немає збереженого графіка':'Світло весь день';details.textContent=(isOfflineMode()?'Неможливо перевірити графік без зв’язку':'Немає опублікованого графіка')+' · Підчерга '+queue;return}
@@ -608,7 +610,7 @@ function renderSettings(){
  else if(!hasAddress){title='Потрібна адреса';description='Додайте адресу з підчергою, щоб налаштувати Push.'}
  else if(pushControlBusy){title='Застосовуємо…';description='Оновлюємо Push-підписку. Збережені категорії не скидаються.'}
  else if(connected){title='Підключено';description='Системні Push увімкнені. Оберіть категорії, які хочете отримувати.'}
- else if(!optedOut){title='Не підключено';description='Натисніть головний перемикач, щоб підключити Push.'}
+ else if(!optedOut){title='Не підключено';description='Увімкніть Push головним перемикачем. Після підключення стануть доступними категорії.'}
  setText('pushHeadline',title);setText('pushDescription',description);
  const status=$('pushHeadline');if(status)status.dataset.status=connected?'connected':title==='Застосовуємо…'?'pending':'disconnected';
  const offline=$('offlineDataState');if(offline){
@@ -885,7 +887,7 @@ async function refreshData(manual=false){
    }catch(error){console.warn('Bulletin or admin overrides:',error)}
    }
    hasCheckedOnce=true;render();checkNotifications();
-   if(manual)flash(schedulesOk?'Графіки оновлено':'Сервер недоступний. Показуємо збережені дані.');
+   if(manual&&!schedulesOk)flash('Сервер недоступний. Показуємо збережені дані.');
    if(schedulesOk){
      if(hadChecked&&scheduleQueueChanged(before,data,primary()?.queue))flash('Графік для вашої підчерги оновлено');
      announceChanges(before,data);
@@ -1155,7 +1157,7 @@ setInterval(()=>{if(!document.hidden)refreshData()},AUTO_SCHEDULE_CHECK_MS);
 window.addEventListener('svitlo:live-schedules',()=>{lastRefresh=0;refreshData().catch(console.warn)});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();refreshData();checkNotifications()}});
 window.addEventListener('online',()=>{
-  renderFreshness();flash('Зв’язок відновлено. Оновлюємо графіки та повідомлення…');
+  renderFreshness();
   refreshData(true);
   window.dispatchEvent(new Event('svitlo:refresh-content'));
  });window.addEventListener('offline',renderFreshness);
