@@ -43,25 +43,22 @@ test('reject unverified and unsafe fake message links',()=>{
  assert.equal(resolvePublicMessage('push:unexpected',ctx),null);
  assert.equal(resolvePublicMessage('day:6.1:2026-10-19',{...ctx,schedule:{days:[],changes:[]}}),null);
 });
-test('Sunday tomorrow navigates to next Monday and offers a clear return',()=>{
+test('Sunday keeps Sunday and next Monday but has no week-navigation controls',()=>{
  const app=read('app.js'),html=read('index.html');
- assert.match(app,/const requested=weekStart\(date\),canVisitNext=/);
- assert.match(app,/const canPreviewNext=tomorrowMonday!==currentMonday/);
+ assert.doesNotMatch(html,/weekBackControl|weekForwardControl|week-jump-controls/);
  assert.match(app,/root\.disabled=!queue;/);
  assert.match(app,/tomorrowLink\.disabled=!queue/);
- assert.match(html,/id="weekBackControl"/);assert.match(html,/id="weekForwardControl"/);
  const begin=app.indexOf('function weekStart(date)'),end=app.indexOf('const currentDay=',begin);
  const from=app.indexOf('function nextChangeLabel('),to=app.indexOf('function statusCopy(',from);
- assert.ok(begin>=0&&end>begin&&from>=0&&to>from);
  let current='2026-10-18',view=null;
  const shiftDay=(date,n)=>{const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)};
- const vmctx=vm.createContext({today:()=>current,shiftDay,formatDate:d=>d,clock:n=>String(n),renderDetail(){view=vmctx.daySelected},dayStripStart:null,daySelected:null});
+ const vmctx=vm.createContext({today:()=>current,shiftDay,formatDate:d=>d,clock:n=>String(n),renderDetail(){view=vmctx.daySelected},daySelected:null});
  vm.runInContext(app.slice(begin,end)+'\n'+app.slice(from,to),vmctx);
- vmctx.showDay('2026-10-19');
- assert.equal(view,'2026-10-19');assert.equal(vmctx.dayStripStart,'2026-10-19');
+ assert.deepEqual(Array.from(vmctx.stripDates()),['2026-10-18','2026-10-19']);
+ vmctx.showDay('2026-10-19');assert.equal(view,'2026-10-19');
  vmctx.showDay('2026-10-18');assert.equal(view,'2026-10-18');
- current='2026-10-19';vmctx.showDay('2026-10-18');
- assert.equal(view,'2026-10-19');assert.equal(vmctx.dayStripStart,'2026-10-19');
+ vmctx.showDay('2026-10-12');assert.equal(view,'2026-10-18');
+ current='2026-10-19';vmctx.showDay('2026-10-18');assert.equal(view,'2026-10-19');
 });
 test('operator silence is still light-all-day, explicitly unchanged',()=>{
  const app=read('app.js');
