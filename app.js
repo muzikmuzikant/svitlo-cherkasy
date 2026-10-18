@@ -871,7 +871,7 @@ async function refreshData(manual=false){
      const nextStamp=Date.parse(loaded.lastChecked||'')||0;
      // Never downgrade an already checked schedule after an outage.
      if(nextStamp>=currentStamp||!data.days.length)data=retainWeeklySchedules(loaded,data);
-     schedulesOk=source!=='device';lastSyncFailed=source!=='railway';
+     schedulesOk=source!=='device';lastSyncFailed=source==='device';
      if(source!=='device')lastDownloadAt=new Date().toISOString();
      // Never replace a newer confirmed snapshot with an older stale fallback.
      if(source!=='device'&&nextStamp>=currentStamp)saveCachedSchedule(data);
