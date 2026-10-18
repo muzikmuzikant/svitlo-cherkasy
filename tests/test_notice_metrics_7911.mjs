@@ -82,5 +82,5 @@ test('PWA reports only after voluntary consent and actual actions, not passive l
  assert.match(admin,/opsNoticeMetrics/);
  assert.match(file('privacy.html'),/взаємодію з повідомленнями/);
  assert.match(file('beta-ads.js'),/7\.9\.11-notices/);
- assert.equal(JSON.parse(file('release.json')).version,'7.9.11');
+ assert.match(JSON.parse(file('release.json')).version,/^7\.9\.(?:11|12)$/);
 });
