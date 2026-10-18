@@ -251,11 +251,13 @@ def update_schedules(session, now=None):
     official schedules are still safe to publish.
     """
     now = now or datetime.now(TZ)
-    # Sunday 00:00 Europe/Kyiv expires previous Monday-Saturday.
-    # Preserve the Sunday schedule and any upcoming published Mon/Tue plans.
+    # Sunday 00:00 Europe/Kyiv expires only previous Mon-Sat schedules.
+    # Keep today's Sunday and the full coming Mon-Sun for weekday labels.
     monday = now.date() - timedelta(days=now.weekday())
-    cutoff = now.date() if now.weekday() == 6 else monday
-    wanted = {(monday + timedelta(days=i)).isoformat() for i in range(9)
+    is_sunday = now.weekday() == 6
+    cutoff = now.date() if is_sunday else monday
+    wanted = {(monday + timedelta(days=i)).isoformat()
+              for i in range(14 if is_sunday else 9)
               if monday + timedelta(days=i) >= cutoff}
     dest = DATA / 'schedules.json'
     try:
