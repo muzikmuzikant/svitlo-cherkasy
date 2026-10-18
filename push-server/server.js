@@ -21,6 +21,7 @@ import {createSchedulePublication} from './schedule-publication.js';
 import {createScheduleReview} from './schedule-review.js';
 import {createScheduleMirror} from './schedule-mirror.js';
 import {tomorrowKey,alreadySentTomorrow} from './tomorrow-dedupe.js';
+import {resolvePublicMessage} from './public-message.js';
 import {originPolicy} from './origins.js';
 import webpush from 'web-push';
 import {adminRouter} from './admin.js';
@@ -111,7 +112,7 @@ async function forEachLimited(items,limit,fn){
   while(next<items.length){const i=next++;try{await fn(items[i])}catch(e){console.warn('Delivery worker:',e.message)}}
  }));
 }
-let lastSuccess=null,lastError=null,running=false,lastLoadedSchedule=null,transitionRunning=false;
+let lastSuccess=null,lastError=null,running=false,lastLoadedSchedule=null,lastLoadedBulletins=[],transitionRunning=false;
 // Dedicated short ticker: external bulletin requests must never delay a planned
 // outage/restoration reminder. No browser or opened PWA is required.
 async function transitionJob(){
@@ -200,6 +201,8 @@ async function job(){
        if(Array.isArray(events))bulletin.push(...events)}
    catch(e){console.warn('Bulletin refresh:',e.message)}
   }
+  // Allow a verified cross-device link to resolve recent published emergency messages.
+  lastLoadedBulletins=bulletin.filter(e=>e&&typeof e.publishedAt==='string').slice(-40);
   // The freshest verified bulletin determines whether an emergency is active or ended.
   const event=latestOfficialEvent(bulletin,timestamp);
   const all=Object.values(subscribers);
@@ -340,6 +343,13 @@ const server=http.createServer(async(req,res)=>{
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   try{const body=await readPayload(req,500);noticeMetrics.forget(body?.id);response(res,ads.optOut(body)?200:400,{ok:true})}
   catch{response(res,400,{error:'Bad request'})}return
+ }
+ if(requestPath==='/api/public/message'&&req.method==='GET'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  const id=new URL(req.url,'http://localhost').searchParams.get('id');
+  const message=resolvePublicMessage(id,{schedule:officialSchedules.schedule()||lastLoadedSchedule,
+   announcements:siteControls.publicState().announcements,emergencies:lastLoadedBulletins});
+  response(res,message?200:404,message||{error:'Повідомлення більше недоступне'});return;
  }
  if(requestPath==='/api/data/status'&&req.method==='GET'){
   response(res,200,officialSchedules.status());return;
