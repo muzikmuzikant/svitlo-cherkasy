@@ -15,10 +15,10 @@ function calendarMonday(epoch){
 function localDay(date){return date.toISOString().slice(0,10)}
 function withWholeWeek(latest,previous,epoch){
  const monday=calendarMonday(epoch),end=new Date(monday);
- end.setUTCDate(end.getUTCDate()+8); // next Monday and Tuesday can be published in advance.
- // Cut off previous Mon-Sat at Sunday 00:00 Kyiv even if Production still
- // includes them in its read-only public schedule snapshot.
+ // On Sunday the weekday tabs Mon-Sat correspond to the approaching week,
+ // so preserve verified forecasts through the next Sunday as well.
  const isSunday=new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Kyiv',weekday:'short'}).format(new Date(epoch))==='Sun';
+ end.setUTCDate(end.getUTCDate()+(isSunday?13:8));
  const sunday=new Date(monday);sunday.setUTCDate(sunday.getUTCDate()+6);
  const first=localDay(isSunday?sunday:monday),last=localDay(end);
  const days=new Map();
