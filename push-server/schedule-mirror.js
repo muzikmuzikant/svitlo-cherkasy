@@ -16,11 +16,16 @@ function localDay(date){return date.toISOString().slice(0,10)}
 function withWholeWeek(latest,previous,epoch){
  const monday=calendarMonday(epoch),end=new Date(monday);
  end.setUTCDate(end.getUTCDate()+8); // next Monday and Tuesday can be published in advance.
- const first=localDay(monday),last=localDay(end);
+ // Cut off previous Mon-Sat at Sunday 00:00 Kyiv even if Production still
+ // includes them in its read-only public schedule snapshot.
+ const isSunday=new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Kyiv',weekday:'short'}).format(new Date(epoch))==='Sun';
+ const sunday=new Date(monday);sunday.setUTCDate(sunday.getUTCDate()+6);
+ const first=localDay(isSunday?sunday:monday),last=localDay(end);
  const days=new Map();
  for(const day of previous?.days||[])if(day.verified===true&&day.date>=first&&day.date<=last)days.set(day.date,day);
  for(const day of latest.days||[])if(day.verified===true&&day.date>=first&&day.date<=last)days.set(day.date,day);
- return {...latest,days:[...days.values()].sort((a,b)=>a.date.localeCompare(b.date))};
+ return {...latest,days:[...days.values()].sort((a,b)=>a.date.localeCompare(b.date)),
+  changes:(latest.changes||[]).filter(x=>typeof x?.date==='string'&&x.date>=first&&x.date<=last)};
 }
 
 
