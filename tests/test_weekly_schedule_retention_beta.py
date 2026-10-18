@@ -27,10 +27,18 @@ def test_sunday_midnight_discards_old_weekdays_but_preserves_sunday(monkeypatch,
     saturday=source.update_schedules(None,now=datetime(2026,10,17,23,59,tzinfo=TZ))
     assert [x['date'] for x in saturday['days']]==['2026-10-12','2026-10-15','2026-10-18']
 
+    # Simulate a verified next-week publication arriving before the Sunday
+    # cutover: it must not disappear while old Mon-Sat are being cleared.
+    saturday['days'].append(
+      {'date':'2026-10-23','verified':True,'source':'https://www.cherkasyoblenergo.com/media/next-friday',
+       'publishedAt':'2026-10-17T23:59+03:00','queues':{'1.1':{'knownFrom':'00:00','off':[['09:00','11:00']]}}})
+    source.atomic_write(tmp_path/'schedules.json',saturday)
+
     sunday=source.update_schedules(None,now=datetime(2026,10,18,0,0,tzinfo=TZ))
-    assert [x['date'] for x in sunday['days']]==['2026-10-18']
+    assert [x['date'] for x in sunday['days']]==['2026-10-18','2026-10-23']
     assert sunday['days'][0]['queues']['1.1']['off']==[['16:00','18:00']]
+    assert sunday['days'][1]['queues']['1.1']['off']==[['09:00','11:00']]
 
     monday=source.update_schedules(None,now=datetime(2026,10,19,0,0,tzinfo=TZ))
-    assert monday['days']==[]
+    assert [x['date'] for x in monday['days']]==['2026-10-23']
     assert '2026-10-19' in monday['confirmedNoScheduleDates']
