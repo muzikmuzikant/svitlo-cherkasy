@@ -145,13 +145,18 @@ function nextChangeLabel(change){
  const day=change.date||shiftDay(today(),change.dayOffset||0);
  return clock(change.time)+(change.dayOffset===1?' завтра':change.dayOffset===2?' післязавтра':(change.dayOffset>2?' · '+formatDate(day):''));
 }
-// No manual week switching. On Sunday only Sunday and next Monday are visible.
+// Calendar always displays seven weekdays, Monday through Sunday.
+// Clearing old outage schedules on Sunday NEVER removes weekday buttons.
 function stripDates(){
- const current=today();
- if(new Date(current+'T12:00:00Z').getUTCDay()===0)return [current,shiftDay(current,1)];
- const monday=weekStart(current);return Array.from({length:7},(_,i)=>shiftDay(monday,i));
+ const monday=weekStart(today());
+ return Array.from({length:7},(_,i)=>shiftDay(monday,i));
 }
-function stripContains(_start,date){return stripDates().includes(date)}
+// Sunday has a separate tomorrow shortcut for next Monday, outside today's
+// seven-day strip. It must not trigger a week selector or hide any weekdays.
+function stripContains(_start,date){
+ return stripDates().includes(date)||
+  (new Date(today()+'T12:00:00Z').getUTCDay()===0&&date===shiftDay(today(),1));
+}
 function weekdayShort(date){return ['Нд','Пн','Вт','Ср','Чт','Пт','Сб'][new Date(date+'T12:00:00Z').getUTCDay()]}
 function showDay(date){
  daySelected=stripContains(today(),date)?date:today();
@@ -539,8 +544,8 @@ function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Пі�
  setText('detailAddress',previewQueue?'Підчерга '+previewQueue+' · тимчасовий перегляд':fullAddress(a));const tToday=timeline(today(),a.queue),st=stateAt(tToday,nowMinutes()),nxt=nextChange(today(),a.queue,nowMinutes());const status=$('detailStatus');status.className='detail-status '+st;status.textContent=statusCopy(st,nxt,a.queue,today()).title;
  const day=daySelected&&stripContains(today(),daySelected)?daySelected:today();daySelected=day;
  const root=$('days');root.replaceChildren();
- const visibleDates=stripDates();root.classList.toggle('sunday-cutover',visibleDates.length===2);
- for(const d of visibleDates){
+ // Always seven weekday buttons, including after the Sunday 00:00 cleanup.
+ for(const d of stripDates()){
   const b=el('button','day-choice'+(d===day?' selected':'')+(d===today()?' is-today':''),weekdayShort(d));
   b.type='button';
   b.setAttribute('aria-pressed',String(d===day));
