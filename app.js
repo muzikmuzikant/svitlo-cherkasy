@@ -15,7 +15,7 @@ const legacy=safeJSON('svitlo-addresses-v3',safeJSON('svitlo-addresses-v2',[]));
 let addresses=safeJSON(STORE,Array.isArray(legacy)?legacy:[]), prefs=Object.assign({primaryId:null,off:true,on:true,changes:true,tomorrow:true,emergency:true},safeJSON(PREF,{}));
 let previewQueue=null;
 let pushHealthLast=0,pushHealthBusy=null;
-let pushActive=('Notification' in window&&Notification.permission==='granted'&&localStorage.getItem(PUSH_CONSENT)==='yes'), emergency={events:[],lastChecked:null},overrides={schedules:{days:[]},addresses:{},emergency:{events:[]}},data={days:[],changes:[]},index={keys:{},streets:{},localities:{}},active='home',daySelected=null,dayStripStart=null,editId=null,suggestion=null,toastTimeout=null,lastPub=null,pushConfig=null,swRegistration=null,notified=new Set(safeJSON(SEEN,[])),lastRefresh=0,hasCheckedOnce=false,lastDownloadAt=null,lastSyncFailed=false,refreshInFlight=null;
+let pushActive=('Notification' in window&&Notification.permission==='granted'&&localStorage.getItem(PUSH_CONSENT)==='yes'), emergency={events:[],lastChecked:null},overrides={schedules:{days:[]},addresses:{},emergency:{events:[]}},data={days:[],changes:[]},index={keys:{},streets:{},localities:{}},active='home',daySelected=null,editId=null,suggestion=null,toastTimeout=null,lastPub=null,pushConfig=null,swRegistration=null,notified=new Set(safeJSON(SEEN,[])),lastRefresh=0,hasCheckedOnce=false,lastDownloadAt=null,lastSyncFailed=false,refreshInFlight=null;
 // Lightweight schedule checks can run every minute without redownloading address maps.
 const AUTO_SCHEDULE_CHECK_MS=60_000, AUXILIARY_REFRESH_MS=5*60_000;
 let lastAuxiliaryRefresh=0;
@@ -50,6 +50,8 @@ function saveCachedSchedule(value){
   OFFLINE_CACHE_KEY,new Response(json,{headers:{'Content-Type':'application/json; charset=utf-8'}})
  )).catch(error=>console.warn('Offline schedule backup:',error));
 }
+// Purge old days from an installed offline snapshot on first launch.
+if(data.lastChecked)saveCachedSchedule(data);
  // Drop obsolete 7.9.8 user preferences, including those already saved on Beta devices.
  const retired798Prefs=['favorites','offMinutes','onMinutes','quietEnabled','quietFrom','quietTo','addressRules'];
  if(retired798Prefs.some(name=>Object.prototype.hasOwnProperty.call(prefs,name))){
@@ -71,15 +73,16 @@ const nowMinutes=()=>{const x=Object.fromEntries(new Intl.DateTimeFormat('en-GB'
 function shiftDay(d,num){const x=new Date(d+'T12:00:00Z');x.setUTCDate(x.getUTCDate()+num);return x.toISOString().slice(0,10)}
 const formatDate=(v,options={day:'numeric',month:'long'})=>new Intl.DateTimeFormat('uk-UA',Object.assign({timeZone:'UTC'},options)).format(new Date(v+'T12:00:00Z'));
 function fmtStamp(v){if(!v)return 'невідомо';const d=new Date(v);return isNaN(d)?'невідомо':new Intl.DateTimeFormat('uk-UA',{timeZone:TZ,day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}).format(d)}
-// Only the active Monday-Sunday week and the approaching Monday can stay
-// in the offline snapshot. Historic days survive the whole active week.
+// Sunday 00:00 Kyiv removes previous Mon-Sat, preserving Sunday and next Monday.
 function weekStart(date){const weekday=new Date(date+'T12:00:00Z').getUTCDay();return shiftDay(date,-((weekday+6)%7))}
-function weekAllowed(date){const start=weekStart(today());return date>=start&&date<=shiftDay(start,7)}
+function retentionStart(){const current=today();return new Date(current+'T12:00:00Z').getUTCDay()===0?current:weekStart(current)}
+function weekAllowed(date){return date>=retentionStart()&&date<=shiftDay(weekStart(today()),7)}
 function retainWeeklySchedules(incoming,previous={days:[]}){
  const recent=normalizeData(incoming),days=new Map();
  for(const day of previous.days||[])if(weekAllowed(day.date)&&day.verified===true)days.set(day.date,day);
  for(const day of recent.days)if(weekAllowed(day.date))days.set(day.date,day);
- return {...recent,days:[...days.values()].sort((a,b)=>a.date.localeCompare(b.date))};
+ return {...recent,days:[...days.values()].sort((a,b)=>a.date.localeCompare(b.date)),
+  changes:(recent.changes||[]).filter(c=>typeof c?.date==='string'&&weekAllowed(c.date))};
 }
 const currentDay=date=>data.days.find(x=>x.date===date&&x.verified===true);
 const minute=s=>s==='24:00'?1440:/^([01]\d|2[0-3]):[0-5]\d$/.test(s||'')?Number(s.slice(0,2))*60+Number(s.slice(3)):-1;
@@ -142,16 +145,16 @@ function nextChangeLabel(change){
  const day=change.date||shiftDay(today(),change.dayOffset||0);
  return clock(change.time)+(change.dayOffset===1?' завтра':change.dayOffset===2?' післязавтра':(change.dayOffset>2?' · '+formatDate(day):''));
 }
-// A single fixed calendar week: exactly Пн, Вт, Ср, Чт, Пт, Сб, Нд.
-// It automatically changes at Monday 00:00 in Europe/Kyiv.
-function stripDates(start=today()){const monday=weekStart(start);return Array.from({length:7},(_,i)=>shiftDay(monday,i))}
-function stripContains(_start,date){return weekStart(date)===weekStart(today())}
+// No manual week switching. On Sunday only Sunday and next Monday are visible.
+function stripDates(){
+ const current=today();
+ if(new Date(current+'T12:00:00Z').getUTCDay()===0)return [current,shiftDay(current,1)];
+ const monday=weekStart(current);return Array.from({length:7},(_,i)=>shiftDay(monday,i));
+}
+function stripContains(_start,date){return stripDates().includes(date)}
 function weekdayShort(date){return ['Нд','Пн','Вт','Ср','Чт','Пт','Сб'][new Date(date+'T12:00:00Z').getUTCDay()]}
 function showDay(date){
- const currentWeek=weekStart(today()),nextWeek=weekStart(shiftDay(today(),1));
- const requested=weekStart(date),canVisitNext=nextWeek!==currentWeek&&requested===nextWeek;
- if(requested!==currentWeek&&!canVisitNext){dayStripStart=currentWeek;daySelected=today()}
- else{dayStripStart=requested;daySelected=date}
+ daySelected=stripContains(today(),date)?date:today();
  renderDetail();
 }
 function statusCopy(state,change,queue,date){
@@ -534,17 +537,9 @@ function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Пі�
  if(!a)return;
  $('editActive').hidden=!!previewQueue;
  setText('detailAddress',previewQueue?'Підчерга '+previewQueue+' · тимчасовий перегляд':fullAddress(a));const tToday=timeline(today(),a.queue),st=stateAt(tToday,nowMinutes()),nxt=nextChange(today(),a.queue,nowMinutes());const status=$('detailStatus');status.className='detail-status '+st;status.textContent=statusCopy(st,nxt,a.queue,today()).title;
- const currentMonday=weekStart(today()),tomorrowMonday=weekStart(shiftDay(today(),1));
- const canPreviewNext=tomorrowMonday!==currentMonday;
- const monday=canPreviewNext&&dayStripStart===tomorrowMonday?tomorrowMonday:currentMonday;
- const day=daySelected&&weekStart(daySelected)===monday?daySelected:(monday===currentMonday?today():monday);
- daySelected=day;dayStripStart=monday;
- // Always seven weekday pills; only Sunday exposes next-week preview and back.
- const back=$('weekBackControl'),forward=$('weekForwardControl');
- if(back){back.hidden=monday===currentMonday;back.onclick=()=>showDay(today())}
- if(forward){forward.hidden=!canPreviewNext||monday===tomorrowMonday;forward.onclick=()=>showDay(tomorrowMonday)}
+ const day=daySelected&&stripContains(today(),daySelected)?daySelected:today();daySelected=day;
  const root=$('days');root.replaceChildren();
- for(const d of stripDates(monday)){
+ for(const d of stripDates()){
   const b=el('button','day-choice'+(d===day?' selected':'')+(d===today()?' is-today':''),weekdayShort(d));
   b.type='button';
   b.setAttribute('aria-pressed',String(d===day));
@@ -1176,7 +1171,10 @@ fillQueueSelect();
  getPushConfig();
 setInterval(()=>{
  const filtered=data.days.filter(day=>weekAllowed(day.date));
- if(filtered.length!==data.days.length)data={...data,days:filtered};
+ const changes=(data.changes||[]).filter(change=>typeof change?.date==='string'&&weekAllowed(change.date));
+ if(filtered.length!==data.days.length||changes.length!==(data.changes||[]).length){
+  data={...data,days:filtered,changes};saveCachedSchedule(data);
+ }
  if(daySelected&&!stripContains(today(),daySelected))daySelected=today();
  renderHome();if(active==='detail')renderDetail();checkNotifications();
 },30_000);
