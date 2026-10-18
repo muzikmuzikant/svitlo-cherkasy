@@ -1,4 +1,4 @@
-/* Beta-only advertising, voluntary support and PWA analytics.
+/* Advertising, voluntary support and privacy-aware PWA analytics.
  * All durable files remain on isolated Railway volume. Never store IP/UA/address.
  */
 import fs from 'node:fs';
@@ -40,7 +40,7 @@ function normalize(raw){
  const packages=Array.isArray(s.packages)?s.packages.slice(0,40):[];
  const campaigns=Array.isArray(s.campaigns)?s.campaigns.slice(0,80):[];
  const normalized={
- enabled:s.enabled!==false,rotationSeconds:clamp(s.rotationSeconds,3,60,8),promoEvery:clamp(s.promoEvery,1,20,4),
+ enabled:s.enabled===true,rotationSeconds:clamp(s.rotationSeconds,3,60,8),promoEvery:clamp(s.promoEvery,1,20,4),
  showPromo:s.showPromo!==false,manualSwipe:s.manualSwipe!==false,
  animation:['fade','slide','none'].includes(s.animation)?s.animation:'fade',
  promoTitle:text(s.promoTitle||defaults.promoTitle,100),promoText:text(s.promoText||defaults.promoText,240),
@@ -109,7 +109,7 @@ function normalize(raw){
  return normalized;
 }
 
-export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed=String(process.env.APP_ORIGIN||'').replace(/\/+$/,'')==='https://svitlo-cherkasy.pages.dev'}){
+export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed=process.env.ADS_FORCE_DISABLED!=='true'}){
  const file=path.join(directory,'beta-ads.json');
  const visitorsFile=path.join(directory,'beta-pwa-installations.json');
  const stateDefault=normalize(defaults);
@@ -117,11 +117,15 @@ export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed
  const online=new Map(),rate=new Map(),recentAdViews=new Map();
  let timer=null,visitorTimer=null;
  function write(dest,data){fs.mkdirSync(directory,{recursive:true});const tmp=dest+'.tmp';fs.writeFileSync(tmp,JSON.stringify(data),{mode:0o600});fs.renameSync(tmp,dest)}
- function flush(){if(timer){clearTimeout(timer);timer=null}write(file,{schemaVersion:2,state,stats,lastModified})}
+ function flush(){if(timer){clearTimeout(timer);timer=null}write(file,{schemaVersion:3,state,stats,lastModified})}
  function flushVisitors(){if(visitorTimer){clearTimeout(visitorTimer);visitorTimer=null}write(visitorsFile,{schemaVersion:1,installed})}
  function schedule(){if(!timer){timer=setTimeout(flush,900);timer.unref?.()}}
  function scheduleVisitors(){if(!visitorTimer){visitorTimer=setTimeout(flushVisitors,4000);visitorTimer.unref?.()}}
- try{const old=JSON.parse(fs.readFileSync(file,'utf8'));state=normalize(old.state);stats=isObj(old.stats)?old.stats:{};lastModified=old.lastModified||null}catch(e){if(e.code!=='ENOENT')console.warn('[beta-ads] Config reset',e.message)}
+ try{const old=JSON.parse(fs.readFileSync(file,'utf8'));state=normalize(old.state);stats=isObj(old.stats)?old.stats:{};lastModified=old.lastModified||null;
+  // Existing production drafts are disabled on migration, regardless of old checkbox state.
+  // Re-enabling requires an explicit admin save on the new schema.
+  if(old.schemaVersion!==3){state.enabled=false;flush()}
+ }catch(e){if(e.code!=='ENOENT')console.warn('[beta-ads] Config reset',e.message)}
  try{const old=JSON.parse(fs.readFileSync(visitorsFile,'utf8'));installed=isObj(old.installed)?old.installed:{}}catch(e){if(e.code!=='ENOENT')console.warn('[beta-ads] Visitor store reset',e.message)}
  function prune(){const now=clock(),cut=now-60*86400000,dayCut=new Date(now-90*86400000).toISOString().slice(0,10);
   for(const [id,v] of Object.entries(installed))if(!v||!Number.isFinite(v.at)||v.at<cut)delete installed[id];
@@ -136,7 +140,8 @@ export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed
    if(key.endsWith('|'+day))today=Number(v.impressions)||0;
   }return {all,today,clicks}}
  function publicState(){
-  // Advertising is release-locked on Production. Voluntary support is separate.
+  // The global advertising checkbox gates all commercial impressions and events.
+  // Voluntary support remains independent. Emergency kill switch: ADS_FORCE_DISABLED.
   // Only expose payment destinations when the operator explicitly enabled support.
   const supportMethods=state.support.methods.filter(m=>m.enabled&&!!(m.url||m.details));
   const supportEnabled=state.support.enabled&&!!(state.support.paymentUrl||supportMethods.length);
