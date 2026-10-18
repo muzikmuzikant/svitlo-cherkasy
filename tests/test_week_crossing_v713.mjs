@@ -21,21 +21,24 @@ test('Saturday retains the current Mon-Sun and seven weekday labels',()=>{
   '2026-10-12','2026-10-13','2026-10-14','2026-10-15','2026-10-16','2026-10-17','2026-10-18']);
  assert.deepEqual(Array.from(h.stripDates().map(h.weekdayShort)),['Пн','Вт','Ср','Чт','Пт','Сб','Нд']);
 });
-test('Sunday 00:00 deletes obsolete outage SCHEDULES but keeps all seven weekday buttons',()=>{
+test('Sunday 00:00: seven weekday labels show next Mon-Sat and current Sunday',()=>{
  current='2026-10-18';
  assert.deepEqual(Array.from(h.stripDates()),[
-  '2026-10-12','2026-10-13','2026-10-14','2026-10-15','2026-10-16','2026-10-17','2026-10-18']);
+  '2026-10-19','2026-10-20','2026-10-21','2026-10-22','2026-10-23','2026-10-24','2026-10-18']);
  assert.deepEqual(Array.from(h.stripDates().map(h.weekdayShort)),['Пн','Вт','Ср','Чт','Пт','Сб','Нд']);
- assert.equal(h.weekAllowed('2026-10-17'),false,'obsolete Saturday schedule is purged');
- assert.equal(h.weekAllowed('2026-10-18'),true,'Sunday schedule remains');
- assert.equal(h.weekAllowed('2026-10-19'),true,'tomorrow Monday can be cached');
+ assert.equal(h.weekAllowed('2026-10-17'),false,'previous Saturday schedule is purged');
+ assert.equal(h.weekAllowed('2026-10-18'),true,'current Sunday schedule is preserved');
+ assert.equal(h.weekAllowed('2026-10-19'),true,'next Monday schedule survives');
+ assert.equal(h.weekAllowed('2026-10-24'),true,'next Saturday schedule survives');
+ assert.equal(h.weekAllowed('2026-10-25'),true,'next Sunday publication can be retained');
  assert.doesNotMatch(html,/id="weekBackControl"|id="weekForwardControl"|id="weekPrev"|id="weekNext"/);
  const style=readFileSync(join(root,'style.css'),'utf8');
  assert.match(style,/\.days-row\.fixed-weekdays\{display:grid;grid-template-columns:repeat\(7,/);
  assert.doesNotMatch(style,/\.days-row\.fixed-weekdays\.sunday-cutover/);
- h.showDay('2026-10-12');assert.equal(vm.runInContext('daySelected',ctx),'2026-10-12','weekday stays selectable, but with no old data');
+ h.showDay('2026-10-12');assert.equal(vm.runInContext('daySelected',ctx),'2026-10-18','past Monday is not selectable');
  h.showDay('2026-10-18');assert.equal(vm.runInContext('daySelected',ctx),'2026-10-18');
- h.showDay('2026-10-19');assert.equal(vm.runInContext('daySelected',ctx),'2026-10-19','tomorrow shortcut still works');
+ h.showDay('2026-10-19');assert.equal(vm.runInContext('daySelected',ctx),'2026-10-19');
+ h.showDay('2026-10-24');assert.equal(vm.runInContext('daySelected',ctx),'2026-10-24');
 });
 test('Monday 00:00 restores usual Mon-Sun automatically without previous Sunday',()=>{
  current='2026-10-19';
@@ -61,6 +64,17 @@ test('verified day snapshots and old revisions are pruned at Sunday then Monday'
  const monday=h.retainWeeklySchedules({...sunday,lastChecked:'2026-10-19T00:00:00+03:00'},sunday);
  assert.deepEqual(Array.from(monday.days.map(d=>d.date)),['2026-10-19']);
  assert.deepEqual(Array.from(monday.changes),[]);
+});
+test('Sunday cache retains published next-week Friday and Sunday without old weekdays',()=>{
+ current='2026-10-18';
+ const old={lastChecked:'2026-10-18T00:00:00+03:00',days:[
+  {date:'2026-10-12',verified:true,queues:{}},
+  {date:'2026-10-18',verified:true,queues:{}},
+  {date:'2026-10-19',verified:true,queues:{}},
+  {date:'2026-10-23',verified:true,queues:{}},
+  {date:'2026-10-25',verified:true,queues:{}}]};
+ const got=h.retainWeeklySchedules({...old},old);
+ assert.deepEqual(Array.from(got.days.map(d=>d.date)),['2026-10-18','2026-10-19','2026-10-23','2026-10-25']);
 });
 test('next-day captions work without any week controls',()=>{
  current='2026-10-18';
