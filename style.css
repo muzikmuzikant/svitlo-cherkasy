@@ -697,3 +697,9 @@ html:not([data-app-mode="standalone"]) #appBootScreen,.app-boot-screen[hidden]{d
 .inbox-card-opener>p{margin:0;color:#667994;font-size:13px;line-height:1.55;padding-right:16px}
 .inbox-card-opener .inbox-item-head{padding-right:32px}
 .inbox-context[open]{z-index:12}
+
+
+/* Subtle home indicator, not a technical diagnostic panel. */
+.home-cache-hint{display:flex;align-items:center;gap:6px;margin:9px 6px 4px;color:#527960;font-size:11px;line-height:1.3;font-weight:620}
+.home-cache-hint[hidden]{display:none!important}
+.home-cache-hint>span{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#e7f5ea;color:#24794b;font-weight:850;font-size:11px}
