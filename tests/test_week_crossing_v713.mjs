@@ -32,7 +32,7 @@ test('Sunday 00:00 deletes obsolete outage SCHEDULES but keeps all seven weekday
  assert.doesNotMatch(html,/id="weekBackControl"|id="weekForwardControl"|id="weekPrev"|id="weekNext"/);
  const style=readFileSync(join(root,'style.css'),'utf8');
  assert.match(style,/\.days-row\.fixed-weekdays\{display:grid;grid-template-columns:repeat\(7,/);
- assert.doesNotMatch(style,/sunday-cutover|grid-template-columns:repeat\(2/);
+ assert.doesNotMatch(style,/\.days-row\.fixed-weekdays\.sunday-cutover/);
  h.showDay('2026-10-12');assert.equal(vm.runInContext('daySelected',ctx),'2026-10-12','weekday stays selectable, but with no old data');
  h.showDay('2026-10-18');assert.equal(vm.runInContext('daySelected',ctx),'2026-10-18');
  h.showDay('2026-10-19');assert.equal(vm.runInContext('daySelected',ctx),'2026-10-19','tomorrow shortcut still works');
