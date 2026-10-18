@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
  <div class="app-update-copy"><p id="appUpdateText">Оновіть застосунок без перевстановлення.</p><ul id="appUpdateNotes" class="app-update-notes"></ul></div>
  <button type="button" id="appUpdateAction" class="app-update-action">Оновити застосунок ↗</button>
 </div>
-<div id="offlineChip" class="offline-chip" role="status" hidden>📶 Немає зв’язку. Показуємо збережені дані.</div>
+<div id="offlineChip" class="offline-chip" role="status" aria-live="polite" hidden>Немає інтернету. Показуємо збережені дані, вони могли змінитися.</div>
 <main id="main" class="main-content">
 <section id="home" class="screen"><div class="hero-heading"><div class="eyebrow"><i class="live-dot"></i> ВСЕ ПРО СВІТЛО</div><h1>Все під контролем.</h1><p>Оберіть адресу. Решту зробимо ми.</p></div>
 <div class="primary-picker"><div class="selected-label">МОЯ АДРЕСА</div><button class="picker-btn" id="primaryPicker"><span class="picker-place" id="primaryName">Додайте свою адресу</span><span class="picker-sub" id="primarySub">Черкаси або села району</span><svg class="chevron-svg" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg></button></div>
