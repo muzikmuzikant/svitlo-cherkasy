@@ -15,6 +15,8 @@ const ad=(id='first')=>({id,title:'Тестова реклама',enabled:true,w
 
 test('no ads: promo appears without invented commercial campaigns',()=>{
  const {store,dir}=fresh();const pub=store.publicState();
+ assert.equal(store.dashboard().settings.enabled,false,'Global advertising checkbox is initially off');
+ assert.equal(pub.enabled,false);
  assert.equal(pub.campaigns.length,0);
  assert.equal(pub.showPromo,true);
  assert.equal(pub.promoTitle,'Тут може бути ваша реклама');
@@ -25,7 +27,7 @@ test('no ads: promo appears without invented commercial campaigns',()=>{
 test('campaign settings, personalization, contacts, tariffs and support are isolated & validated',()=>{
  const {store,dir}=fresh();
  const original=store.dashboard().settings;
- const changed=store.update({...original,rotationSeconds:12,promoEvery:3,animation:'slide',
+ const changed=store.update({...original,enabled:true,rotationSeconds:12,promoEvery:3,animation:'slide',
   contacts:[{label:'Telegram',url:'https://t.me/example',enabled:true},{label:'Пошта',url:'mailto:test@example.com',enabled:true}],
   packages:[{id:'pkg',title:'Тиждень',price:450,durationDays:7,visible:true}],
   support:{enabled:true,title:'Підтримати',description:'Для сервера',paymentUrl:'https://example.com/donate',button:'Донат'},
@@ -46,7 +48,7 @@ test('campaign settings, personalization, contacts, tariffs and support are isol
 });
 
 test('scheduled and capped campaigns are hidden from public carousel',()=>{
- const {store,dir}=fresh();const settings=store.dashboard().settings;
+ const {store,dir}=fresh();const settings=store.dashboard().settings;settings.enabled=true;
  settings.campaigns=[{...ad(),dailyCap:1},{...ad('future'),start:'2035-01-01T00:00:00Z'}];
  store.update(settings);
  assert.deepEqual(store.publicState().campaigns.map(c=>c.id),['first']);
@@ -106,7 +108,7 @@ test('beta site only includes ad placement in home and PWA requires privacy opt-
 
 
 test('7.9.10: fullscreen ad uses independently customizable content and images',()=>{
- const {store,dir}=fresh();const s=store.dashboard().settings;
+ const {store,dir}=fresh();const s=store.dashboard().settings;s.enabled=true;
  s.campaigns=[{...ad('more'),detailEnabled:true,detailTitle:'Великий заголовок',
  detailSubtitle:'Окремий підзаголовок',detailDescription:'Абзац 1\n\nАбзац 2',
  detailBanner:'https://example.com/banner.webp',detailImage:'https://example.com/image.webp',
@@ -133,7 +135,7 @@ test('7.9.10: fullscreen ad uses independently customizable content and images',
 });
 
 test('7.9.10: editable advertising and support designs survive restart',()=>{
- const {store,dir}=fresh();const s=store.dashboard().settings;
+ const {store,dir}=fresh();const s=store.dashboard().settings;s.enabled=true;
  s.pageBackground='#edf4ff';s.pageAccent='#2360c5';
  s.pageHeroImage='https://example.com/hero.webp';
  s.pageAbout='Переваги сервісу';
@@ -176,7 +178,7 @@ test('7.9.10: full screen advertising page and first run consent have shipped as
 
 
 test('7.9.8: badges and supported donation methods expose only enabled configured values',()=>{
- const {store,dir}=fresh();const settings=store.dashboard().settings;
+ const {store,dir}=fresh();const settings=store.dashboard().settings;settings.enabled=true;
  settings.packages=[{title:'Доступний',price:420,durationDays:14,badge:'Вигідно',badgeBackground:'#e5f1ff',badgeForeground:'#1456b5',featured:true,features:['Основна картка','Сторінка реклами']}];
  settings.support={...settings.support,enabled:true,methods:[
  {kind:'monobank',title:'Банка',url:'https://example.com/jar',enabled:true},
@@ -257,4 +259,57 @@ test('all tiny villages with positive opt-in audience are listed, including afte
   assert.equal(changed.items.length,21,'missing town is not displayed as zero');
   assert.equal(changed.unknown,1,'unknown town stays separate, not a zero-value village');
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
+});
+
+
+test('ads global switch stays off across restart, supports explicit opt-in, and disables instantly',()=>{
+ const {store,dir}=fresh();
+ try{
+  const draft=store.dashboard().settings;
+  draft.campaigns=[ad()];
+  store.update(draft);
+  assert.equal(store.publicState().enabled,false);
+  assert.deepEqual(store.publicState().campaigns,[]);
+  assert.equal(store.event('first','impression'),false,'no advertising metrics while off');
+  store.flush();
+  let reopened=createAdsStore({directory:dir});
+  assert.equal(reopened.dashboard().settings.enabled,false);
+  assert.equal(reopened.publicState().enabled,false);
+  const enabled={...reopened.dashboard().settings,enabled:true};
+  reopened.update(enabled);
+  assert.equal(reopened.publicState().enabled,true);
+  assert.equal(reopened.publicState().campaigns.length,1);
+  assert.equal(reopened.event('first','impression'),true);
+  reopened.flush();
+  reopened=createAdsStore({directory:dir});
+  assert.equal(reopened.dashboard().settings.enabled,true,'explicit consent persists');
+  reopened.update({...reopened.dashboard().settings,enabled:false});
+  assert.equal(reopened.publicState().enabled,false);
+  assert.deepEqual(reopened.publicState().campaigns,[]);
+  assert.equal(reopened.event('first','click'),false);
+ }finally{fs.rmSync(dir,{recursive:true,force:true})}
+});
+
+test('legacy enabled advertising is migrated to OFF without losing campaigns or voluntary support',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'svitlo-ad-migration-'));
+ try{
+  const old={...createAdsStore({directory:dir}).dashboard().settings,
+   enabled:true,campaigns:[ad()],
+   support:{enabled:true,paymentUrl:'https://example.com/donate'}};
+  fs.writeFileSync(path.join(dir,'beta-ads.json'),JSON.stringify({schemaVersion:2,state:old,stats:{},lastModified:null}));
+  const migrated=createAdsStore({directory:dir});
+  assert.equal(migrated.dashboard().settings.enabled,false);
+  assert.equal(migrated.dashboard().settings.campaigns.length,1);
+  assert.equal(migrated.publicState().enabled,false);
+  assert.equal(migrated.publicState().support.enabled,true);
+  const saved=JSON.parse(fs.readFileSync(path.join(dir,'beta-ads.json'),'utf8'));
+  assert.equal(saved.schemaVersion,3);
+  assert.equal(saved.state.enabled,false);
+ }finally{fs.rmSync(dir,{recursive:true,force:true})}
+});
+
+test('advertising master switch is a single explicit checkbox in the owner ads panel',()=>{
+ const admin=fs.readFileSync(new URL('../admin-ads.js',import.meta.url),'utf8');
+ assert.ok(admin.includes("'Увімкнути рекламу в застосунку',draft,'enabled','toggle'"));
+ assert.ok(!admin.includes("'Показувати рекламний блок',draft,'enabled'"),'do not duplicate the switch');
 });
