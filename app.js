@@ -535,7 +535,7 @@ function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Пі�
  const pub=currentDay(day),t=timeline(day,a.queue);
  const dayStats=stats(t);
  setText('detailDayStat',dayStats?(pub?(dayStats.unknown?'Частина годин уточнюється':'Без світла '+formatDuration(dayStats.off)+' · Зі світлом '+formatDuration(dayStats.on)):''):'Немає даних');
- setText('detailDayLabel',formatDate(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:'Світло весь день');const grid=$('hourGrid');grid.replaceChildren();
+ setText('detailDayLabel',formatDate(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:isOfflineMode()?'Немає збереженого графіка':'Світло весь день');const grid=$('hourGrid');grid.replaceChildren();
  for(let h=0;h<24;h++){
    let on=0,off=0;
    for(let m=h*60;m<h*60+60;m++){if(t?.[m]===0)on++;if(t?.[m]===1)off++}
