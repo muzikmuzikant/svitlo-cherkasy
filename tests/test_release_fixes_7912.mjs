@@ -43,21 +43,24 @@ test('reject unverified and unsafe fake message links',()=>{
  assert.equal(resolvePublicMessage('push:unexpected',ctx),null);
  assert.equal(resolvePublicMessage('day:6.1:2026-10-19',{...ctx,schedule:{days:[],changes:[]}}),null);
 });
-test('Sunday keeps Sunday and next Monday but has no week-navigation controls',()=>{
+test('Sunday keeps seven weekday pills while purging prior Mon-Sat outage data',()=>{
  const app=read('app.js'),html=read('index.html');
  assert.doesNotMatch(html,/weekBackControl|weekForwardControl|week-jump-controls/);
  assert.match(app,/root\.disabled=!queue;/);
  assert.match(app,/tomorrowLink\.disabled=!queue/);
+ assert.doesNotMatch(app,/sunday-cutover/,'no two-column Sunday mode');
  const begin=app.indexOf('function weekStart(date)'),end=app.indexOf('const currentDay=',begin);
  const from=app.indexOf('function nextChangeLabel('),to=app.indexOf('function statusCopy(',from);
  let current='2026-10-18',view=null;
  const shiftDay=(date,n)=>{const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)};
  const vmctx=vm.createContext({today:()=>current,shiftDay,formatDate:d=>d,clock:n=>String(n),renderDetail(){view=vmctx.daySelected},daySelected:null});
  vm.runInContext(app.slice(begin,end)+'\n'+app.slice(from,to),vmctx);
- assert.deepEqual(Array.from(vmctx.stripDates()),['2026-10-18','2026-10-19']);
- vmctx.showDay('2026-10-19');assert.equal(view,'2026-10-19');
+ assert.deepEqual(Array.from(vmctx.stripDates()),[
+  '2026-10-12','2026-10-13','2026-10-14','2026-10-15','2026-10-16','2026-10-17','2026-10-18']);
+ assert.equal(vmctx.weekAllowed('2026-10-12'),false,'previous Monday publication is purged');
+ vmctx.showDay('2026-10-19');assert.equal(view,'2026-10-19','tomorrow still accessible');
  vmctx.showDay('2026-10-18');assert.equal(view,'2026-10-18');
- vmctx.showDay('2026-10-12');assert.equal(view,'2026-10-18');
+ vmctx.showDay('2026-10-12');assert.equal(view,'2026-10-12','calendar weekday remains selectable');
  current='2026-10-19';vmctx.showDay('2026-10-18');assert.equal(view,'2026-10-19');
 });
 test('operator silence is still light-all-day, explicitly unchanged',()=>{
