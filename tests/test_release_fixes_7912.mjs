@@ -49,6 +49,8 @@ test('Sunday keeps seven weekday pills while purging prior Mon-Sat outage data',
  assert.match(app,/root\.disabled=!queue;/);
  assert.match(app,/tomorrowLink\.disabled=!queue/);
  assert.doesNotMatch(app,/sunday-cutover/,'no two-column Sunday mode');
+ assert.match(app,/setText\('detailDayLabel',weekdayFull\(day\)\)/,'only weekday label, no numeric day heading');
+ assert.match(app,/b\.setAttribute\('aria-label',weekdayFull\(d\)\)/,'day pills have no date in accessibility label');
  const begin=app.indexOf('function weekStart(date)'),end=app.indexOf('const currentDay=',begin);
  const from=app.indexOf('function nextChangeLabel('),to=app.indexOf('function statusCopy(',from);
  let current='2026-10-18',view=null;
@@ -56,11 +58,14 @@ test('Sunday keeps seven weekday pills while purging prior Mon-Sat outage data',
  const vmctx=vm.createContext({today:()=>current,shiftDay,formatDate:d=>d,clock:n=>String(n),renderDetail(){view=vmctx.daySelected},daySelected:null});
  vm.runInContext(app.slice(begin,end)+'\n'+app.slice(from,to),vmctx);
  assert.deepEqual(Array.from(vmctx.stripDates()),[
-  '2026-10-12','2026-10-13','2026-10-14','2026-10-15','2026-10-16','2026-10-17','2026-10-18']);
+  '2026-10-19','2026-10-20','2026-10-21','2026-10-22','2026-10-23','2026-10-24','2026-10-18']);
  assert.equal(vmctx.weekAllowed('2026-10-12'),false,'previous Monday publication is purged');
- vmctx.showDay('2026-10-19');assert.equal(view,'2026-10-19','tomorrow still accessible');
- vmctx.showDay('2026-10-18');assert.equal(view,'2026-10-18');
- vmctx.showDay('2026-10-12');assert.equal(view,'2026-10-12','calendar weekday remains selectable');
+ assert.equal(vmctx.weekAllowed('2026-10-25'),true,'upcoming Sunday can be preloaded');
+ assert.deepEqual(Array.from(vmctx.stripDates().map(vmctx.weekdayShort)),['Пн','Вт','Ср','Чт','Пт','Сб','Нд']);
+ vmctx.showDay('2026-10-19');assert.equal(view,'2026-10-19','next Monday is assigned to Monday pill');
+ vmctx.showDay('2026-10-24');assert.equal(view,'2026-10-24','coming Saturday works');
+ vmctx.showDay('2026-10-18');assert.equal(view,'2026-10-18','current Sunday is retained');
+ vmctx.showDay('2026-10-12');assert.equal(view,'2026-10-18','obsolete Monday cannot be opened');
  current='2026-10-19';vmctx.showDay('2026-10-18');assert.equal(view,'2026-10-19');
 });
 test('operator silence is still light-all-day, explicitly unchanged',()=>{
