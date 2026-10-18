@@ -214,7 +214,11 @@
      const button=el('button',label);button.type='button';
      button.onclick=event=>{
        event.stopPropagation();
-       const run=()=>Promise.resolve().then(handler).catch(error=>console.warn('Inbox action:',error));
+       // Keep Web Share in the original user gesture (required on Android/iOS).
+       const run=()=>{
+         try{Promise.resolve(handler()).catch(error=>console.warn('Inbox action:',error))}
+         catch(error){console.warn('Inbox action:',error)}
+       };
        if(afterClose)closeMenu(run);
        else{closeMenu();run()}
      };
