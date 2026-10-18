@@ -706,7 +706,7 @@ html:not([data-app-mode="standalone"]) #appBootScreen,.app-boot-screen[hidden]{d
 
 /* Sunday preview: seven weekday pills, week boundary navigation only. */
 .week-jump-controls{display:flex;justify-content:flex-end;align-items:center;min-height:0;margin:3px 1px 4px}
-.week-jump-control{border:1px solid #d7e5f5;background:#eff5ff;color:#285e9b;border-radius:12px;padding:8px 12px;font:700 12px/1.35 system-ui,-apple-system,sans-serif;cursor:pointer;transition:background .18s ease,transform .18s ease}
+.week-jump-control{border:1px solid #d7e5f5;background:#eff5ff;color:#285e9b;border-radius:12px;padding:8px 12px;font:700 12px/1.35 system-ui,-apple-system,sans-serif;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;transition:background .18s ease,transform .18s ease}
 .week-jump-control[hidden]{display:none!important}
 .week-jump-control:active{transform:scale(.97);background:#e3efff}
 @media(prefers-reduced-motion:reduce){.week-jump-control{transition:none!important}}
