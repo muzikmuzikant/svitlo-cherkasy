@@ -148,8 +148,11 @@ function stripDates(start=today()){const monday=weekStart(start);return Array.fr
 function stripContains(_start,date){return weekStart(date)===weekStart(today())}
 function weekdayShort(date){return ['Нд','Пн','Вт','Ср','Чт','Пт','Сб'][new Date(date+'T12:00:00Z').getUTCDay()]}
 function showDay(date){
- if(!stripContains(today(),date)){daySelected=today();renderDetail();return}
- daySelected=date;renderDetail();
+ const currentWeek=weekStart(today()),nextWeek=weekStart(shiftDay(today(),1));
+ const requested=weekStart(date),canVisitNext=nextWeek!==currentWeek&&requested===nextWeek;
+ if(requested!==currentWeek&&!canVisitNext){dayStripStart=currentWeek;daySelected=today()}
+ else{dayStripStart=requested;daySelected=date}
+ renderDetail();
 }
 function statusCopy(state,change,queue,date){
  if(state==='unknown')return {title:'Немає підтверджених даних',detail:queue?'Перевірте актуальність графіка оператора':'Додайте адресу або оберіть підчергу'};
@@ -273,9 +276,9 @@ function renderTomorrowPreview(){
  const root=$('tomorrowCard'),summary=$('tomorrowSummary'),details=$('tomorrowDetails');
  if(!root||!summary||!details)return;
  const t=queue?timeline(date,queue):null,day=queue?currentDay(date):null,st=stats(t);
- const outsideWeek=weekStart(date)!==weekStart(today());
- root.disabled=!queue||outsideWeek;
- const tomorrowLink=$('tomorrowOpen');if(tomorrowLink){tomorrowLink.disabled=outsideWeek;tomorrowLink.title=outsideWeek?'Графік нового тижня відкриється в понеділок':''}
+ // Tomorrow always opens tomorrow's actual calendar date, including Sunday -> Monday.
+ root.disabled=!queue;
+ const tomorrowLink=$('tomorrowOpen');if(tomorrowLink){tomorrowLink.disabled=!queue;tomorrowLink.title='Переглянути графік на завтра'}
  root.classList.toggle('tomorrow-unknown',!t||st.unknown>0);
  if(!queue){summary.textContent='Спочатку додайте адресу';details.textContent='Після цього покажемо графік на завтра';return}
  if(!day||!t){summary.textContent=isOfflineMode()?'Немає збереженого графіка':'Світло весь день';details.textContent=(isOfflineMode()?'Неможливо перевірити графік без зв’язку':'Немає опублікованого графіка')+' · Підчерга '+queue;return}
@@ -531,9 +534,15 @@ function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Пі�
  if(!a)return;
  $('editActive').hidden=!!previewQueue;
  setText('detailAddress',previewQueue?'Підчерга '+previewQueue+' · тимчасовий перегляд':fullAddress(a));const tToday=timeline(today(),a.queue),st=stateAt(tToday,nowMinutes()),nxt=nextChange(today(),a.queue,nowMinutes());const status=$('detailStatus');status.className='detail-status '+st;status.textContent=statusCopy(st,nxt,a.queue,today()).title;
- const monday=weekStart(today());
- const day=daySelected&&weekStart(daySelected)===monday?daySelected:today();daySelected=day;
- // No dates, arrows or rolling-week controls: weekday pills only.
+ const currentMonday=weekStart(today()),tomorrowMonday=weekStart(shiftDay(today(),1));
+ const canPreviewNext=tomorrowMonday!==currentMonday;
+ const monday=canPreviewNext&&dayStripStart===tomorrowMonday?tomorrowMonday:currentMonday;
+ const day=daySelected&&weekStart(daySelected)===monday?daySelected:(monday===currentMonday?today():monday);
+ daySelected=day;dayStripStart=monday;
+ // Always seven weekday pills; only Sunday exposes next-week preview and back.
+ const back=$('weekBackControl'),forward=$('weekForwardControl');
+ if(back){back.hidden=monday===currentMonday;back.onclick=()=>showDay(today())}
+ if(forward){forward.hidden=!canPreviewNext||monday===tomorrowMonday;forward.onclick=()=>showDay(tomorrowMonday)}
  const root=$('days');root.replaceChildren();
  for(const d of stripDates(monday)){
   const b=el('button','day-choice'+(d===day?' selected':'')+(d===today()?' is-today':''),weekdayShort(d));
