@@ -704,13 +704,6 @@ html:not([data-app-mode="standalone"]) #appBootScreen,.app-boot-screen[hidden]{d
 .home-cache-hint[hidden]{display:none!important}
 .home-cache-hint>span{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#e7f5ea;color:#24794b;font-weight:850;font-size:11px}
 
-/* Sunday preview: seven weekday pills, week boundary navigation only. */
-.week-jump-controls{display:flex;justify-content:flex-end;align-items:center;min-height:0;margin:3px 1px 4px}
-.week-jump-control{border:1px solid #d7e5f5;background:#eff5ff;color:#285e9b;border-radius:12px;padding:8px 12px;font:700 12px/1.35 system-ui,-apple-system,sans-serif;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;transition:background .18s ease,transform .18s ease}
-.week-jump-control[hidden]{display:none!important}
-.week-jump-control:active{transform:scale(.97);background:#e3efff}
-@media(prefers-reduced-motion:reduce){.week-jump-control{transition:none!important}}
-
 /* Beta Inbox: real opening/closing motion for the contextual action dropdown. */
 .inbox-context summary{transition:background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease}
 .inbox-context[open] summary{background:#e9f2ff;border-color:#a8caf8;color:#256dca}
