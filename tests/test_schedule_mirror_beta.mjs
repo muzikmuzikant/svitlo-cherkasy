@@ -74,12 +74,12 @@ test('Beta mirror discards past Mon-Sat at Sunday 00:00 Kyiv but keeps Sunday',a
   assert.deepEqual(publisher.schedule().days.map(x=>x.date),['2026-10-12']);
   current=Date.parse('2026-10-17T21:01:00.000Z'); // Sunday 00:01 Kyiv
   data=fixture('2026-10-17T21:00:00.000Z');
-  data.schedule.days=[{date:'2026-10-18',verified:true,queues:q},{date:'2026-10-19',verified:true,queues:q}];
+  data.schedule.days=[{date:'2026-10-18',verified:true,queues:q},{date:'2026-10-19',verified:true,queues:q},{date:'2026-10-24',verified:true,queues:q},{date:'2026-10-25',verified:true,queues:q}];
   assert.equal(await mirror.sync(),true);
-  assert.deepEqual(publisher.schedule().days.map(x=>x.date),['2026-10-18','2026-10-19']);
+  assert.deepEqual(publisher.schedule().days.map(x=>x.date),['2026-10-18','2026-10-19','2026-10-24','2026-10-25']);
   current=Date.parse('2026-10-18T21:01:00.000Z'); // Monday 00:01 Kyiv
   data=fixture('2026-10-18T21:00:00.000Z');data.schedule.days=[];
   assert.equal(await mirror.sync(),true);
-  assert.deepEqual(publisher.schedule().days.map(x=>x.date),['2026-10-19']);
+  assert.deepEqual(publisher.schedule().days.map(x=>x.date),['2026-10-19','2026-10-24','2026-10-25']);
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });
