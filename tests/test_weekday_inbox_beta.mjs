@@ -127,3 +127,33 @@ test('a shared schedule link opens that message, not a different screen',async()
  assert.match(inbox,/url\.searchParams\.set\('message',item\.id\)/);
  assert.doesNotMatch(inbox,/title\.append\(el\('span','', 'Графік/);
 });
+
+
+test('shared schedule URL routes to the exact message rather than the schedule tab',async()=>{
+ const source=read('inbox-ui.js');
+ const start=source.indexOf(' function routeMessage(id){');
+ const end=source.indexOf(' function routePush(id,pushClick=false){',start);
+ assert.ok(start>=0&&end>start);
+ const opened=[],events=[];
+ const context={
+  pendingLinkId:null,
+  document:{querySelector:()=>({click:()=>events.push('inbox')})},
+  open:id=>{opened.push(id);return true},
+  sync:async()=>{},console
+ };
+ const route=vm.runInNewContext(source.slice(start,end)+'\nrouteMessage',context);
+ route('day:6.1:2026-10-18:alpha');
+ assert.equal(opened[0],'day:6.1:2026-10-18:alpha');
+ assert.deepEqual(events,['inbox']);
+ assert.equal(context.pendingLinkId,null);
+ // The target remains pending if a different device has not synchronized it yet.
+ context.open=()=>false;
+ let synchronized=false;
+ context.sync=async()=>{synchronized=true};
+ route('notice:welcome_2026');
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(context.pendingLinkId,'notice:welcome_2026');
+ assert.equal(synchronized,true);
+ route('https://malicious.invalid');
+ assert.equal(context.pendingLinkId,'notice:welcome_2026','reject invalid inbound ids');
+});
