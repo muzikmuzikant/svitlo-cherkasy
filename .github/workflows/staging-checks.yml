@@ -69,5 +69,20 @@ jobs:
           assert isinstance(data.get('campaigns'),list), 'Campaigns API unavailable'
           assert isinstance(data.get('contacts'),list), 'Contact configuration unavailable'
           assert isinstance(data.get('support'),dict), 'Donation config unavailable'
-          print('Beta API ready, no mutation or production request')
+          base='https://svitlo-beta-api-staging.up.railway.app'
+          def get_json(endpoint):
+              req=urllib.request.Request(base+endpoint,headers={'Origin':'https://svitlo-cherkasy.pages.dev','Accept':'application/json'})
+              with urllib.request.urlopen(req,timeout=15) as resp:
+                  assert resp.status==200
+                  assert resp.headers.get('Access-Control-Allow-Origin')=='https://svitlo-cherkasy.pages.dev'
+                  return json.loads(resp.read().decode('utf-8'))
+          current=get_json('/api/data/schedules.json')
+          verified=[day for day in current.get('days',[]) if day.get('verified') and day.get('date')]
+          assert verified, 'No verified Beta schedule for message preview smoke'
+          from urllib.parse import quote
+          shared_id='day:6.1:'+verified[-1]['date']
+          shared=get_json('/api/public/message?id='+quote(shared_id,safe=''))
+          assert shared['id']==shared_id and shared['kind']=='schedule', 'Cross-queue public deep-link failed'
+          assert '6.1' in shared['body']
+          print('Beta API and verified deep-link endpoint ready (read-only)')
           PY
