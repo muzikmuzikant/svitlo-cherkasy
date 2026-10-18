@@ -19,6 +19,7 @@
    emergencyCopy:status=>({title:status==='ended'?'✅ Екстрені обмеження завершено':'⚠️ Екстрені відключення',body:status==='ended'?'Оператор повідомив про завершення обмежень.':'Оператор повідомив про екстрені обмеження.',content:'Перевірте офіційні повідомлення оператора, щоб дізнатися про актуальний стан.'})};
  })();
  if(!store||!$('inboxList'))return;
+ let pendingLinkId=null;
  let selected='all',rows=[],notices=window.SvitloPublicConfig?.announcements||[],busy=false,lastSync=0,activeDetail=null,noticeFeedConfirmed=window.SvitloPublicConfig?.serverVerified===true,needsResync=false;
  // Only voluntary opt-in PWA installations count toward custom notice engagement.
  // "Read" is an approximation: detail stayed in the foreground for two seconds.
@@ -192,17 +193,55 @@
    card.append(opener);
    const menu=el('details','','inbox-context');
    const trigger=el('summary','⋯');trigger.setAttribute('aria-label','Дії з повідомленням');menu.append(trigger);
+   const motionAllowed=()=>!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+     &&!document.documentElement?.classList.contains('feature-off-animations');
+   let closeTimer=null;
+   const closeMenu=(afterClose)=>{
+     clearTimeout(closeTimer);closeTimer=null;
+     if(!menu.open||!motionAllowed()){
+       menu.open=false;menu.classList.remove('is-closing');afterClose?.();return;
+     }
+     menu.classList.add('is-closing');
+     closeTimer=setTimeout(()=>{
+       menu.open=false;menu.classList.remove('is-closing');closeTimer=null;afterClose?.();
+     },190);
+   };
+   trigger.addEventListener('click',event=>{
+     if(menu.open){event.preventDefault();closeMenu()}
+   });
    const actions=el('div','','inbox-context-actions');
-   const action=(label,handler)=>{const button=el('button',label);button.type='button';button.onclick=async event=>{
-     event.stopPropagation();menu.open=false;try{await handler()}catch(error){console.warn('Inbox action:',error)}};actions.append(button)};
+   const action=(label,handler,{afterClose=false}={})=>{
+     const button=el('button',label);button.type='button';
+     button.onclick=event=>{
+       event.stopPropagation();
+       const run=()=>Promise.resolve().then(handler).catch(error=>console.warn('Inbox action:',error));
+       if(afterClose)closeMenu(run);
+       else{closeMenu();run()}
+     };
+     actions.append(button);
+   };
    action(item.read?'Позначити непрочитаним':'Позначити прочитаним',async()=>{
      if(item.read)await store.unmark([item.id]);else await store.mark([item.id]);await refresh();
-   });
+   },{afterClose:true});
    action('Копіювати текст',async()=>{await navigator.clipboard.writeText(item.title+'\n'+item.body)});
+   // A share is a deep link to the message, never a pasted copy of its text.
+   const messageLink=()=>{
+     const url=new URL('./',location.href);
+     url.searchParams.set('message',item.id);
+     return url.href;
+   };
+   const copyLink=async()=>{
+     const link=messageLink();
+     if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(link);
+     else window.prompt?.('Скопіюйте посилання на повідомлення:',link);
+   };
+   action('Копіювати посилання',copyLink);
    action('Поділитися',async()=>{
-     const text=item.title+'\n'+item.body;
-     if(navigator.share)await navigator.share({title:item.title,text});
-     else await navigator.clipboard.writeText(text);
+     const link=messageLink();
+     if(navigator.share){
+       try{await navigator.share({title:item.title,url:link})}
+       catch(error){if(error?.name!=='AbortError')await copyLink()}
+     }else await copyLink();
    });
    menu.append(actions);card.append(menu);
    return card;
@@ -214,13 +253,16 @@
      const box=el('details','','inbox-auto-group');box.open=items.some(x=>!x.read);
      const title=el('summary','','inbox-auto-summary');
      const matched=/^(.+):([1-6]\.[12])$/.exec(key),queueDate=matched[1],queue=matched[2];
-     title.append(el('span','', 'Графік · '+date(queueDate)+' · підчерга '+queue),el('span','',String(items.length)+' повідомл.'));
+     title.append(el('span','Графік · '+date(queueDate)+' · підчерга '+queue),el('span',String(items.length)+' повідомл.'));
      box.append(title);for(const member of items)box.append(makeCard(member));root.append(box);
    }else root.append(makeCard(item));
   }
   document.querySelectorAll('[data-inbox-filter]').forEach(b=>{const state=b.dataset.inboxFilter===selected;b.classList.toggle('selected',state);b.setAttribute('aria-pressed',String(state))});
   if(activeDetail&&dialog.open&&!rows.some(x=>x.id===activeDetail))dialog.close();
   observeNoticeCards();
+  if(pendingLinkId&&rows.some(x=>x.id===pendingLinkId)){
+   const id=pendingLinkId;pendingLinkId=null;open(id);
+  }
  }
  async function sync(){
   if(busy){needsResync=true;return}busy=true;
@@ -277,6 +319,16 @@
    console.warn('Inbox synchronization failed:',error);
    await refresh().catch(console.warn);
   }finally{busy=false;if(needsResync){needsResync=false;queueMicrotask(()=>sync().catch(console.warn))}}
+ }
+ function routeMessage(id){
+  const target=String(id||'');
+  if(!/^(?:notice|day|change|transition|emergency|push):[A-Za-z0-9_.:+-]{1,145}$/.test(target))return;
+  pendingLinkId=target;
+  document.querySelector('[data-go="updates"]')?.click();
+  if(open(target)){pendingLinkId=null;return}
+  // Announcements may arrive after the site configuration; keep the target
+  // until synchronization makes the shared message available on this device.
+  sync().catch(console.warn);
  }
  function routePush(id,pushClick=false){
   if(pushClick)trackNotice(id,'pushClick');
@@ -341,9 +393,10 @@
   const params=new URL(location.href).searchParams;
   const pushClick=params.get('pushclick');
   if(pushClick)trackNotice(pushClick,'pushClick');
-  const id=params.get('inbox');
-  if(id||pushClick)history.replaceState(null,'',location.pathname+location.hash);
-  if(id)routePush(id);
+  const id=params.get('inbox'),shared=params.get('message');
+  if(id||pushClick||shared)history.replaceState(null,'',location.pathname+location.hash);
+  if(shared)routeMessage(shared);
+  else if(id)routePush(id);
  }).catch(console.warn);
  setInterval(()=>{if(!document.hidden)sync().catch(console.warn)},5*60000);
 })();
