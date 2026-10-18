@@ -6,6 +6,7 @@ const QUEUES=Array.from({length:6},(_,i)=>[`${i+1}.1`,`${i+1}.2`]).flat();
 const OFFICIAL='https://www.cherkasyoblenergo.com/off';
 const STORE='svitlo-addresses-v6', PREF='svitlo-prefs-v6', SEEN='svitlo-notifications-v6', PUSH_CONSENT='svitlo-push-consent-v6';
 const OFFLINE_SCHEDULE='svitlo-offline-schedule-v74',OFFLINE_ADDRESSES='svitlo-offline-address-v74';
+const OFFLINE_CACHE='svitlo-cherkasy-offline-snapshots-v1',OFFLINE_CACHE_KEY='./offline-schedules-snapshot.json';
 const SCREEN_RETURN='svitlo-return-screen-v751';
 const ICON='<svg class="bolt" viewBox="0 0 20 24" aria-hidden="true"><path fill="currentColor" d="M11.8 1 2 13h7l-1.5 10L18 9.9h-7z"/></svg>';
 const PIN='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0z"/><circle cx="12" cy="10" r="2.4"/></svg>';
@@ -23,6 +24,32 @@ const byId=id=>addresses.find(x=>x.id===id);
 const primary=()=>byId(prefs.primaryId)||addresses[0]||null;
 const saveAddresses=()=>localStorage.setItem(STORE,JSON.stringify(addresses));
 const savePrefs=()=>localStorage.setItem(PREF,JSON.stringify(prefs));
+// Hydrate the last confirmed snapshot before rendering, including after a cold offline launch.
+try{const saved=safeJSON(OFFLINE_SCHEDULE,null);if(saved&&Array.isArray(saved.days))data=normalizeData(saved)}catch{}
+try{const saved=safeJSON(OFFLINE_ADDRESSES,null);if(saved?.keys&&saved?.streets)index=saved}catch{}
+function isOfflineMode(){return navigator.onLine===false||lastSyncFailed}
+async function readCachedSchedule(){
+ const copies=[safeJSON(OFFLINE_SCHEDULE,null)];
+ if('caches' in window)try{
+  const cache=await caches.open(OFFLINE_CACHE),response=await cache.match(OFFLINE_CACHE_KEY);
+  if(response?.ok)copies.push(await response.json());
+ }catch(error){console.warn('Offline schedule cache read:',error)}
+ let latest=null;
+ for(const item of copies)try{
+  const value=normalizeData(item);
+  if(value.lastChecked&&(!latest||Date.parse(value.lastChecked)>Date.parse(latest.lastChecked)))latest=value;
+ }catch{}
+ return latest;
+}
+function saveCachedSchedule(value){
+ if(!value?.lastChecked||!Array.isArray(value.days))return;
+ const json=JSON.stringify(value);
+ if(json.length>1200000)return;
+ try{localStorage.setItem(OFFLINE_SCHEDULE,json)}catch(error){console.warn('Offline schedule storage:',error)}
+ if('caches' in window)caches.open(OFFLINE_CACHE).then(cache=>cache.put(
+  OFFLINE_CACHE_KEY,new Response(json,{headers:{'Content-Type':'application/json; charset=utf-8'}})
+ )).catch(error=>console.warn('Offline schedule backup:',error));
+}
  // Drop obsolete 7.9.8 user preferences, including those already saved on Beta devices.
  const retired798Prefs=['favorites','offMinutes','onMinutes','quietEnabled','quietFrom','quietTo','addressRules'];
  if(retired798Prefs.some(name=>Object.prototype.hasOwnProperty.call(prefs,name))){
@@ -71,9 +98,8 @@ function timeline(date,queue){
  if(!QUEUES.includes(queue))return null;
  const day=currentDay(date),q=day?.queues?.[queue];
  if(!day){
-   // Product display rule: no published graph means 24h green, for any date.
-   // This is a schedule convention, not a live electricity measurement.
-   return new Int8Array(1440);
+   // Offline, a missing date is UNKNOWN, not a verified day without outages.
+   return isOfflineMode()?null:new Int8Array(1440);
  }
  if(!q){return new Int8Array(1440)} // Omitted subqueue in verified publication.
  const start=minute(q.knownFrom||'00:00');if(start<0)return null;
@@ -153,41 +179,44 @@ function scheduleQueueChanged(before, after, queue) {
    JSON.stringify(earlier.get(day.date) ?? null) !== JSON.stringify(day.queues?.[queue] ?? null));
 }
 function renderSyncStatus(){
- const offlineChip=$('offlineChip');if(offlineChip){const noNetwork=navigator.onLine===false||lastSyncFailed;offlineChip.hidden=!hasCheckedOnce||!noNetwork;offlineChip.textContent='📶 '+(navigator.onLine===false?'Офлайн':'Не вдалося оновити')+'. Показуємо останні доступні дані.';}
+ const offlineChip=$('offlineChip'),noNetwork=isOfflineMode();
+ if(offlineChip){
+  offlineChip.hidden=!hasCheckedOnce||!noNetwork;
+  if(!offlineChip.hidden){
+   const connection=navigator.onLine===false?'Немає інтернету':'Немає зв’язку із сервером';
+   const saved=data.lastChecked?'Остання перевірка графіка: '+fmtStamp(data.lastChecked)+'.':'Дата перевірки невідома.';
+   offlineChip.textContent=connection+'. Показуємо збережені дані, вони могли змінитися. '+saved+' Без інтернету нагадування доступні лише у відкритому застосунку.';
+  }
+ }
  const box=$('syncStatus');if(!box)return;
  const checked=Date.parse(data.lastChecked||'');
  const checkKnown=Number.isFinite(checked)&&checked<=Date.now()+5*60_000;
  const sourceStale=!checkKnown||(Date.now()-checked>55*60_000);
  const offline=navigator.onLine===false,review=reviewAffects(today())&&!currentDay(today());
- box.dataset.state=!hasCheckedOnce?'pending':offline||lastSyncFailed?'error':sourceStale||review?'stale':'fresh';
- const title=!hasCheckedOnce?'Завантажуємо графіки…':offline?'Немає інтернету':lastSyncFailed?'Не вдалося отримати графіки':review?'Уточнюємо години графіка':sourceStale?'Перевірка оператора затримується':'Автооновлення графіків активне';
- const details=!hasCheckedOnce?'При відкритті й кожні 5 хвилин, поки застосунок відкритий':
+ box.dataset.state=!hasCheckedOnce?'pending':noNetwork?'error':sourceStale||review?'stale':'fresh';
+ const title=!hasCheckedOnce?'Завантажуємо графіки…':offline?'Немає інтернету':lastSyncFailed?'Сервер недоступний':review?'Уточнюємо години графіка':sourceStale?'Перевірка оператора затримується':'Автооновлення графіків активне';
+ const details=!hasCheckedOnce?'При відкритті й щохвилини, поки застосунок відкритий':
    checkKnown?`Перевірено ${fmtStamp(data.lastChecked)}`:'Оновлюємо інформацію';
  setText('syncStatusTitle',title);setText('syncStatusDetails',details);
 }
 function renderFreshness(){
  renderSyncStatus();const node=$('dataFreshness');if(!node)return;
- // The timestamp describes the source-import check, NOT the publication time and
- // not a live power meter. A manual refresh only re-downloads published data.
  const checked=Date.parse(data.lastChecked||'');
  const age=Date.now()-checked;
  const hasTime=Number.isFinite(checked)&&age>=0;
  const stale=!hasTime||age>55*60_000;
- const offline=navigator.onLine===false,review=reviewAffects(today())&&!currentDay(today());
- // Avoid alarming users while the initial network request is still in flight.
- node.hidden=!hasCheckedOnce||(!stale&&!offline&&!review);
+ const offline=isOfflineMode(),review=reviewAffects(today())&&!currentDay(today());
+ // The persistent offline banner covers server failures. Do not offer an unusable external link.
+ node.hidden=!hasCheckedOnce||offline||(!stale&&!review);
  if(node.hidden)return;
  node.replaceChildren();
- const title=el('strong','',offline?'Немає інтернету':review?'Новий графік уточнюється':hasTime?'Можливо, графік застарів':'Актуальність графіка не підтверджена');
- const message=el('span','',offline
-   ?' Показуємо останні доступні дані. Вони могли змінитися.'
-   :review?' Дивіться найновіший графік на сайті оператора.'
+ const title=el('strong','',review?'Новий графік уточнюється':hasTime?'Можливо, графік застарів':'Актуальність графіка не підтверджена');
+ const message=el('span','',review
+   ?' Нова публікація ще не підтверджена, дані можуть змінитися.'
    :hasTime
-     ?` Публікації оператора востаннє перевіряли ${fmtStamp(data.lastChecked)}. Новіші зміни можуть бути відсутні.`
-     :' Не вдалося визначити час останньої перевірки публікацій.');
- const link=el('a','', 'Перевірити в оператора 🔗');
- link.href=OFFICIAL;link.target='_blank';link.rel='noopener noreferrer';
- node.append(title,message,link);
+     ?` Публікації востаннє перевіряли ${fmtStamp(data.lastChecked)}. Новіші зміни можуть бути відсутні.`
+     :' Не вдалося визначити час останньої перевірки.');
+ node.append(title,message);
 }
 function renderHome(){
  try{window.SvitloTelemetry?.sampleSelected(primary())}catch{}
@@ -198,12 +227,13 @@ function renderHome(){
  const nxt=a?.queue?nextChange(date,a.queue,m):null,copy=statusCopy(st,nxt,a?.queue,date);
  const panel=$('heroStatus');panel.className='status-panel status-'+st;
  $('stateIcon').innerHTML=ICON;
- setText('stateCaption',!a?'ВАШ ГРАФІК':schedule?'ЗА ОПУБЛІКОВАНИМ ГРАФІКОМ':'ГРАФІКА НЕМАЄ · СВІТЛО ВЕСЬ ДЕНЬ');
- setText('heroTitle',a&&!schedule?'Світло весь день':copy.title);setText('heroCountdown',a&&!schedule?'Графік не опубліковано. Відключення не зазначені.':copy.detail);
- setText('sourceStamp',schedule?`Опубліковано ${fmtStamp(schedule.publishedAt)}`:'Офіційний графік на сьогодні не опубліковано');
+ const unknownOffline=Boolean(a&&!schedule&&isOfflineMode());
+ setText('stateCaption',!a?'ВАШ ГРАФІК':schedule?'ЗА ОПУБЛІКОВАНИМ ГРАФІКОМ':unknownOffline?'АКТУАЛЬНИЙ ГРАФІК НЕВІДОМИЙ':'ГРАФІКА НЕМАЄ · СВІТЛО ВЕСЬ ДЕНЬ');
+ setText('heroTitle',a&&!schedule?(unknownOffline?'Немає збереженого графіка':'Світло весь день'):copy.title);setText('heroCountdown',a&&!schedule?(unknownOffline?'Зараз неможливо перевірити графік.':'Графік не опубліковано. Відключення не зазначені.'):copy.detail);
+ setText('sourceStamp',schedule?`Опубліковано ${fmtStamp(schedule.publishedAt)}`:unknownOffline?'Немає підтверджених даних':'Офіційний графік на сьогодні не опубліковано');
  setText('queueChip',a?.queue?`Черга ${a.queue}`:'—');
  setText('overviewDate',formatDate(date,{weekday:'long',day:'numeric',month:'long'}));
- setText('overviewLabel',schedule?'24 години':'Світло весь день · немає графіка');renderBar(timelineToday);
+ setText('overviewLabel',schedule?'24 години':unknownOffline?'Графік недоступний':'Світло весь день · немає графіка');renderBar(timelineToday);
  const t=stats(timelineToday);
  setText('hoursOn',t&&t.unknown===0?minutesLabel(t.on):t&&t.on?`${minutesLabel(t.on)}+`:'—');
  setText('hoursOff',t&&t.unknown===0?minutesLabel(t.off):t&&t.off?`${minutesLabel(t.off)}+`:'—');
@@ -236,7 +266,7 @@ function renderTomorrowPreview(){
  root.disabled=!queue;
  root.classList.toggle('tomorrow-unknown',!t||st.unknown>0);
  if(!queue){summary.textContent='Спочатку додайте адресу';details.textContent='Після цього покажемо графік на завтра';return}
- if(!day||!t){summary.textContent='Світло весь день';details.textContent='Немає опублікованого графіка · Підчерга '+queue;return}
+ if(!day||!t){summary.textContent=isOfflineMode()?'Немає збереженого графіка':'Світло весь день';details.textContent=(isOfflineMode()?'Неможливо перевірити графік без зв’язку':'Немає опублікованого графіка')+' · Підчерга '+queue;return}
  if(!st||st.unknown>0){summary.textContent='Частина годин ще уточнюється';details.textContent='Підчерга '+queue+' · Перевірте офіційний графік';return}
  summary.textContent=st.off===0?'Без планових відключень':'Планується без світла: '+formatDuration(st.off);
  details.textContent='Підчерга '+queue+' · '+formatDate(date,{day:'numeric',month:'long'});
@@ -751,8 +781,13 @@ function mergeIndexes(live,backup,options={}){
  return SvitloDataMerge.mergeIndexes(live,backup,options);
 }
 
-// Railway is the primary schedule publisher; Pages retains a static fallback.
+// Railway is primary, Pages is a backup, device storage is the final offline fallback.
 async function loadLatestSchedules(){
+ const stored=await readCachedSchedule();
+ if(navigator.onLine===false){
+  if(stored)return {value:stored,source:'device'};
+  throw Error('No saved offline schedule');
+ }
  let liveError=null;
  try{
   const cfg=pushConfig||await fetch('./push-config.json?live='+Date.now(),{cache:'no-store'}).then(r=>{
@@ -760,24 +795,29 @@ async function loadLatestSchedules(){
   });
   const base=new URL(cfg.apiBase);
   if(base.protocol!=='https:')throw Error('Railway API requires HTTPS');
-  const u=new URL('/api/data/schedules.json',base);
-  u.searchParams.set('t',String(Date.now()));
-  const ctrl=new AbortController(),timeout=setTimeout(()=>ctrl.abort(),11500);
+  const url=new URL('/api/data/schedules.json',base);
+  url.searchParams.set('t',String(Date.now()));
+  const ctrl=new AbortController(),timeout=setTimeout(()=>ctrl.abort(),8500);
   try{
-   const resp=await fetch(u,{cache:'no-store',signal:ctrl.signal});
-   if(!resp.ok)throw Error('Railway HTTP '+resp.status);
-   const value=normalizeData(await resp.json());
+   const response=await fetch(url,{cache:'no-store',signal:ctrl.signal});
+   if(!response.ok)throw Error('Railway HTTP '+response.status);
+   const value=normalizeData(await response.json());
    if(!value.lastChecked)throw Error('Railway snapshot missing check timestamp');
    return {value,source:'railway'};
   }finally{clearTimeout(timeout)}
- }catch(e){liveError=e;console.warn('Railway schedules unavailable, reading fallback:',e.message)}
- const fallback=await fetch('./data/schedules.json?refresh='+Date.now(),{cache:'no-store'});
- if(!fallback.ok)throw liveError||Error('Pages schedule HTTP '+fallback.status);
- const value=normalizeData(await fallback.json());
- const saved=safeJSON(OFFLINE_SCHEDULE,null);
- if(saved?.lastChecked&&Date.parse(saved.lastChecked)>Date.parse(value.lastChecked||'')&&Array.isArray(saved.days))
-  return {value:normalizeData(saved),source:'device'};
- return {value,source:'pages-fallback'};
+ }catch(error){liveError=error;console.warn('Railway unavailable; using stored or Pages schedule:',error.message)}
+ try{
+  const response=await fetch('./data/schedules.json?refresh='+Date.now(),{cache:'no-store'});
+  if(!response.ok)throw Error('Pages schedule HTTP '+response.status);
+  const value=normalizeData(await response.json());
+  if(stored?.lastChecked&&Date.parse(stored.lastChecked)>Date.parse(value.lastChecked||'')){
+   return {value:stored,source:'device'};
+  }
+  if(response.headers.get('X-Svitlo-Cache')==='offline')return {value,source:'device'};
+  return {value,source:'pages-fallback'};
+ }catch(error){console.warn('Pages schedule unavailable:',error.message)}
+ if(stored)return {value:stored,source:'device'};
+ throw liveError||Error('No verified schedule snapshot');
 }
 
 async function refreshData(manual=false){
@@ -794,15 +834,16 @@ async function refreshData(manual=false){
      const nextStamp=Date.parse(loaded.lastChecked||'')||0;
      // Never downgrade an already checked schedule after an outage.
      if(nextStamp>=currentStamp||!data.days.length)data=loaded;
-     schedulesOk=true;lastSyncFailed=source==='pages-fallback';lastDownloadAt=new Date().toISOString();
-     // Additional local snapshot protects against service-worker cache eviction.
-     try{const serialized=JSON.stringify(loaded);if(serialized.length<1200000)localStorage.setItem(OFFLINE_SCHEDULE,serialized)}catch{}
+     schedulesOk=source!=='device';lastSyncFailed=source!=='railway';
+     if(source!=='device')lastDownloadAt=new Date().toISOString();
+     // Never replace a newer confirmed snapshot with an older stale fallback.
+     if(source!=='device'&&nextStamp>=currentStamp)saveCachedSchedule(data);
    }catch(error){
      lastSyncFailed=true;console.warn('Schedule fetch:',error);
      // Never replace an in-memory confirmed schedule with a failed response.
      if(!data.days.length)try{
-       const saved=safeJSON(OFFLINE_SCHEDULE,null);
-       if(saved?.days?.length)data=normalizeData(saved);
+       const saved=await readCachedSchedule();
+       if(saved)data=saved;
      }catch(e){console.warn('Offline schedule recovery:',e)}
    }
    const refreshAuxiliary=manual||!lastAuxiliaryRefresh||Date.now()-lastAuxiliaryRefresh>=AUXILIARY_REFRESH_MS;
@@ -836,7 +877,7 @@ async function refreshData(manual=false){
    }catch(error){console.warn('Bulletin or admin overrides:',error)}
    }
    hasCheckedOnce=true;render();checkNotifications();
-   if(manual)flash(schedulesOk?'Графіки оновлено':'Немає з’єднання. Показуємо збережений графік.');
+   if(manual)flash(schedulesOk?'Графіки оновлено':'Сервер недоступний. Показуємо збережені дані.');
    if(schedulesOk){
      if(hadChecked&&scheduleQueueChanged(before,data,primary()?.queue))flash('Графік для вашої підчерги оновлено');
      announceChanges(before,data);
@@ -844,23 +885,26 @@ async function refreshData(manual=false){
  })();
  try{return await refreshInFlight}finally{refreshInFlight=null;if(refreshButton)refreshButton.disabled=false}
 }
-function notify(title,body,key){
+function notify(title,body,key,{offlineLocal=false}={}){
  // Never let the foreground PWA duplicate the server's Push delivery.
  // A transient failed status check does NOT mean an existing server
  // subscription has disappeared. Also respect an explicit Push opt-out.
- if(localStorage.getItem(PUSH_CONSENT)==='yes'||localStorage.getItem(PUSH_CONSENT)==='no')return;
- if(pushActive||notified.has(key)||!('Notification' in window)||Notification.permission!=='granted')return;notified.add(key);localStorage.setItem(SEEN,JSON.stringify([...notified].slice(-400)));navigator.serviceWorker?.ready.then(r=>r.showNotification(title,{body,icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',tag:key})).catch(()=>{try{new Notification(title,{body})}catch{}})}
+ const localMode=offlineLocal&&navigator.onLine===false&&!document.hidden;
+ if(!localMode&&(localStorage.getItem(PUSH_CONSENT)==='yes'||localStorage.getItem(PUSH_CONSENT)==='no'))return;
+ if((pushActive&&!localMode)||notified.has(key)||!('Notification' in window)||Notification.permission!=='granted')return;notified.add(key);localStorage.setItem(SEEN,JSON.stringify([...notified].slice(-400)));navigator.serviceWorker?.ready.then(r=>r.showNotification(title,{body,icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',tag:key})).catch(()=>{try{new Notification(title,{body})}catch{}})}
 function announceChanges(previous,current){if(!prefs.changes||!previous?.lastChecked)return;const a=primary();if(!a?.queue)return;for(const c of current.changes||[])if(c.queues?.includes(a.queue)&&!previous.changes?.some(x=>x.date===c.date&&(x.revisionId||x.publishedAt)===(c.revisionId||c.publishedAt))){notify('🔄 Графік оновлено',`Підчерга ${a.queue} · Змінено години на ${formatDate(c.date)}. Перевірте розклад.`, `change:${c.date}:${c.revisionId||c.publishedAt}:${a.queue}`)}}
 function checkNotifications(){
  // In-app reminders must work even when Web Push is denied, disabled or delayed.
- // Only verified, recently checked schedules can produce a new reminder.
+ // A verified stored schedule can also produce reminders while this PWA stays open offline.
  const nativeAllowed='Notification' in window&&Notification.permission==='granted';
  if(nativeAllowed&&prefs.emergency)notifyEmergencyEvent();
  const a=primary();
  if(!a?.queue)return;
  const date=today(),m=nowMinutes(),verifiedAt=Date.parse(data.lastChecked||'');
- const fresh=Number.isFinite(verifiedAt)&&verifiedAt<=Date.now()+5*60_000&&
-   Date.now()-verifiedAt<=55*60_000&&data.reviewPending!==true;
+ const hasVerifiedDay=Boolean(currentDay(date));
+ const fresh=hasVerifiedDay&&Number.isFinite(verifiedAt)&&verifiedAt<=Date.now()+5*60_000&&
+   (navigator.onLine===false||Date.now()-verifiedAt<=55*60_000)&&
+   (navigator.onLine===false||data.reviewPending!==true);
  if(fresh){
   const current=timeline(date,a.queue),nextDate=shiftDay(date,1),tomorrow=timeline(nextDate,a.queue);
   for(const [type,offset,desired] of [['off',30,1],['on',15,0]]){
@@ -891,7 +935,7 @@ function checkNotifications(){
       .catch(error=>{notified.delete('inbox:'+key);console.warn('In-app reminder:',error)});
     }
     // The server owns Push for registered subscribers; no duplicate local Push.
-    if(nativeAllowed&&!pushActive)notify(title,body,'local:'+key);
+    if(nativeAllowed&&(!pushActive||navigator.onLine===false))notify(title,body,'local:'+key,{offlineLocal:true});
     break;
    }
   }
