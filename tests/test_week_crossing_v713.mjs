@@ -21,7 +21,7 @@ test('Sunday shows exactly Mon-Sun, labels have weekdays and no numbers in pills
  assert.deepEqual(Array.from(h.stripDates().map(h.weekdayShort)),['Пн','Вт','Ср','Чт','Пт','Сб','Нд']);
  assert.match(html,/id="days"/);
  assert.doesNotMatch(html,/id="weekPrev"|id="weekNext"|id="weekRange"|id="dayToday"|id="dayTomorrow"/);
- assert.doesNotMatch(code,/b\\.append\\(el\\('b','',String\\(Number\\(d\\.slice/);
+ assert.equal(code.includes("b.append(el('b'"),false);
 });
 test('Monday midnight changes the entire visible week, previous dates cannot be reselected',()=>{
  current='2026-10-19';
