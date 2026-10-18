@@ -25,7 +25,7 @@ const primary=()=>byId(prefs.primaryId)||addresses[0]||null;
 const saveAddresses=()=>localStorage.setItem(STORE,JSON.stringify(addresses));
 const savePrefs=()=>localStorage.setItem(PREF,JSON.stringify(prefs));
 // Hydrate the last confirmed snapshot before rendering, including after a cold offline launch.
-try{const saved=safeJSON(OFFLINE_SCHEDULE,null);if(saved&&Array.isArray(saved.days))data=normalizeData(saved)}catch{}
+try{const saved=safeJSON(OFFLINE_SCHEDULE,null);if(saved&&Array.isArray(saved.days))data=retainWeeklySchedules(saved)}catch{}
 try{const saved=safeJSON(OFFLINE_ADDRESSES,null);if(saved?.keys&&saved?.streets)index=saved}catch{}
 function isOfflineMode(){return navigator.onLine===false||lastSyncFailed}
 async function readCachedSchedule(){
@@ -36,14 +36,14 @@ async function readCachedSchedule(){
  }catch(error){console.warn('Offline schedule cache read:',error)}
  let latest=null;
  for(const item of copies)try{
-  const value=normalizeData(item);
+  const value=retainWeeklySchedules(item);
   if(value.lastChecked&&(!latest||Date.parse(value.lastChecked)>Date.parse(latest.lastChecked)))latest=value;
  }catch{}
  return latest;
 }
 function saveCachedSchedule(value){
  if(!value?.lastChecked||!Array.isArray(value.days))return;
- const json=JSON.stringify(value);
+ const json=JSON.stringify(retainWeeklySchedules(value));
  if(json.length>1200000)return;
  try{localStorage.setItem(OFFLINE_SCHEDULE,json)}catch(error){console.warn('Offline schedule storage:',error)}
  if('caches' in window)caches.open(OFFLINE_CACHE).then(cache=>cache.put(
@@ -71,6 +71,16 @@ const nowMinutes=()=>{const x=Object.fromEntries(new Intl.DateTimeFormat('en-GB'
 function shiftDay(d,num){const x=new Date(d+'T12:00:00Z');x.setUTCDate(x.getUTCDate()+num);return x.toISOString().slice(0,10)}
 const formatDate=(v,options={day:'numeric',month:'long'})=>new Intl.DateTimeFormat('uk-UA',Object.assign({timeZone:'UTC'},options)).format(new Date(v+'T12:00:00Z'));
 function fmtStamp(v){if(!v)return 'невідомо';const d=new Date(v);return isNaN(d)?'невідомо':new Intl.DateTimeFormat('uk-UA',{timeZone:TZ,day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}).format(d)}
+// Only the active Monday-Sunday week and the approaching Monday can stay
+// in the offline snapshot. Historic days survive the whole active week.
+function weekStart(date){const weekday=new Date(date+'T12:00:00Z').getUTCDay();return shiftDay(date,-((weekday+6)%7))}
+function weekAllowed(date){const start=weekStart(today());return date>=start&&date<=shiftDay(start,7)}
+function retainWeeklySchedules(incoming,previous={days:[]}){
+ const recent=normalizeData(incoming),days=new Map();
+ for(const day of previous.days||[])if(weekAllowed(day.date)&&day.verified===true)days.set(day.date,day);
+ for(const day of recent.days)if(weekAllowed(day.date))days.set(day.date,day);
+ return {...recent,days:[...days.values()].sort((a,b)=>a.date.localeCompare(b.date))};
+}
 const currentDay=date=>data.days.find(x=>x.date===date&&x.verified===true);
 const minute=s=>s==='24:00'?1440:/^([01]\d|2[0-3]):[0-5]\d$/.test(s||'')?Number(s.slice(0,2))*60+Number(s.slice(3)):-1;
 const clock=n=>`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;
@@ -132,21 +142,14 @@ function nextChangeLabel(change){
  const day=change.date||shiftDay(today(),change.dayOffset||0);
  return clock(change.time)+(change.dayOffset===1?' завтра':change.dayOffset===2?' післязавтра':(change.dayOffset>2?' · '+formatDate(day):''));
 }
-// A rolling, date-based strip: on Sunday it includes next Monday rather than
-// stopping at the artificial boundary between calendar weeks.
-function stripDates(start){return Array.from({length:7},(_,i)=>shiftDay(start,i))}
-function stripContains(start,date){return stripDates(start).includes(date)}
+// A single fixed calendar week: exactly Пн, Вт, Ср, Чт, Пт, Сб, Нд.
+// It automatically changes at Monday 00:00 in Europe/Kyiv.
+function stripDates(start=today()){const monday=weekStart(start);return Array.from({length:7},(_,i)=>shiftDay(monday,i))}
+function stripContains(_start,date){return weekStart(date)===weekStart(today())}
 function weekdayShort(date){return ['Нд','Пн','Вт','Ср','Чт','Пт','Сб'][new Date(date+'T12:00:00Z').getUTCDay()]}
-function stripRangeLabel(start){const last=shiftDay(start,6);return `${formatDate(start,{day:'numeric',month:'short'})} — ${formatDate(last,{day:'numeric',month:'short'})}`}
 function showDay(date){
- daySelected=date;
- if(!dayStripStart||!stripContains(dayStripStart,date))dayStripStart=date;
- renderDetail();
-}
-function shiftDayStrip(amount){
- dayStripStart=shiftDay(dayStripStart||today(),amount*7);
- daySelected=dayStripStart;
- renderDetail();
+ if(!stripContains(today(),date)){daySelected=today();renderDetail();return}
+ daySelected=date;renderDetail();
 }
 function statusCopy(state,change,queue,date){
  if(state==='unknown')return {title:'Немає підтверджених даних',detail:queue?'Перевірте актуальність графіка оператора':'Додайте адресу або оберіть підчергу'};
@@ -219,6 +222,7 @@ function renderFreshness(){
  node.append(title,message);
 }
 function renderHome(){
+ const intro=$('homeIntro');if(intro)intro.hidden=Boolean(primary());
  try{window.SvitloTelemetry?.sampleSelected(primary())}catch{}
  renderEmergency();renderFreshness();const a=primary(),date=today(),m=nowMinutes();
  setText('primaryName',label(a));setText('primarySub',a?`${a.settlement||'Черкаси'} · ${a.queue?'підчерга '+a.queue:'підчергу не визначено'}`:'Черкаси або села району');
@@ -229,11 +233,11 @@ function renderHome(){
  $('stateIcon').innerHTML=ICON;
  const unknownOffline=Boolean(a&&!schedule&&isOfflineMode());
  setText('stateCaption',!a?'ВАШ ГРАФІК':schedule?'ЗА ОПУБЛІКОВАНИМ ГРАФІКОМ':unknownOffline?'АКТУАЛЬНИЙ ГРАФІК НЕВІДОМИЙ':'ГРАФІКА НЕМАЄ · СВІТЛО ВЕСЬ ДЕНЬ');
- setText('heroTitle',a&&!schedule?(unknownOffline?'Немає збереженого графіка':'Світло весь день'):copy.title);setText('heroCountdown',a&&!schedule?(unknownOffline?'Зараз неможливо перевірити графік.':'Графік не опубліковано. Відключення не зазначені.'):copy.detail);
+ setText('heroTitle',a&&!schedule?(unknownOffline?'Немає збереженого графіка':'Світло весь день'):copy.title);setText('heroCountdown',a&&!schedule?(unknownOffline?'Немає збережених даних.':'Відключень за опублікованим графіком немає.'):copy.detail);
  setText('sourceStamp',schedule?`Опубліковано ${fmtStamp(schedule.publishedAt)}`:unknownOffline?'Немає підтверджених даних':'Офіційний графік на сьогодні не опубліковано');
  setText('queueChip',a?.queue?`Черга ${a.queue}`:'—');
  setText('overviewDate',formatDate(date,{weekday:'long',day:'numeric',month:'long'}));
- setText('overviewLabel',schedule?'24 години':unknownOffline?'Графік недоступний':'Світло весь день · немає графіка');renderBar(timelineToday);
+ setText('overviewLabel',schedule?'24 години':unknownOffline?'Немає збережених даних':'Світло весь день');renderBar(timelineToday);
  const t=stats(timelineToday);
  setText('hoursOn',t&&t.unknown===0?minutesLabel(t.on):t&&t.on?`${minutesLabel(t.on)}+`:'—');
  setText('hoursOff',t&&t.unknown===0?minutesLabel(t.off):t&&t.off?`${minutesLabel(t.off)}+`:'—');
@@ -273,7 +277,7 @@ function renderTomorrowPreview(){
 }
 function renderQuickPlaces(){
  const host=$('homeQuickPlaces');if(!host)return;
- host.replaceChildren();
+ host.replaceChildren();host.hidden=addresses.length<2; if(host.hidden)return;
  if(!addresses.length){host.append(el('span','quick-place-empty','Додайте адресу, щоб перемикатися одним дотиком'));return}
  [...addresses].sort((a,b)=>Number(!!b.favorite)-Number(!!a.favorite)).forEach(item=>{
   const button=el('button','quick-place'+(primary()?.id===item.id?' selected':''),(item.favorite?'⭐  ':'')+label(item));
@@ -441,7 +445,7 @@ function navigate(name){
  const previous=active;
  if(name!=='detail')previewQueue=null;
  try{sessionStorage.setItem(SCREEN_RETURN,name)}catch{}
- if(name==='detail'){daySelected=today();dayStripStart=today();renderDetail()}
+ if(name==='detail'){daySelected=today();renderDetail()}
  else if(name==='updates')renderUpdates();
  else if(name==='settings')renderSettings();
  else renderHome();
@@ -519,15 +523,13 @@ function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Пі�
  if(!a)return;
  $('editActive').hidden=!!previewQueue;
  setText('detailAddress',previewQueue?'Підчерга '+previewQueue+' · тимчасовий перегляд':fullAddress(a));const tToday=timeline(today(),a.queue),st=stateAt(tToday,nowMinutes()),nxt=nextChange(today(),a.queue,nowMinutes());const status=$('detailStatus');status.className='detail-status '+st;status.textContent=statusCopy(st,nxt,a.queue,today()).title;
- const day=daySelected||today();const start=dayStripStart||today();
- setText('weekRange',stripRangeLabel(start));
- for(const [element,date] of [['dayToday',today()],['dayTomorrow',shiftDay(today(),1)]]){
-  const button=$(element);button.classList.toggle('active',day===date);button.setAttribute('aria-pressed',String(day===date));
- }
+ const monday=weekStart(today());
+ const day=daySelected&&weekStart(daySelected)===monday?daySelected:today();daySelected=day;
+ // No dates, arrows or rolling-week controls: weekday pills only.
  const root=$('days');root.replaceChildren();
- for(const d of stripDates(start)){
-  const b=el('button','day-choice'+(d===day?' selected':''),weekdayShort(d));
-  b.type='button';b.append(el('b','',String(Number(d.slice(8)))));
+ for(const d of stripDates(monday)){
+  const b=el('button','day-choice'+(d===day?' selected':'')+(d===today()?' is-today':''),weekdayShort(d));
+  b.type='button';
   b.setAttribute('aria-pressed',String(d===day));
   b.setAttribute('aria-label',formatDate(d,{weekday:'long',day:'numeric',month:'long'}));
   b.onclick=()=>showDay(d);root.append(b);
@@ -566,8 +568,8 @@ function updatePushInvite(){
  box.hidden=!supported||pushActive||(Notification.permission==='granted'&&localStorage.getItem(PUSH_CONSENT)==='yes');
  if(box.hidden)return;
  const denied=Notification.permission==='denied';
- setText('pushInviteTitle',denied?'Сповіщення вимкнені в iPhone':'Не пропустіть зміну графіка');
- setText('pushInviteText',denied?'Дозвольте сповіщення для «Світло Черкаси» в налаштуваннях iPhone.':
+ setText('pushInviteTitle',denied?'Сповіщення вимкнені на пристрої':'Не пропустіть зміну графіка');
+ setText('pushInviteText',denied?'Дозвольте сповіщення для «Світло Черкаси» в налаштуваннях пристрою.':
   'Отримуйте повідомлення про відключення, повернення світла та зміни графіка.');
  const action=$('pushInviteAction');
  action.firstChild.textContent=denied?'Відкрити налаштування сповіщень ':'Увімкнути сповіщення ';
@@ -600,7 +602,7 @@ function renderSettings(){
   categoryBox.setAttribute('aria-disabled',connected?'false':'true');
  }
  let title='Вимкнено',description='Увімкніть головний перемикач, щоб налаштувати категорії повідомлень.';
- if(!supported){title='Недоступно';description='Цей браузер не підтримує Push. На iPhone відкрийте встановлений PWA.'}
+ if(!supported){title='Недоступно';description='Цей браузер не підтримує Push. Відкрийте встановлений PWA в сумісному браузері.'}
  else if(!configured){title='Немає з’єднання';description='Не вдалося отримати налаштування Push-сервера. Перевірте інтернет.'}
  else if(permission==='denied'){title='Заборонено';description='Дозвольте сповіщення для PWA у системних налаштуваннях пристрою.'}
  else if(!hasAddress){title='Потрібна адреса';description='Додайте адресу з підчергою, щоб налаштувати Push.'}
@@ -609,6 +611,12 @@ function renderSettings(){
  else if(!optedOut){title='Не підключено';description='Натисніть головний перемикач, щоб підключити Push.'}
  setText('pushHeadline',title);setText('pushDescription',description);
  const status=$('pushHeadline');if(status)status.dataset.status=connected?'connected':title==='Застосовуємо…'?'pending':'disconnected';
+ const offline=$('offlineDataState');if(offline){
+  const days=(data.days||[]).filter(d=>weekStart(d.date)===weekStart(today()));
+  offline.textContent=(days.length?('Збережено графіків: '+days.length+' із 7 днів поточного тижня.'):'Графіки поточного тижня ще не збережені.')+
+   (data.lastChecked?' Остання перевірка: '+fmtStamp(data.lastChecked)+'.':'')+
+   ' За наявності інтернету дані завантажуються автоматично.';
+ }
 }
 function fillQueueSelect(){const root=$('manualQueue');root.replaceChildren(new Option('Оберіть підчергу',''),...QUEUES.map(q=>new Option(q,q)))}
 function town(){return $('settlement').value==='Інше'?$('customSettlement').value.trim():$('settlement').value}
@@ -833,7 +841,7 @@ async function refreshData(manual=false){
      const currentStamp=Date.parse(data.lastChecked||'')||0;
      const nextStamp=Date.parse(loaded.lastChecked||'')||0;
      // Never downgrade an already checked schedule after an outage.
-     if(nextStamp>=currentStamp||!data.days.length)data=loaded;
+     if(nextStamp>=currentStamp||!data.days.length)data=retainWeeklySchedules(loaded,data);
      schedulesOk=source!=='device';lastSyncFailed=source!=='railway';
      if(source!=='device')lastDownloadAt=new Date().toISOString();
      // Never replace a newer confirmed snapshot with an older stale fallback.
@@ -947,9 +955,9 @@ function checkNotifications(){
  }
 }
 
-function pushHealthMessage(message){
- const node=$('pushDeliveryStatus');
- if(node)node.textContent=message;
+function pushHealthMessage(_message){
+ // Health checks still repair subscriptions, but never expose developer telemetry
+ // or the time of the last Push to end users.
 }
 async function checkPushDelivery(force=false){
  if(pushHealthBusy)return pushHealthBusy;
@@ -959,7 +967,7 @@ async function checkPushDelivery(force=false){
   if(!pushConfig?.apiBase){pushHealthMessage('Сервер Push недоступний.');return}
   if(!('Notification' in window)||Notification.permission!=='granted'){
    pushActive=false;
-   pushHealthMessage('Системні Push не дозволені. Увімкніть їх у налаштуваннях iPhone.');
+   pushHealthMessage('Системні Push не дозволені. Увімкніть їх у налаштуваннях пристрою.');
    return;
   }
   if(localStorage.getItem(PUSH_CONSENT)==='no'){
@@ -979,7 +987,7 @@ async function checkPushDelivery(force=false){
     await updatePushSubscription();
     subscription=await registration.pushManager.getSubscription();
    }
-   if(!subscription){pushHealthMessage('Push-підписка iPhone відсутня.');return}
+   if(!subscription){pushHealthMessage('Push-підписка пристрою відсутня.');return}
    const response=await fetch(pushConfig.apiBase.replace(/\/$/,'')+'/api/push/subscription-status',{
     method:'POST',headers:{'content-type':'application/json'},
     body:JSON.stringify({subscription:{endpoint:subscription.endpoint}}),cache:'no-store'
@@ -1004,7 +1012,7 @@ async function checkPushDelivery(force=false){
       ' Найближчі події: '+eventText(upcoming.off,'відключення')+
        eventText(upcoming.on,'відновлення'):
       ' Найближчих підтверджених змін немає.';
-     const lastDelivery=recent.lastAccepted?' Останній автоматичний Push: '+fmtStamp(recent.lastAccepted)+'.':'';
+     const lastDelivery='';
      const error=recent.lastError?' Остання спроба мала помилку доставки.':'';
      pushHealthMessage('Push підключено · підчерга '+remote.queue+
       ' · нагадування за 30 хв до відключення: '+(remote.preferences.off?'увімкнено':'вимкнено')+
@@ -1063,7 +1071,7 @@ async function disableNotifications(){
   pushActive=false;localStorage.setItem(PUSH_CONSENT,'no');flash('Сповіщення вимкнено. Підписку скасовано');renderSettings();updatePushInvite();
  }catch(e){console.warn(e);flash('Не вдалося відписатися — повторіть, коли є інтернет')}
 }
-async function enableNotifications(){if(!('Notification' in window)){flash('Цей браузер не підтримує сповіщення');return}if(Notification.permission==='denied'){flash('Дозвольте сповіщення у налаштуваннях iPhone');return}const granted=await Notification.requestPermission();if(granted!=='granted'){flash('Дозвіл на сповіщення не надано');return}if(pushConfig){try{await updatePushSubscription();flash('Сповіщення увімкнено')}catch(e){console.warn(e);flash('Не вдалося ввімкнути сповіщення. Спробуйте пізніше')}}else flash('Нагадування увімкнено для відкритого застосунку');renderSettings();updatePushInvite()}
+async function enableNotifications(){if(!('Notification' in window)){flash('Цей браузер не підтримує сповіщення');return}if(Notification.permission==='denied'){flash('Дозвольте сповіщення у налаштуваннях пристрою');return}const granted=await Notification.requestPermission();if(granted!=='granted'){flash('Дозвіл на сповіщення не надано');return}if(pushConfig){try{await updatePushSubscription();flash('Сповіщення увімкнено')}catch(e){console.warn(e);flash('Не вдалося ввімкнути сповіщення. Спробуйте пізніше')}}else flash('Нагадування увімкнено для відкритого застосунку');renderSettings();updatePushInvite()}
 // An iOS permission change can happen in system Settings while the PWA is suspended.
 window.addEventListener('focus',()=>{updatePushInvite();checkPushDelivery().catch(console.warn);if(!document.hidden)refreshData().catch(console.warn)});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){updatePushInvite();checkNotifications();checkPushDelivery().catch(console.warn)}});
@@ -1088,13 +1096,9 @@ for(const b of document.querySelectorAll('[data-go]'))b.addEventListener('click'
   $('quickQueueOpen').onclick=()=>{
    if(!QUEUES.includes(quickSelect.value)){flash('Оберіть підчергу');return}
    previewQueue=quickSelect.value;
-   navigate('detail');
+   if(active==='detail')renderDetail();else navigate('detail');
   };
  }
-$('weekPrev').onclick=()=>shiftDayStrip(-1);
-$('weekNext').onclick=()=>shiftDayStrip(1);
-$('dayToday').onclick=()=>showDay(today());
-$('dayTomorrow').onclick=()=>showDay(shiftDay(today(),1));
 $('syncNow').onclick=()=>refreshData(true);$('refreshTop').onclick=()=>refreshData(true);$('refreshDetail').onclick=()=>refreshData(true);$('manualRefresh').onclick=()=>refreshData(true);$('primaryPicker').onclick=()=>addresses.length?openPicker():openAddressSheet();$('addFromHome').onclick=()=>openAddressSheet();$('addFromSettings').onclick=()=>openAddressSheet();$('editActive').onclick=()=>openAddressSheet(primary());$('openDetail').onclick=()=>navigate('detail');
 $('closeSheet').onclick=()=>closeSheet($('addressSheet'));$('closePlaces').onclick=()=>closeSheet($('placesSheet'));$('sheetAddPlace').onclick=()=>{closeSheet($('placesSheet'));openAddressSheet()};
 for(const dialog of [$('addressSheet'),$('placesSheet')])dialog.addEventListener('close',unlockSheet);
@@ -1141,7 +1145,12 @@ fillQueueSelect();
  }
  finishInitialLoad();
  getPushConfig();
-setInterval(()=>{renderHome();if(active==='detail')renderDetail();checkNotifications()},30_000);
+setInterval(()=>{
+ const filtered=data.days.filter(day=>weekAllowed(day.date));
+ if(filtered.length!==data.days.length)data={...data,days:filtered};
+ if(daySelected&&!stripContains(today(),daySelected))daySelected=today();
+ renderHome();if(active==='detail')renderDetail();checkNotifications();
+},30_000);
 setInterval(()=>{if(!document.hidden)refreshData()},AUTO_SCHEDULE_CHECK_MS);
 window.addEventListener('svitlo:live-schedules',()=>{lastRefresh=0;refreshData().catch(console.warn)});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();refreshData();checkNotifications()}});
