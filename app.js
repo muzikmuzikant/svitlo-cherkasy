@@ -539,7 +539,8 @@ function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Пі�
  setText('detailAddress',previewQueue?'Підчерга '+previewQueue+' · тимчасовий перегляд':fullAddress(a));const tToday=timeline(today(),a.queue),st=stateAt(tToday,nowMinutes()),nxt=nextChange(today(),a.queue,nowMinutes());const status=$('detailStatus');status.className='detail-status '+st;status.textContent=statusCopy(st,nxt,a.queue,today()).title;
  const day=daySelected&&stripContains(today(),daySelected)?daySelected:today();daySelected=day;
  const root=$('days');root.replaceChildren();
- for(const d of stripDates()){
+ const visibleDates=stripDates();root.classList.toggle('sunday-cutover',visibleDates.length===2);
+ for(const d of visibleDates){
   const b=el('button','day-choice'+(d===day?' selected':'')+(d===today()?' is-today':''),weekdayShort(d));
   b.type='button';
   b.setAttribute('aria-pressed',String(d===day));
@@ -1169,18 +1170,28 @@ fillQueueSelect();
  }
  finishInitialLoad();
  getPushConfig();
-setInterval(()=>{
+function applyCalendarCutover(){
  const filtered=data.days.filter(day=>weekAllowed(day.date));
  const changes=(data.changes||[]).filter(change=>typeof change?.date==='string'&&weekAllowed(change.date));
  if(filtered.length!==data.days.length||changes.length!==(data.changes||[]).length){
   data={...data,days:filtered,changes};saveCachedSchedule(data);
  }
  if(daySelected&&!stripContains(today(),daySelected))daySelected=today();
+}
+function paintCalendarClock(){
+ applyCalendarCutover();
  renderHome();if(active==='detail')renderDetail();checkNotifications();
-},30_000);
+}
+// Align a check to 00 seconds of every real clock minute. In particular,
+// Sunday and Monday cut over at 00:00 Kyiv, rather than 30 seconds late.
+function calendarMinuteTick(){
+ setTimeout(()=>{paintCalendarClock();calendarMinuteTick()},Math.max(50,60000-Date.now()%60000+30));
+}
+calendarMinuteTick();
+setInterval(paintCalendarClock,30_000);
 setInterval(()=>{if(!document.hidden)refreshData()},AUTO_SCHEDULE_CHECK_MS);
 window.addEventListener('svitlo:live-schedules',()=>{lastRefresh=0;refreshData().catch(console.warn)});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();refreshData();checkNotifications()}});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){applyCalendarCutover();render();refreshData();checkNotifications()}});
 window.addEventListener('online',()=>{
   renderFreshness();
   refreshData(true);
