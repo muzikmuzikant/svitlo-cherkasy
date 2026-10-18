@@ -51,7 +51,7 @@ jobs:
       - name: Validate official source parser syntax
         run: python -m py_compile scripts/update_data.py scripts/railway_schedule_cron.py
       - name: Run Beta advertising contract tests
-        run: node --test tests/test_schedule_review_beta.mjs tests/test_tomorrow_dedupe_beta.mjs tests/test_push_options_7911.mjs tests/test_one_time_analytics_consent.mjs tests/test_notice_metrics_7911.mjs tests/test_manual_notice_update_badge.mjs tests/test_beta_799_live.mjs tests/test_pwa_updates.mjs tests/test_beta_monetization.mjs tests/test_admin_users_beta.mjs tests/test_legal_revision_beta.mjs tests/test_schedule_quality_beta.mjs tests/test_manual_push.mjs tests/test_feedback.mjs tests/test_diagnostics_beta.mjs tests/test_daily_reports_beta.mjs tests/test_beta_ui_regressions.mjs tests/test_motion_beta.mjs
+        run: node --test tests/test_schedule_review_beta.mjs tests/test_tomorrow_dedupe_beta.mjs tests/test_push_options_7911.mjs tests/test_one_time_analytics_consent.mjs tests/test_notice_metrics_7911.mjs tests/test_manual_notice_update_badge.mjs tests/test_beta_799_live.mjs tests/test_pwa_updates.mjs tests/test_beta_monetization.mjs tests/test_admin_users_beta.mjs tests/test_legal_revision_beta.mjs tests/test_schedule_quality_beta.mjs tests/test_manual_push.mjs tests/test_feedback.mjs tests/test_diagnostics_beta.mjs tests/test_daily_reports_beta.mjs tests/test_beta_ui_regressions.mjs tests/test_motion_beta.mjs tests/test_offline_readiness_beta.mjs
       - name: Verify published beta API read-only route
         run: |
           python - <<'PY'
