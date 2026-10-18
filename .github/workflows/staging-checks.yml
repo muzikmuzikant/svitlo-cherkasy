@@ -54,7 +54,7 @@ jobs:
         run: node --test tests/test_schedule_review_beta.mjs tests/test_tomorrow_dedupe_beta.mjs tests/test_push_options_7911.mjs tests/test_one_time_analytics_consent.mjs tests/test_notice_metrics_7911.mjs tests/test_manual_notice_update_badge.mjs tests/test_beta_799_live.mjs tests/test_pwa_updates.mjs tests/test_beta_monetization.mjs tests/test_admin_users_beta.mjs tests/test_legal_revision_beta.mjs tests/test_schedule_quality_beta.mjs tests/test_manual_push.mjs tests/test_feedback.mjs tests/test_diagnostics_beta.mjs tests/test_daily_reports_beta.mjs tests/test_beta_ui_regressions.mjs tests/test_motion_beta.mjs tests/test_offline_readiness_beta.mjs
       - name: Verify calendar-week retention and Beta schedule mirror
         run: |
-          node --test tests/test_week_crossing_v713.mjs tests/test_schedule_mirror_beta.mjs
+          node --test tests/test_week_crossing_v713.mjs tests/test_schedule_mirror_beta.mjs tests/test_weekday_inbox_beta.mjs
           python -m pip install -q -r requirements.txt pytest
           python -m pytest -q tests/test_weekly_schedule_retention_beta.py
       - name: Verify published beta API read-only route
