@@ -6,7 +6,7 @@ const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 
 test('weekday-only navigation, quick queue inside graph, clean settings',()=>{
  const html=read('index.html'),app=read('app.js');
- assert.match(html,/id="days"[^>]+aria-label="Дні поточного тижня"/);
+ assert.match(html,/id="days"[^>]+aria-label="Дні вибраного тижня"/);
  assert.doesNotMatch(html,/id="weekPrev"|id="weekNext"|id="weekRange"/);
  assert.ok(html.indexOf('class="quick-queue-lookup"')<html.indexOf('id="articleLink"'));
  assert.equal((html.match(/id="homeQuickPlaces"/g)||[]).length,1);
