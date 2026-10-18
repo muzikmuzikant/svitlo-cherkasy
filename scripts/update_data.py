@@ -251,7 +251,12 @@ def update_schedules(session, now=None):
     official schedules are still safe to publish.
     """
     now = now or datetime.now(TZ)
-    wanted = {(now.date() + timedelta(days=i)).isoformat() for i in (-2, -1, 0, 1, 2, 3)}
+    # Keep every verified publication from Monday through Sunday until the
+    # local calendar week ends. The following Monday/Tuesday remain eligible
+    # for advance official publications, but the old week expires at Monday
+    # 00:00 Europe/Kyiv. Never manufacture missing outage intervals.
+    monday = now.date() - timedelta(days=now.weekday())
+    wanted = {(monday + timedelta(days=i)).isoformat() for i in range(9)}
     dest = DATA / 'schedules.json'
     try:
         old = json.loads(dest.read_text(encoding='utf-8'))
