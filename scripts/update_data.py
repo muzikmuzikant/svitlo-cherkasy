@@ -251,12 +251,12 @@ def update_schedules(session, now=None):
     official schedules are still safe to publish.
     """
     now = now or datetime.now(TZ)
-    # Keep every verified publication from Monday through Sunday until the
-    # local calendar week ends. The following Monday/Tuesday remain eligible
-    # for advance official publications, but the old week expires at Monday
-    # 00:00 Europe/Kyiv. Never manufacture missing outage intervals.
+    # Sunday 00:00 Europe/Kyiv expires previous Monday-Saturday.
+    # Preserve the Sunday schedule and any upcoming published Mon/Tue plans.
     monday = now.date() - timedelta(days=now.weekday())
-    wanted = {(monday + timedelta(days=i)).isoformat() for i in range(9)}
+    cutoff = now.date() if now.weekday() == 6 else monday
+    wanted = {(monday + timedelta(days=i)).isoformat() for i in range(9)
+              if monday + timedelta(days=i) >= cutoff}
     dest = DATA / 'schedules.json'
     try:
         old = json.loads(dest.read_text(encoding='utf-8'))
@@ -353,7 +353,9 @@ def update_schedules(session, now=None):
                                 'source': latest['source'], 'queues': diffs})
         existing[day] = latest
 
-    old_changes = old.get('changes', [])
+    old_changes = [x for x in old.get('changes', [])
+                   if isinstance(x, dict) and isinstance(x.get('date'), str)
+                   and x['date'] >= cutoff.isoformat()]
     keys = {(x.get('date'), x.get('revisionId') or x.get('publishedAt')) for x in old_changes}
     for change in changed:
         identity = (change['date'], change['revisionId'])
