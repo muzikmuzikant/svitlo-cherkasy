@@ -1,4 +1,4 @@
-/* Beta advertising control center: all edits stay in the isolated staging API. */
+/* Owner advertising control center. Changes are persisted on the connected server. */
 (()=>{'use strict';
  const root=document.getElementById('betaAdsAdmin');
  if(!root)return;
@@ -174,17 +174,21 @@
   if(!report||!draft)return;
   root.replaceChildren();root.className='beta-ads-admin';
   const heading=el('div',undefined,'ad-titlebar');
-  const title=el('div');title.append(el('h3','Центр рекламного керування'),el('p',report.commercialLocked?'Production · Реклама та приймання внесків вимкнені в цій версії':'Beta · Тестове середовище реклами','ad-muted'));
+  const title=el('div');title.append(el('h3','Центр рекламного керування'),el('p',report.commercialLocked?'Показ реклами тимчасово заблоковано налаштуванням сервера':'Лише головна сторінка · Налаштування зберігаються на сервері','ad-muted'));
   const tools=el('div',undefined,'ad-toolbar');
   button(tools,'Оновити дані',()=>refresh(true));
   // Saving lives in a sticky footer, not in the distant heading.
   const status=el('small',dirty?'Є незбережені зміни':'Налаштування завантажено','ad-muted');status.id='betaAdsSaveStatus';
   heading.append(title,tools);root.append(heading);
-  if(report.commercialLocked){const warning=el('p','Реклама та реквізити для переказів не відображаються користувачам. Налаштування тут є лише чернетками: збереження не активує монетизацію.','ad-muted');warning.setAttribute('role','status');warning.style.padding='14px';warning.style.border='1px solid #dae4f2';warning.style.borderRadius='12px';root.append(warning)}
+  if(report.commercialLocked){const warning=el('p','Серверний запобіжник блокує рекламу незалежно від галочки. Підтримка проєкту керується окремо.','ad-muted');warning.setAttribute('role','status');warning.style.padding='14px';warning.style.border='1px solid #dae4f2';warning.style.borderRadius='12px';root.append(warning)}
   analytics();
+  const gate=section('Показ реклами в застосунку','Головний перемикач. За замовчуванням вимкнено. Поки галочка не встановлена й зміни не збережені, користувачі не бачать ані рекламних карток, ані блоку «Ваша реклама». Підтримка проєкту керується окремо.');
+  const gateFields=grid(gate);
+  field(gateFields,'Увімкнути рекламу в застосунку',draft,'enabled','toggle');
+  gate.append(el('p',draft.enabled?'Реклама буде увімкнена після збереження, якщо є активні кампанії або дозволено блок «Ваша реклама».':'Зараз реклама вимкнена. Налаштовуйте кампанії заздалегідь, вони не будуть показуватися.','ad-muted'));
+  root.append(gate);
   const main=section('Загальні параметри каруселі','Реклама відображається лише на головній сторінці. Індивідуальні параметри мають пріоритет над загальними.');
   const g=grid(main);
-  field(g,'Показувати рекламний блок',draft,'enabled','toggle');
   field(g,'Показувати «Ваша реклама»',draft,'showPromo','toggle');
   field(g,'Дозволити ручне гортання',draft,'manualSwipe','toggle');
   field(g,'Стандартний інтервал, с',draft,'rotationSeconds','number',null,{min:3,max:60});
@@ -282,13 +286,13 @@
   ads.append(templates);
   button(ads,'+ Створити оголошення',()=>{draft.campaigns.unshift({id:uuid(),title:'',description:'',image:'',link:'',button:'Дізнатися більше',enabled:false,background:'#ffffff',foreground:'#142338',start:'',end:'',days:[],weight:1,seconds:8,maxImpressions:0,dailyCap:0,price:0,paid:false,note:''});mark();render()});root.append(ads);
   const bottom=el('div',undefined,'ad-sticky-savebar');
-  const caption=el('span',report.commercialLocked?'Чернетки зберігаються. Публікація та платежі заблоковані.':'Зміни застосовуються до Beta після збереження.');
+  const caption=el('span',report.commercialLocked?'Рекламні покази заблоковані сервером. Підтримка керується окремо.':'Зміни застосовуються після збереження.');
   const controls=el('div',undefined,'ad-toolbar');
   button(controls,'Скасувати зміни',()=>refresh(true),'secondary');
   const save=button(controls,'Зберегти всі зміни',saveDraft,'primary');save.id='betaAdsSaveButton';
   bottom.append(caption,status,controls);root.append(bottom);
   async function saveDraft(){if(loading)return;loading=true;save.disabled=true;status.textContent='Зберігаємо...';
-    try{const r=await api('PUT',draft);report=r;draft=structuredClone(r.settings);dirty=false;render();const n=document.getElementById('betaAdsSaveStatus');if(n)n.textContent=report.commercialLocked?'Чернетки збережено, публікацію вимкнено':'Зміни збережено у Beta'}
+    try{const r=await api('PUT',draft);report=r;draft=structuredClone(r.settings);dirty=false;render();const n=document.getElementById('betaAdsSaveStatus');if(n)n.textContent=report.commercialLocked?'Чернетки збережено, публікацію вимкнено':'Зміни збережено'}
     catch(e){status.textContent='Помилка: '+e.message;alert('Не вдалося зберегти: '+e.message)}
     finally{loading=false;save.disabled=false}}
  }
