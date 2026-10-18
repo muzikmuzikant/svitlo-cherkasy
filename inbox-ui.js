@@ -20,6 +20,18 @@
  })();
  if(!store||!$('inboxList'))return;
  let pendingLinkId=null;
+ // Explicitly shared public notices remain available across queue changes,
+ // but unpublishing still removes them once the authoritative feed updates.
+ const LINKED_NOTICE_IDS='svitlo-inbox-linked-notices-v1';
+ let linkedNoticeIds=new Set();
+ try{const saved=JSON.parse(localStorage.getItem(LINKED_NOTICE_IDS)||'[]');
+  if(Array.isArray(saved))linkedNoticeIds=new Set(saved.filter(x=>/^notice:[A-Za-z0-9_-]{6,64}$/.test(x)).slice(-30));
+ }catch{}
+ function rememberLinkedNotice(id){
+  if(!/^notice:[A-Za-z0-9_-]{6,64}$/.test(id))return;
+  linkedNoticeIds.add(id);
+  try{localStorage.setItem(LINKED_NOTICE_IDS,JSON.stringify([...linkedNoticeIds].slice(-30)))}catch{}
+ }
  let selected='all',rows=[],notices=window.SvitloPublicConfig?.announcements||[],busy=false,lastSync=0,activeDetail=null,noticeFeedConfirmed=window.SvitloPublicConfig?.serverVerified===true,needsResync=false;
  // Only voluntary opt-in PWA installations count toward custom notice engagement.
  // "Read" is an approximation: detail stayed in the foreground for two seconds.
@@ -273,8 +285,8 @@
   try{
    const queue=primaryQueue(),now=Date.now(),incoming=[];
    if(noticeFeedConfirmed){
-    const allowed=notices.filter(a=>a.active===true&&(!a.queue||a.queue==='all'||a.queue===queue)
-      &&targeted(a)&&(!a.scheduledAt||Date.parse(a.scheduledAt)<=now)&&(!a.expiresAt||Date.parse(a.expiresAt)>now))
+    const allowed=notices.filter(a=>a.active===true&&(!a.queue||a.queue==='all'||a.queue===queue||linkedNoticeIds.has('notice:'+a.id))
+      &&(targeted(a)||linkedNoticeIds.has('notice:'+a.id))&&(!a.scheduledAt||Date.parse(a.scheduledAt)<=now)&&(!a.expiresAt||Date.parse(a.expiresAt)>now))
       .map(a=>'notice:'+a.id);
     await store.reconcileAnnouncements(allowed);
    }
@@ -308,7 +320,8 @@
       content:message?.content||x.title||'',url:x.source,priority:'important'});
    }
    for(const a of notices){
-    if(a.active!==true||!targeted(a)||a.queue&&a.queue!=='all'&&a.queue!==queue||a.scheduledAt&&Date.parse(a.scheduledAt)>now||a.expiresAt&&Date.parse(a.expiresAt)<=now)continue;
+    const linked=linkedNoticeIds.has('notice:'+a.id);
+    if(a.active!==true||(!targeted(a)&&!linked)||(a.queue&&a.queue!=='all'&&a.queue!==queue&&!linked)||a.scheduledAt&&Date.parse(a.scheduledAt)>now||a.expiresAt&&Date.parse(a.expiresAt)<=now)continue;
     incoming.push({id:'notice:'+a.id,kind:'announcement',title:(a.icon||({important:'📣',update:'✨',emergency:'⚠️',schedule:'🗓️'})[a.kind]||'💬')+' '+a.title,
      body:a.body,content:a.content,images:a.images,at:a.publishedAt,updatedAt:a.updatedAt,pinned:a.pinned,priority:a.priority,authoritative:true});
    }
@@ -324,15 +337,42 @@
    await refresh().catch(console.warn);
   }finally{busy=false;if(needsResync){needsResync=false;queueMicrotask(()=>sync().catch(console.warn))}}
  }
+ async function restoreSharedMessage(id){
+  try{
+   const cfg=await fetch('./push-config.json?shared='+Date.now(),{cache:'no-store'}).then(r=>{
+    if(!r.ok)throw Error('Push config unavailable');return r.json()
+   });
+   const api=new URL(cfg.apiBase);
+   if(api.protocol!=='https:')throw Error('Secure Beta API required');
+   const url=new URL('/api/public/message',api);url.searchParams.set('id',id);
+   const response=await fetch(url,{cache:'no-store'});
+   if(!response.ok)throw Error('Message unavailable: HTTP '+response.status);
+   const item=await response.json();
+   if(item?.id!==id)throw Error('Shared message ID mismatch');
+   if(id.startsWith('notice:'))rememberLinkedNotice(id);
+   await store.add({...item,authoritative:true});
+   if(pendingLinkId===id){selected='all';await refresh();
+    if(open(id))pendingLinkId=null;
+   }
+  }catch(error){
+   console.warn('Shared message resolution:',error.message);
+   if(pendingLinkId===id){
+    pendingLinkId=null;
+    await refresh().catch(console.warn);
+    const root=$('inboxList');
+    root?.prepend?.(el('div','Повідомлення більше недоступне або немає з’єднання. Спробуйте відкрити посилання пізніше.','inbox-empty'));
+   }
+  }
+ }
  function routeMessage(id){
   const target=String(id||'');
   if(!/^(?:notice|day|change|transition|emergency|push):[A-Za-z0-9_.:+-]{1,145}$/.test(target))return;
-  pendingLinkId=target;
+  selected='all';pendingLinkId=target;
   document.querySelector('[data-go="updates"]')?.click();
   if(open(target)){pendingLinkId=null;return}
-  // Announcements may arrive after the site configuration; keep the target
-  // until synchronization makes the shared message available on this device.
+  // Cross-device links must not depend on this device's own queue or old Inbox cache.
   sync().catch(console.warn);
+  restoreSharedMessage(target).catch(console.warn);
  }
  function routePush(id,pushClick=false){
   if(pushClick)trackNotice(id,'pushClick');
