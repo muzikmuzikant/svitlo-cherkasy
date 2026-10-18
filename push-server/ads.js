@@ -14,7 +14,7 @@ const color=(v,def)=>/^#[0-9a-f]{6}$/i.test(String(v||''))?String(v):def;
 const when=v=>{const s=text(v,35);return !s?'':Number.isFinite(Date.parse(s))?new Date(s).toISOString():''};
 const kinds=['iPhone','iPad','Android','Windows','macOS','Linux','Інше'];
 const defaults={
- enabled:true,rotationSeconds:8,promoEvery:4,showPromo:true,manualSwipe:true,animation:'fade',
+ enabled:false,rotationSeconds:8,promoEvery:4,showPromo:true,manualSwipe:true,animation:'fade',
  promoTitle:'Тут може бути ваша реклама',promoText:'Розкажіть про свій бізнес користувачам «Світло Черкаси»',
  contactLabel:'Зв’язатися з нами',pageTitle:'Реклама у Світло Черкаси',
  pageIntro:'Невелике рекламне оголошення на головній сторінці застосунку. Обговорімо умови розміщення.',
@@ -40,7 +40,7 @@ function normalize(raw){
  const packages=Array.isArray(s.packages)?s.packages.slice(0,40):[];
  const campaigns=Array.isArray(s.campaigns)?s.campaigns.slice(0,80):[];
  const normalized={
- enabled:s.enabled!==false,rotationSeconds:clamp(s.rotationSeconds,3,60,8),promoEvery:clamp(s.promoEvery,1,20,4),
+ enabled:s.enabled===true,rotationSeconds:clamp(s.rotationSeconds,3,60,8),promoEvery:clamp(s.promoEvery,1,20,4),
  showPromo:s.showPromo!==false,manualSwipe:s.manualSwipe!==false,
  animation:['fade','slide','none'].includes(s.animation)?s.animation:'fade',
  promoTitle:text(s.promoTitle||defaults.promoTitle,100),promoText:text(s.promoText||defaults.promoText,240),
@@ -117,11 +117,15 @@ export function createAdsStore({directory,clock=()=>Date.now()}){
  const online=new Map(),rate=new Map(),recentAdViews=new Map();
  let timer=null,visitorTimer=null;
  function write(dest,data){fs.mkdirSync(directory,{recursive:true});const tmp=dest+'.tmp';fs.writeFileSync(tmp,JSON.stringify(data),{mode:0o600});fs.renameSync(tmp,dest)}
- function flush(){if(timer){clearTimeout(timer);timer=null}write(file,{schemaVersion:2,state,stats,lastModified})}
+ function flush(){if(timer){clearTimeout(timer);timer=null}write(file,{schemaVersion:3,state,stats,lastModified})}
  function flushVisitors(){if(visitorTimer){clearTimeout(visitorTimer);visitorTimer=null}write(visitorsFile,{schemaVersion:1,installed})}
  function schedule(){if(!timer){timer=setTimeout(flush,900);timer.unref?.()}}
  function scheduleVisitors(){if(!visitorTimer){visitorTimer=setTimeout(flushVisitors,4000);visitorTimer.unref?.()}}
- try{const old=JSON.parse(fs.readFileSync(file,'utf8'));state=normalize(old.state);stats=isObj(old.stats)?old.stats:{};lastModified=old.lastModified||null}catch(e){if(e.code!=='ENOENT')console.warn('[beta-ads] Config reset',e.message)}
+ try{const old=JSON.parse(fs.readFileSync(file,'utf8'));state=normalize(old.state);stats=isObj(old.stats)?old.stats:{};lastModified=old.lastModified||null;
+  // Existing deployments may have an enabled commercial draft from before this gate.
+  // Require an explicit new admin save to activate ads after the safe-default migration.
+  if(old.schemaVersion!==3){state.enabled=false;flush()}
+ }catch(e){if(e.code!=='ENOENT')console.warn('[beta-ads] Config reset',e.message)}
  try{const old=JSON.parse(fs.readFileSync(visitorsFile,'utf8'));installed=isObj(old.installed)?old.installed:{}}catch(e){if(e.code!=='ENOENT')console.warn('[beta-ads] Visitor store reset',e.message)}
  function prune(){const now=clock(),cut=now-60*86400000,dayCut=new Date(now-90*86400000).toISOString().slice(0,10);
   for(const [id,v] of Object.entries(installed))if(!v||!Number.isFinite(v.at)||v.at<cut)delete installed[id];
