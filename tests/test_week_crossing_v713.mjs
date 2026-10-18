@@ -21,15 +21,21 @@ test('Saturday retains the current Mon-Sun and seven weekday labels',()=>{
   '2026-10-12','2026-10-13','2026-10-14','2026-10-15','2026-10-16','2026-10-17','2026-10-18']);
  assert.deepEqual(Array.from(h.stripDates().map(h.weekdayShort)),['Пн','Вт','Ср','Чт','Пт','Сб','Нд']);
 });
-test('Sunday 00:00 removes old Mon-Sat without deleting Sunday or tomorrow Monday',()=>{
+test('Sunday 00:00 deletes obsolete outage SCHEDULES but keeps all seven weekday buttons',()=>{
  current='2026-10-18';
- assert.deepEqual(Array.from(h.stripDates()),['2026-10-18','2026-10-19']);
- assert.equal(h.weekAllowed('2026-10-17'),false);
- assert.equal(h.weekAllowed('2026-10-18'),true);
- assert.equal(h.weekAllowed('2026-10-19'),true);
+ assert.deepEqual(Array.from(h.stripDates()),[
+  '2026-10-12','2026-10-13','2026-10-14','2026-10-15','2026-10-16','2026-10-17','2026-10-18']);
+ assert.deepEqual(Array.from(h.stripDates().map(h.weekdayShort)),['Пн','Вт','Ср','Чт','Пт','Сб','Нд']);
+ assert.equal(h.weekAllowed('2026-10-17'),false,'obsolete Saturday schedule is purged');
+ assert.equal(h.weekAllowed('2026-10-18'),true,'Sunday schedule remains');
+ assert.equal(h.weekAllowed('2026-10-19'),true,'tomorrow Monday can be cached');
  assert.doesNotMatch(html,/id="weekBackControl"|id="weekForwardControl"|id="weekPrev"|id="weekNext"/);
- h.showDay('2026-10-12');assert.equal(vm.runInContext('daySelected',ctx),'2026-10-18');
- h.showDay('2026-10-19');assert.equal(vm.runInContext('daySelected',ctx),'2026-10-19');
+ const style=readFileSync(join(root,'style.css'),'utf8');
+ assert.match(style,/\.days-row\.fixed-weekdays\{display:grid;grid-template-columns:repeat\(7,/);
+ assert.doesNotMatch(style,/sunday-cutover|grid-template-columns:repeat\(2/);
+ h.showDay('2026-10-12');assert.equal(vm.runInContext('daySelected',ctx),'2026-10-12','weekday stays selectable, but with no old data');
+ h.showDay('2026-10-18');assert.equal(vm.runInContext('daySelected',ctx),'2026-10-18');
+ h.showDay('2026-10-19');assert.equal(vm.runInContext('daySelected',ctx),'2026-10-19','tomorrow shortcut still works');
 });
 test('Monday 00:00 restores usual Mon-Sun automatically without previous Sunday',()=>{
  current='2026-10-19';
