@@ -61,26 +61,25 @@ test('Production stays isolated when mirror setting is not configured',async()=>
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });
 
-test('Beta mirror archives preceding days until Sunday, resets at next Monday midnight Kyiv',async()=>{
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'beta-calendar-week-'));
+test('Beta mirror discards past Mon-Sat at Sunday 00:00 Kyiv but keeps Sunday',async()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'beta-sunday-cutover-'));
  try{
   const publisher=createSchedulePublication({directory:dir,token:'beta-token'});
-  let current=Date.parse('2026-10-18T20:57:00.000Z'); // Sunday 23:57 in Kyiv
-  let data=fixture('2026-10-18T20:56:00.000Z');
+  let current=Date.parse('2026-10-17T20:57:00.000Z'); // Saturday 23:57 Kyiv
+  let data=fixture('2026-10-17T20:56:00.000Z');
   data.schedule.days=[{date:'2026-10-12',verified:true,queues:q}];
-  const mirror=createScheduleMirror({
-   publisher,sourceOrigin:ORIGIN,clock:()=>current,logger:silent,
-   fetcher:async url=>({ok:true,text:async()=>JSON.stringify(url.endsWith('/schedules.json')?data.schedule:data.review)})
-  });
+  const mirror=createScheduleMirror({publisher,sourceOrigin:ORIGIN,clock:()=>current,logger:silent,
+   fetcher:async url=>({ok:true,text:async()=>JSON.stringify(url.endsWith('/schedules.json')?data.schedule:data.review)})});
   assert.equal(await mirror.sync(),true);
-  data=fixture('2026-10-18T20:57:30.000Z');
-  data.schedule.days=[{date:'2026-10-18',verified:true,queues:q}];
+  assert.deepEqual(publisher.schedule().days.map(x=>x.date),['2026-10-12']);
+  current=Date.parse('2026-10-17T21:01:00.000Z'); // Sunday 00:01 Kyiv
+  data=fixture('2026-10-17T21:00:00.000Z');
+  data.schedule.days=[{date:'2026-10-18',verified:true,queues:q},{date:'2026-10-19',verified:true,queues:q}];
   assert.equal(await mirror.sync(),true);
-  assert.deepEqual(publisher.schedule().days.map(x=>x.date),['2026-10-12','2026-10-18']);
+  assert.deepEqual(publisher.schedule().days.map(x=>x.date),['2026-10-18','2026-10-19']);
   current=Date.parse('2026-10-18T21:01:00.000Z'); // Monday 00:01 Kyiv
-  data=fixture('2026-10-18T21:00:00.000Z');
-  data.schedule.days=[];
+  data=fixture('2026-10-18T21:00:00.000Z');data.schedule.days=[];
   assert.equal(await mirror.sync(),true);
-  assert.deepEqual(publisher.schedule().days,[],'old week must expire at midnight Kyiv time');
+  assert.deepEqual(publisher.schedule().days.map(x=>x.date),['2026-10-19']);
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });
