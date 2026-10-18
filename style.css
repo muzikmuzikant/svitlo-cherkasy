@@ -690,3 +690,10 @@ html:not([data-app-mode="standalone"]) #appBootScreen,.app-boot-screen[hidden]{d
 .inbox-auto-summary span:last-child{font-size:11px;font-weight:650;color:#73869e;white-space:nowrap}
 .inbox-auto-group>.inbox-item{margin-bottom:9px}
 .home-quick-places .quick-place{font-family:inherit;font-size:12px;font-weight:750;line-height:1.2}
+
+
+.inbox-card-opener{display:grid;gap:9px;min-width:0}
+.inbox-card-opener>strong{font-size:16px;font-weight:830;letter-spacing:-.3px;color:var(--inbox-ink);padding-right:38px}
+.inbox-card-opener>p{margin:0;color:#667994;font-size:13px;line-height:1.55;padding-right:16px}
+.inbox-card-opener .inbox-item-head{padding-right:32px}
+.inbox-context[open]{z-index:12}
