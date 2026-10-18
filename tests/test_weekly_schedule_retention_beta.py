@@ -19,6 +19,9 @@ def test_sunday_midnight_discards_old_weekdays_but_preserves_sunday(monkeypatch,
       {'date':'2026-10-18','verified':True,'source':'https://www.cherkasyoblenergo.com/media/c',
        'publishedAt':'2026-10-17T19:00+03:00','queues':{'1.1':{'knownFrom':'00:00','off':[['16:00','18:00']]}}},
     ]
+    initial['days'].append(
+      {'date':'2026-10-23','verified':True,'source':'https://www.cherkasyoblenergo.com/media/f',
+       'publishedAt':'2026-10-17T19:00+03:00','queues':{'1.1':{'knownFrom':'00:00','off':[['17:00','19:00']]}}})
     source.atomic_write(tmp_path/'schedules.json',initial)
 
     saturday=source.update_schedules(None,now=datetime(2026,10,17,23,59,tzinfo=TZ))
