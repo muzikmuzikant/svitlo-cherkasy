@@ -647,3 +647,12 @@ html:not([data-app-mode="standalone"]) #appBootScreen,.app-boot-screen[hidden]{d
 .push-master-card .switch{flex-shrink:0}
 @media(max-width:370px){.push-master-card{padding:15px 13px}.push-master-line{gap:10px}}
 @media(prefers-reduced-motion:reduce){.push-categories .setting-line{transition:none}}
+
+/* Offline mode stays readable on small iPhones and never implies a live power reading. */
+.offline-chip{display:block;position:relative;margin:8px 0 18px;padding:14px 15px 14px 44px;border-radius:17px;
+ background:linear-gradient(135deg,#fff8eb,#fffaf3);border:1px solid #efdab8;
+ color:#795323;box-shadow:0 8px 28px #77612812;font-size:12px;font-weight:620;line-height:1.55;
+ overflow-wrap:anywhere;letter-spacing:-.05px}
+.offline-chip::before{content:"";position:absolute;top:14px;left:15px;width:19px;height:19px;
+ border-radius:8px;background:#ebc98f;box-shadow:0 0 0 5px #f5e8d0}
+.offline-chip[hidden]{display:none!important}
