@@ -229,6 +229,12 @@ function renderHome(){
  const schedule=a?.queue?currentDay(date):null;
  const timelineToday=a?.queue?timeline(date,a.queue):null,st=stateAt(timelineToday,m);
  const nxt=a?.queue?nextChange(date,a.queue,m):null,copy=statusCopy(st,nxt,a?.queue,date);
+ const offlineReady=$('homeOfflineReady');if(offlineReady){
+  const snapshot=safeJSON(OFFLINE_SCHEDULE,null);
+  const saved=Array.isArray(snapshot?.days)&&Boolean(snapshot?.lastChecked);
+  offlineReady.hidden=!saved||isOfflineMode();
+  if(saved)offlineReady.title='Остання перевірка: '+fmtStamp(snapshot.lastChecked);
+ }
  const panel=$('heroStatus');panel.className='status-panel status-'+st;
  $('stateIcon').innerHTML=ICON;
  const unknownOffline=Boolean(a&&!schedule&&isOfflineMode());
