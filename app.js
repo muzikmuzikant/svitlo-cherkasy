@@ -76,7 +76,11 @@ function fmtStamp(v){if(!v)return 'невідомо';const d=new Date(v);return 
 // Sunday 00:00 Kyiv removes previous Mon-Sat, preserving Sunday and next Monday.
 function weekStart(date){const weekday=new Date(date+'T12:00:00Z').getUTCDay();return shiftDay(date,-((weekday+6)%7))}
 function retentionStart(){const current=today();return new Date(current+'T12:00:00Z').getUTCDay()===0?current:weekStart(current)}
-function weekAllowed(date){return date>=retentionStart()&&date<=shiftDay(weekStart(today()),7)}
+function weekAllowed(date){
+ const sunday=new Date(today()+'T12:00:00Z').getUTCDay()===0;
+ // On Sunday retain this Sunday plus the entire approaching Monday-Sunday.
+ return date>=retentionStart()&&date<=shiftDay(weekStart(today()),sunday?13:7);
+}
 function retainWeeklySchedules(incoming,previous={days:[]}){
  const recent=normalizeData(incoming),days=new Map();
  for(const day of previous.days||[])if(weekAllowed(day.date)&&day.verified===true)days.set(day.date,day);
@@ -145,19 +149,18 @@ function nextChangeLabel(change){
  const day=change.date||shiftDay(today(),change.dayOffset||0);
  return clock(change.time)+(change.dayOffset===1?' завтра':change.dayOffset===2?' післязавтра':(change.dayOffset>2?' · '+formatDate(day):''));
 }
-// Calendar always displays seven weekdays, Monday through Sunday.
-// Clearing old outage schedules on Sunday NEVER removes weekday buttons.
+// Seven fixed weekday labels. On Sunday, Mon-Sat refer to the coming week,
+// while Sun refers to today. No week selector, no calendar dates on pills.
 function stripDates(){
- const monday=weekStart(today());
+ const current=today(),monday=weekStart(current);
+ if(new Date(current+'T12:00:00Z').getUTCDay()===0){
+  return [...Array.from({length:6},(_,i)=>shiftDay(monday,7+i)),current];
+ }
  return Array.from({length:7},(_,i)=>shiftDay(monday,i));
 }
-// Sunday has a separate tomorrow shortcut for next Monday, outside today's
-// seven-day strip. It must not trigger a week selector or hide any weekdays.
-function stripContains(_start,date){
- return stripDates().includes(date)||
-  (new Date(today()+'T12:00:00Z').getUTCDay()===0&&date===shiftDay(today(),1));
-}
+function stripContains(_start,date){return stripDates().includes(date)}
 function weekdayShort(date){return ['Нд','Пн','Вт','Ср','Чт','Пт','Сб'][new Date(date+'T12:00:00Z').getUTCDay()]}
+function weekdayFull(date){return ['Неділя','Понеділок','Вівторок','Середа','Четвер','П’ятниця','Субота'][new Date(date+'T12:00:00Z').getUTCDay()]}
 function showDay(date){
  daySelected=stripContains(today(),date)?date:today();
  renderDetail();
@@ -544,18 +547,18 @@ function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Пі�
  setText('detailAddress',previewQueue?'Підчерга '+previewQueue+' · тимчасовий перегляд':fullAddress(a));const tToday=timeline(today(),a.queue),st=stateAt(tToday,nowMinutes()),nxt=nextChange(today(),a.queue,nowMinutes());const status=$('detailStatus');status.className='detail-status '+st;status.textContent=statusCopy(st,nxt,a.queue,today()).title;
  const day=daySelected&&stripContains(today(),daySelected)?daySelected:today();daySelected=day;
  const root=$('days');root.replaceChildren();
- // Always seven weekday buttons, including after the Sunday 00:00 cleanup.
+ // Always show only the seven weekday names. No calendar dates or manual switching.
  for(const d of stripDates()){
   const b=el('button','day-choice'+(d===day?' selected':'')+(d===today()?' is-today':''),weekdayShort(d));
   b.type='button';
   b.setAttribute('aria-pressed',String(d===day));
-  b.setAttribute('aria-label',formatDate(d,{weekday:'long',day:'numeric',month:'long'}));
+  b.setAttribute('aria-label',weekdayFull(d));
   b.onclick=()=>showDay(d);root.append(b);
  }
  const pub=currentDay(day),t=timeline(day,a.queue);
  const dayStats=stats(t);
  setText('detailDayStat',dayStats?(pub?(dayStats.unknown?'Частина годин уточнюється':'Без світла '+formatDuration(dayStats.off)+' · Зі світлом '+formatDuration(dayStats.on)):''):'Немає даних');
- setText('detailDayLabel',formatDate(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:isOfflineMode()?'Немає збереженого графіка':'Світло весь день');const grid=$('hourGrid');grid.replaceChildren();
+ setText('detailDayLabel',weekdayFull(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:isOfflineMode()?'Немає збереженого графіка':'Світло весь день');const grid=$('hourGrid');grid.replaceChildren();
  for(let h=0;h<24;h++){
    let on=0,off=0;
    for(let m=h*60;m<h*60+60;m++){if(t?.[m]===0)on++;if(t?.[m]===1)off++}
