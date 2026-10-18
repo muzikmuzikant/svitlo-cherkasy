@@ -955,7 +955,7 @@ function checkNotifications(){
  }
 }
 
-function pushHealthMessage(_message){
+function pushHealthMessage(message){
  // Health checks still repair subscriptions, but never expose developer telemetry
  // or the time of the last Push to end users.
 }
