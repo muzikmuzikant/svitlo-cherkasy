@@ -174,7 +174,7 @@
   const grouped=new Map();
   const groupKey=item=>{
    if(item.kind!=='schedule'||item.pinned)return '';
-   const m=/^(?:day|change|transition):([1-6]\\.[12]):(20\\d{2}-\\d{2}-\\d{2})(?::|$)/.exec(item.id);
+   const m=/^(?:day|change|transition):([1-6]\.[12]):(20\d{2}-\d{2}-\d{2})(?::|$)/.exec(item.id);
    return m?m[2]+':'+m[1]:'';
   };
   for(const item of visible){const key=groupKey(item);if(key){if(!grouped.has(key))grouped.set(key,[]);grouped.get(key).push(item)}}
@@ -198,9 +198,9 @@
    action(item.read?'Позначити непрочитаним':'Позначити прочитаним',async()=>{
      if(item.read)await store.unmark([item.id]);else await store.mark([item.id]);await refresh();
    });
-   action('Копіювати текст',async()=>{await navigator.clipboard.writeText(item.title+'\\n'+item.body)});
+   action('Копіювати текст',async()=>{await navigator.clipboard.writeText(item.title+'\n'+item.body)});
    action('Поділитися',async()=>{
-     const text=item.title+'\\n'+item.body;
+     const text=item.title+'\n'+item.body;
      if(navigator.share)await navigator.share({title:item.title,text});
      else await navigator.clipboard.writeText(text);
    });
@@ -213,7 +213,7 @@
      if(processed.has(key))continue;processed.add(key);
      const box=el('details','','inbox-auto-group');box.open=items.some(x=>!x.read);
      const title=el('summary','','inbox-auto-summary');
-     const matched=/^(.+):([1-6]\\.[12])$/.exec(key),queueDate=matched[1],queue=matched[2];
+     const matched=/^(.+):([1-6]\.[12])$/.exec(key),queueDate=matched[1],queue=matched[2];
      title.append(el('span','', 'Графік · '+date(queueDate)+' · підчерга '+queue),el('span','',String(items.length)+' повідомл.'));
      box.append(title);for(const member of items)box.append(makeCard(member));root.append(box);
    }else root.append(makeCard(item));
@@ -283,7 +283,7 @@
   const target=String(id||'');
   // Graph-related Push opens the exact relevant date directly.
   // Emergency and custom announcements retain their full Inbox detail.
-  if(/^(?:transition|change|day):[1-6]\\.[12]:20\\d{2}-\\d{2}-\\d{2}(?::|$)/.test(target)){
+  if(/^(?:transition|change|day):[1-6]\.[12]:20\d{2}-\d{2}-\d{2}(?::|$)/.test(target)){
    store.mark([target]).catch(console.warn);
    window.dispatchEvent(new CustomEvent('svitlo:open-schedule',{detail:{date:graphDate({id:target,at:new Date().toISOString()})}}));
    window.dispatchEvent(new CustomEvent('svitlo:refresh-content'));
