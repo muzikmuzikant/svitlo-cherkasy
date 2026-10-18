@@ -831,6 +831,18 @@ async function loadLatestSchedules(){
    return {value,source:'railway'};
   }finally{clearTimeout(timeout)}
  }catch(error){liveError=error;console.warn('Railway unavailable; using stored or Pages schedule:',error.message)}
+ // Read-only, continually refreshed public source prevents the Beta static
+ // fallback from getting stuck on the date of the last staging commit.
+ // CORS failure never blocks the PWA's own static or device backup.
+ try{
+  const response=await fetch('https://svitlo-cherkasy.pp.ua/data/schedules.json?fallback='+Date.now(),
+   {cache:'no-store',mode:'cors',signal:AbortSignal.timeout(6000)});
+  if(!response.ok)throw Error('Public snapshot HTTP '+response.status);
+  const value=normalizeData(await response.json());
+  if(!value.lastChecked)throw Error('Missing public check time');
+  if(stored?.lastChecked&&Date.parse(stored.lastChecked)>Date.parse(value.lastChecked))return {value:stored,source:'device'};
+  return {value,source:'pages-fallback'};
+ }catch(error){console.warn('Public fallback unavailable; trying Beta static snapshot:',error.message)}
  try{
   const response=await fetch('./data/schedules.json?refresh='+Date.now(),{cache:'no-store'});
   if(!response.ok)throw Error('Pages schedule HTTP '+response.status);
