@@ -171,16 +171,52 @@
   const visible=rows.filter(x=>selected==='all'||selected==='unread'&&!x.read||selected==='schedule'&&x.kind==='schedule'||selected==='important'&&['emergency','announcement'].includes(x.kind));
   const root=$('inboxList');root.replaceChildren();
   if(!visible.length){const empty=el('div','Тут поки тихо ✨','inbox-empty');empty.append(el('p',selected==='unread'?'Нових повідомлень немає.':'Важливі оновлення з’являться тут.'));root.append(empty)}
-  for(const item of visible){
+  const grouped=new Map();
+  const groupKey=item=>{
+   if(item.kind!=='schedule'||item.pinned)return '';
+   const m=/^(?:day|change|transition):([1-6]\\.[12]):(20\\d{2}-\\d{2}-\\d{2})(?::|$)/.exec(item.id);
+   return m?m[2]+':'+m[1]:'';
+  };
+  for(const item of visible){const key=groupKey(item);if(key){if(!grouped.has(key))grouped.set(key,[]);grouped.get(key).push(item)}}
+  const processed=new Set();
+  const makeCard=item=>{
    const card=el('article','','inbox-item inbox-interactive'+(!item.read?' is-unread':'')+(item.pinned?' is-pinned':''));
    if(item.id.startsWith('notice:'))card.dataset.noticeId=item.id;
-   card.tabIndex=0;card.setAttribute('role','button');card.setAttribute('aria-label','Відкрити повідомлення: '+item.title);
-   card.onclick=()=>open(item.id);card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open(item.id)}};
+   const opener=el('button','','inbox-card-opener');opener.type='button';
+   opener.setAttribute('aria-label','Відкрити повідомлення: '+item.title);
+   opener.onclick=()=>open(item.id);
    const head=el('div','','inbox-item-head');head.append(el('span',item.pinned?'📌 Закріплено':({schedule:'Графіки',emergency:'Важливе',announcement:'Оголошення',push:'Push'})[item.kind],'inbox-kind'),el('time',time(item.at),'inbox-time'));
-   card.append(head,el('strong',item.title),el('p',item.body));
-   card.append(el('span','Переглянути детальніше  →','inbox-more'));
-   if(item.images?.length){const img=document.createElement('img');img.src=item.images[0];img.alt='';img.loading='lazy';img.className='inbox-cover';card.append(img)}
-   root.append(card);
+   opener.append(head,el('strong',item.title),el('p',item.body));
+   opener.append(el('span','Переглянути детальніше  →','inbox-more'));
+   if(item.images?.length){const img=document.createElement('img');img.src=item.images[0];img.alt='';img.loading='lazy';img.className='inbox-cover';opener.append(img)}
+   card.append(opener);
+   const menu=el('details','','inbox-context');
+   const trigger=el('summary','⋯');trigger.setAttribute('aria-label','Дії з повідомленням');menu.append(trigger);
+   const actions=el('div','','inbox-context-actions');
+   const action=(label,handler)=>{const button=el('button',label);button.type='button';button.onclick=async event=>{
+     event.stopPropagation();menu.open=false;try{await handler()}catch(error){console.warn('Inbox action:',error)}};actions.append(button)};
+   action(item.read?'Позначити непрочитаним':'Позначити прочитаним',async()=>{
+     if(item.read)await store.unmark([item.id]);else await store.mark([item.id]);await refresh();
+   });
+   action('Копіювати текст',async()=>{await navigator.clipboard.writeText(item.title+'\\n'+item.body)});
+   action('Поділитися',async()=>{
+     const text=item.title+'\\n'+item.body;
+     if(navigator.share)await navigator.share({title:item.title,text});
+     else await navigator.clipboard.writeText(text);
+   });
+   menu.append(actions);card.append(menu);
+   return card;
+  };
+  for(const item of visible){
+   const key=groupKey(item),items=key?grouped.get(key):null;
+   if(items?.length>1){
+     if(processed.has(key))continue;processed.add(key);
+     const box=el('details','','inbox-auto-group');box.open=items.some(x=>!x.read);
+     const title=el('summary','','inbox-auto-summary');
+     const matched=/^(.+):([1-6]\\.[12])$/.exec(key),queueDate=matched[1],queue=matched[2];
+     title.append(el('span','', 'Графік · '+date(queueDate)+' · підчерга '+queue),el('span','',String(items.length)+' повідомл.'));
+     box.append(title);for(const member of items)box.append(makeCard(member));root.append(box);
+   }else root.append(makeCard(item));
   }
   document.querySelectorAll('[data-inbox-filter]').forEach(b=>{const state=b.dataset.inboxFilter===selected;b.classList.toggle('selected',state);b.setAttribute('aria-pressed',String(state))});
   if(activeDetail&&dialog.open&&!rows.some(x=>x.id===activeDetail))dialog.close();
@@ -244,12 +280,19 @@
  }
  function routePush(id,pushClick=false){
   if(pushClick)trackNotice(id,'pushClick');
+  const target=String(id||'');
+  // Graph-related Push opens the exact relevant date directly.
+  // Emergency and custom announcements retain their full Inbox detail.
+  if(/^(?:transition|change|day):[1-6]\\.[12]:20\\d{2}-\\d{2}-\\d{2}(?::|$)/.test(target)){
+   store.mark([target]).catch(console.warn);
+   window.dispatchEvent(new CustomEvent('svitlo:open-schedule',{detail:{date:graphDate({id:target,at:new Date().toISOString()})}}));
+   window.dispatchEvent(new CustomEvent('svitlo:refresh-content'));
+   return;
+  }
   document.querySelector('[data-go="updates"]')?.click();
-  // Push tap should always request a fresh authoritative server snapshot.
   window.dispatchEvent(new CustomEvent('svitlo:refresh-content'));
-  const target=id||'';
   if(target&&open(target))return;
-  if(target){sync().then(()=>open(target)).catch(console.warn)}
+  if(target)sync().then(()=>open(target)).catch(console.warn);
  }
  document.querySelectorAll('[data-inbox-filter]').forEach(b=>b.addEventListener('click',()=>{selected=b.dataset.inboxFilter;refresh().catch(console.warn)}));
  $('inboxMarkAll').onclick=async()=>{await store.mark(rows.map(x=>x.id));await refresh()};
