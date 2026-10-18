@@ -656,3 +656,19 @@ html:not([data-app-mode="standalone"]) #appBootScreen,.app-boot-screen[hidden]{d
 .offline-chip::before{content:"";position:absolute;top:14px;left:15px;width:19px;height:19px;
  border-radius:8px;background:#ebc98f;box-shadow:0 0 0 5px #f5e8d0}
 .offline-chip[hidden]{display:none!important}
+
+
+/* Beta: one calendar week, exactly seven clean weekday pills. */
+#homeIntro[hidden],#homeQuickPlaces[hidden]{display:none!important}
+.days-row.fixed-weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:clamp(3px,1vw,8px);margin:0 0 16px}
+.days-row.fixed-weekdays .day-choice{display:flex;align-items:center;justify-content:center;min-height:46px;padding:10px 2px;border-radius:15px;font-size:clamp(12px,3.2vw,15px);line-height:1;font-weight:790;white-space:nowrap}
+.days-row.fixed-weekdays .day-choice.is-today:not(.selected){background:#eaf2ff;color:#2469cc;box-shadow:inset 0 0 0 1px #c1d7fc}
+.days-row.fixed-weekdays .day-choice.selected{background:var(--blue);color:white}
+.home-quick-places{display:flex;gap:9px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:3px 1px 7px;margin:9px 0 12px;max-width:100%;overscroll-behavior-x:contain}
+.home-quick-places::-webkit-scrollbar{display:none}
+.home-quick-places .quick-place{flex:0 0 auto;border:1px solid #d9e5f7;background:#fff;border-radius:14px;min-height:39px;padding:8px 13px;font:700 12px/1.2 inherit;color:var(--ink);box-shadow:0 2px 9px #223b6410;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.home-quick-places .quick-place.selected{border-color:#86b6fc;background:#ecf4ff;color:#1968c8}
+.offline-data-card .setting-line{min-height:58px}
+.offline-data-card .setting-line p{font-size:12px;line-height:1.55;margin-top:5px}
+@media(max-width:370px){.days-row.fixed-weekdays{gap:2px}.days-row.fixed-weekdays .day-choice{min-height:43px;border-radius:12px;font-size:12px}}
+@media(prefers-reduced-motion:reduce){.home-quick-places .quick-place{transition:none!important}}
