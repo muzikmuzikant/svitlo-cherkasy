@@ -68,3 +68,20 @@ test('operator silence is still light-all-day, explicitly unchanged',()=>{
  assert.match(app,/if\(!day\)\{[\s\S]*?return isOfflineMode\(\)\?null:new Int8Array\(1440\);/);
  assert.match(app,/unknownOffline\?'Немає збереженого графіка':'Світло весь день'/);
 });
+
+test('Railway outage uses latest public read-only snapshot before dated Beta static backup',async()=>{
+ const app=read('app.js');
+ const start=app.indexOf('async function loadLatestSchedules(){'),end=app.indexOf('async function refreshData(manual=false){',start);
+ assert.ok(start>=0&&end>start);
+ const urls=[],latest={lastChecked:'2026-10-18T20:09:43+03:00',days:[],changes:[]};
+ const ctx={navigator:{onLine:true},pushConfig:{apiBase:'https://beta-api.test'},readCachedSchedule:async()=>null,
+  fetch:async url=>{urls.push(String(url));if(String(url).includes('beta-api.test'))throw Error('Beta temporarily offline');
+   if(String(url).startsWith('https://svitlo-cherkasy.pp.ua/data/schedules.json'))return {ok:true,json:async()=>latest};
+   throw Error('Stale beta static source must not be preferred')},
+  normalizeData:x=>x,URL,Date,AbortController,AbortSignal,setTimeout,clearTimeout,console};
+ const load=vm.runInNewContext(app.slice(start,end)+';loadLatestSchedules',ctx);
+ const result=await load();
+ assert.equal(result.source,'pages-fallback');assert.equal(result.value,latest);
+ assert.equal(urls.some(x=>x.startsWith('./data/schedules.json')),false);
+ assert.match(app,/schedulesOk=source!=='device';lastSyncFailed=source==='device';/);
+});
