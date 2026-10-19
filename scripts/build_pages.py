@@ -43,6 +43,9 @@ for filename in FILES:
 build_hash=signature.hexdigest()[:12]
 sw=re.sub(r"const VERSION='[^']+';","const VERSION='svitlo-cherkasy-shell-v"+version+channel_suffix+"-"+build_hash+"';",sw,count=1)
 sw_path.write_text(sw,encoding='utf-8')
+# Retain verified Search Console ownership during application updates.
+for verification in ROOT.glob('google*.html'):
+    if verification.is_file():shutil.copy2(verification,DEST/verification.name)
 for icon in ROOT.glob('favicon*'):
     if icon.is_file():shutil.copy2(icon, DEST/icon.name)
 # iOS home-screen icons live at the site root; without these, iOS displays
