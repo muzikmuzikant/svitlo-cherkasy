@@ -58,7 +58,7 @@ test('lateral CSS has no native page snapshot or vertical fallbacks',()=>{
  assert.match(css,/animation:tabSettle \.46s/);
  assert.match(css,/@keyframes tabSettle\{from\{opacity:\.25;transform:translate3d\(28px,0,0\) scale\(\.985\)/);
  assert.match(css,/@keyframes tabSettleBackward\{from\{opacity:\.25;transform:translate3d\(-28px,0,0\) scale\(\.985\)/);
- assert.match(app,/section\.classList\.remove\('tab-enter'\)/);
+ assert.match(app,/node\.classList\.remove\('tab-enter'\)/);
 });
 test('missing schedule keeps simple caption',()=>{
  assert.match(app,/setText\('detailUpdated',pub\?\x60Опубліковано/);
