@@ -22,7 +22,7 @@ function run({minute=570,off=600,push=true,permission='denied',stale=false,revie
   shiftDay:()=>dateTomorrow,timeline:date=>date===today?current:tomorrow,
   notified,SEEN:'reminder-test',localStorage:{setItem(k,v){stored[k]=v}},
   clock:m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'),
-  formatDate:d=>d,currentDay:()=>null,notify:(...x)=>native.push(x),
+  formatDate:d=>d,currentDay:date=>date===today?{date,verified:true}:null,isOfflineMode:()=>false,navigator:{onLine:true},notify:(...x)=>native.push(x),
   notifyEmergencyEvent(){},console
  };
  vm.runInNewContext(logic+';checkNotifications();checkNotifications();',sandbox);
