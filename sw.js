@@ -7,9 +7,10 @@ const CACHE_SNAPSHOTS='svitlo-cherkasy-offline-snapshots-v1';
 const ESSENTIAL_DATA=['./data/schedules.json','./data/addresses.json','./data/published_street_fallback.json','./data/emergency.json','./data/manual_overrides.json','./push-config.json'];
 // Only these files are required for a complete offline first screen. Optional
 // pages and images are cached on demand instead of delaying SW installation.
-const OFFLINE_BOOT=['./','./index.html','./app.js','./style.css',
- './install.js','./install.css','./hour-paint.js','./address-lookup.js',
- './data-merge.js','./notification-center.js','./notification-text.js',
+const OFFLINE_CORE=['./','./index.html','./app.js','./style.css',
+ './install.js','./hour-paint.js','./address-lookup.js',
+ './data-merge.js','./notification-center.js'];
+const OFFLINE_BOOT=[...OFFLINE_CORE,'./install.css','./notification-text.js',
  './inbox-ui.js','./version-check.js','./site-mode.js','./beta-ads.js',
  './client-errors.js','./internal-pages.js','./internal-pages.css',
  './legal-consent.js','./legal-consent.css','./motion.js','./motion.css',
@@ -22,10 +23,17 @@ function offlineCopy(response){
 }
 self.addEventListener('install',event=>event.waitUntil((async()=>{
  const cache=await caches.open(VERSION);
- // Install must finish quickly on iOS. Cache EVERY script and stylesheet that
- // boots the installed PWA, not dozens of admin pages and optional images.
- // A missing boot file fails the install so the previous working SW stays active.
- await cache.addAll(OFFLINE_BOOT.map(url=>new Request(url,{cache:'reload'})));
+ // Only the minimum startup chain is critical: a transient missing icon or
+ // optional helper must never prevent iOS from installing the offline shell.
+ // Failed core files abort the upgrade so the previously working SW survives.
+ await cache.addAll(OFFLINE_CORE.map(url=>new Request(url,{cache:'reload'})));
+ await Promise.allSettled(OFFLINE_BOOT.filter(url=>!OFFLINE_CORE.includes(url)).map(async url=>{
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),4000);
+  try{
+   const fresh=await fetch(new Request(url,{cache:'reload',signal:controller.signal}));
+   if(fresh.ok)await cache.put(new Request(url),fresh);
+  }finally{clearTimeout(timer)}
+ }));
  // Seed offline schedules and addresses. Missing optional data must not prevent
  // the application shell from becoming available, and never wipe old caches.
  const dataCache=await caches.open(CACHE_DATA);
