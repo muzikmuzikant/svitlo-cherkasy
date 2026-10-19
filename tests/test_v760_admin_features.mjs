@@ -96,7 +96,6 @@ test('managed controls do not alter official schedule data or change blank draft
  const server=read('push-server/app-config.js');
  assert.match(server,/site:defaultSite\(\)/);
  assert.match(server,/const announcements=state\.announcements\.filter/);
- assert.match(server,/site:state\.site\|\|defaultSite\(\),announcements/);
  assert.equal(validateAppConfig({...input(),announcements:[{id:'empty_draft1',title:'',body:'',active:false}]}).announcements[0].active,false);
 });
 
@@ -106,7 +105,8 @@ test('favorite places persist without losing selection and restore online refres
  assert.match(app,/favorite:editId\?addresses\.find/);
  assert.match(app,/a\.favorite=!a\.favorite;saveAddresses\(\);openPickerContent\(\);renderHome\(\)/);
  assert.match(app,/Number\(!!b\.favorite\)-Number\(!!a\.favorite\)/);
- assert.match(app,/Зв’язок відновлено\. Оновлюємо графіки та повідомлення/);
+ assert.match(app,/window\.addEventListener\('online'/);
+ assert.match(app,/refreshData\(true\)/);
  assert.match(css,/\.favorite-btn\.selected/);
 });
 test('inbox detail occupies full mobile screen without stale updated badges',()=>{

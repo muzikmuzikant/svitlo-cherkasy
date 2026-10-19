@@ -10,7 +10,7 @@ const start=code.indexOf('const currentDay='),end=code.indexOf('function stats(a
 assert.ok(start!==-1&&end>start);
 function sample({days=[],stale=false,error=false}={}){
  const input={days,lastChecked:new Date(Date.now()-(stale?3*3600_000:5*60000)).toISOString()};
- const ctx=vm.createContext({data:input,lastSyncFailed:error,QUEUES:['1.1','2.1','6.2'],today:()=> '2026-10-10',shiftDay:(date,num)=>{const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+num);return d.toISOString().slice(0,10)},clock:(n)=>`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`});
+ const ctx=vm.createContext({isOfflineMode:()=>false,data:input,lastSyncFailed:error,QUEUES:['1.1','2.1','6.2'],today:()=> '2026-10-10',shiftDay:(date,num)=>{const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+num);return d.toISOString().slice(0,10)},clock:(n)=>`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`});
  vm.runInContext(code.slice(start,end)+';this.api={timeline,sourceFresh,nextChange,statusCopy,stateAt};',ctx);
  return ctx.api;
 }

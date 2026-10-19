@@ -6,7 +6,9 @@ test('four sections use horizontal reveal without a navigation cooldown',()=>{
  const css=read('style.css'),app=read('app.js'),html=read('index.html');
  for(const id of ['home','detail','updates','settings'])
   assert.match(html,new RegExp('<section id="'+id+'" class="screen"'));
- assert.match(css,/\.screen\.tab-enter:not\(\[hidden\]\)\{animation:tabSettle \.46s/);
+ assert.match(css,/html:not\(\.feature-off-animations\) \.screen\.tab-enter:not\(\[hidden\]\)\{animation:tabSettle \.46s/);
+ assert.match(app,/token\.incoming=nextSection\.animate\(/);
+ assert.match(app,/tabMotion\.incoming\?\.cancel\(\)/);
  assert.match(css,/@keyframes tabSettleBackward/);
  assert.match(app,/if\(name===active\)return/);
  assert.doesNotMatch(app,/startViewTransition|queuedName|pendingName/);

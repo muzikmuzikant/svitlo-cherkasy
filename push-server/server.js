@@ -14,9 +14,14 @@ import {createLegalStore} from './legal-store.js';
 import {auditSchedule} from './schedule-quality.js';
 import {createDiagnosticsStore} from './diagnostics.js';
 import {createDailyReports} from './daily-reports.js';
+import {createNoticeMetrics} from './notice-metrics.js';
 import {createAppConfig} from './app-config.js';
 import {createMediaStore} from './media-store.js';
 import {createSchedulePublication} from './schedule-publication.js';
+import {createScheduleReview} from './schedule-review.js';
+import {createScheduleMirror} from './schedule-mirror.js';
+import {tomorrowKey,alreadySentTomorrow} from './tomorrow-dedupe.js';
+import {resolvePublicMessage} from './public-message.js';
 import {originPolicy} from './origins.js';
 import webpush from 'web-push';
 import {adminRouter} from './admin.js';
@@ -50,9 +55,15 @@ const errorCounts=createDiagnosticsStore({directory:path.dirname(DATA_FILE)});
 const dailyReports=createDailyReports({directory:path.dirname(DATA_FILE)});
 const siteControls=createAppConfig({directory:path.dirname(DATA_FILE),record:extras.record});
 const mediaStore=createMediaStore(path.dirname(DATA_FILE));
-const officialSchedules=createSchedulePublication({directory:path.dirname(DATA_FILE),token:process.env.SCHEDULE_INGEST_SECRET||''});
+const noticeMetrics=createNoticeMetrics({directory:path.dirname(DATA_FILE)});
+const scheduleReview=createScheduleReview({directory:path.dirname(DATA_FILE)});
+const officialSchedules=createSchedulePublication({directory:path.dirname(DATA_FILE),
+ token:process.env.SCHEDULE_INGEST_SECRET||'',reviewApprovals:scheduleReview});
+const betaScheduleMirror=createScheduleMirror({publisher:officialSchedules,sourceOrigin:process.env.SCHEDULE_MIRROR_API_BASE||''});
 const appUrl=new URL('/',APP_ORIGIN).href; // Push opens PWA, never the GitHub raw JSON host.
-const manualPush=createManualPush({subscribers,webpush,appUrl,hash,save});
+const manualPush=createManualPush({subscribers,webpush,appUrl,hash,save,
+ onBroadcast:(notificationId,result)=>{const id=notificationId.startsWith('notice:')?notificationId.slice(7):'';if(id)noticeMetrics.push(id,result)}
+});
 const fmtKyiv=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
 function dayInKyiv(d=new Date()){const p=Object.fromEntries(fmtKyiv.formatToParts(d).map(x=>[x.type,x.value]));return {date:`${p.year}-${p.month}-${p.day}`,m:Number(p.hour)*60+Number(p.minute)}}
 function shiftDay(s,n){const d=new Date(s+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
@@ -101,7 +112,7 @@ async function forEachLimited(items,limit,fn){
   while(next<items.length){const i=next++;try{await fn(items[i])}catch(e){console.warn('Delivery worker:',e.message)}}
  }));
 }
-let lastSuccess=null,lastError=null,running=false,lastLoadedSchedule=null,transitionRunning=false;
+let lastSuccess=null,lastError=null,running=false,lastLoadedSchedule=null,lastLoadedBulletins=[],transitionRunning=false;
 // Dedicated short ticker: external bulletin requests must never delay a planned
 // outage/restoration reminder. No browser or opened PWA is required.
 async function transitionJob(){
@@ -190,6 +201,8 @@ async function job(){
        if(Array.isArray(events))bulletin.push(...events)}
    catch(e){console.warn('Bulletin refresh:',e.message)}
   }
+  // Allow a verified cross-device link to resolve recent published emergency messages.
+  lastLoadedBulletins=bulletin.filter(e=>e&&typeof e.publishedAt==='string').slice(-40);
   // The freshest verified bulletin determines whether an emergency is active or ended.
   const event=latestOfficialEvent(bulletin,timestamp);
   const all=Object.values(subscribers);
@@ -205,8 +218,15 @@ async function job(){
    const tomorrowRevised=freshChanges.some(change=>isLatestRevision(change,tomorrow,q));
    if(schedulesSafe&&pref.tomorrow&&tomorrow?.verified===true&&minutes>=19*60&&!(pref.changes&&tomorrowRevised)){
     const revision=firstPublishedAt(tomorrow),msg=tomorrowCopy(q,nextDate,tomorrow);
-    await send(record,msg,`${prefix}:tomorrow:${nextDate}:${revision}`,{
-     notificationId:dayId(q,tomorrow),at:revision,source:tomorrow.source});
+    // One daily preview per subscriber and calendar date. Revisions are handled
+    // separately by 'change' notifications, not repeated 'tomorrow' pushes.
+    // Recognize previous timestamp-qualified keys so upgrading mid-evening
+    // does not cause one more duplicate notification.
+    if(!alreadySentTomorrow(sent,prefix,nextDate)){
+     const outcome=await send(record,msg,tomorrowKey(prefix,nextDate),{
+      notificationId:dayId(q,tomorrow),at:revision,source:tomorrow.source});
+     if(outcome==='accepted')console.info('[auto-push] tomorrow accepted (once per day) queue='+q+' day='+nextDate);
+    }
    }
    if(pref.emergency&&freshEvent(event,timestamp)&&(!Array.isArray(event.queues)||!event.queues.length||event.queues.includes(q))){
     const msg=emergencyCopy(event.status);
@@ -306,10 +326,30 @@ const server=http.createServer(async(req,res)=>{
  if(requestPath==='/api/ads'&&req.method==='GET'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}response(res,200,ads.publicState());return}
  if(requestPath==='/api/ads/event'&&req.method==='POST'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}try{const body=await readPayload(req,500);response(res,ads.event(String(body.id||'').slice(0,55),body.type,crypto.createHash('sha256').update(String(req.socket.remoteAddress||'')+new Date().toISOString().slice(0,10)).digest('hex').slice(0,20))?202:400,{ok:true})}catch{response(res,400,{error:'Bad event'})}return}
  if(requestPath==='/api/pwa/presence'&&req.method==='POST'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}try{const body=await readPayload(req,500);response(res,ads.activity(body)?202:400,{ok:true})}catch{response(res,400,{error:'Bad presence'})}return}
+ if(requestPath==='/api/notice/engagement'&&req.method==='POST'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  try{
+   const data=await readPayload(req,550);
+   if(!ads.hasInstallation(data?.installId)){response(res,403,{error:'Analytics consent not registered'});return}
+   const noticeId=String(data?.noticeId||'');
+   if(!siteControls.get().announcements.some(x=>x.id===noticeId)){
+    response(res,404,{error:'Notice unavailable'});return
+   }
+   const ok=noticeMetrics.event({noticeId,installId:data.installId,type:data.type});
+   response(res,ok?202:400,{ok});
+  }catch{response(res,400,{error:'Bad engagement event'})}return;
+ }
  if(requestPath==='/api/pwa/forget'&&req.method==='POST'){
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
-  try{const body=await readPayload(req,500);response(res,ads.optOut(body)?200:400,{ok:true})}
+  try{const body=await readPayload(req,500);noticeMetrics.forget(body?.id);response(res,ads.optOut(body)?200:400,{ok:true})}
   catch{response(res,400,{error:'Bad request'})}return
+ }
+ if(requestPath==='/api/public/message'&&req.method==='GET'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  const id=new URL(req.url,'http://localhost').searchParams.get('id');
+  const message=resolvePublicMessage(id,{schedule:officialSchedules.schedule()||lastLoadedSchedule,
+   announcements:siteControls.publicState().announcements,emergencies:lastLoadedBulletins});
+  response(res,message?200:404,message||{error:'Повідомлення більше недоступне'});return;
  }
  if(requestPath==='/api/data/status'&&req.method==='GET'){
   response(res,200,officialSchedules.status());return;
@@ -345,15 +385,15 @@ const server=http.createServer(async(req,res)=>{
     await Promise.all([['schedules',SCHEDULE_URL],['emergency',new URL('emergency.json',SCHEDULE_URL).href],['review',new URL('source_review.json',SCHEDULE_URL).href]].map(async([name,url])=>{
       try{
         const data=(name==='schedules'?officialSchedules.schedule():name==='review'?officialSchedules.review():null)||await loadJson(url);
-        result.sources[name]=name==='schedules'?{lastChecked:data.lastChecked,days:(data.days||[]).map(d=>({date:d.date,verified:d.verified,source:d.source,publishedAt:d.publishedAt})),changes:(data.changes||[]).length}:
+        result.sources[name]=name==='schedules'?{lastChecked:data.lastChecked,days:(data.days||[]).map(d=>({date:d.date,verified:d.verified,source:d.source,publishedAt:d.publishedAt})),changes:(data.changes||[]).length,reviewPending:data.reviewPending===true,unresolvedDates:data.unresolvedDates||[]}:
           name==='emergency'?{lastChecked:data.lastChecked,count:(data.events||[]).length,latest:data.events?.[0]?.status||null}:
-          {lastChecked:data.lastChecked,rejectedCount:data.rejectedCount||0,items:(data.items||[]).slice(0,30)};
+          {lastChecked:data.lastChecked,rejectedCount:data.rejectedCount||0,warningCount:data.warningCount||0,items:(data.items||[]).slice(0,30)};
       }catch(e){result.sources[name]={error:e.message}}
     }));
     const tickets=feedback.list().items;
     result.feedback={total:tickets.length,new:tickets.filter(t=>t.status==='new').length,inProgress:tickets.filter(t=>t.status==='in_progress').length};
     return result;
-  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule(officialSchedules.schedule()||lastLoadedSchedule),errorCounts,dailyReports);return}
+  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule(officialSchedules.schedule()||lastLoadedSchedule),errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules);return}
  if(req.url?.startsWith('/api/media/')&&req.method==='GET'){
    const id=req.url.slice('/api/media/'.length).split('?')[0],file=mediaStore.read(id);
    if(!file){response(res,404,{error:'Фото не знайдене'});return}
@@ -477,6 +517,8 @@ const reportSources={feedback,ads,push:manualPush,diagnostics:errorCounts,audit:
 function refreshDailyReport(){try{dailyReports.capture(reportSources)}catch(error){console.warn('Daily reports update:',error.message)}}
 setTimeout(refreshDailyReport,15_000).unref?.();
 setInterval(refreshDailyReport,60*60_000).unref?.();
+betaScheduleMirror.sync().catch(error=>console.warn('[beta-schedule-mirror]',error.message));
+if(betaScheduleMirror.enabled)setInterval(()=>betaScheduleMirror.sync().catch(error=>console.warn('[beta-schedule-mirror]',error.message)),60_000).unref?.();
 job().catch(console.error);
 transitionJob().catch(console.error);
 setInterval(()=>job().catch(console.error),60_000);

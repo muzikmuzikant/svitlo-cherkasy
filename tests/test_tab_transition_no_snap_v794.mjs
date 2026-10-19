@@ -6,9 +6,9 @@ const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 const app=read('app.js'),css=read('style.css');
 const nav=app.slice(app.indexOf('function navigate(name){'),app.indexOf('function renderDetail(){'));
 test('rapid tap sequence always shows the last requested screen synchronously',()=>{
- const pages=Object.fromEntries(['home','detail','updates','settings'].map(id=>[id,{hidden:id!=='home',classList:{add(){},remove(){}},style:{cssText:''}}]));
+ const pages=Object.fromEntries(['home','detail','updates','settings'].map(id=>[id,{hidden:id!=='home',style:{cssText:''},classList:{add(){},remove(){}}}]));
  const html={style:{scrollBehavior:''},dataset:{},classList:{contains:()=>false}};
- const context={active:'home',tabMotion:null,TAB_MOTION_MS:260,previewQueue:null,primary:()=>({queue:'1.1'}),SCREEN_RETURN:'saved',sessionStorage:{setItem(){}},today:()=> '2026-10-15',
+ const context={active:'home',tabMotion:null,TAB_MOTION_MS:460,previewQueue:null,primary:()=>({queue:'1.1'}),SCREEN_RETURN:'saved',sessionStorage:{setItem(){}},today:()=> '2026-10-15',
   renderDetail(){},renderHome(){},renderUpdates(){},renderSettings(){},
   window:{scrollTo(){},matchMedia:()=>({matches:false})},
   document:{documentElement:html,querySelector:()=>null,querySelectorAll:()=>[]},
@@ -21,10 +21,10 @@ test('rapid tap sequence always shows the last requested screen synchronously',(
  context.navigate('updates');assert.equal(pages.updates.hidden,false);
  assert.equal(html.style.scrollBehavior,'');
 });
-test('same-tab taps never queue or restart running transitions',()=>{
- assert.doesNotMatch(nav,/Promise\.resolve|skipTransition|startViewTransition|setTimeout|pendingName|queuedName/);
+test('same-tab taps have no animations to cancel, timers to wait or stale transitions',()=>{
+ assert.doesNotMatch(nav,/startViewTransition|pendingName|queuedName/);
+ assert.match(nav,/if\(tabMotion!==token\)return/,'previous animation completion cannot override a newer screen');
+ assert.match(nav,/tabMotion\.incoming\?\.cancel\(\)/,'interrupted animations are cancelled on rapid taps');
  assert.match(nav,/if\(name===active\)return/);
- assert.match(nav,/token\.incoming\.finished\.then/);
- assert.match(nav,/token\.outgoing\.cancel\(\)/);
  assert.doesNotMatch(css,/translate3d\(0,30px,0\)/);
 });

@@ -130,34 +130,27 @@
   copyButton?.addEventListener('click',async()=>{
    try{
     await navigator.clipboard.writeText(location.href);
-    copyButton.textContent='✓ Посилання скопійовано. Відкрийте у Safari або Chrome';
+    copyButton.textContent='✓ Посилання скопійовано. Відкрийте в браузері';
    }catch{
     copyButton.textContent='Скопіюйте адресу сайту зверху: svitlo-cherkasy.pp.ua';
    }
   });
   if (!action || !instructions || !platformLabel) return;
-  const isiOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isAndroid = /Android/i.test(navigator.userAgent);
   let deferredPrompt = null;
 
   function stepsHTML() {
-    if (isiOS) return `<strong>На iPhone / iPad:</strong><ol>
-      <li>Відкрийте сайт у <strong>Safari</strong>.</li>
-      <li>Натисніть кнопку <strong>Поділитися</strong> (квадрат зі стрілкою).</li>
-      <li>Оберіть <strong>На початковий екран</strong> → <strong>Додати</strong>.</li>
-      <li>Відкрийте «Світло Черкаси» із нової іконки.</li>
-    </ol><p class="install-note">Відкрили посилання в Telegram? У меню браузера виберіть «Відкрити в Safari». Якщо такого пункту немає, скопіюйте посилання кнопкою нижче та вставте в Safari.</p>`;
-    if (isAndroid) return `<strong>На Android:</strong><ol>
+    if(isAndroid)return `<strong>Встановлення на Android:</strong><ol>
       <li>Відкрийте сайт у <strong>Google Chrome</strong>.</li>
-      <li>Натисніть меню <strong>⋮</strong> у браузері.</li>
-      <li>Виберіть <strong>Встановити застосунок</strong> або <strong>Додати на головний екран</strong>.</li>
-      <li>Запустіть його через іконку на телефоні.</li>
-    </ol><p class="install-note">Якщо Chrome пропонує встановлення автоматично, використайте основну кнопку вище.</p>`;
-    return `<strong>Як установити:</strong><ol>
-      <li>На iPhone відкрийте цей сайт через Safari → Поділитися → На початковий екран.</li>
-      <li>На Android відкрийте сайт через Chrome → ⋮ → Встановити застосунок.</li>
-      <li>На комп’ютері у Chrome або Edge скористайтеся пунктом «Встановити застосунок» у меню браузера.</li>
+      <li>Натисніть меню <strong>⋮</strong>.</li>
+      <li>Оберіть <strong>Встановити застосунок</strong> або <strong>Додати на головний екран</strong>.</li>
+      <li>Відкрийте «Світло Черкаси» через нову іконку.</li>
+    </ol>`;
+    return `<strong>Встановлення вебзастосунку:</strong><ol>
+      <li>Відкрийте цей сайт у браузері з підтримкою вебзастосунків.</li>
+      <li>Знайдіть пункт <strong>Встановити</strong> або <strong>Додати на головний екран</strong> у меню браузера.</li>
+      <li>Якщо такого пункту немає, відкрийте меню <strong>Поділитися</strong> та оберіть додавання на початковий екран.</li>
+      <li>Запускайте застосунок через його іконку.</li>
     </ol>`;
   }
   function showInstructions(scroll = false) {
@@ -165,12 +158,8 @@
     instructions.hidden = false;
     if (scroll) instructions.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   }
-  platformLabel.textContent = isiOS ? 'iPhone / iPad · Safari' : isAndroid ? 'Android · Chrome' : 'iPhone, Android або комп’ютер';
-  action.innerHTML = isiOS ? 'Як встановити на iPhone <span aria-hidden="true">→</span>' :
-    isAndroid ? 'Як встановити на Android <span aria-hidden="true">→</span>' :
-      'Як встановити застосунок <span aria-hidden="true">→</span>';
-  // Apple Safari cannot open a native install dialog; showing clear steps is more useful.
-  if (isiOS) showInstructions();
+  platformLabel.textContent=isAndroid?'Android · Chrome':'Встановлення PWA';
+  action.innerHTML='Як встановити застосунок <span aria-hidden="true">→</span>';
 
   window.addEventListener('beforeinstallprompt', event => {
     event.preventDefault();

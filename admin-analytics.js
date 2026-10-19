@@ -89,10 +89,12 @@
    if(!rows.length)holder.append(make('p','Поки немає достатньо даних зі згодою. Старі події не враховуємо.','analytics-no-data'));
    for(const item of rows){
     const line=make('div',null,'analytics-popularity-row'),heading=make('div',null,'analytics-popularity-row-head');
-    const percent=Number.isFinite(Number(item.percent))?Number(item.percent):0;
-    heading.append(make('span',item.label),make('strong',pretty(item.count)+' · '+percent.toLocaleString('uk-UA',{maximumFractionDigits:1})+'%'));
+    const small=item.count==='1–4',validPercent=item.percent!==null&&item.percent!==undefined;
+    const percent=validPercent&&Number.isFinite(Number(item.percent))?Number(item.percent):0;
+    const amount=small?'1–4 інсталяції':pretty(item.count)+' · '+percent.toLocaleString('uk-UA',{maximumFractionDigits:1})+'%';
+    heading.append(make('span',item.label),make('strong',amount));
     const track=make('div',null,'analytics-popularity-track'),bar=make('i');
-    bar.style.width=Math.max(0,Math.min(100,percent))+'%';
+    bar.style.width=small?'4%':Math.max(0,Math.min(100,percent))+'%';
     track.append(bar);line.append(heading,track);holder.append(line);
    }
    if(data.other>0)holder.append(make('p','Інші або приховані з міркувань приватності: '+pretty(data.other),'analytics-privacy-small'));

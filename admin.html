@@ -36,7 +36,15 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
 .planner-hour{display:grid;grid-template-columns:47px minmax(0,1fr) minmax(0,1fr);gap:4px;align-items:center;min-width:0}.planner-hour strong{font-size:11px;color:#58718c;text-align:right;padding-right:3px}.planner-slot{background:#e8f4ed;color:#276044;font-weight:600;font-size:10px;border:1px solid #badbc8;border-radius:9px;min-width:0;min-height:37px;padding:5px 3px}.planner-slot.is-off{background:#315f9f;color:white;border-color:#315f9f}.planner-slot:focus-visible{outline:3px solid #ffac46;outline-offset:1px}.planner-summary{font-weight:700;color:#254568}.planner-tools button{min-height:40px}
 @media(max-width:650px){.planner-grid{grid-template-columns:1fr;max-height:530px}.planner-slot{font-size:12px}.planner-hour{grid-template-columns:50px 1fr 1fr}}
 </style>
-<link rel="stylesheet" href="./motion.css"><script defer src="./motion.js"></script></head><body><main>
+<link rel="stylesheet" href="./motion.css"><script defer src="./motion.js"></script><style>
+.schedule-review-editor{border:1px solid #c7d7f0;border-radius:19px;background:#f7faff;padding:20px;margin:15px 0;min-width:0}
+.schedule-review-editor h3{margin:0 0 5px;font-size:17px}
+.review-queue-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:15px 0}
+.review-queue-fields .field{padding:11px;background:white;border:1px solid #e3eaf5;border-radius:13px}
+.review-queue-fields input{width:100%;padding:10px;font-size:14px}
+#reviewApprovalStatus{margin-top:12px}
+@media(max-width:650px){.review-queue-fields{grid-template-columns:1fr}.schedule-review-editor{padding:15px}}
+</style></head><body><main>
 <header><div class="flex"><svg aria-hidden="true" width="37" height="37" viewBox="0 0 48 48"><rect width="48" height="48" rx="16" fill="#347dff"/><path d="M27 7 14 26h9l-1 15L35 20h-9Z" fill="#fff"/></svg><strong>Світло Черкаси</strong></div><a href="./">← До застосунку</a></header>
 <section id="adminLoginScreen" class="login-view">
  <div class="login-symbol" aria-hidden="true">ϟ</div>
@@ -192,6 +200,23 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  </section>
  <h2 style="margin-top:23px">Публікації, що потребують уваги</h2>
  <div id="sourceIssues" class="review-list"></div>
+ <h3 style="margin-top:18px">Раніше підтверджені вручну графіки</h3>
+ <div id="reviewSavedApprovals" class="review-list"><p class="hint">Завантажуємо історію підтверджень…</p></div>
+ <section id="reviewApprovalPanel" class="schedule-review-editor" hidden aria-labelledby="reviewApprovalHeading">
+  <div class="headline"><div><h3 id="reviewApprovalHeading">Підтвердження офіційного графіка</h3>
+   <p class="hint">Звірте кожну з 12 підчерг із текстом офіційної новини. Імпортовані старі години служать лише підказкою, а не автоматичним підтвердженням.</p></div>
+   <button type="button" class="secondary" id="reviewApprovalClose">Закрити</button></div>
+  <div class="two">
+   <div class="field"><label for="reviewApprovalDate">Дата, на яку діє графік</label><input id="reviewApprovalDate" type="date"></div>
+   <div class="field"><label for="reviewApprovalSource">Джерело оператора</label><input id="reviewApprovalSource" type="url" readonly></div>
+  </div>
+  <p id="reviewApprovalNote" class="hint">Незалежно від того, що написано в попередній версії, перевірте актуальні години.</p>
+  <div class="review-queue-fields" id="reviewApprovalQueues"></div>
+  <label class="checkline"><input type="checkbox" id="reviewApprovalConfirmed"> Я особисто звірив(ла) дату та всі 12 підчерг з офіційною публікацією. Порожнє поле означає, що відключення для підчерги не зазначені.</label>
+  <div class="flex" style="margin-top:14px"><button type="button" id="reviewApprovalSubmit">Підтвердити та застосувати графік</button>
+   <button type="button" class="secondary" id="reviewApprovalCancel">Скасувати ручне підтвердження дати</button></div>
+  <p id="reviewApprovalStatus" role="status" class="push-state">Нічого не змінено.</p>
+ </section>
  <p class="hint">Перевірка не виправляє помилки офіційного сайту автоматично. Для ручного уточнення використовуйте тільки підтверджене джерело в редакторі.</p>
 </section>
 <section class="card" data-admin-panel="help" hidden>
@@ -278,6 +303,13 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
      <div class="field"><label for="opsNoticeImageUrl">Або додати HTTPS-посилання</label><div class="flex"><input id="opsNoticeImageUrl" type="url" placeholder="https://..."><button type="button" class="secondary" id="opsAddImageUrl">+</button></div></div>
     </div><div id="opsPhotoGallery" class="ops-photo-grid"></div>
    </div>
+   <section class="ops-notice-metrics" aria-labelledby="opsNoticeMetricsTitle">
+    <div class="ops-notice-metrics-head"><div><h3 id="opsNoticeMetricsTitle">Статистика повідомлення</h3>
+     <p class="hint">За унікальними встановленнями PWA з добровільною згодою, починаючи з версії 7.9.11. Менше 5 переглядів не деталізуємо.</p></div>
+     <button type="button" class="secondary" id="opsMetricsRefresh">Оновити</button></div>
+    <div id="opsNoticeMetrics" class="ops-notice-metrics-grid" role="status" aria-live="polite">Оберіть повідомлення для перегляду статистики.</div>
+    <p class="hint">«Push прийнято»: підтвердження від провайдера, не факт появи на екрані. «Прочитано»: відкрите повідомлення було на екрані хоча б 2 секунди. Показники доступні лише для інсталяцій зі згодою, тому не відображають повне охоплення аудиторії.</p>
+   </section>
    <div class="ops-message-preview"><div class="panel-eyebrow">ПЕРЕГЛЯД У «ВХІДНИХ»</div><strong id="opsEditorPreviewTitle">Заголовок</strong><p id="opsEditorPreviewBody">Короткий текст повідомлення</p>
  <div class="ops-ios-push"><span>⚡ СВІТЛО ЧЕРКАСИ · ТЕПЕР</span><strong id="opsPreviewPushTitle">Назва сповіщення</strong><p id="opsPreviewPushBody">Текст Push для пристрою</p></div>
  <div class="ops-rich-preview"><strong>Повний текст</strong><div id="opsRichContentPreview"></div></div>
@@ -409,7 +441,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  <div class="field"><label for="opsBannerBody">Опис</label><textarea id="opsBannerBody" rows="2" maxlength="260"></textarea></div>
  <div class="field"><label for="opsBannerUrl">Посилання з кнопки (HTTPS або ./)</label><input id="opsBannerUrl" placeholder="./help.html"></div>
   <section class="ops-planned-builder ops-update-preview-workspace">
-   <div class="headline"><div><strong>Тестування банера оновлення</strong><p>Перевіряє вигляд і текст релізу без розсилання користувачам та без зміни версії.</p></div><button type="button" id="opsTestUpdate" class="secondary">Показати тестовий банер</button></div>
+   <div class="headline"><div><strong>Тестування банера оновлення (Beta)</strong><p>Перевіряє вигляд і текст релізу без розсилання користувачам та без зміни версії.</p></div><button type="button" id="opsTestUpdate" class="secondary">Показати тестовий банер</button></div>
    <div id="opsUpdatePreview" class="ops-update-test" hidden aria-live="polite">
     <span>ЩО НОВОГО</span><strong id="opsUpdatePreviewTitle">Нові можливості</strong>
     <p id="opsUpdatePreviewBody"></p><ul id="opsUpdatePreviewNotes"></ul>
@@ -506,4 +538,4 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
 </div>
 <div class="card" data-admin-panel="data" hidden><div class="headline"><h2>Редактор та перевірка</h2><span class="pill" id="editMode">Локальна копія</span></div><div class="flex"><div class="field"><label for="kind">Файл</label><select id="kind"><option value="overrides">Ручні уточнення (не перезаписуються імпортером)</option><option value="schedules">Планові графіки</option><option value="addresses">Точні адреси</option><option value="streets">Довідник сіл і вулиць</option><option value="emergency">Повідомлення про аварійні відключення</option></select></div></div><p class="hint">Рекомендуємо змінювати <b>«Ручні уточнення»</b>: інакше наступний імпорт може перезаписати графіки чи адреси. Для виправлення обов'язково залишайте посилання на офіційну публікацію.</p><textarea id="editor" class="mono" spellcheck="false" aria-label="Редагування JSON"></textarea><div class="flex" style="margin-top:13px"><button id="validate" class="secondary">Перевірити JSON</button><button id="scheduleDiffButton" type="button" class="secondary">Порівняти зміни графіків</button><button id="reload" class="secondary">Повернути збережене</button><button id="download" class="secondary">Експортувати JSON</button><button id="publish" disabled>Опублікувати через GitHub</button></div><div id="scheduleDiffPanel" class="schedule-diff-panel" hidden></div><div id="result" role="status" aria-live="polite">Оберіть файл або підключіть сервер, щоб перевіряти дані.</div></div>
 <div class="card" data-admin-panel="data" hidden><h2>Правила перевірки</h2><p>Адреси з вулицями без будинків показують <strong>можливі</strong> підчерги, а не точні. Не позначайте аварійні повідомлення як активні без офіційного підтвердження. Автоматичні Push на заблокованому iPhone працюють лише при увімкненому push-сервері й дозволі користувача.</p></div>
-</div></main><script defer src="./admin.js"></script><script defer src="./admin-extra.js"></script><script defer src="./admin-control.js"></script><script defer src="./admin-richtext.js"></script><script defer src="./admin-help-richtext.js"></script><script defer src="./admin-features.js"></script><script defer src="./admin-command.js"></script><script defer src="./admin-dashboard.js"></script><script defer src="./admin-analytics.js"></script><script defer src="./admin-ads.js"></script><script defer src="./admin-security-ui.js"></script><script defer src="./admin-users.js"></script><script defer src="./admin-workspace.js"></script><script defer src="./admin-quality.js"></script><script defer src="./admin-schedule-diff.js"></script><script defer src="./admin-errors.js"></script><script defer src="./admin-reports.js"></script><script defer src="./admin-categories.js"></script><script defer src="./admin-legal.js"></script><script defer src="./schedule-planner.js"></script><script defer src="./admin-planner.js"></script></body></html>
+</div></main><script defer src="./admin.js"></script><script defer src="./admin-extra.js"></script><script defer src="./admin-control.js"></script><script defer src="./admin-richtext.js"></script><script defer src="./admin-help-richtext.js"></script><script defer src="./admin-features.js"></script><script defer src="./admin-command.js"></script><script defer src="./admin-dashboard.js"></script><script defer src="./admin-analytics.js"></script><script defer src="./admin-ads.js"></script><script defer src="./admin-security-ui.js"></script><script defer src="./admin-users.js"></script><script defer src="./admin-workspace.js"></script><script defer src="./admin-quality.js"></script><script defer src="./admin-schedule-diff.js"></script><script defer src="./admin-errors.js"></script><script defer src="./admin-reports.js"></script><script defer src="./admin-categories.js"></script><script defer src="./admin-legal.js"></script><script defer src="./schedule-planner.js"></script><script defer src="./admin-planner.js"></script><script defer src="./admin-source-review.js"></script></body></html>

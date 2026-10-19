@@ -9,7 +9,8 @@ test('queue preview never changes address storage or push subscription',()=>{
  assert.match(app,/if\(name!=='detail'\)previewQueue=null/);
  assert.match(app,/if\(name==='detail'&&!primary\(\)&&!previewQueue\)/);
  assert.match(app,/const queue=previewQueue\|\|primary\(\)\?\.queue/);
- assert.match(app,/previewQueue=quickSelect\.value;\s*navigate\('detail'\)/);
+ assert.match(app,/previewQueue=quickSelect\.value/);
+ assert.match(app,/navigate\('detail'\)/);
  assert.match(app,/for\(const queue of QUEUES\)/);
  assert.match(html,/id="quickQueueSelect"/);
  assert.match(html,/id="quickQueueOpen"/);

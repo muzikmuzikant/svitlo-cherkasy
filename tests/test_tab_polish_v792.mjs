@@ -9,9 +9,9 @@ function setup({reduced=false,off=false,hasAddress=true}={}){
  const events=[],ids=['home','detail','updates','settings'];
  const classes=()=>({set:new Set(),add(k){this.set.add(k)},remove(k){this.set.delete(k)},contains(k){return this.set.has(k)},toggle(k,v){if(v)this.set.add(k);else this.set.delete(k)}});
  const pages=Object.fromEntries(ids.map(id=>[id,{hidden:id!=='home',classList:classes(),style:{cssText:''}}]));
- const buttons=ids.map(name=>({dataset:{go:name},classList:{contains:k=>k==='nav-item',toggle(k,v){events.push('nav:'+name+':'+v)}},setAttribute(){}}));
+ const buttons=ids.map(name=>({dataset:{go:name},setAttribute(){},classList:{contains:k=>k==='nav-item',toggle(k,v){events.push('nav:'+name+':'+v)}}}));
  const element={style:{scrollBehavior:'smooth'},dataset:{},classList:{contains:k=>off&&k==='feature-off-animations'}};
- const context={active:'home',tabMotion:null,TAB_MOTION_MS:260,previewQueue:null,primary:()=>hasAddress?{queue:'2.1'}:null,openAddressSheet:()=>events.push('picker'),
+ const context={active:'home',tabMotion:null,TAB_MOTION_MS:460,previewQueue:null,primary:()=>hasAddress?{queue:'2.1'}:null,openAddressSheet:()=>events.push('picker'),
   sessionStorage:{setItem(){}},SCREEN_RETURN:'selected',today:()=> '2026-10-15',
   renderHome:()=>events.push('render-home'),renderDetail:()=>events.push('render-detail'),
   renderUpdates:()=>events.push('render-updates'),renderSettings:()=>events.push('render-settings'),
@@ -56,8 +56,8 @@ test('lateral CSS has no native page snapshot or vertical fallbacks',()=>{
  assert.doesNotMatch(app,/document\.startViewTransition|navigate\.queuedName|navigate\.runningTransition|skipTransition/);
  assert.doesNotMatch(css,/svitloViewportIn|svitloViewportOut|view-transition-name:svitlo-navigation/);
  assert.match(css,/animation:tabSettle \.46s/);
- assert.match(css,/@keyframes tabSettle\{from\{opacity:\.25;transform:translate3d\(28px,0,0\)/);
- assert.match(css,/@keyframes tabSettleBackward\{from\{opacity:\.25;transform:translate3d\(-28px,0,0\)/);
+ assert.match(css,/@keyframes tabSettle\{from\{opacity:\.25;transform:translate3d\(28px,0,0\) scale\(\.985\)/);
+ assert.match(css,/@keyframes tabSettleBackward\{from\{opacity:\.25;transform:translate3d\(-28px,0,0\) scale\(\.985\)/);
  assert.match(app,/node\.classList\.remove\('tab-enter'\)/);
 });
 test('missing schedule keeps simple caption',()=>{

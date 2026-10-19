@@ -604,7 +604,7 @@ html:not([data-app-mode="standalone"]) #appBootScreen,.app-boot-screen[hidden]{d
  @keyframes inboxContentsDismiss{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(9px)}}
 }
 
-/* Release UI: generous update card and individually themed planned notices. */
+/* Beta 7.9.9: generous update card and individually themed planned notices. */
 .app-update-banner{padding:27px 24px 25px;gap:17px;margin:13px 0 24px;min-height:222px;border-radius:27px;box-shadow:0 19px 44px #316bbf25}
 .app-update-heading strong{font-size:clamp(20px,5vw,25px);line-height:1.24}
 .app-update-copy p{font-size:14px;line-height:1.65}
@@ -619,3 +619,109 @@ html:not([data-app-mode="standalone"]) #appBootScreen,.app-boot-screen[hidden]{d
 .maintenance-inline.is-planned .maintenance-inline-eyebrow{color:var(--planned-accent,#347af0)}
 .maintenance-inline.is-planned .maintenance-inline-action{background:var(--planned-accent,#347af0)}
 @media(max-width:420px){.app-update-banner{min-height:0;padding:22px 19px}.app-update-heading strong{font-size:20px}}
+
+/* Stable first-run opt-in: privacy controls live in Settings. */
+.analytics-consent-status{font-size:12px;color:var(--muted);line-height:1.5;margin:8px 14px 13px}
+#betaAnalyticsScopeNotice[hidden]{display:none!important}
+#betaAnalyticsEnableNotice{margin-top:10px;max-width:100%;min-height:40px;white-space:normal;text-align:center}
+
+
+/* Opt-in Push connection: one primary switch and dependent categories */
+.push-master-card{padding:17px 17px 14px;overflow:hidden}
+.push-master-line{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.push-master-copy{min-width:0;flex:1}
+.push-master-copy>strong{display:flex;align-items:center;flex-wrap:wrap;gap:7px;font-size:14px;line-height:1.35}
+.push-master-copy>p{font-size:12px;color:var(--muted);margin:7px 0 0;line-height:1.55}
+.push-state-label{display:inline-flex;align-items:center;gap:5px;max-width:100%;border-radius:9px;padding:4px 8px;font-size:10px;font-weight:800;color:#64758d;background:#edf1f7}
+.push-state-label::before{content:"";width:6px;height:6px;flex:none;border-radius:50%;background:currentColor}
+.push-state-label[data-status="connected"]{background:#e4f7ec;color:#147c4b}
+.push-state-label[data-status="pending"]{background:#e9f1ff;color:#276fdd}
+.push-delivery-status{color:var(--muted);font-size:11px;line-height:1.55;white-space:normal;overflow-wrap:anywhere;margin:8px 0 0}
+.push-delivery-status:empty{display:none}
+.push-categories{margin-top:12px}
+.push-categories .setting-line{transition:opacity .2s ease}
+.push-categories.push-categories-disabled .setting-line{opacity:.58}
+.push-categories .switch input:disabled+span{cursor:not-allowed;background:#dfe5ee}
+.push-categories .switch input:disabled:checked+span{background:#a7c8ba}
+.push-master-card .switch input:disabled+span{opacity:.62;cursor:not-allowed}
+.push-master-card .switch{flex-shrink:0}
+@media(max-width:370px){.push-master-card{padding:15px 13px}.push-master-line{gap:10px}}
+@media(prefers-reduced-motion:reduce){.push-categories .setting-line{transition:none}}
+
+/* Offline mode stays readable on small iPhones and never implies a live power reading. */
+.offline-chip{display:block;position:relative;margin:8px 0 18px;padding:14px 15px 14px 44px;border-radius:17px;
+ background:linear-gradient(135deg,#fff8eb,#fffaf3);border:1px solid #efdab8;
+ color:#795323;box-shadow:0 8px 28px #77612812;font-size:12px;font-weight:620;line-height:1.55;
+ overflow-wrap:anywhere;letter-spacing:-.05px}
+.offline-chip::before{content:"";position:absolute;top:14px;left:15px;width:19px;height:19px;
+ border-radius:8px;background:#ebc98f;box-shadow:0 0 0 5px #f5e8d0}
+.offline-chip[hidden]{display:none!important}
+
+
+/* Beta: one calendar week, exactly seven clean weekday pills. */
+#homeIntro[hidden],#homeQuickPlaces[hidden]{display:none!important}
+.days-row.fixed-weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:clamp(3px,1vw,8px);margin:0 0 16px}
+.days-row.fixed-weekdays .day-choice{display:flex;align-items:center;justify-content:center;min-height:46px;padding:10px 2px;border-radius:15px;font-size:clamp(12px,3.2vw,15px);line-height:1;font-weight:790;white-space:nowrap}
+.days-row.fixed-weekdays .day-choice.is-today:not(.selected){background:#eaf2ff;color:#2469cc;box-shadow:inset 0 0 0 1px #c1d7fc}
+.days-row.fixed-weekdays .day-choice.selected{background:var(--blue);color:white}
+.home-quick-places{display:flex;gap:9px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:3px 1px 7px;margin:9px 0 12px;max-width:100%;overscroll-behavior-x:contain}
+.home-quick-places::-webkit-scrollbar{display:none}
+.home-quick-places .quick-place{flex:0 0 auto;border:1px solid #d9e5f7;background:#fff;border-radius:14px;min-height:39px;padding:8px 13px;font:700 12px/1.2 inherit;color:var(--ink);box-shadow:0 2px 9px #223b6410;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.home-quick-places .quick-place.selected{border-color:#86b6fc;background:#ecf4ff;color:#1968c8}
+.offline-data-card .setting-line{min-height:58px}
+.offline-data-card .setting-line p{font-size:12px;line-height:1.55;margin-top:5px}
+@media(max-width:370px){.days-row.fixed-weekdays{gap:2px}.days-row.fixed-weekdays .day-choice{min-height:43px;border-radius:12px;font-size:12px}}
+@media(prefers-reduced-motion:reduce){.home-quick-places .quick-place{transition:none!important}}
+
+
+/* Beta Inbox: grouped automatic updates and an accessible per-item menu. */
+.inbox-card-opener{display:block;width:100%;padding:0;margin:0;border:0;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer}
+.inbox-card-opener:focus-visible,.inbox-context summary:focus-visible,.inbox-context-actions button:focus-visible{outline:3px solid #8bbdff;outline-offset:3px;border-radius:7px}
+.inbox-item{position:relative}
+.inbox-context{position:absolute;right:12px;top:43px;z-index:4}
+.inbox-context summary{display:grid;place-items:center;list-style:none;width:38px;height:38px;border:1px solid #dbe6f3;border-radius:12px;background:#f7faff;color:#536b86;cursor:pointer;font-size:21px;font-weight:800}
+.inbox-context summary::-webkit-details-marker{display:none}
+.inbox-context-actions{position:absolute;right:0;top:43px;min-width:190px;display:grid;padding:7px;border-radius:15px;border:1px solid #dce7f6;background:#fff;box-shadow:0 15px 35px #1b355b24;z-index:8}
+.inbox-context-actions button{border:0;border-radius:10px;background:transparent;padding:11px 12px;font-size:13px;color:#233f64;text-align:left;cursor:pointer}
+.inbox-context-actions button:active{background:#ebf3ff}
+.inbox-auto-group{border:1px solid #dfebfa;background:#f7faff;border-radius:17px;margin-bottom:12px;padding:6px 9px 0}
+.inbox-auto-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 5px 16px;list-style:none;cursor:pointer;color:#254969;font-size:12px;font-weight:750}
+.inbox-auto-summary::-webkit-details-marker{display:none}
+.inbox-auto-summary span:last-child{font-size:11px;font-weight:650;color:#73869e;white-space:nowrap}
+.inbox-auto-group>.inbox-item{margin-bottom:9px}
+.home-quick-places .quick-place{font-family:inherit;font-size:12px;font-weight:750;line-height:1.2}
+
+
+.inbox-card-opener{display:grid;gap:9px;min-width:0}
+.inbox-card-opener>strong{font-size:16px;font-weight:830;letter-spacing:-.3px;color:var(--inbox-ink);padding-right:38px}
+.inbox-card-opener>p{margin:0;color:#667994;font-size:13px;line-height:1.55;padding-right:16px}
+.inbox-card-opener .inbox-item-head{padding-right:32px}
+.inbox-context[open]{z-index:12}
+
+
+/* Subtle home indicator, not a technical diagnostic panel. */
+.home-cache-hint{display:flex;align-items:center;gap:6px;margin:9px 6px 4px;color:#527960;font-size:11px;line-height:1.3;font-weight:620}
+.home-cache-hint[hidden]{display:none!important}
+.home-cache-hint>span{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#e7f5ea;color:#24794b;font-weight:850;font-size:11px}
+
+/* Beta Inbox: real opening/closing motion for the contextual action dropdown. */
+.inbox-context summary{transition:background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease}
+.inbox-context[open] summary{background:#e9f2ff;border-color:#a8caf8;color:#256dca}
+.inbox-context-actions{
+ opacity:0;visibility:hidden;pointer-events:none;
+ transform:translate3d(0,-9px,0) scale(.965);transform-origin:calc(100% - 15px) 0;
+ transition:opacity .19s cubic-bezier(.2,.8,.2,1),transform .19s cubic-bezier(.2,.8,.2,1),visibility 0s linear .19s;
+ will-change:opacity,transform;
+}
+.inbox-context[open]:not(.is-closing) .inbox-context-actions{
+ opacity:1;visibility:visible;pointer-events:auto;transform:translate3d(0,0,0) scale(1);
+ transition-delay:0s;
+}
+.inbox-context[open].is-closing .inbox-context-actions{
+ opacity:0;visibility:visible;pointer-events:none;transform:translate3d(0,-7px,0) scale(.975);
+}
+.inbox-context-actions button{transition:background .16s ease,color .16s ease}
+@media(hover:hover){.inbox-context-actions button:hover{background:#eef5ff;color:#185ab1}}
+@media(prefers-reduced-motion:reduce){
+ .inbox-context summary,.inbox-context-actions,.inbox-context-actions button{transition:none!important;will-change:auto}
+}

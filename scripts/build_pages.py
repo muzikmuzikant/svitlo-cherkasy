@@ -9,7 +9,7 @@ import hashlib
 
 ROOT=Path(__file__).resolve().parent.parent
 DEST=ROOT/'_site'
-FILES=['index.html','admin.html','app.js','notification-center.js','notification-text.js','inbox-ui.js','site-mode.js','admin-control.js','admin-richtext.js','admin-help-richtext.js','admin-control.css','admin-feedback.css','admin-dashboard.js','admin-analytics.js','admin-security-ui.js','admin-users.js','admin-users.css','admin-workspace.js','admin-workspace.css','admin-quality.js','admin-schedule-diff.js','admin-categories.js','admin-features.js','admin-command.js','address-lookup.js','data-merge.js','admin.js','hour-paint.js','install.js','version-check.js','release.json','style.css','maintenance-ui.css','install.css','sw.js','manifest.webmanifest','privacy.html','terms.html','about.html','feedback.html','feedback.js','feedback.css','help.html','help.css','help.js','admin-extra.js','admin-planner.js','schedule-planner.js','client-errors.js','admin-errors.js','admin-reports.js','motion.js','motion.css','internal-pages.js','internal-pages.css','legal-consent.js','legal-consent.css','admin-legal.js','beta-ads.js','admin-ads.js','admin-ads.css','ad-detail.html','advertising.html','support-project.html','robots.txt','sitemap.xml']
+FILES=['index.html','admin.html','app.js','notification-center.js','notification-text.js','inbox-ui.js','site-mode.js','admin-control.js','admin-richtext.js','admin-help-richtext.js','admin-control.css','admin-feedback.css','admin-dashboard.js','admin-analytics.js','admin-security-ui.js','admin-users.js','admin-users.css','admin-workspace.js','admin-workspace.css','admin-quality.js','admin-schedule-diff.js','admin-source-review.js','admin-categories.js','admin-features.js','admin-command.js','address-lookup.js','data-merge.js','admin.js','hour-paint.js','install.js','version-check.js','release.json','style.css','maintenance-ui.css','install.css','sw.js','manifest.webmanifest','privacy.html','terms.html','about.html','feedback.html','feedback.js','feedback.css','help.html','help.css','help.js','admin-extra.js','admin-planner.js','schedule-planner.js','client-errors.js','admin-errors.js','admin-reports.js','motion.js','motion.css','internal-pages.js','internal-pages.css','legal-consent.js','legal-consent.css','admin-legal.js','beta-ads.js','admin-ads.js','admin-ads.css','ad-detail.html','advertising.html','support-project.html','robots.txt','sitemap.xml']
 if DEST.exists():shutil.rmtree(DEST)
 DEST.mkdir()
 for filename in FILES:
@@ -43,6 +43,9 @@ for filename in FILES:
 build_hash=signature.hexdigest()[:12]
 sw=re.sub(r"const VERSION='[^']+';","const VERSION='svitlo-cherkasy-shell-v"+version+channel_suffix+"-"+build_hash+"';",sw,count=1)
 sw_path.write_text(sw,encoding='utf-8')
+# Retain verified Search Console ownership during application updates.
+for verification in ROOT.glob('google*.html'):
+    if verification.is_file():shutil.copy2(verification,DEST/verification.name)
 for icon in ROOT.glob('favicon*'):
     if icon.is_file():shutil.copy2(icon, DEST/icon.name)
 # iOS home-screen icons live at the site root; without these, iOS displays
@@ -57,7 +60,7 @@ if not (DEST/'apple-touch-icon-v692.png').is_file():
 for folder in ('assets','data'):
     shutil.copytree(ROOT/folder,DEST/folder)
 # User-owned public configuration and custom domain must survive the release build.
-optional_files=('push-config.json',) if release.get('channel') == 'beta' else ('push-config.json','CNAME','google651cc9e5e29fd428.html')
+optional_files=('push-config.json',) if release.get('channel') == 'beta' else ('push-config.json','CNAME')
 for optional in optional_files:
     if (ROOT/optional).is_file():shutil.copy2(ROOT/optional,DEST/optional)
 print('Prepared public site with',len(list(DEST.rglob('*'))),'entries.')

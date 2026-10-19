@@ -23,9 +23,10 @@ test('queue auto-refresh ignores identical data, missing old data, other queue a
  assert.equal(diff(before,snapshot({off:[['11:00','12:00']]},'2026-10-11'), '2.1'),false);
  assert.equal(diff(before,snapshot({off:[['11:00','12:00']]}), '3.1'),false);
 });
-test('installed app visibly reports update timing and checks once per minute when visible',()=>{
+test('installed app visibly reports update timing and checks in the background',()=>{
  const html=read('index.html');
  assert.match(html,/id="syncStatus"/);assert.match(html,/id="syncNow"/);
+ assert.match(app,/AUTO_SCHEDULE_CHECK_MS=60_000/);
  assert.match(app,/setInterval\(\(\)=>\{if\(!document\.hidden\)refreshData\(\)\},AUTO_SCHEDULE_CHECK_MS\)/);
  assert.match(app,/visibilitychange/);assert.match(app,/lastDownloadAt/);assert.match(app,/lastSyncFailed/);
 });
@@ -49,7 +50,8 @@ test('installation is platform-aware and preserves iOS icon',()=>{
  assert.match(html,/apple-touch-icon-v692.png/);
  assert.match(js,/navigator\.standalone/);
  assert.match(js,/beforeinstallprompt/);
- assert.match(js,/iPhone \/ iPad/);
- assert.match(js,/На початковий екран/);
+ assert.match(js,/iPhone/);
+ assert.match(js,/iPad/);
+ assert.match(js,/на початковий екран/i);
  assert.match(js,/hour\.onload/);
 });

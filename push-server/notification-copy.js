@@ -11,7 +11,7 @@ const dateLabel=s=>{
 };
 const clock=n=>{if(!Number.isInteger(n)||n<0||n>=2880)throw Error('Invalid time');n%=1440;return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')};
 const firstPublishedAt=d=>String(d?.publications?.[0]?.publishedAt||d?.publishedAt||'');
-const dayId=(q,d)=>'day:'+q+':'+d.date+':'+firstPublishedAt(d);
+const dayId=(q,d)=>'day:'+q+':'+d.date;
 const changeId=(q,c)=>'change:'+q+':'+c.date+':'+(c.revisionId||c.publishedAt);
 const isLatestRevision=(c,d,q)=>!!(c&&d&&c.date===d.date&&c.queues?.includes(q)&&(c.publishedAt===d.publishedAt||c.revisionId&&c.revisionId===d.planFingerprint));
 function hash(s){let n=2166136261;for(const c of String(s||'')){n^=c.charCodeAt(0);n=Math.imul(n,16777619)}return (n>>>0).toString(36)}

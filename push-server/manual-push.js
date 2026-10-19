@@ -30,7 +30,7 @@ export function selectRecipients(subscribers, { queue = 'all', target = 'all', e
   return list.filter(r => (queue === 'all' || r.queue === queue)&&(!settlement||normArea(r.settlement)===normArea(settlement)));
 }
 
-export function createManualPush({ subscribers, webpush, appUrl, hash, save }) {
+export function createManualPush({ subscribers, webpush, appUrl, hash, save, onBroadcast=()=>{} }) {
   const history = new Map();
   const requireCooldown = (action, max, windowMs) => {
     const now = Date.now();
@@ -106,7 +106,9 @@ export function createManualPush({ subscribers, webpush, appUrl, hash, save }) {
       const recipients = selectRecipients(subscribers, { queue: msg.queue,settlement:msg.settlement });
       if (!recipients.length) return { ok: false, attempted: 0, accepted: 0, failed: 0, expired: 0, error: 'Немає підписаних пристроїв для вибраної підчерги.' };
       requireCooldown('broadcast', 6, 60 * 60_000);
-      return deliver(recipients, msg);
+      const result=await deliver(recipients,msg);
+      if(msg.notificationId)onBroadcast(msg.notificationId,result);
+      return result;
     }
   };
 }

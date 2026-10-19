@@ -32,7 +32,11 @@ async function load(){
   if(remote&&canPublish){const r=await api('file?kind='+kind);contents=r.contents;sha=r.sha}
   else{const r=await fetch('./data/'+FILES[kind]+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Файл недоступний');contents=await r.json();sha=''}
   original=contents;current=kind;$('editor').value=JSON.stringify(contents,null,2);
-  $('publish').disabled=!(remote&&canPublish);$('editMode').textContent=remote&&canPublish?'Серверний режим':'Локальна копія';message('Дані завантажено. Ручне редагування не вплине на застосунок до публікації.',true);
+  $('publish').disabled=!(remote&&canPublish);
+  $('editMode').textContent=remote&&canPublish?'Публікація GitHub доступна':'Попередній перегляд та експорт';
+  message(remote&&canPublish
+    ?'Дані завантажено. Після перевірки їх можна опублікувати у GitHub.'
+    :'Редагування файлів зараз не підключено. Можна перевіряти та експортувати JSON, але опублікувати його через цю панель не вийде. Для публікації потрібен доступ GitHub у налаштуваннях сервера.',remote&&canPublish);
  }catch(e){message('Не вдалося завантажити: '+e.message,false)}
 }
 async function diagnostics(){
@@ -101,7 +105,7 @@ function staging(){
  if($('kind').value!=='overrides')throw Error('Оберіть файл «Ручні уточнення», а потім повторіть дію');
  const o=JSON.parse($('editor').value);validate('overrides',o);return o;
 }
-function staged(o,s){$('editor').value=JSON.stringify(o,null,2);message(s+' Натисніть «Перевірити JSON», потім «Опублікувати» для збереження на GitHub.',true)}
+function staged(o,s){$('editor').value=JSON.stringify(o,null,2);message(s+(canPublish?' Перевірте JSON та опублікуйте зміни через GitHub.':' Це лише чернетка. Публікація через адмінпанель недоступна, але можна експортувати JSON.'),canPublish)}
 function requiredSource(){const s=$('quickSource').value.trim();if(!/^https:\/\/(?:www\.)?cherkasyoblenergo\.com\//.test(s))throw Error('Вставте перевірене посилання на офіційну публікацію Черкасиобленерго');return s}
 $('findStreet').onclick=async()=>{try{
  const r=await fetch('./data/published_street_fallback.json?t='+Date.now());const j=await r.json();
