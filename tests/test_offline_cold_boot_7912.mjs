@@ -122,6 +122,7 @@ test('cold startup has a bounded splash even if live schedule refresh stalls',()
  assert.match(app,/Promise\.race\(\[refresh\.then\(\(\)=> 'loaded'\),deadline\]\)/);
  assert.match(app,/navigator\.onLine===false\?350:1800/);
  assert.match(app,/splash\.classList\.add\('is-complete'\)/);
- assert.match(sw,/OFFLINE_BOOT\.map\(url=>new Request\(url,\{cache:'reload'\}\)\)/);
+ assert.match(sw,/OFFLINE_CORE\.map\(url=>new Request\(url,\{cache:'reload'\}\)\)/);
+ assert.match(sw,/Promise\.allSettled\(OFFLINE_BOOT\.filter/);
  assert.doesNotMatch(sw,/Promise\.allSettled\(SHELL\.filter/);
 });
