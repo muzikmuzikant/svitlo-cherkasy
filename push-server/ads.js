@@ -109,7 +109,7 @@ function normalize(raw){
  return normalized;
 }
 
-export function createAdsStore({directory,clock=()=>Date.now()}){
+export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed=String(process.env.APP_ORIGIN||'').replace(/\/+$/,'')==='https://svitlo-cherkasy.pages.dev'}){
  const file=path.join(directory,'beta-ads.json');
  const visitorsFile=path.join(directory,'beta-pwa-installations.json');
  const stateDefault=normalize(defaults);
@@ -140,8 +140,15 @@ export function createAdsStore({directory,clock=()=>Date.now()}){
    if(key.endsWith('|'+day))today=Number(v.impressions)||0;
   }return {all,today,clicks}}
  function publicState(){
+  // Commercial campaigns stay hidden in Production, even if saved as enabled.
+  const supportMethods=state.support.methods.filter(m=>m.enabled&&!!(m.url||m.details));
+  const supportEnabled=state.support.enabled&&!!(state.support.paymentUrl||supportMethods.length);
+  const support=supportEnabled?{...state.support,enabled:true,methods:supportMethods,
+   expenses:state.support.expenses.filter(e=>e.public)}:
+   {...state.support,enabled:false,methods:[],expenses:[],paymentUrl:'',details:'',provider:''};
+  if(!commercialAllowed)return {enabled:false,campaigns:[],contacts:[],packages:[],support};
   const now=new Date(clock()).toISOString(),day=now.slice(0,10),weekday=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Kyiv',weekday:'short'}).format(new Date(clock())));
-  return {enabled:state.enabled,rotationSeconds:state.rotationSeconds,promoEvery:state.promoEvery,
+  return {enabled:commercialAllowed&&state.enabled,rotationSeconds:state.rotationSeconds,promoEvery:state.promoEvery,
    showPromo:state.showPromo,manualSwipe:state.manualSwipe,animation:state.animation,
    promoTitle:state.promoTitle,promoText:state.promoText,contactLabel:state.contactLabel,
    pageTitle:state.pageTitle,pageIntro:state.pageIntro,pageTerms:state.pageTerms,
@@ -149,11 +156,7 @@ export function createAdsStore({directory,clock=()=>Date.now()}){
    pageAbout:state.pageAbout,pageContactText:state.pageContactText,pageBenefits:state.pageBenefits,
    contacts:state.contacts.filter(c=>c.enabled&&c.url).map(({label,url})=>({label,url})),
    packages:state.packages.filter(p=>p.visible).map(({title,description,price,durationDays,badge,badgeBackground,badgeForeground,featured,features})=>({title,description,price,durationDays,badge,badgeBackground,badgeForeground,featured,features})),
-   support:{...state.support,
-    methods:state.support.methods.filter(m=>m.enabled&&!!(m.url||m.details)),
-    expenses:state.support.expenses.filter(e=>e.public),
-    enabled:state.support.enabled&&!!(state.support.paymentUrl||state.support.methods.some(m=>m.enabled&&(m.url||m.details)))
-   },
+   support,
    campaigns:state.enabled?state.campaigns.filter(c=>{
     if(!c.enabled||!c.title||c.start&&c.start>now||c.end&&c.end<=now)return false;
     if(c.days.length&&!c.days.includes(weekday))return false;
@@ -165,7 +168,7 @@ export function createAdsStore({directory,clock=()=>Date.now()}){
  function update(value){if(!isObj(value))throw Error('Некоректні налаштування');state=normalize(value);lastModified=new Date(clock()).toISOString();flush();return dashboard()}
  function rateLimit(bucket,limit,windowMs){const now=clock(),r=rate.get(bucket);if(!r||now-r.last>=windowMs){rate.set(bucket,{last:now,count:1});return true}r.count++;return r.count<=limit}
  function event(id,type,clientKey=''){
-  if(!['impression','click','detailOpen','outbound'].includes(type)||!state.enabled)return false;
+  if(!commercialAllowed||!['impression','click','detailOpen','outbound'].includes(type)||!state.enabled)return false;
   if(id!=='promo'&&!publicState().campaigns.some(c=>c.id===id))return false;
   if(clientKey&&!rateLimit('ad:'+clientKey,150,60000))return false;
   const now=clock(),day=new Date(now).toISOString().slice(0,10),k=id+'|'+day;
@@ -241,7 +244,7 @@ export function createAdsStore({directory,clock=()=>Date.now()}){
    const d=daily[day]??={impressions:0,clicks:0};
    d.impressions+=Number(s.impressions)||0;d.clicks+=Number(s.clicks)||0;
   }
-  return {settings:state,stats:totals,statsByCampaignDay:stats,daily,pwa,lastModified};
+  return {settings:state,stats:totals,statsByCampaignDay:stats,daily,pwa,lastModified,commercialLocked:!commercialAllowed};
  }
  function hasInstallation(id){
   if(typeof id!=='string'||!/^[0-9a-f]{8}-[0-9a-f-]{27,56}$/i.test(id))return false;
