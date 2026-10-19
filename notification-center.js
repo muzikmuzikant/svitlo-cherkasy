@@ -85,6 +85,7 @@
   })
  }catch{saveFallback(fallback().filter(x=>!predicate(x)||edit(x)).map(x=>predicate(x)?edit(x):x).filter(Boolean))}}
  async function mark(ids){const keys=new Set(ids);await mutate(x=>keys.has(x.id),x=>({...x,read:true}))}
+ async function unmark(ids){const keys=new Set(ids);await mutate(x=>keys.has(x.id),x=>({...x,read:false}))}
  async function clearRead(){await mutate(x=>x.read,()=>null)}
  async function remove(id){await mutate(x=>x.id===id,()=>null)}
  async function reconcileAnnouncements(ids){
@@ -106,5 +107,5 @@
    return Boolean(date&&dates.has(date));
   },()=>null);
  }
- root.SvitloInbox={normalize,all,add,mark,clearRead,remove,reconcileAnnouncements,reconcileAutomated};
+ root.SvitloInbox={normalize,all,add,mark,unmark,clearRead,remove,reconcileAnnouncements,reconcileAutomated};
 })(typeof self!=='undefined'?self:globalThis);

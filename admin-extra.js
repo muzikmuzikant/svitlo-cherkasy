@@ -21,6 +21,7 @@ function setTab(tab){
   catch{apply()}
  }else{adminTabMotion?.skipTransition?.();apply()}
  if(tab==='overview'||tab==='sources')refreshMonitor();
+ if(tab==='sources')window.SvitloSourceReview?.load();
  if(tab==='feedback')refreshTickets();
  if(tab==='push')refreshPushStatus();
  if(tab==='help')refreshHelp();
@@ -36,28 +37,33 @@ async function refreshMonitor(){
     ['Push-підписки',push.pushSubscribers??'—'],
     ['Нові звернення',tickets.new??'—'],
     ['Опубліковані дні',sched.days?.length??'—'],
-    ['Підозрілі публікації',review.rejectedCount??'—'],
+    ['Публікації на перевірці',(review.items||[]).length],
     ['Остання перевірка джерела',sched.lastChecked?extraDate(sched.lastChecked):'Немає даних'],
     ['Остання перевірка Push',push.lastPushCheck?extraDate(push.lastPushCheck):'Немає даних']
   ];
   const grid=extraGet('monitorMetrics');grid.replaceChildren();cards.forEach(([label,value])=>{const tile=document.createElement('div');tile.className='metric';tile.append(extraText('strong',value),extraText('span',label));grid.append(tile)});
   const failures=Object.entries(source).filter(([,item])=>item.error).map(([name,item])=>name+': '+item.error);
   const stale=sched.lastChecked&&Date.now()-Date.parse(sched.lastChecked)>2*3600_000;
-  status.className='push-state'+(failures.length||push.pushCheckError?' error':' good');
-  status.textContent=[failures.length?'Деякі джерела недоступні: '+failures.join('; '):'Джерела відповідають.',stale?'Увага: перевірка графіка була понад 2 години тому.':'',push.pushCheckError?'Push: '+push.pushCheckError:''].filter(Boolean).join('\n');
-  const overview=extraGet('sourceOverview');overview.className='push-state'+(review.rejectedCount?' error':' good');
+  status.className='push-state'+(failures.length||push.pushCheckError||stale||sched.reviewPending?' error':' good');
+  status.textContent=[failures.length?'Деякі джерела недоступні: '+failures.join('; '):'Джерела відповідають.',stale?'Увага: перевірка графіка була понад 2 години тому.':'',push.pushCheckError?'Push: '+push.pushCheckError:'',sched.reviewPending&&!stale?'Автоперевірка працює, але нова публікація очікує ручної звірки.':''].filter(Boolean).join('\n');
+  const overview=extraGet('sourceOverview');overview.className='push-state'+((review.items||[]).length||sched.reviewPending?' error':' good');
   overview.textContent=`Графіки: ${sched.days?.length??'—'} днів · Перевірено: ${extraDate(sched.lastChecked)}\n`+
    `Екстрені бюлетені: ${emergency.count??'—'} · Перевірено: ${extraDate(emergency.lastChecked)}\n`+
-   `Відхилено підозрілих публікацій: ${review.rejectedCount??'—'} · Оновлено: ${extraDate(review.lastChecked)}`;
+   `Публікацій на перевірці: ${(review.items||[]).length} · Відхилених дат: ${review.rejectedCount??0} · Оновлено: ${extraDate(review.lastChecked)}`;
   const issues=extraGet('sourceIssues');issues.replaceChildren();
-  if(!Array.isArray(review.items)||!review.items.length){issues.append(extraText('p',review.error?'Не вдалося отримати журнал перевірок: '+review.error:'Підозрілих дат під час останньої перевірки не виявлено.','hint'))}
+  if(!Array.isArray(review.items)||!review.items.length){issues.append(extraText('p',review.error?'Не вдалося отримати журнал перевірок: '+review.error :'Публікацій, які потребують перевірки, зараз немає.','hint'))}
   else review.items.forEach(item=>{
    const card=document.createElement('article');card.className='review-item';
-   card.append(extraText('strong','Потрібна перевірка: '+(item.headlineDate||'дата невідома')));
+   card.append(extraText('strong','Потрібна перевірка: '+(item.targetDate||item.headlineDate||'дата невідома')));
    card.append(extraText('p','Опубліковано: '+extraDate(item.publishedAt)));
    card.append(extraText('p',item.reason));
    if(/^https:\/\/(?:www\.)?cherkasyoblenergo\.com\//.test(item.source||'')){
-    const a=document.createElement('a');a.href=item.source;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Відкрити оригінал на сайті оператора ↗';card.append(a)
+    const a=document.createElement('a');a.href=item.source;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Відкрити оригінал на сайті оператора ↗';card.append(a);
+    const action=document.createElement('button');action.type='button';action.className='secondary';
+    action.textContent='Перевірити та підтвердити графік';
+    action.style.marginLeft='9px';action.style.marginTop='8px';
+    action.addEventListener('click',()=>window.SvitloSourceReview?.open(item));
+    card.append(action)
    }issues.append(card)
   });
  }catch(e){status.className='push-state error';status.textContent='Не вдалося перевірити систему: '+e.message}

@@ -40,7 +40,7 @@ function normalize(raw){
  const packages=Array.isArray(s.packages)?s.packages.slice(0,40):[];
  const campaigns=Array.isArray(s.campaigns)?s.campaigns.slice(0,80):[];
  const normalized={
- enabled:s.enabled!==false,rotationSeconds:clamp(s.rotationSeconds,3,60,8),promoEvery:clamp(s.promoEvery,1,20,4),
+ enabled:s.enabled===true,rotationSeconds:clamp(s.rotationSeconds,3,60,8),promoEvery:clamp(s.promoEvery,1,20,4),
  showPromo:s.showPromo!==false,manualSwipe:s.manualSwipe!==false,
  animation:['fade','slide','none'].includes(s.animation)?s.animation:'fade',
  promoTitle:text(s.promoTitle||defaults.promoTitle,100),promoText:text(s.promoText||defaults.promoText,240),
@@ -109,7 +109,7 @@ function normalize(raw){
  return normalized;
 }
 
-export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed=String(process.env.APP_ORIGIN||'').replace(/\/+$/,'')==='https://svitlo-cherkasy.pages.dev'}){
+export function createAdsStore({directory,clock=()=>Date.now()}){
  const file=path.join(directory,'beta-ads.json');
  const visitorsFile=path.join(directory,'beta-pwa-installations.json');
  const stateDefault=normalize(defaults);
@@ -117,11 +117,15 @@ export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed
  const online=new Map(),rate=new Map(),recentAdViews=new Map();
  let timer=null,visitorTimer=null;
  function write(dest,data){fs.mkdirSync(directory,{recursive:true});const tmp=dest+'.tmp';fs.writeFileSync(tmp,JSON.stringify(data),{mode:0o600});fs.renameSync(tmp,dest)}
- function flush(){if(timer){clearTimeout(timer);timer=null}write(file,{schemaVersion:2,state,stats,lastModified})}
+ function flush(){if(timer){clearTimeout(timer);timer=null}write(file,{schemaVersion:3,state,stats,lastModified})}
  function flushVisitors(){if(visitorTimer){clearTimeout(visitorTimer);visitorTimer=null}write(visitorsFile,{schemaVersion:1,installed})}
  function schedule(){if(!timer){timer=setTimeout(flush,900);timer.unref?.()}}
  function scheduleVisitors(){if(!visitorTimer){visitorTimer=setTimeout(flushVisitors,4000);visitorTimer.unref?.()}}
- try{const old=JSON.parse(fs.readFileSync(file,'utf8'));state=normalize(old.state);stats=isObj(old.stats)?old.stats:{};lastModified=old.lastModified||null}catch(e){if(e.code!=='ENOENT')console.warn('[beta-ads] Config reset',e.message)}
+ try{const old=JSON.parse(fs.readFileSync(file,'utf8'));state=normalize(old.state);stats=isObj(old.stats)?old.stats:{};lastModified=old.lastModified||null;
+  // Existing deployments may have an enabled commercial draft from before this gate.
+  // Require an explicit new admin save to activate ads after the safe-default migration.
+  if(old.schemaVersion!==3){state.enabled=false;flush()}
+ }catch(e){if(e.code!=='ENOENT')console.warn('[beta-ads] Config reset',e.message)}
  try{const old=JSON.parse(fs.readFileSync(visitorsFile,'utf8'));installed=isObj(old.installed)?old.installed:{}}catch(e){if(e.code!=='ENOENT')console.warn('[beta-ads] Visitor store reset',e.message)}
  function prune(){const now=clock(),cut=now-60*86400000,dayCut=new Date(now-90*86400000).toISOString().slice(0,10);
   for(const [id,v] of Object.entries(installed))if(!v||!Number.isFinite(v.at)||v.at<cut)delete installed[id];
@@ -136,25 +140,21 @@ export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed
    if(key.endsWith('|'+day))today=Number(v.impressions)||0;
   }return {all,today,clicks}}
  function publicState(){
-  // Advertising is release-locked on Production. Voluntary support is separate.
-  // Only expose payment destinations when the operator explicitly enabled support.
-  const supportMethods=state.support.methods.filter(m=>m.enabled&&!!(m.url||m.details));
-  const supportEnabled=state.support.enabled&&!!(state.support.paymentUrl||supportMethods.length);
-  const support=supportEnabled?{...state.support,enabled:true,methods:supportMethods,
-   expenses:state.support.expenses.filter(e=>e.public)}:
-   {...state.support,enabled:false,methods:[],expenses:[],paymentUrl:'',details:'',provider:''};
-  if(!commercialAllowed)return {enabled:false,campaigns:[],contacts:[],packages:[],support};
   const now=new Date(clock()).toISOString(),day=now.slice(0,10),weekday=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Kyiv',weekday:'short'}).format(new Date(clock())));
-  return {enabled:commercialAllowed&&state.enabled,rotationSeconds:state.rotationSeconds,promoEvery:state.promoEvery,
+  return {enabled:state.enabled,rotationSeconds:state.rotationSeconds,promoEvery:state.promoEvery,
    showPromo:state.showPromo,manualSwipe:state.manualSwipe,animation:state.animation,
    promoTitle:state.promoTitle,promoText:state.promoText,contactLabel:state.contactLabel,
    pageTitle:state.pageTitle,pageIntro:state.pageIntro,pageTerms:state.pageTerms,
    pageBackground:state.pageBackground,pageAccent:state.pageAccent,pageHeroImage:state.pageHeroImage,
    pageAbout:state.pageAbout,pageContactText:state.pageContactText,pageBenefits:state.pageBenefits,
-   contacts:(commercialAllowed?state.contacts:[]).filter(c=>c.enabled&&c.url).map(({label,url})=>({label,url})),
-   packages:(commercialAllowed?state.packages:[]).filter(p=>p.visible).map(({title,description,price,durationDays,badge,badgeBackground,badgeForeground,featured,features})=>({title,description,price,durationDays,badge,badgeBackground,badgeForeground,featured,features})),
-   support,
-   campaigns:commercialAllowed&&state.enabled?state.campaigns.filter(c=>{
+   contacts:state.contacts.filter(c=>c.enabled&&c.url).map(({label,url})=>({label,url})),
+   packages:state.packages.filter(p=>p.visible).map(({title,description,price,durationDays,badge,badgeBackground,badgeForeground,featured,features})=>({title,description,price,durationDays,badge,badgeBackground,badgeForeground,featured,features})),
+   support:{...state.support,
+    methods:state.support.methods.filter(m=>m.enabled&&!!(m.url||m.details)),
+    expenses:state.support.expenses.filter(e=>e.public),
+    enabled:state.support.enabled&&!!(state.support.paymentUrl||state.support.methods.some(m=>m.enabled&&(m.url||m.details)))
+   },
+   campaigns:state.enabled?state.campaigns.filter(c=>{
     if(!c.enabled||!c.title||c.start&&c.start>now||c.end&&c.end<=now)return false;
     if(c.days.length&&!c.days.includes(weekday))return false;
     const t=totals(c.id,day);return (!c.maxImpressions||t.all<c.maxImpressions)&&(!c.dailyCap||t.today<c.dailyCap);
@@ -165,7 +165,7 @@ export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed
  function update(value){if(!isObj(value))throw Error('Некоректні налаштування');state=normalize(value);lastModified=new Date(clock()).toISOString();flush();return dashboard()}
  function rateLimit(bucket,limit,windowMs){const now=clock(),r=rate.get(bucket);if(!r||now-r.last>=windowMs){rate.set(bucket,{last:now,count:1});return true}r.count++;return r.count<=limit}
  function event(id,type,clientKey=''){
-  if(!commercialAllowed||!['impression','click','detailOpen','outbound'].includes(type)||!state.enabled)return false;
+  if(!['impression','click','detailOpen','outbound'].includes(type)||!state.enabled)return false;
   if(id!=='promo'&&!publicState().campaigns.some(c=>c.id===id))return false;
   if(clientKey&&!rateLimit('ad:'+clientKey,150,60000))return false;
   const now=clock(),day=new Date(now).toISOString().slice(0,10),k=id+'|'+day;
@@ -191,7 +191,7 @@ export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed
  function optOut(data){
   const id=text(data?.id,64);if(!/^[0-9a-f]{8}-[0-9a-f-]{27,56}$/i.test(id))return false;
   const key=crypto.createHash('sha256').update('beta-install:'+id).digest('hex');
-  online.delete(key);delete installed[key];scheduleVisitors();return true;
+  online.delete(key);delete installed[key];flushVisitors();return true;
  }
  // Group only distinct opt-in installation hashes, never raw open events.
  // Historic installation rows missing queue/version stay unattributed.
@@ -205,9 +205,15 @@ export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed
    }
    const total=[...counts.values()].reduce((a,b)=>a+b,0);
    const all=[...counts.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'uk'));
-   const visible=(field==='locality'?all.filter(([,count])=>count>=5):all).slice(0,15);
+   // Show every opt-in locality with activity, including small villages.
+   // Small groups use a range; no exact values or percentages for 1–4 installs.
+   // Other dimensions retain their compact top-15 shortlist.
+   const visible=field==='locality'?all:all.slice(0,15);
    result[name]={
-    items:visible.map(([label,count])=>({label,count,percent:total?Number((100*count/total).toFixed(1)):0})),
+    items:visible.map(([label,count])=>({
+     label,count:field==='locality'&&count<5?'1–4':count,
+     percent:field==='locality'&&count<5?null:(total?Number((100*count/total).toFixed(1)):0)
+    })),
     total,unknown:rows.length-total,
     other:total-visible.reduce((n,[,count])=>n+count,0)
    };
@@ -235,7 +241,12 @@ export function createAdsStore({directory,clock=()=>Date.now(),commercialAllowed
    const d=daily[day]??={impressions:0,clicks:0};
    d.impressions+=Number(s.impressions)||0;d.clicks+=Number(s.clicks)||0;
   }
-  return {settings:state,stats:totals,statsByCampaignDay:stats,daily,pwa,lastModified,commercialLocked:!commercialAllowed};
+  return {settings:state,stats:totals,statsByCampaignDay:stats,daily,pwa,lastModified};
  }
- return {publicState,update,event,activity,optOut,dashboard,flush,flushVisitors};
+ function hasInstallation(id){
+  if(typeof id!=='string'||!/^[0-9a-f]{8}-[0-9a-f-]{27,56}$/i.test(id))return false;
+  prune();const key=crypto.createHash('sha256').update('beta-install:'+id).digest('hex');
+  return Object.hasOwn(installed,key);
+ }
+ return {publicState,update,event,activity,optOut,hasInstallation,dashboard,flush,flushVisitors};
 }

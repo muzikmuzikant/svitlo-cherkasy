@@ -107,33 +107,42 @@ def check_schedule_date(day, pub, url):
 
 def parse_article(html,url,reference=None):
     soup=BeautifulSoup(html,'html.parser')
-    def reject(reason):
-        LOG.warning('Schedule parser rejected %s: %s', url, reason)
-        return None
     header=soup.find('h1')
-    if not header:return reject('missing h1')
+    if not header:return None
     heading=header.get_text(' ',strip=True).lower()
-    if 'погодинн' not in heading or 'відключен' not in heading:return reject('h1 is not a blackout heading: '+heading[:110])
+    if 'погодинн' not in heading or 'відключен' not in heading:return None
     date_hit=HEADLINE_DATE.search(heading)
-    if not date_hit:return reject('headline date missing: '+heading[:110])
+    if not date_hit:return None
     full=soup.get_text(' ',strip=True).replace('\xa0',' ').replace('−','-')
     # The operator's CMS wraps parts of a clock in separate HTML spans,
     # so BeautifulSoup may produce "08 :00" instead of "08:00".
     # Join only numeric clock colons, never merge unrelated table tokens.
     full=re.sub(r'(?<=\d)\s*:\s*(?=\d{2}\b)', ':', full)
-    # Operator CMS can split a leading zero into separate text nodes:
-    # '1.2 0 0:00 - 02:00'. Without joining this clock, QUEUE_START misses
-    # 1.2 and mistakenly merges all later subqueues into 1.1.
-    full=re.sub(r'(?<![\w.])([012])\s+([0-9]):([0-5]\d)\b', r'\1\2:\3', full)
     time_hit=PUB_TS.search(full)
-    if not time_hit:return reject('publication timestamp missing')
-    pub=datetime.strptime(' '.join(time_hit.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
+    if time_hit:
+        pub=datetime.strptime(' '.join(time_hit.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
+    else:
+        # CMS editors can change visible date markup while its structured
+        # publication date remains authoritative. Do not infer today's date.
+        raw_time=None
+        for selector,attribute in [('meta[property="article:published_time"]','content'),
+                                   ('meta[itemprop="datePublished"]','content'),
+                                   ('time[datetime]','datetime')]:
+            el=soup.select_one(selector)
+            if el and el.get(attribute):
+                raw_time=el.get(attribute)
+                break
+        try:
+            pub=datetime.fromisoformat(raw_time.replace('Z','+00:00')).astimezone(TZ) if raw_time else None
+        except (ValueError,TypeError):
+            pub=None
+        if pub is None:return None
     year=pub.year
     month=UA_MONTHS[date_hit.group(2).lower()]
     if pub.month==12 and month==1:year+=1
     if pub.month==1 and month==12:year-=1
     try:day=datetime(year,month,int(date_hit.group(1)),tzinfo=TZ).date().isoformat()
-    except ValueError:return reject('invalid headline date')
+    except ValueError:return None
     check_schedule_date(day,pub,url)
     # Operator edits are separate official news posts and sometimes change
     # the wording before the queue table. A fixed introductory phrase must not
@@ -147,27 +156,26 @@ def parse_article(html,url,reference=None):
         container=soup.select_one('article, .article-content, .news-article, main') or soup
         text=container.get_text(' ', strip=True).replace('\xa0',' ').replace('−','-')
         text=re.sub(r'(?<=\d)\s*:\s*(?=\d{2}\b)', ':', text)
-        text=re.sub(r'(?<![\w.])([012])\s+([0-9]):([0-5]\d)\b', r'\1\2:\3', text)
         heading_pos=text.lower().find(heading)
         table_text=text[heading_pos+len(heading):] if heading_pos>=0 else text
         if len(set(m.group(1) for m in QUEUE_START.finditer(table_text))) < 3:
-            return reject('fallback queue count under three; sample='+repr(table_text[:210]))
+            return None
     body=re.split(r'Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|Відключення\s+електроенергії\s+можуть',table_text,maxsplit=1,flags=re.I)[0]
     found=list(QUEUE_START.finditer(body))
-    if not found:return reject('no queue tokens; sample='+repr(body[:210]))
-    if len({x.group(1) for x in found})!=len(found):return reject('duplicate queue tokens: '+repr([x.group(1) for x in found]))
+    if not found:return None
+    if len({x.group(1) for x in found})!=len(found):return None
     queues={}
     for i,m in enumerate(found):
         part=body[m.end():found[i+1].start() if i+1<len(found) else len(body)]
         periods=[]
         for a,am,b,bm in INTERVAL.findall(part):
             start,end=int(a)*60+int(am),int(b)*60+int(bm)
-            if not 0<=start<end<=1440 or periods and periods[-1][1]>start:return reject('invalid or overlapping time intervals for queue '+m.group(1))
+            if not 0<=start<end<=1440 or periods and periods[-1][1]>start:return None
             periods.append((start,end))
         # Explicit 'not disconnected' text means known schedule with no outages.
         explicitly_none=bool(re.search(r'не\s+відключ|без\s+відключ|відключення\s+не\s+передбач',part,re.I))
         if periods or explicitly_none:queues[m.group(1)]=periods
-        else:return reject('missing intervals for queue '+m.group(1)+'; sample='+repr(part[:150]))
+        else:return None
     return {'date':day,'publishedAt':pub.isoformat(timespec='minutes'),'source':url,'queues':queues}
 
 
@@ -211,6 +219,14 @@ def compose(revisions):
                              for r in revs]}
 
 
+def publication_fingerprint(html):
+    """Hash visible article content to invalidate approvals after real edits."""
+    soup=BeautifulSoup(html,'html.parser')
+    node=soup.select_one('article, .article-content, .news-article, main') or soup
+    content=re.sub(r'\s+', ' ',node.get_text(' ',strip=True)).strip()
+    return hashlib.sha256(content.encode('utf-8')).hexdigest()[:24]
+
+
 def parse_news_links(html):
     soup=BeautifulSoup(html,'html.parser');urls=[]
     for a in soup.select('a[href]'):
@@ -235,7 +251,14 @@ def update_schedules(session, now=None):
     official schedules are still safe to publish.
     """
     now = now or datetime.now(TZ)
-    wanted = {(now.date() + timedelta(days=i)).isoformat() for i in (-2, -1, 0, 1, 2, 3)}
+    # Sunday 00:00 Europe/Kyiv expires only previous Mon-Sat schedules.
+    # Keep today's Sunday and the full coming Mon-Sun for weekday labels.
+    monday = now.date() - timedelta(days=now.weekday())
+    is_sunday = now.weekday() == 6
+    cutoff = now.date() if is_sunday else monday
+    wanted = {(monday + timedelta(days=i)).isoformat()
+              for i in range(14 if is_sunday else 9)
+              if monday + timedelta(days=i) >= cutoff}
     dest = DATA / 'schedules.json'
     try:
         old = json.loads(dest.read_text(encoding='utf-8'))
@@ -273,13 +296,16 @@ def update_schedules(session, now=None):
     warnings = []
     for u in urls:
         try:
-            rev = parse_article(fetch(session, u), u)
+            html=fetch(session, u)
+            fingerprint=publication_fingerprint(html)
+            rev = parse_article(html, u)
             if rev and rev['date'] in wanted:
                 grouped[rev['date']].append(rev)
             elif rev is None:
                 warnings.append({'code': 'UNREADABLE_ARTICLE', 'source': u,
                                  'targetDate': advertised_dates.get(u),
-                                 'reason': 'Графік у новині не вдалося розпізнати.'})
+                                 'sourceHash': fingerprint,
+                                 'reason': 'Редаговану офіційну новину не вдалося розпізнати. Перевірте її години вручну; попередній підтверджений графік збережено.'})
                 LOG.warning('Could not parse schedule article %s', u)
         except ScheduleDateConflict as e:
             review.append({'code': 'HEADLINE_DATE_CONFLICT', 'source': e.url,
@@ -291,33 +317,6 @@ def update_schedules(session, now=None):
                              'targetDate': advertised_dates.get(u),
                              'reason': 'Не вдалося отримати або прочитати публікацію.'})
             LOG.warning('Article error %s: %s', u, e)
-
-    # The operator sometimes exposes a newer/revised news link whose body is
-    # unreadable while the original official full-day article is still live.
-    # Recover from that original article rather than publishing an empty day.
-    # The fallback is ONLY an official dated article; parse_article validates
-    # its headline, publication date, queue numbers and outage time ranges.
-    month_slugs = ('sichnya', 'lyutoho', 'bereznya', 'kvitnya', 'travnya',
-                   'chervnya', 'lypnya', 'serpnya', 'veresnya', 'zhovtnya',
-                   'lystopada', 'hrudnya')
-    for target in (now.date(), (now + timedelta(days=1)).date()):
-        iso_day = target.isoformat()
-        if grouped.get(iso_day):
-            continue
-        canonical = (f'{BASE}/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-'
-                     f'{target.day}-{month_slugs[target.month - 1]}')
-        if any(urlparse(u).path == urlparse(canonical).path for u in urls):
-            continue
-        try:
-            recovered = parse_article(fetch(session, canonical), canonical)
-        except (requests.RequestException, ValueError, RuntimeError) as error:
-            LOG.info('Official canonical schedule unavailable for %s (%s)',
-                     iso_day, type(error).__name__)
-            continue
-        if recovered and recovered['date'] == iso_day:
-            grouped[iso_day].append(recovered)
-            LOG.warning('Recovered official %s schedule from canonical article %s',
-                        iso_day, canonical)
 
     # Never claim that an absent graph means power is planned all day while
     # an official publication is unresolved. Publishing a *verified* other
@@ -341,13 +340,13 @@ def update_schedules(session, now=None):
         prev = existing.get(day)
         # A newer previously verified edition must not be rolled back if an
         # earlier article is temporarily the only one visible in the news list.
-        if prev and prev.get('publishedAt', '') > latest['publishedAt']:
+        if prev and not prev.get('manualReview') and prev.get('publishedAt', '') > latest['publishedAt']:
             continue
         if prev:
             diffs = [q for q in QUEUE if prev.get('queues', {}).get(q, {}) != latest['queues'].get(q, {})]
             # Same URL and same publication minute may contain different hours!
             # Keep lastChecked heartbeat for no-op checks, but publish a true edit.
-            if not diffs and prev.get('publishedAt') == latest['publishedAt'] and prev.get('source') == latest['source']:
+            if not diffs and prev.get('publishedAt') == latest['publishedAt'] and prev.get('source') == latest['source'] and not prev.get('manualReview'):
                 continue
             if diffs:
                 changed.append({'date': day, 'publishedAt': latest['publishedAt'],
@@ -356,7 +355,9 @@ def update_schedules(session, now=None):
                                 'source': latest['source'], 'queues': diffs})
         existing[day] = latest
 
-    old_changes = old.get('changes', [])
+    old_changes = [x for x in old.get('changes', [])
+                   if isinstance(x, dict) and isinstance(x.get('date'), str)
+                   and x['date'] >= cutoff.isoformat()]
     keys = {(x.get('date'), x.get('revisionId') or x.get('publishedAt')) for x in old_changes}
     for change in changed:
         identity = (change['date'], change['revisionId'])
