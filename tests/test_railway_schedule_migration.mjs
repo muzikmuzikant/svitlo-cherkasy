@@ -77,7 +77,7 @@ test('backend does not expose subscriber secrets or internal upload endpoint to 
 test('Railway live GET endpoints accept cache-busting query parameters from installed PWA',()=>{
  const backend=read('push-server/server.js');
  const app=read('app.js');
- assert.match(app,/u\.searchParams\.set\('t',String\(Date\.now\(\)\)\)/);
+ assert.match(app,/url\.searchParams\.set\('t',String\(Date\.now\(\)\)\)/);
  assert.match(backend,/const requestPath=new URL\(req\.url,'http:\/\/localhost'\)\.pathname/);
  assert.match(backend,/requestPath==='\/api\/data\/schedules\.json'/);
  assert.match(backend,/requestPath==='\/api\/data\/source_review\.json'/);
