@@ -14,10 +14,12 @@ test('Cold-start loading cover exists only in installed PWA, and cannot trap a b
   assert.match(css,/\.app-boot-screen\.is-complete\{opacity:0;pointer-events:none\}/);
 });
 
-test('On full cold start, app waits for schedules before removing launch cover',()=>{
+test('Cold start reveals the interface promptly while schedule sync may continue',()=>{
   const app=source('app.js'),install=source('install.js');
   assert.match(app,/async function finishInitialLoad\(\)/);
-  assert.match(app,/try\{await refreshData\(\)\}/);
+  assert.match(app,/const refresh=refreshData\(\)/);
+  assert.match(app,/Promise\.race\(\[refresh\.then\(\(\)=> 'loaded'\),deadline\]\)/);
+  assert.match(app,/navigator\.onLine===false\?350:1800/);
   assert.match(app,/finally\{[\s\S]*?splash\.classList\.add\('is-complete'\)/);
   assert.match(app,/finishInitialLoad\(\);/);
   assert.match(install,/hour\.onerror = reportLaunchFailure/);
