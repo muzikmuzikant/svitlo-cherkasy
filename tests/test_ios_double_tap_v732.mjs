@@ -4,16 +4,14 @@ import {readFileSync} from 'node:fs';
 
 const read=file=>readFileSync(new URL('../'+file,import.meta.url),'utf8');
 
-test('rapid taps in schedule calendar cannot trigger Safari double-tap zoom',()=>{
- const css=read('style.css');
- assert.match(css,/\.viewport,\s*\.viewport button,\s*\.viewport a,[\s\S]*?\.calendar-arrows,[\s\S]*?\.days-row\s*\{\s*touch-action:\s*manipulation\s*;/);
- assert.match(css,/\.calendar-arrows button,[\s\S]*?\.day-choice\s*\{[^}]*-webkit-user-select:\s*none\s*;/);
- const html=read('index.html');
- assert.match(html,/id="weekPrev"/);
- assert.match(html,/id="weekNext"/);
+test('seven weekday buttons prevent unintended Safari double-tap zoom without navigation arrows',()=>{
+ const css=read('style.css'),html=read('index.html');
+ assert.match(css,/\.days-row\s*\{\s*touch-action:\s*manipulation/);
+ assert.match(css,/\.day-choice\s*\{[\s\S]*?-webkit-user-select:\s*none/);
+ assert.match(css,/\.days-row\.fixed-weekdays\{display:grid;grid-template-columns:repeat\(7,/);
  assert.match(html,/id="days"/);
+ assert.doesNotMatch(html,/id="weekPrev"|id="weekNext"|id="weekBackControl"|id="weekForwardControl"/);
 });
-
 test('accessibility zoom remains enabled rather than being locked in viewport settings',()=>{
  const html=read('index.html');
  const meta=html.match(/<meta name="viewport"[^>]*>/)?.[0]||'';
