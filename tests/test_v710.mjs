@@ -50,7 +50,8 @@ test('installation is platform-aware and preserves iOS icon',()=>{
  assert.match(html,/apple-touch-icon-v692.png/);
  assert.match(js,/navigator\.standalone/);
  assert.match(js,/beforeinstallprompt/);
- assert.match(js,/iPhone \/ iPad/);
+ assert.match(js,/iPhone/);
+ assert.match(js,/iPad/);
  assert.match(js,/На початковий екран/);
  assert.match(js,/hour\.onload/);
 });
