@@ -41,6 +41,8 @@ jobs:
           node --check app.js && node --check sw.js && node --check install.js && node --check site-mode.js && node --check version-check.js
           node --check admin.js && node --check admin-control.js && node --check inbox-ui.js && node --check beta-ads.js && node --check client-errors.js
           find push-server -maxdepth 1 -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Build Production artifacts before shell integrity checks
+        run: python scripts/build_pages.py
       - name: Full Node tests
         run: node --test tests/*.cjs tests/*.mjs
       - name: Full Python tests
