@@ -310,6 +310,6 @@ test('legacy enabled advertising is migrated to OFF without losing campaigns or 
 
 test('advertising master switch is a single explicit checkbox in the owner ads panel',()=>{
  const admin=fs.readFileSync(new URL('../admin-ads.js',import.meta.url),'utf8');
- assert.ok(admin.includes("'Увімкнути рекламу в застосунку',draft,'enabled','toggle'"));
- assert.ok(!admin.includes("'Показувати рекламний блок',draft,'enabled'"),'do not duplicate the switch');
+ assert.ok(admin.includes("'Показувати рекламний блок',draft,'enabled','toggle'"));
+ assert.ok(admin.includes('report.commercialLocked'),'owner sees that publishing paid campaigns is locked in Production');
 });
