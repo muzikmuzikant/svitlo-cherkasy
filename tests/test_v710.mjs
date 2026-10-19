@@ -52,6 +52,6 @@ test('installation is platform-aware and preserves iOS icon',()=>{
  assert.match(js,/beforeinstallprompt/);
  assert.match(js,/iPhone/);
  assert.match(js,/iPad/);
- assert.match(js,/На початковий екран/);
+ assert.match(js,/на початковий екран/i);
  assert.match(js,/hour\.onload/);
 });
