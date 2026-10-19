@@ -6,7 +6,7 @@ const release=JSON.parse(read('release.json'));
 const manifest=JSON.parse(read('manifest.webmanifest'));
 const push=JSON.parse(read('push-config.json'));
 test('release candidate uses production identity and API, never Beta identity',()=>{
- assert.equal(release.version,'7.9.10');
+ assert.equal(release.version,'7.9.12');
  assert.equal(release.channel,'production');
  assert.equal(manifest.id,'./');
  assert.equal(manifest.start_url,'./');
