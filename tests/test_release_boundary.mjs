@@ -22,7 +22,7 @@ test('release candidate uses production identity and API, never Beta identity',(
 });
 test('builder includes Google verification, production origin and content-hash SW cache',()=>{
  const build=read('scripts/build_pages.py');
- assert.ok(build.includes("'google651cc9e5e29fd428.html'"));
+ assert.ok(build.includes("ROOT.glob('google*.html')"),'All site verification files must survive a new release');
  assert.ok(build.includes("hashlib.sha256()"));
  assert.match(read('sw.js'),/const VERSION='svitlo-cherkasy-shell-v/);
  assert.ok(read('sitemap.xml').includes('https://svitlo-cherkasy.pp.ua/'));
