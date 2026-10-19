@@ -33,14 +33,14 @@ test('registered device confirms real server subscription without sending a test
  const h=harness();await h.check();
  assert.equal(h.ctx.pushActive,true);
  assert.equal(h.repairs,0);
- assert.match(h.status.textContent,/Push підключено/);
+ assert.equal(h.status.textContent,'','technical registration is deliberately hidden from users');
  assert.equal(h.requests.length,1);
  assert.match(h.requests[0].url,/\/api\/push\/subscription-status$/);
 });
 test('missing subscription is re-registered when app becomes active',async()=>{
  const h=harness({registered:false});await h.check();
  assert.equal(h.repairs,1);
- assert.match(h.status.textContent,/оновлено/);
+ assert.equal(h.status.textContent,'');
 });
 test('wrong queue or missing OFF/ON preferences automatically refreshes server subscription',async()=>{
  const h=harness({queue:'2.2',off:false});await h.check();
@@ -49,13 +49,12 @@ test('wrong queue or missing OFF/ON preferences automatically refreshes server s
 test('device status shows actual upcoming OFF and ON events and previous automatic delivery',async()=>{
  const h=harness({upcoming:{off:{date:'2026-10-14',time:'16:00'},on:{date:'2026-10-14',time:'18:00'}},
   latest:{lastAccepted:'2026-10-14T08:30:00Z'}});await h.check();
- assert.match(h.status.textContent,/відключення 2026-10-14 о 16:00/);
- assert.match(h.status.textContent,/відновлення 2026-10-14 о 18:00/);
- assert.match(h.status.textContent,/Останній автоматичний Push/);
+ assert.equal(h.status.textContent,'','device details must remain private technical telemetry');
+ assert.equal(h.requests.length,1,'health state is checked without an extra Push');
 });
 test('freshness problem is surfaced instead of reporting healthy reminders',async()=>{
  const h=harness({checkError:'Schedule data stale'});await h.check();
- assert.match(h.status.textContent,/проблему з перевіркою графіка/);
+ assert.equal(h.status.textContent,'','technical source details are not surfaced in the UI');
 });
 test('technical Push status box is removed while registration checks still run',()=>{
  assert.doesNotMatch(html,/id="pushDeliveryStatus"/);
