@@ -23,7 +23,7 @@ function harness({registered=true,queue='1.1',off=true,on=true,checkError=null,u
   pushConfig:{apiBase:'https://example.test'},pushActive:false,pushHealthBusy:null,pushHealthLast:0,
   PUSH_CONSENT:'consent',localStorage:{getItem:()=> 'yes'},primary:()=>({queue:'1.1'}),
   prefs,$:id=>id==='pushDeliveryStatus'?status:null,
-  updatePushSubscription:async()=>{repairs++},fetch,console,Date,
+  updatePushSubscription:async()=>{repairs++},renderSettings(){},fetch,console,Date,
   formatDate:date=>date,fmtStamp:date=>date,flash(){}};
  vm.createContext(ctx);vm.runInContext(script,ctx);
  return {ctx,status,requests,get repairs(){return repairs},
