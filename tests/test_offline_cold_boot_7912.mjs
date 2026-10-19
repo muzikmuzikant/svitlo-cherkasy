@@ -9,7 +9,7 @@ const ORIGIN='https://svitlo-cherkasy.pp.ua/';
 const saved={lastChecked:'2026-10-18T20:00:00+03:00',days:[{date:'2026-10-19',verified:true,queues:{'1.1':{off:[['12:00','14:00']]}}}]};
 const pathOf=input=>new URL(typeof input==='string'?input:input.url,ORIGIN).href;
 function harness(){
- const listeners={},cachesMap=new Map(),network=[],state={online:true};
+ const listeners={},cachesMap=new Map(),network=[],state={online:true,unavailable:new Set()};
  const cacheStorage={
   async open(name){
    if(!cachesMap.has(name)){
@@ -46,6 +46,7 @@ function harness(){
   network.push(pathOf(req));
   if(!state.online)throw Error('network offline');
   const path=new URL(pathOf(req)).pathname;
+  if(state.unavailable.has(path))return new Response('Missing optional file',{status:404});
   if(path.endsWith('/data/schedules.json'))return new Response(JSON.stringify(saved),{headers:{'Content-Type':'application/json'}});
   return new Response(path.endsWith('/index.html')||path==='/'?'<html>Cached application shell</html>':'// static asset '+path);
  }
@@ -98,6 +99,19 @@ test('freshly installed iOS PWA retains an entire bootable offline shell',async(
  assert.equal(graph.status,200);
  assert.equal(graph.headers.get('X-Svitlo-Cache'),'offline');
  assert.equal((await graph.json()).days[0].date,'2026-10-19');
+});
+
+
+test('a missing optional script or icon never prevents installing an offline PWA',async()=>{
+ const h=harness();
+ h.state.unavailable.add('/assets/icon-192-v692.png');
+ h.state.unavailable.add('/notification-text.js');
+ await h.install();
+ h.state.online=false;
+ const home=await h.request(ORIGIN+'?source=offline',{mode:'navigate'});
+ assert.equal(home.status,200,'cached HTML must still open without Internet');
+ const app=await h.request(ORIGIN+'app.js');
+ assert.equal(app.status,200,'all critical application files remain cached');
 });
 
 test('offline app reads installer-seeded schedule before its first online app launch',async()=>{
