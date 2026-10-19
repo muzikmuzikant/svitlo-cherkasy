@@ -30,10 +30,16 @@ try{const saved=safeJSON(OFFLINE_ADDRESSES,null);if(saved?.keys&&saved?.streets)
 function isOfflineMode(){return navigator.onLine===false||lastSyncFailed}
 async function readCachedSchedule(){
  const copies=[safeJSON(OFFLINE_SCHEDULE,null)];
- if('caches' in window)try{
-  const cache=await caches.open(OFFLINE_CACHE),response=await cache.match(OFFLINE_CACHE_KEY);
-  if(response?.ok)copies.push(await response.json());
- }catch(error){console.warn('Offline schedule cache read:',error)}
+ if('caches' in window){
+  // The Service Worker seeds public data before the first application run;
+  // iOS may kill the page before the separate app snapshot is written.
+  for(const [name,key] of [[OFFLINE_CACHE,OFFLINE_CACHE_KEY],['svitlo-cherkasy-data-v6.7','./data/schedules.json']]){
+   try{
+    const cache=await caches.open(name),response=await cache.match(key);
+    if(response?.ok)copies.push(await response.json());
+   }catch(error){console.warn('Offline schedule cache read:',error)}
+  }
+ }
  let latest=null;
  for(const item of copies)try{
   const value=retainWeeklySchedules(item);
@@ -1162,12 +1168,25 @@ fillQueueSelect();
  // Keep first-render placeholders completely behind the launch screen.
  render();
  async function finishInitialLoad(){
-   try{await refreshData()}
-   catch(error){
+   // A cold offline iPhone launch must never wait for network or auxiliary
+   // requests to settle. Refresh continues behind the cached interface.
+   let bootTimer=null;
+   try{
+     const refresh=refreshData();
+     const deadline=new Promise(resolve=>{
+       bootTimer=setTimeout(()=>resolve('boot-timeout'),navigator.onLine===false?350:1800);
+     });
+     if(await Promise.race([refresh.then(()=> 'loaded'),deadline])==='boot-timeout'){
+       hasCheckedOnce=true;
+       if(navigator.onLine===false)lastSyncFailed=true;
+       render();
+     }
+   }catch(error){
      console.warn('First launch schedule sync:',error);
      hasCheckedOnce=true;
      try{render()}catch(renderError){console.warn('Initial fallback render:',renderError)}
    }finally{
+     if(bootTimer!==null)clearTimeout(bootTimer);
      const splash=$('appBootScreen');
      if(splash){
        splash.classList.add('is-complete');
