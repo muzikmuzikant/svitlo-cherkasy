@@ -8,7 +8,7 @@ import {createAdsStore} from '../push-server/ads.js';
 const fresh=()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'svitlo-beta-ads-'));
  let clock=Date.parse('2026-10-15T12:00:00Z');
- const store=createAdsStore({directory:dir,clock:()=>clock});
+ const store=createAdsStore({directory:dir,clock:()=>clock,commercialAllowed:true});
  return {store,dir,advance:n=>{clock+=n}};
 };
 const ad=(id='first')=>({id,title:'Тестова реклама',enabled:true,weight:2,seconds:9,link:'https://example.com',background:'#ffffff',start:'',end:'',price:1000});
@@ -41,7 +41,7 @@ test('campaign settings, personalization, contacts, tariffs and support are isol
  assert.equal(store.event('first','click'),true);
  assert.equal(store.dashboard().stats.first.impressions,1);
  assert.equal(store.dashboard().stats.first.clicks,1);
- store.flush();const reopened=createAdsStore({directory:dir});
+ store.flush();const reopened=createAdsStore({directory:dir,commercialAllowed:true});
  assert.equal(reopened.dashboard().stats.first.impressions,1);
  assert.equal(reopened.dashboard().settings.campaigns.length,1);
  fs.rmSync(dir,{recursive:true,force:true});
@@ -128,7 +128,7 @@ test('7.9.10: fullscreen ad uses independently customizable content and images',
  assert.equal(store.dashboard().stats.more.detailOpens,1);
  assert.equal(store.dashboard().stats.more.outboundClicks,1);
  store.flush();
- const reopened=createAdsStore({directory:dir});
+ const reopened=createAdsStore({directory:dir,commercialAllowed:true});
  assert.equal(reopened.dashboard().settings.campaigns[0].detailEnabled,true);
  assert.equal(reopened.dashboard().stats.more.outboundClicks,1);
  fs.rmSync(dir,{recursive:true,force:true});
@@ -144,7 +144,7 @@ test('7.9.10: editable advertising and support designs survive restart',()=>{
  heroImage:'https://example.com/support.webp',goals:[{icon:'♡',title:'Підтримка',description:'Розвиток проєкту'}],
  showGoals:true,showThanks:false};
  store.update(s);store.flush();
- const reload=createAdsStore({directory:dir}).publicState();
+ const reload=createAdsStore({directory:dir,commercialAllowed:true}).publicState();
  assert.equal(reload.pageAccent,'#2360c5');
  assert.equal(reload.pageBenefits.length,3);
  assert.equal(reload.support.goals[0].title,'Підтримка');
@@ -272,7 +272,7 @@ test('ads global switch stays off across restart, supports explicit opt-in, and 
   assert.deepEqual(store.publicState().campaigns,[]);
   assert.equal(store.event('first','impression'),false,'no advertising metrics while off');
   store.flush();
-  let reopened=createAdsStore({directory:dir});
+  let reopened=createAdsStore({directory:dir,commercialAllowed:true});
   assert.equal(reopened.dashboard().settings.enabled,false);
   assert.equal(reopened.publicState().enabled,false);
   const enabled={...reopened.dashboard().settings,enabled:true};
@@ -281,7 +281,7 @@ test('ads global switch stays off across restart, supports explicit opt-in, and 
   assert.equal(reopened.publicState().campaigns.length,1);
   assert.equal(reopened.event('first','impression'),true);
   reopened.flush();
-  reopened=createAdsStore({directory:dir});
+  reopened=createAdsStore({directory:dir,commercialAllowed:true});
   assert.equal(reopened.dashboard().settings.enabled,true,'explicit consent persists');
   reopened.update({...reopened.dashboard().settings,enabled:false});
   assert.equal(reopened.publicState().enabled,false);
@@ -293,11 +293,11 @@ test('ads global switch stays off across restart, supports explicit opt-in, and 
 test('legacy enabled advertising is migrated to OFF without losing campaigns or voluntary support',()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'svitlo-ad-migration-'));
  try{
-  const old={...createAdsStore({directory:dir}).dashboard().settings,
+  const old={...createAdsStore({directory:dir,commercialAllowed:true}).dashboard().settings,
    enabled:true,campaigns:[ad()],
    support:{enabled:true,paymentUrl:'https://example.com/donate'}};
   fs.writeFileSync(path.join(dir,'beta-ads.json'),JSON.stringify({schemaVersion:2,state:old,stats:{},lastModified:null}));
-  const migrated=createAdsStore({directory:dir});
+  const migrated=createAdsStore({directory:dir,commercialAllowed:true});
   assert.equal(migrated.dashboard().settings.enabled,false);
   assert.equal(migrated.dashboard().settings.campaigns.length,1);
   assert.equal(migrated.publicState().enabled,false);
