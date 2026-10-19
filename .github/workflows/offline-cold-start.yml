@@ -1,0 +1,26 @@
+name: Installed PWA cold offline boot
+on:
+  push:
+    branches:
+      - staging
+      - release/7.9.12-rc1
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build actual installable static PWA
+        run: python scripts/build_pages.py
+      - name: Install Chromium browser for real Service Worker test
+        run: |
+          python -m pip install -q playwright==1.56.0
+          python -m playwright install --with-deps chromium
+      - name: Open installed PWA online, disconnect, close and relaunch offline
+        run: python tests/offline_pwa_browser.py
