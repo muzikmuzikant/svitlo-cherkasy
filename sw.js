@@ -5,6 +5,16 @@ const CACHE_DATA='svitlo-cherkasy-data-v6.7';
 const CACHE_IMAGES='svitlo-cherkasy-media-v74';
 const CACHE_SNAPSHOTS='svitlo-cherkasy-offline-snapshots-v1';
 const ESSENTIAL_DATA=['./data/schedules.json','./data/addresses.json','./data/published_street_fallback.json','./data/emergency.json','./data/manual_overrides.json','./push-config.json'];
+// Only these files are required for a complete offline first screen. Optional
+// pages and images are cached on demand instead of delaying SW installation.
+const OFFLINE_BOOT=['./','./index.html','./app.js','./style.css',
+ './install.js','./install.css','./hour-paint.js','./address-lookup.js',
+ './data-merge.js','./notification-center.js','./notification-text.js',
+ './inbox-ui.js','./version-check.js','./site-mode.js','./beta-ads.js',
+ './client-errors.js','./internal-pages.js','./internal-pages.css',
+ './legal-consent.js','./legal-consent.css','./motion.js','./motion.css',
+ './maintenance-ui.css','./assets/icon-192-v692.png'];
+
 function offlineCopy(response){
  const headers=new Headers(response.headers);
  headers.set('X-Svitlo-Cache','offline');
@@ -12,19 +22,21 @@ function offlineCopy(response){
 }
 self.addEventListener('install',event=>event.waitUntil((async()=>{
  const cache=await caches.open(VERSION);
- // An optional missing asset must not block the repaired app shell on iOS.
- const critical=['./','./index.html','./app.js','./style.css','./install.js','./hour-paint.js','./address-lookup.js','./data-merge.js','./notification-center.js','./inbox-ui.js','./site-mode.js','./beta-ads.js'];
- await cache.addAll(critical.map(url=>new Request(url,{cache:'reload'})));
- await Promise.allSettled(SHELL.filter(url=>!critical.includes(url)).map(async url=>{
-  try{const response=await fetch(new Request(url,{cache:'reload'}));if(response.ok)await cache.put(url,response)}
-  catch(error){console.warn('Optional offline asset:',url,error?.message)}
- }));
- // A fresh installation should already have a usable offline schedule, even
- // before the first in-app refresh. Do not fail installation on optional data.
+ // Install must finish quickly on iOS. Cache EVERY script and stylesheet that
+ // boots the installed PWA, not dozens of admin pages and optional images.
+ // A missing boot file fails the install so the previous working SW stays active.
+ await cache.addAll(OFFLINE_BOOT.map(url=>new Request(url,{cache:'reload'})));
+ // Seed offline schedules and addresses. Missing optional data must not prevent
+ // the application shell from becoming available, and never wipe old caches.
  const dataCache=await caches.open(CACHE_DATA);
  await Promise.allSettled(ESSENTIAL_DATA.map(async url=>{
-  const response=await fetch(new Request(url,{cache:'reload'}));
-  if(response.ok)await dataCache.put(new Request(url),response.clone());
+  try{
+   const ctrl=new AbortController(),timeout=setTimeout(()=>ctrl.abort(),4000);
+   try{
+    const response=await fetch(new Request(url,{cache:'reload',signal:ctrl.signal}));
+    if(response.ok)await dataCache.put(new Request(url),response.clone());
+   }finally{clearTimeout(timeout)}
+  }catch(error){console.warn('Optional offline seed:',url,error?.message)}
  }));
  await self.skipWaiting();
 })()));
@@ -48,6 +60,25 @@ self.addEventListener('fetch',event=>{
    }
    return;
  }
+ const scopePath=new URL(self.registration.scope).pathname;
+ const relative=u.pathname.startsWith(scopePath)?'./'+u.pathname.slice(scopePath.length):null;
+ // iOS must not wait for a failed network request before loading cached HTML,
+ // bootstrap JavaScript and styles. Ignore query parameters in shared links.
+ if(req.mode==='navigate'||(relative&&OFFLINE_BOOT.includes(relative))){
+  event.respondWith((async()=>{
+   const cache=await caches.open(VERSION);
+   const cached=await cache.match(new Request(u.origin+u.pathname));
+   if(cached)return cached;
+   try{
+    const live=await fetch(req);
+    if(live.ok)await cache.put(new Request(u.origin+u.pathname),live.clone()).catch(()=>{});
+    return live;
+   }catch{
+    if(req.mode==='navigate')return (await cache.match('./index.html'))||Response.error();
+    return Response.error();
+   }
+  })());return;
+ }
  if(u.pathname.endsWith('/release.json')){
   event.respondWith((async()=>{try{return await fetch(req,{cache:'no-store'})}
    catch{return (await caches.match('./release.json'))||Response.error()}})());return;
@@ -56,17 +87,28 @@ self.addEventListener('fetch',event=>{
    event.respondWith((async()=>{
      const key=new Request(u.origin+u.pathname);
      const cache=await caches.open(CACHE_DATA);
+     const ctrl=new AbortController(),timeout=setTimeout(()=>ctrl.abort(),2500);
      try{
-      const fresh=await fetch(req);
+      const fresh=await fetch(req,{signal:ctrl.signal});
       if(fresh.ok){await cache.put(key,fresh.clone());return fresh}
       const old=await cache.match(key);return old?offlineCopy(old):fresh;
      }catch{
       const old=await cache.match(key);
       return old?offlineCopy(old):new Response('Offline, no cache',{status:503,headers:{'Content-Type':'text/plain'}});
-     }
+     }finally{clearTimeout(timeout)}
    })());return;
  }
- event.respondWith((async()=>{try{const fresh=await fetch(req);if(fresh.ok&&u.pathname.match(/(?:\.js|\.css|\.html|\.png|\.svg|\.webmanifest)$/)){const c=await caches.open(VERSION);await c.put(req,fresh.clone()).catch(()=>{})}return fresh}catch{const cached=await caches.match(req);if(cached)return cached;return req.mode==='navigate'?(await caches.match('./index.html'))||Response.error():Response.error()}})());
+ event.respondWith((async()=>{
+ const cache=await caches.open(VERSION),key=new Request(u.origin+u.pathname);
+ const cached=await cache.match(key);
+ if(cached)return cached;
+ try{
+  const fresh=await fetch(req);
+  if(fresh.ok&&u.pathname.match(/(?:\.js|\.css|\.html|\.png|\.svg|\.webmanifest)$/))
+   await cache.put(key,fresh.clone()).catch(()=>{});
+  return fresh;
+ }catch{return Response.error()}
+})());
 });
 self.addEventListener('push',event=>{
  let msg={title:'💡 Світло Черкаси',body:'Є нове повідомлення про графік.'};
