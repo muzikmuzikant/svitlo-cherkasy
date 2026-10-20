@@ -718,6 +718,100 @@ def preserve_street_catalogue(result, previous, historical):
     return result
 
 
+
+def pdf_source_metadata(raw, expected_queue):
+    """Audit the *actual* PDF, not the HTML link label alone.
+
+    A changed PDF must never be accepted under the wrong subqueue. Filenames
+    vary, therefore prefer the text of the document's first page.
+    """
+    import fitz
+    with fitz.open(stream=raw, filetype='pdf') as document:
+        if not len(document):
+            raise RuntimeError('Empty official PDF')
+        title = document[0].get_text('text', sort=True)[:3500]
+        pages = len(document)
+    match = re.search(
+        r'(?<!\d)([1-6])\s*черга\s*[,.;:]?\s*'
+        r'(ІІ|І|II|I)\s*підчерга',
+        title, re.I)
+    title_queue = None
+    if match:
+        roman = match.group(2).upper().replace('І', 'I')
+        title_queue = f'{match.group(1)}.{2 if roman == "II" else 1}'
+        if title_queue != expected_queue:
+            raise RuntimeError(
+                f'Official PDF header says {title_queue}, '
+                f'but the website lists it as {expected_queue}')
+    return {'url': None, 'sha256': hashlib.sha256(raw).hexdigest(),
+            'pages': pages, 'verifiedPdfTitleQueue': title_queue}
+
+
+def address_audit(index, sources, previous=None, now=None):
+    """An independent, compact QUALITY report, never a second queue source.
+
+    The report is diagnostics. No unconfirmed streets/houses are added to
+    the public PWA index, and its existence cannot certify grid topology.
+    """
+    previous = previous or {}
+    now = now or datetime.now(TZ)
+    city = index.get('keys', {})
+    locations = {'черкаси': index, **index.get('localities', {})}
+    conflicts = []
+    q_counts = {q: {'houses': 0, 'streetHints': 0} for q in QUEUE}
+    for locality, row in locations.items():
+        for key, values in row.get('keys', {}).items():
+            confirmed = set(values)
+            for queue in confirmed:
+                if queue in q_counts:
+                    q_counts[queue]['houses'] += 1
+            if len(confirmed) > 1:
+                conflicts.append({'locality': locality, 'streetHouse': key,
+                                  'queues': sorted(confirmed)})
+        for values in row.get('streetQueues', {}).values():
+            for queue in set(values):
+                if queue in q_counts:
+                    q_counts[queue]['streetHints'] += 1
+
+    by_locality = {}
+    for locality, row in sorted(locations.items()):
+        by_locality[locality] = {
+            'name': row.get('label', 'Черкаси' if locality == 'черкаси' else locality),
+            'indexedHouses': len(row.get('keys', {})),
+            'operatorStreets': len(row.get('streetQueues', {})),
+            'discoveredStreetNames': len(row.get('streets', {})),
+            'conflictedHouses': sum(1 for e in conflicts if e['locality'] == locality)
+        }
+    oldcity = set(previous.get('keys', {}))
+    cityset = set(city)
+    files = sorted(sources, key=lambda r: (int(r['queue'][0]), r['queue'][2]))
+    if {s['queue'] for s in files} != set(QUEUE):
+        raise RuntimeError('PDF provenance audit lacks one or more subqueues')
+    return {
+        'schemaVersion': 1,
+        'checkedAt': utc_stamp(now),
+        'effectiveSource': BASE + '/perelik-gpv?lang=uk',
+        'expectedPdfCount': 12,
+        'verifiedPdfCount': len(files),
+        'sourceFiles': files,
+        'totals': {
+            'indexedCityHouseKeys': len(city),
+            'indexedDistrictHouseKeys': sum(len(v.get('keys',{}))
+                                            for v in index.get('localities',{}).values()),
+            'conflictedHouseKeys': len(conflicts),
+            'operatorStreetEntries': sum(len(row.get('streetQueues', {}))
+                                         for row in locations.values()),
+            'knownLocalities': len(index.get('localities', {})),
+            'newCityHouseKeysSincePrevious': len(cityset - oldcity),
+            'missingCityHouseKeysSincePrevious': len(oldcity - cityset)
+        },
+        'queues': q_counts,
+        'localities': by_locality,
+        # Only samples, not a claim these represent errors: in the official
+        # network the same building can appear on several feeding lines.
+        'multipleQueueExamples': conflicts[:80]
+    }
+
 def update_addresses(session,now=None):
     now=now or datetime.now(TZ)
     html=fetch(session,BASE+'/perelik-gpv?lang=uk')
@@ -725,12 +819,22 @@ def update_addresses(session,now=None):
     if len(urls)!=12:
         raise RuntimeError(f'Only {len(urls)} unambiguously labeled queue PDF links; refusing to guess queue order')
     collected=defaultdict(lambda:defaultdict(set));street_labels=defaultdict(dict);street_q=defaultdict(lambda:defaultdict(set));town_labels={}
-    errors=[]
+    errors=[];source_files=[]
     for queue,url in urls.items():
         try:
             raw=fetch(session,url,True)
             if not raw.startswith(b'%PDF'):raise ValueError('Not a PDF')
+            metadata=pdf_source_metadata(raw,queue)
             sections=extract_sections(raw)
+            # In the current period local Cherkasy EM / city EM are in the
+            # first half of each queue. Do not demand sections in *.2 PDFs,
+            # whose tables contain other branches of the same operator.
+            if queue.endswith('.1') and not sections:
+                raise RuntimeError('Current PDF yielded zero city/district sections')
+            meta={'queue':queue, **metadata,'url':url,
+                  'cityHouseMentions':0,'districtHouseMentions':0,
+                  'cityStreetMentions':0,'districtStreetMentions':0,
+                  'localities':len(sections)}
             for town,content in sections.items():
                 key=clean_locality(town)
                 # Old operator PDFs abbreviate these names or retain
@@ -741,14 +845,21 @@ def update_addresses(session,now=None):
                 town_labels.setdefault(key, display_names.get(key,town.strip()))
                 # Numbered addresses and street-wide listings are distinct:
                 # street-wide listings are NOT proof for a specific house.
-                for kind,street,house,label in street_entries(content)+street_house_lists(content):
+                houses=street_entries(content)+street_house_lists(content)
+                names=street_only_entries(content)
+                which='city' if key == clean_locality('Черкаси') else 'district'
+                meta[which+'HouseMentions']+=len(houses)
+                meta[which+'StreetMentions']+=len(names)
+                for kind,street,house,label in houses:
                     if not street or not house:continue
                     collected[key][f'{kind}|{street}|{house}'].add(queue)
                     street_labels[key][f'{kind}|{street}']=f'{kind.capitalize()} {label}'
-                for kind,street,label in street_only_entries(content):
+                for kind,street,label in names:
                     street_q[key][f'{kind}|{street}'].add(queue)
                     street_labels[key].setdefault(f'{kind}|{street}',f'{kind.capitalize()} {label}')
-            LOG.info('%s: %s localities parsed',queue,len(sections))
+            source_files.append(meta)
+            LOG.info('%s: %s localities parsed, %s city house mentions, %s district street hints',
+                     queue,len(sections),meta['cityHouseMentions'],meta['districtStreetMentions'])
         except Exception as e:
             errors.append(f'{queue}: {e}')
 
@@ -784,6 +895,10 @@ def update_addresses(session,now=None):
     LOG.info('Address catalogue: %d current streets and %d archived-only labels',
              sum(len(loc.get('streetQueues', {})) for loc in result['localities'].values()),
              result['stats']['archivedStreetOnly'])
+    # Publish index and its evidence report only after all 12 PDFs were
+    # fetched, validated and passed the existing catastrophic-drop guard.
+    audit=address_audit(result,source_files,previous,now)
+    atomic_write(DATA / 'address_audit.json',audit)
     atomic_write(current_file,result)
     return result
 
