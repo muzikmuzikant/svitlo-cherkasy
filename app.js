@@ -668,7 +668,7 @@ function checkLookup(){
   nohouse:house&&known.length?'Будинок '+house+' відсутній у доступному списку точних адрес. Підчергу не визначено автоматично.':'Для цієї адреси немає однозначного запису. Виберіть підчергу вручну.',
   exact:`Будинок ${house}: підтверджена підчерга ${r.queue} за адресним переліком.`,
   street:`Для цієї вулиці вказано підчергу ${r.queue}; суперечливих будинкових записів не знайдено.`,
-  possible:r.reason==='split-rename'?'Цю вулицю поділено на різні ділянки з новими назвами: '+(r.splitNewNames||[]).join(' та ')+'. Оберіть сучасну вулицю з підказок і звірте підчергу свого будинку.':r.reason==='external-only'?'Вулицю знайдено в географічному довіднику. Її підчерга ще не підтверджена оператором. Звірте підчергу на офіційному сайті.':r.reason==='reported-only'?'Вулицю додано за зверненням користувача. Підчерга ще не підтверджена. Звірте її в обленерго.':r.reason==='archived-only'?('Цю вулицю відновлено з попереднього офіційного довідника. У поточному імпорті її немає. '+(list?'Архівні підчерги: '+list+'. ':'')+'Звірте актуальну підчергу на сайті оператора й оберіть вручну.'):
+  possible:r.reason==='split-rename'?'Цю вулицю поділено на різні ділянки з новими назвами: '+(r.splitNewNames||[]).join(' та ')+'. Оберіть сучасну вулицю з підказок і звірте підчергу свого будинку.':r.reason==='external-only'?'Для цієї адреси підчергу не підтверджено. Перевірте її в обленерго.':r.reason==='reported-only'?'Для цієї адреси підчергу не підтверджено. Перевірте її в обленерго.':r.reason==='archived-only'?('Цю вулицю відновлено з попереднього офіційного довідника. У поточному імпорті її немає. '+(list?'Архівні підчерги: '+list+'. ':'')+'Звірте актуальну підчергу на сайті оператора й оберіть вручну.'):
     r.reason==='house-conflict'?`Будинок ${house} згадується в різних підчергах: ${list}. Звірте дані з оператором.`:
     r.reason==='no-house-index'?`${house?'Будинок '+house+': точного запису немає. ':''}Для вулиці можливі підчерги ${list}. У джерелі немає розподілу за номерами будинків. Виберіть підчергу нижче.`:
     r.reason==='house-unlisted'?`Будинку ${house} немає серед точних записів цієї вулиці. Можливі підчерги: ${list}. Виберіть підтверджену вами підчергу.`:
@@ -731,32 +731,30 @@ function checkLookup(){
  return r;
 }
 
+// Typeahead only draws place names. No queue lookup per row and no
+// internal source/status badges (the official queue is checked on selection).
 function suggestions(){
- const root=$('streetSuggestions');root.replaceChildren();
- const matches=SvitloAddressLookup.suggest(localIndex(),$('street').value);
- root.hidden=!matches.length||(!SvitloAddressLookup.splitHint(localIndex(),$('street').value)&&SvitloAddressLookup.streetMatches(localIndex(),$('street').value).length===1);
- for(const [key,name] of matches){const b=el('button','',name);b.type='button';b.onclick=()=>{
-   $('street').value=name;suggestion={key,label:name};root.hidden=true;checkLookup();
- };
-   const idx=localIndex();
-   const matched=SvitloAddressLookup.resolve({idx,settlement:town(),street:name,house:$('house').value});
-   if(matched.verifiedRename||matched.verifiedNameVariant){
-     b.append(el('small','archive-street-tag',matched.verifiedNameVariant?' · підчерга за скороченою назвою':' · підчерга в списку за старою назвою'));
-   }else if(SvitloAddressLookup.hasPublishedQueue(idx,key)){
-     b.append(el('small','archive-street-tag',' · є в переліку обленерго'));
-   }
-   if(!matched.verifiedRename && Array.isArray(idx.archiveOnlyStreets)&&idx.archiveOnlyStreets.includes(key)){
-     const note=idx.reportedStreetNames?.includes(key)?' · додано за зверненням':
-       idx.externalStreetNames?.includes(key)?' · з географічного довідника':
-       ' · з попереднього переліку';
-     b.append(el('small','archive-street-tag',note));
-   }
-   const rename=SvitloAddressLookup.renameHint(idx,$('street').value);
-   if(rename && SvitloAddressLookup.normalize($('street').value)===
-       SvitloAddressLookup.normalize(rename.oldName)){
-     b.append(el('small','archive-street-tag',' · тепер '+rename.newName));
-   }
-   root.append(b)}
+ const root=$('streetSuggestions');
+ const query=$('street').value;
+ const matches=SvitloAddressLookup.suggest(localIndex(),query);
+ const split=SvitloAddressLookup.splitHint(localIndex(),query);
+ root.replaceChildren();
+ root.hidden=!matches.length||(!split&&SvitloAddressLookup.streetMatches(localIndex(),query).length===1);
+ if(root.hidden)return;
+ const fragment=document.createDocumentFragment();
+ for(const [key,name] of matches){
+  const button=el('button','',name);
+  button.type='button';
+  button.onclick=()=>{
+   clearTimeout(streetLookupTimer);
+   $('street').value=name;
+   suggestion={key,label:name};
+   root.hidden=true;
+   checkLookup();
+  };
+  fragment.append(button);
+ }
+ root.append(fragment);
 }
 function populateSettlements(){
  const select=$('settlement');
@@ -1168,7 +1166,25 @@ for(const b of document.querySelectorAll('[data-go]'))b.addEventListener('click'
 $('syncNow').onclick=()=>refreshData(true);$('refreshTop').onclick=()=>refreshData(true);$('refreshDetail').onclick=()=>refreshData(true);$('manualRefresh').onclick=()=>refreshData(true);$('primaryPicker').onclick=()=>addresses.length?openPicker():openAddressSheet();$('addFromHome').onclick=()=>openAddressSheet();$('addFromSettings').onclick=()=>openAddressSheet();$('editActive').onclick=()=>openAddressSheet(primary());$('openDetail').onclick=()=>navigate('detail');
 $('closeSheet').onclick=()=>closeSheet($('addressSheet'));$('closePlaces').onclick=()=>closeSheet($('placesSheet'));$('sheetAddPlace').onclick=()=>{closeSheet($('placesSheet'));openAddressSheet()};
 for(const dialog of [$('addressSheet'),$('placesSheet')])dialog.addEventListener('close',unlockSheet);
-$('settlement').onchange=()=>{$('manualQueue').value='';$('customSettlement').hidden=$('settlement').value!=='Інше';suggestion=null;suggestions();checkLookup()};$('customSettlement').oninput=()=>{$('manualQueue').value='';checkLookup()};$('street').oninput=()=>{$('manualQueue').value='';suggestion=null;suggestions();checkLookup()};$('house').onfocus=()=>{$('streetSuggestions').hidden=true};$('house').oninput=()=>{$('streetSuggestions').hidden=true;checkLookup()};$('manualQueue').onchange=checkLookup;$('addressForm').onsubmit=saveAddress;$('deleteAddress').onclick=deleteAddress;$('goOfficial').onclick=officialOpen;
+$('settlement').onchange=()=>{$('manualQueue').value='';$('customSettlement').hidden=$('settlement').value!=='Інше';suggestion=null;suggestions();checkLookup()};$('customSettlement').oninput=()=>{$('manualQueue').value='';checkLookup()};// Keep the iPhone keyboard responsive: do no full address/house lookup in
+// input handlers. A short trailing debounce gives the browser time to paint.
+let streetLookupTimer=null;
+function scheduleStreetLookup(){
+ clearTimeout(streetLookupTimer);
+ streetLookupTimer=setTimeout(()=>{
+  if($('street').isComposing)return;
+  suggestions();
+  checkLookup();
+ },110);
+}
+$('street').oninput=()=>{$('manualQueue').value='';suggestion=null;scheduleStreetLookup()};
+$('street').oncompositionend=scheduleStreetLookup;
+$('house').onfocus=()=>{$('streetSuggestions').hidden=true};
+$('house').oninput=()=>{
+ $('streetSuggestions').hidden=true;
+ clearTimeout(streetLookupTimer);
+ streetLookupTimer=setTimeout(()=>checkLookup(),110);
+};$('manualQueue').onchange=checkLookup;$('addressForm').onsubmit=saveAddress;$('deleteAddress').onclick=deleteAddress;$('goOfficial').onclick=officialOpen;
 for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).onchange=e=>{prefs[key]=e.target.checked;savePrefs();updatePushSubscription().catch(console.warn)};
 $('pushMaster').onchange=async event=>{
  if(pushControlBusy)return;
