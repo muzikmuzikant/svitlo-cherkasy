@@ -674,7 +674,11 @@ function checkLookup(){
     r.reason==='house-unlisted'?`Будинку ${house} немає серед точних записів цієї вулиці. Можливі підчерги: ${list}. Виберіть підтверджену вами підчергу.`:
     `Для вулиці є підчерги ${list}. Уточніть номер будинку, щоб перевірити точний збіг, або виберіть відому підчергу.`
  };
- hint.textContent=messages[r.status]||'Не вдалося визначити підчергу.';
+ const rename=SvitloAddressLookup.renameHint(localIndex(),$('street').value);
+ const renameNote=rename?(SvitloAddressLookup.normalize($('street').value)===SvitloAddressLookup.normalize(rename.oldName)
+   ?' Цю вулицю перейменовано на «'+rename.newName+'».'
+   :' У старих документах ця вулиця може називатися «'+rename.oldName+'».'):'';
+ hint.textContent=(messages[r.status]||'Не вдалося визначити підчергу.')+renameNote;
  const coverage=$('houseCoverage'),choices=$('houseChoices');
  choices.replaceChildren();choices.hidden=true;coverage.hidden=true;
  if(r.streetKey&&r.status!=='exact'){
@@ -740,6 +744,11 @@ function suggestions(){
        idx.externalStreetNames?.includes(key)?' · з географічного довідника':
        ' · з попереднього переліку';
      b.append(el('small','archive-street-tag',note));
+   }
+   const rename=SvitloAddressLookup.renameHint(idx,$('street').value);
+   if(rename && SvitloAddressLookup.normalize($('street').value)===
+       SvitloAddressLookup.normalize(rename.oldName)){
+     b.append(el('small','archive-street-tag',' · тепер '+rename.newName));
    }
    root.append(b)}
 }
@@ -905,16 +914,18 @@ async function refreshData(manual=false){
    if(refreshAuxiliary){
    lastAuxiliaryRefresh=Date.now();
    try{
-     const [remote,seed,geo]=await Promise.allSettled([
+     const [remote,seed,geo,renames]=await Promise.allSettled([
        fetch(`./data/addresses.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}),
        fetch(`./data/published_street_fallback.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}),
-       fetch(`./data/street_catalog.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()})
+       fetch(`./data/street_catalog.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}),
+       fetch(`./data/street_aliases.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()})
      ]);
-     if(remote.status==='fulfilled'||seed.status==='fulfilled'||geo.status==='fulfilled'){
+     if(remote.status==='fulfilled'||seed.status==='fulfilled'||geo.status==='fulfilled'||renames.status==='fulfilled'){
        const live=remote.status==='fulfilled'?remote.value:{};
        const backup=seed.status==='fulfilled'?seed.value:{};
        const catalog=geo.status==='fulfilled'?geo.value:{};
-       index=mergeIndexes(live,backup,{catalog});
+       const aliasCatalog=renames.status==='fulfilled'?renames.value:{};
+       index=mergeIndexes(live,backup,{catalog,aliasCatalog});
        try{const snapshot=JSON.stringify(index);if(snapshot.length<1700000)localStorage.setItem(OFFLINE_ADDRESSES,snapshot)}catch{}
        populateSettlements();
        if($('addressSheet').open){suggestions();checkLookup()}
