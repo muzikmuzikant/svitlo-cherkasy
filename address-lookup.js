@@ -77,13 +77,33 @@
     }
     return [...out.entries()];
   }
+  function hasPublishedQueue(idx,key){
+    // Geographic-only/archived streets have no current operator confirmation.
+    if(!key || (idx?.archiveOnlyStreets||[]).includes(key))return false;
+    if(validQueues(idx?.streetQueues?.[key]).length)return true;
+    return knownHouses(idx,key).length>0;
+  }
   function streetMatches(idx, typed, selectedKey) {
     const direct=directMatches(idx,typed);
-    // Exact current/archived source record always wins against an alias.
-    // Never join both names' house indexes or invent a queue.
     const matches=direct.length?direct:renamedCandidates(idx,typed,true);
-    if (selectedKey && matches.some(([key])=>key===selectedKey))
-      return matches.filter(([key])=>key===selectedKey);
+    // Prefer a current, verified electricity record over a geographical name
+    // alone, provided the municipality officially links both street names.
+    // Underlying HOUSE keys stay on the source record, no house remapping.
+    if(matches.length===1&&!hasPublishedQueue(idx,matches[0][0])){
+      const [key]=matches[0];
+      const pair=renamePairs(idx).find(p=>{
+        const former=directMatches(idx,p.oldName).some(([k])=>k===key);
+        const modern=directMatches(idx,p.newName).some(([k])=>k===key);
+        return former||modern;
+      });
+      if(pair){
+        const other=directMatches(idx, directMatches(idx,p.oldName).some(([k])=>k===key)
+          ?pair.newName:pair.oldName).filter(([k])=>hasPublishedQueue(idx,k));
+        if(other.length===1)return other;
+      }
+    }
+    if (selectedKey && matches.some(([key]) => key === selectedKey))
+      return matches.filter(([key]) => key===selectedKey);
     return matches;
   }
   function suggest(idx, typed, limit=12) {
@@ -146,7 +166,20 @@
     if(matches.length===0)return {status:'nostreet'};
     if(matches.length>1)return {status:'ambiguous'};
     const [key,rawLabel]=matches[0];
-    const display=cleanStreetLabel(rawLabel);
+    const matchedName=directMatches(idx,street).some(([k])=>k===key);
+    const pair=renamePairs(idx).find(p=>
+      (directMatches(idx,p.oldName).some(([k])=>k===key) &&
+       normalize(p.newName)===normalize(street) &&
+       (!kindOf(street)||kindOf(street)===kindOf(p.newName))) ||
+      (directMatches(idx,p.newName).some(([k])=>k===key) &&
+       normalize(p.oldName)===normalize(street) &&
+       (!kindOf(street)||kindOf(street)===kindOf(p.oldName))));
+    const bridge=!!pair && !matchedName && hasPublishedQueue(idx,key);
+    const display=cleanStreetLabel(bridge?pair.newName:rawLabel);
+    const bridgeMeta=bridge?{verifiedRename:true,
+      sourceStreet:cleanStreetLabel(rawLabel),
+      matchedStreet:cleanStreetLabel(street),
+      renameSource:pair.source}:{};
     // Archived entries are searchable but cannot automatically confirm a queue.
     if(Array.isArray(idx.archiveOnlyStreets)&&idx.archiveOnlyStreets.includes(key))
       return {status:'possible',reason:Array.isArray(idx.reportedStreetNames)&&idx.reportedStreetNames.includes(key)?'reported-only':Array.isArray(idx.externalStreetNames)&&idx.externalStreetNames.includes(key)?'external-only':'archived-only',street:display,streetKey:key,
@@ -156,7 +189,7 @@
     const houseQueues=validQueues(houses.flatMap(x=>x.queues));
     const options=validQueues([...streetOnly,...houseQueues]);
     const exact=house ? validQueues(houses.filter(x=>houseKey(x.number)===houseKey(house)).flatMap(x=>x.queues)) : [];
-    const base={street:display,streetKey:key,queues:options,knownHouses:houses,hasHouseData:houses.length>0};
+    const base={street:display,streetKey:key,queues:options,knownHouses:houses,hasHouseData:houses.length>0,...bridgeMeta};
     // Only an explicit house hit, not a coincidental street match, can confirm
     // the queue on a street with multiple possible queues.
     if(exact.length===1)return {...base,status:'exact',queue:exact[0],method:'automatic'};
@@ -173,5 +206,5 @@
     return {...base,status:'nohouse',reason:house?'house-unlisted':'no-address-data'};
   }
 
-  return {normalize,houseKey,kindOf,streetMatches,suggest,renameHint,splitHint,knownHouses,resolve};
+  return {normalize,houseKey,kindOf,streetMatches,suggest,renameHint,splitHint,hasPublishedQueue,knownHouses,resolve};
 });
