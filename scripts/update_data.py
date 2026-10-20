@@ -729,7 +729,12 @@ def update_addresses(session,now=None):
             sections=extract_sections(raw)
             for town,content in sections.items():
                 key=clean_locality(town)
-                town_labels.setdefault(key, town.strip())
+                # Old operator PDFs abbreviate these names or retain
+                # obsolete spellings. Keep the same internal key for saved
+                # addresses while displaying the contemporary village name.
+                display_names={'вканівці':'Великі Канівці',
+                               'хрестителево':'Хрестителеве'}
+                town_labels.setdefault(key, display_names.get(key,town.strip()))
                 # Numbered addresses and street-wide listings are distinct:
                 # street-wide listings are NOT proof for a specific house.
                 for kind,street,house,label in street_entries(content)+street_house_lists(content):

@@ -68,10 +68,10 @@ const id=()=>crypto.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).
 function norm(s){return String(s||'').toLocaleLowerCase('uk-UA').replace(/[’ʼ`]/g,"'").replace(/^(вул(?:иця)?\.?|пров(?:улок|\.)?|просп(?:ект)?\.?|пр-т\.?|б-р\.?|бульвар|узвіз|алея|площа|майдан|шосе|набережна|тупик|проїзд)\s+/i,'').replace(/[^\p{L}\p{N}/]+/gu,'')}
 function normTown(s){
   const key=norm(String(s||'').replace(/^(с\.|смт\.?|село|місто|м\.|селище)\s*/i,''));
-  return ({'червонаслобода':'слобода','первомайське':'соснове','іванівка':'яничі'})[key]||key;
+  return ({'червонаслобода':'слобода','первомайське':'соснове','іванівка':'яничі','великіканівці':'вканівці','хрестителеве':'хрестителево'})[key]||key;
 }
 function houseKey(s){return norm(s).replace(/-/g,'')}
-for(const a of addresses){if(normTown(a.settlement)==='слобода')a.settlement='Слобода';else if(normTown(a.settlement)==='соснове')a.settlement='Соснове';else if(normTown(a.settlement)==='яничі')a.settlement='Яничі';}
+for(const a of addresses){if(normTown(a.settlement)==='слобода')a.settlement='Слобода';else if(normTown(a.settlement)==='соснове')a.settlement='Соснове';else if(normTown(a.settlement)==='яничі')a.settlement='Яничі';else if(normTown(a.settlement)==='вканівці')a.settlement='Великі Канівці';else if(normTown(a.settlement)==='хрестителево')a.settlement='Хрестителеве';}
 saveAddresses();
 const dateParts=(d=new Date(),tz=TZ)=>Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d).map(p=>[p.type,p.value]));
 const today=()=>{const p=dateParts();return `${p.year}-${p.month}-${p.day}`};
@@ -750,7 +750,7 @@ function populateSettlements(){
  const present=new Set(Array.from(select.options).map(o=>normTown(o.value)));
  const names=Object.entries(index.localities||{})
    .filter(([key,entry])=>entry && typeof entry==='object' && (entry.streets || entry.keys))
-   .map(([key,entry])=>({key,label:entry.label||''}))
+   .map(([key,entry])=>({key,label:({'вканівці':'Великі Канівці','хрестителево':'Хрестителеве'})[key]||entry.label||''}))
    .filter(item=>item.label && !present.has(item.key))
    .sort((a,b)=>a.label.localeCompare(b.label,'uk-UA'));
  for(const item of names){
