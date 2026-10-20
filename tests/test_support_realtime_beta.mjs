@@ -54,7 +54,8 @@ test('browser clients use origin-restricted generic WebSocket events with SSE fa
  assert.match(server,/publishLive\('feedback'/);
  assert.match(server,/\/api\/socket/);
  assert.match(server,/type:'feedback'/);
- assert.match(client,/error\.status===404/);
+ assert.match(client,/e\.status===404/);
+ assert.match(client,/item\.deleted/);
  assert.match(client,/forgetTicket\(id/);
  assert.match(client,/new WebSocket\(/);
  assert.match(client,/new EventSource\(/);
