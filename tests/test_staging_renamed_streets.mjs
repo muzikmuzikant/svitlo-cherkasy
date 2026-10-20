@@ -10,13 +10,13 @@ const keys=aliases.localities.черкаси;
 const renames={schemaVersion:1,localities:{черкаси:keys}};
 
 test('only adopted city council decisions (not proposals) feed approved old/new name matching',()=>{
- assert.equal(keys.length,18);
- assert.ok(keys.every(x=>x.source.startsWith('https://chmr.golos.net.ua/')));
+ assert.equal(keys.length,53);
+ assert.ok(keys.every(x=>x.source.startsWith('https://chmr.golos.net.ua/')||x.source.startsWith('https://chmr.gov.ua/')));
  assert.ok(keys.every(x=>x.oldName&&x.newName&&x.oldName!==x.newName));
  const tmp=mergeIndexes({streets:{'вулиця|володимирамономаха':'Вулиця Володимира Мономаха'},
   keys:{},streetQueues:{},localities:{слобода:{streets:{'вулиця|короленка':'Вулиця Короленка'},keys:{},streetQueues:{}}}},
  {streets:{},localities:{}},{aliasCatalog:renames});
- assert.equal(tmp.aliases.length,18);
+ assert.equal(tmp.aliases.length,53);
  assert.equal(tmp.localities.слобода.aliases,undefined,'City renaming MUST NOT leak to Sloboda');
  assert.equal(lookup.resolve({idx:tmp.localities.слобода,settlement:'Слобода',street:'Володимира Мономаха'}).status,'nostreet');
 });
@@ -71,4 +71,34 @@ test('beta loads and caches aliases offline, without manufacturing queue metadat
  const city=mergeIndexes({streets:{'вулиця|володимирамономаха':'Вулиця Володимира Мономаха'},localities:{}},{},{aliasCatalog:renames});
  assert.deepEqual(city.streetQueues,{});
  assert.deepEqual(city.keys,{});
+});
+
+
+test('Gen. Puteyko is the verified former name of Ivan Kozhedub street in Cherkasy',()=>{
+ const idx=mergeIndexes({streets:{'вулиця|іванакожедуба':'Вулиця Івана Кожедуба'},
+   keys:{},streetQueues:{},localities:{}},{},{aliasCatalog:renames});
+ assert.equal(lookup.resolve({idx,settlement:'Черкаси',street:'Генерала Путейка'}).streetKey,
+   'вулиця|іванакожедуба');
+ assert.ok(lookup.suggest(idx,'Путейка').some(([key])=>key==='вулиця|іванакожедуба'));
+ assert.equal(lookup.renameHint(idx,'Генерала Путейка').newName,'вулиця Івана Кожедуба');
+});
+
+test('split Gagarin street is never mapped to one arbitrary subqueue',()=>{
+ const idx=mergeIndexes({streets:{
+   'вулиця|гагаріна':'Вулиця Гагаріна',
+   'вулиця|князяольгерда':'Вулиця Князя Ольгерда',
+   'вулиця|володимиравеликого':'Вулиця Володимира Великого'
+ },keys:{'вулиця|гагаріна|7':['1.1']},
+   streetQueues:{'вулиця|гагаріна':['1.1']},localities:{}},{},{aliasCatalog:renames});
+ const found=lookup.resolve({idx,settlement:'Черкаси',street:'вулиця Гагаріна',house:'7'});
+ assert.equal(found.status,'possible');
+ assert.equal(found.reason,'split-rename');
+ assert.deepEqual(found.queues,[]);
+ assert.equal(found.queue,undefined);
+ assert.deepEqual(found.splitNewNames,['вулиця Князя Ольгерда','вулиця Володимира Великого']);
+ const suggestions=lookup.suggest(idx,'вулиця Гагаріна');
+ assert.ok(suggestions.some(([key])=>key==='вулиця|князяольгерда'));
+ assert.ok(suggestions.some(([key])=>key==='вулиця|володимиравеликого'));
+ assert.equal(lookup.splitHint(idx,'вулиця Гагаріна').newNames.length,2);
+ assert.equal(lookup.splitHint(idx,'провулок Гагаріна'),null);
 });
