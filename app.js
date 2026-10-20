@@ -668,7 +668,7 @@ function checkLookup(){
   nohouse:house&&known.length?'Будинок '+house+' відсутній у доступному списку точних адрес. Підчергу не визначено автоматично.':'Для цієї адреси немає однозначного запису. Виберіть підчергу вручну.',
   exact:`Будинок ${house}: підтверджена підчерга ${r.queue} за адресним переліком.`,
   street:`Для цієї вулиці вказано підчергу ${r.queue}; суперечливих будинкових записів не знайдено.`,
-  possible:r.reason==='external-only'?'Вулицю знайдено в географічному довіднику. Її підчерга ще не підтверджена оператором. Звірте підчергу на офіційному сайті.':r.reason==='reported-only'?'Вулицю додано за зверненням користувача. Підчерга ще не підтверджена. Звірте її в обленерго.':r.reason==='archived-only'?('Цю вулицю відновлено з попереднього офіційного довідника. У поточному імпорті її немає. '+(list?'Архівні підчерги: '+list+'. ':'')+'Звірте актуальну підчергу на сайті оператора й оберіть вручну.'):
+  possible:r.reason==='split-rename'?'Цю вулицю поділено на різні ділянки з новими назвами: '+(r.splitNewNames||[]).join(' та ')+'. Оберіть сучасну вулицю з підказок і звірте підчергу свого будинку.':r.reason==='external-only'?'Вулицю знайдено в географічному довіднику. Її підчерга ще не підтверджена оператором. Звірте підчергу на офіційному сайті.':r.reason==='reported-only'?'Вулицю додано за зверненням користувача. Підчерга ще не підтверджена. Звірте її в обленерго.':r.reason==='archived-only'?('Цю вулицю відновлено з попереднього офіційного довідника. У поточному імпорті її немає. '+(list?'Архівні підчерги: '+list+'. ':'')+'Звірте актуальну підчергу на сайті оператора й оберіть вручну.'):
     r.reason==='house-conflict'?`Будинок ${house} згадується в різних підчергах: ${list}. Звірте дані з оператором.`:
     r.reason==='no-house-index'?`${house?'Будинок '+house+': точного запису немає. ':''}Для вулиці можливі підчерги ${list}. У джерелі немає розподілу за номерами будинків. Виберіть підчергу нижче.`:
     r.reason==='house-unlisted'?`Будинку ${house} немає серед точних записів цієї вулиці. Можливі підчерги: ${list}. Виберіть підтверджену вами підчергу.`:
@@ -708,7 +708,7 @@ function checkLookup(){
   }
  }
  manual.hidden=['incomplete','exact','street'].includes(r.status);
- $('manualExplanation').textContent=r.reason==='external-only'?'Назва є в географічному довіднику, але черга не підтверджена. Перевірте її в оператора.':r.reason==='reported-only'?'Назву додано за зверненням користувача. Підчергу необхідно перевірити.':r.reason==='archived-only'
+ $('manualExplanation').textContent=r.reason==='split-rename'?'Для колишньої вулиці є декілька сучасних назв. Виберіть точну ділянку та перевірте свою підчергу в оператора.':r.reason==='external-only'?'Назва є в географічному довіднику, але черга не підтверджена. Перевірте її в оператора.':r.reason==='reported-only'?'Назву додано за зверненням користувача. Підчергу необхідно перевірити.':r.reason==='archived-only'
   ?'Вулиця є в попередньому довіднику, але поточна підчерга не підтверджена. Не обирайте навмання: перевірте її в оператора.'
   :r.reason==='no-house-index'
   ?'Номери будинків у джерелі відсутні. Виберіть свою підчергу зі списку можливих або перевірте її на сайті оператора.'
@@ -734,7 +734,7 @@ function checkLookup(){
 function suggestions(){
  const root=$('streetSuggestions');root.replaceChildren();
  const matches=SvitloAddressLookup.suggest(localIndex(),$('street').value);
- root.hidden=!matches.length||SvitloAddressLookup.streetMatches(localIndex(),$('street').value).length===1;
+ root.hidden=!matches.length||(!SvitloAddressLookup.splitHint(localIndex(),$('street').value)&&SvitloAddressLookup.streetMatches(localIndex(),$('street').value).length===1);
  for(const [key,name] of matches){const b=el('button','',name);b.type='button';b.onclick=()=>{
    $('street').value=name;suggestion={key,label:name};root.hidden=true;checkLookup();
  };
