@@ -8,7 +8,8 @@
     "keys": "node -e \"const w=require('web-push');console.log(w.generateVAPIDKeys())\""
   },
   "dependencies": {
-    "web-push": "^3.6.7"
+    "web-push": "^3.6.7",
+    "ws": "^8.18.3"
   },
   "engines": {
     "node": ">=20"
