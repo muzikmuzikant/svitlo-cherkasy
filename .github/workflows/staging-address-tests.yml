@@ -40,6 +40,7 @@ jobs:
           assert a['totals']['indexedCityHouseKeys']>=9000
           assert a['totals']['missingCityHouseKeysSincePrevious'] < 300, 'Excessive drop in verified houses: inspect before merge'
           assert len(d['localities'])>=40
+          assert len([k for k in d['keys'] if k.startswith('вулиця|14грудня|')])>=10, 'Numbered street 14 Грудня lost operator houses'
           import subprocess
           before=json.loads(subprocess.check_output(['git','show','HEAD:data/addresses.json']))
           gone=sorted(set(before['keys'])-set(d['keys']))
