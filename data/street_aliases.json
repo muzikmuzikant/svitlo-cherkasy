@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "updatedAt": "2026-10-20",
-  "description": "Only officially adopted, verified municipal renames. These records are search aliases, NEVER sources for outage queue or house assignments.",
+  "description": "Only officially adopted, verified municipal renames. These records are search aliases, NEVER sources for outage queue or house assignments. Segment-split renames (for example Gagarin Street in 2023) are intentionally omitted to prevent false queue mapping.",
   "localities": {
     "черкаси": [
       {
@@ -111,6 +111,216 @@
         "newName": "вулиця Агатангела Кримського",
         "source": "https://chmr.golos.net.ua/?id=8855&p=khronolohiya_zasidan&sp=single_textend",
         "decision": "55-60"
+      },
+      {
+        "oldName": "вулиця Балакірева",
+        "newName": "вулиця Героїв Поліції",
+        "source": "https://chmr.golos.net.ua/?id=6680&p=khronolohiya_zasidan&sp=single_textend",
+        "decision": "34-40"
+      },
+      {
+        "oldName": "провулок Балакірєва",
+        "newName": "провулок Миколи Біляшівського",
+        "source": "https://chmr.golos.net.ua/?id=6680&p=khronolohiya_zasidan&sp=single_textend",
+        "decision": "34-40"
+      },
+      {
+        "oldName": "вулиця Бородіна",
+        "newName": "вулиця Олександра Кошиця",
+        "source": "https://chmr.golos.net.ua/?id=6680&p=khronolohiya_zasidan&sp=single_textend",
+        "decision": "34-40"
+      },
+      {
+        "oldName": "провулок Віктора Бабанського",
+        "newName": "провулок Людмили Старицької-Черняхівської",
+        "source": "https://chmr.golos.net.ua/?id=6680&p=khronolohiya_zasidan&sp=single_textend",
+        "decision": "34-40"
+      },
+      {
+        "oldName": "провулок Волкова",
+        "newName": "провулок Сергія Фурсенка",
+        "source": "https://chmr.golos.net.ua/?id=6680&p=khronolohiya_zasidan&sp=single_textend",
+        "decision": "34-40"
+      },
+      {
+        "oldName": "вулиця Гвардійська",
+        "newName": "вулиця Святослава Хороброго",
+        "source": "https://chmr.golos.net.ua/?id=9728&p=khronolohiya_zasidan&sp=print_rishenna",
+        "decision": "34-44"
+      },
+      {
+        "oldName": "вулиця Генерала Коротєєва",
+        "newName": "вулиця Юрія Тютюнника",
+        "source": "https://chmr.golos.net.ua/?id=9728&p=khronolohiya_zasidan&sp=print_rishenna",
+        "decision": "34-44"
+      },
+      {
+        "oldName": "вулиця Генерала Путейка",
+        "newName": "вулиця Івана Кожедуба",
+        "source": "https://chmr.golos.net.ua/?id=9728&p=khronolohiya_zasidan&sp=print_rishenna",
+        "decision": "34-44"
+      },
+      {
+        "oldName": "вулиця Генерала Рибалка",
+        "newName": "вулиця Євгена Коновальця",
+        "source": "https://chmr.golos.net.ua/?id=9728&p=khronolohiya_zasidan&sp=print_rishenna",
+        "decision": "34-44"
+      },
+      {
+        "oldName": "вулиця Гризодубової",
+        "newName": "вулиця Марії Заньковецької",
+        "source": "https://chmr.golos.net.ua/?id=9728&p=khronolohiya_zasidan&sp=print_rishenna",
+        "decision": "34-44"
+      },
+      {
+        "oldName": "провулок Гвардійський",
+        "newName": "провулок Князів Острозьких",
+        "source": "https://chmr.golos.net.ua/?id=9728&p=khronolohiya_zasidan&sp=print_rishenna",
+        "decision": "34-44"
+      },
+      {
+        "oldName": "провулок Грибоєдова",
+        "newName": "провулок Шота Руставелі",
+        "source": "https://chmr.golos.net.ua/?id=9728&p=khronolohiya_zasidan&sp=print_rishenna",
+        "decision": "34-44"
+      },
+      {
+        "oldName": "провулок Гризодубової",
+        "newName": "провулок Віктора Полонського",
+        "source": "https://chmr.golos.net.ua/?id=9728&p=khronolohiya_zasidan&sp=print_rishenna",
+        "decision": "34-44"
+      },
+      {
+        "oldName": "провулок Громова",
+        "newName": "провулок Павла Филиповича",
+        "source": "https://chmr.golos.net.ua/?id=9728&p=khronolohiya_zasidan&sp=print_rishenna",
+        "decision": "34-44"
+      },
+      {
+        "oldName": "вулиця Романа",
+        "newName": "вулиця Ігоря Турчина",
+        "source": "https://chmr.golos.net.ua/?id=9730&p=pryynyati_rishennya&sp=single",
+        "decision": "34-37"
+      },
+      {
+        "oldName": "вулиця Стасова",
+        "newName": "вулиця Івана Підкови",
+        "source": "https://chmr.golos.net.ua/?id=9730&p=pryynyati_rishennya&sp=single",
+        "decision": "34-37"
+      },
+      {
+        "oldName": "вулиця Субботіна",
+        "newName": "вулиця Валерія Лобановського",
+        "source": "https://chmr.golos.net.ua/?id=9730&p=pryynyati_rishennya&sp=single",
+        "decision": "34-37"
+      },
+      {
+        "oldName": "провулок Серафимовича",
+        "newName": "провулок Князя Ігоря",
+        "source": "https://chmr.golos.net.ua/?id=9730&p=pryynyati_rishennya&sp=single",
+        "decision": "34-37"
+      },
+      {
+        "oldName": "провулок Сєдова",
+        "newName": "провулок Козака Мамая",
+        "source": "https://chmr.golos.net.ua/?id=9730&p=pryynyati_rishennya&sp=single",
+        "decision": "34-37"
+      },
+      {
+        "oldName": "провулок Смілянський",
+        "newName": "провулок Федора Матушевського",
+        "source": "https://chmr.golos.net.ua/?id=9730&p=pryynyati_rishennya&sp=single",
+        "decision": "34-37"
+      },
+      {
+        "oldName": "провулок Софії Ковалевської",
+        "newName": "провулок Марії Мартинюк",
+        "source": "https://chmr.golos.net.ua/?id=9730&p=pryynyati_rishennya&sp=single",
+        "decision": "34-37"
+      },
+      {
+        "oldName": "провулок Степана Разіна",
+        "newName": "провулок Корсунський",
+        "source": "https://chmr.golos.net.ua/?id=9730&p=pryynyati_rishennya&sp=single",
+        "decision": "34-37"
+      },
+      {
+        "oldName": "провулок Суворова",
+        "newName": "провулок Катерини Білокур",
+        "source": "https://chmr.golos.net.ua/?id=9730&p=pryynyati_rishennya&sp=single",
+        "decision": "34-37"
+      },
+      {
+        "oldName": "вулиця Волкова",
+        "newName": "вулиця Захисників України",
+        "source": "https://chmr.golos.net.ua/?id=10338&p=pryynyati_rishennya&sp=print_rishenna",
+        "decision": "43-58"
+      },
+      {
+        "oldName": "вулиця Глинки",
+        "newName": "вулиця Джохара Дудаєва",
+        "source": "https://chmr.golos.net.ua/?id=10338&p=pryynyati_rishennya&sp=print_rishenna",
+        "decision": "43-58"
+      },
+      {
+        "oldName": "вулиця Пальохи",
+        "newName": "вулиця Пантелеймона Куліша",
+        "source": "https://chmr.golos.net.ua/?id=10338&p=pryynyati_rishennya&sp=print_rishenna",
+        "decision": "43-58"
+      },
+      {
+        "oldName": "вулиця Сержанта Смірнова",
+        "newName": "вулиця Захисників Азовсталі",
+        "source": "https://chmr.golos.net.ua/?id=10338&p=pryynyati_rishennya&sp=print_rishenna",
+        "decision": "43-58"
+      },
+      {
+        "oldName": "провулок Промисловий",
+        "newName": "провулок Тясминський",
+        "source": "https://chmr.golos.net.ua/?id=10338&p=pryynyati_rishennya&sp=print_rishenna",
+        "decision": "43-58"
+      },
+      {
+        "oldName": "узвіз Дачний",
+        "newName": "узвіз Затон",
+        "source": "https://chmr.golos.net.ua/?id=10338&p=pryynyati_rishennya&sp=print_rishenna",
+        "decision": "43-58"
+      },
+      {
+        "oldName": "вулиця Маршала Красовського",
+        "newName": "вулиця Євгена Кухарця",
+        "source": "https://chmr.gov.ua/ua/newsread.php?s=1&s1=17&view=11414",
+        "decision": "245-2016"
+      },
+      {
+        "oldName": "вулиця Героїв Сталінграда",
+        "newName": "вулиця Припортова",
+        "source": "https://chmr.gov.ua/ua/newsread.php?s=1&s1=17&view=11414",
+        "decision": "245-2016"
+      },
+      {
+        "oldName": "вулиця Маршала Батицького",
+        "newName": "вулиця Віталія Вергая",
+        "source": "https://chmr.gov.ua/ua/newsread.php?s=1&s1=17&view=11414",
+        "decision": "245-2016"
+      },
+      {
+        "oldName": "вулиця Першотравнева",
+        "newName": "вулиця Героїв Холодного Яру",
+        "source": "https://chmr.gov.ua/ua/newsread.php?s=1&s1=17&view=11414",
+        "decision": "245-2016"
+      },
+      {
+        "oldName": "провулок Гайдара",
+        "newName": "провулок Руслана Зайченка",
+        "source": "https://chmr.gov.ua/ua/newsread.php?s=1&s1=17&view=11414",
+        "decision": "245-2016"
+      },
+      {
+        "oldName": "провулок Халтуріна",
+        "newName": "провулок Кузьми Скрябіна",
+        "source": "https://chmr.gov.ua/ua/newsread.php?s=1&s1=17&view=11414",
+        "decision": "245-2016"
       }
     ]
   }
