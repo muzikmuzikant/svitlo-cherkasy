@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-10-20",
+  "sources": {
+    "city": "https://mgis.chmr.gov.ua/server/rest/services/different/Streets_of_Heroes/MapServer/0",
+    "district": "https://www.openstreetmap.org/copyright"
+  },
+  "streets": {
+    "вулиця|іванакожедуба": "Вулиця Івана Кожедуба"
+  },
+  "localities": {
+    "слобода": {
+      "label": "Слобода",
+      "streets": {
+        "вулиця|філатова": "Вулиця Філатова"
+      }
+    }
+  },
+  "stats": {
+    "city": 1,
+    "localities": 1,
+    "districtStreets": 1
+  }
+}
