@@ -6,10 +6,15 @@
   else root.SvitloAddressLookup = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
+  function withPrefixSpaces(s){
+    // Operator PDFs also contain "вул.Зінченко" and "Вулиця вул. Зінченко".
+    // Normalize punctuation safely without matching different actual streets.
+    return String(s||'').replace(/^\s*(вул\.|пров\.|просп\.|пр-т\.|б-р\.)\s*/i,'$1 ');
+  }
   function normalize(s) {
-    return String(s || '').toLocaleLowerCase('uk-UA')
+    return withPrefixSpaces(s).toLocaleLowerCase('uk-UA')
       .replace(/[’ʼ`]/g, "'")
-      .replace(/^(вул(?:иця)?\.?|пров(?:улок|\.)?|просп(?:ект)?\.?|пр-т\.?|б-р\.?|бульвар|узвіз|алея|площа|майдан|шосе|набережна|тупик|проїзд)\s+/i,'')
+      .replace(/^(?:(?:вул(?:иця)?\.?|пров(?:улок|\.)?|просп(?:ект)?\.?|пр-т\.?|б-р\.?|бульвар|узвіз|алея|площа|майдан|шосе|набережна|тупик|проїзд)\s+){1,3}/i,'')
       .replace(/[^\p{L}\p{N}/]+/gu,'');
   }
   // Official PDFs normally use Cyrillic suffixes (12-А), while phone keyboards
@@ -28,7 +33,7 @@
       .sort((a,b)=>a.number.localeCompare(b.number,'uk-UA',{numeric:true,sensitivity:'base'}));
   }
   function kindOf(street) {
-    const match=/^(пров(?:улок|\.)?|вул(?:иця)?\.?|просп(?:ект)?\.?|пр-т\.?|б-р\.?|бульвар|узвіз|алея|площа|майдан|шосе|набережна|тупик|проїзд)\s+/i.exec(String(street||''));
+    const match=/^(пров(?:улок|\.)?|вул(?:иця)?\.?|просп(?:ект)?\.?|пр-т\.?|б-р\.?|бульвар|узвіз|алея|площа|майдан|шосе|набережна|тупик|проїзд)\s+/i.exec(withPrefixSpaces(street));
     if (!match) return null;
     const k=match[1].toLocaleLowerCase('uk-UA');
     if(k.startsWith('пров'))return 'провулок';
