@@ -95,6 +95,15 @@
          pair.oldName!==pair.newName && typeof pair.source==='string' &&
          /^https:\/\/(?:chmr\.golos\.net\.ua|chmr\.gov\.ua)\//.test(pair.source));
        target.aliases=pairs.map(({oldName,newName,source})=>({oldName,newName,source}));
+       const split=obj(aliasCatalog.splitRenames)[locality];
+       if(Array.isArray(split)){
+         target.splitRenames=split.filter(p=>
+           p && typeof p.oldName==='string' && Array.isArray(p.newNames) &&
+           p.newNames.length>=2 && p.newNames.every(n=>typeof n==='string') &&
+           typeof p.source==='string' &&
+           /^https:\/\/chmr\.golos\.net\.ua\//.test(p.source))
+           .map(({oldName,newNames,source})=>({oldName,newNames,source}));
+       }
      }
    }
    result.updatedAt=live.updatedAt||backup.updatedAt||null;
