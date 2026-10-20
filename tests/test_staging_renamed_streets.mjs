@@ -69,6 +69,6 @@ test('beta loads and caches aliases offline, without manufacturing queue metadat
  assert.match(app,/index=mergeIndexes\(live,backup,\{catalog,aliasCatalog\}\)/);
  assert.match(sw,/street_aliases\.json/);
  const city=mergeIndexes({streets:{'вулиця|володимирамономаха':'Вулиця Володимира Мономаха'},localities:{}},{},{aliasCatalog:renames});
- assert.deepEqual(city.streetQueues,undefined);
- assert.deepEqual(city.keys,undefined);
+ assert.deepEqual(city.streetQueues,{});
+ assert.deepEqual(city.keys,{});
 });
