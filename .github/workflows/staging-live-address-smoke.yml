@@ -48,10 +48,12 @@ jobs:
                   assert seed['localities']['слобода']['streets']['вулиця|філатова']=='Вулиця Філатова'
                   assert len(address.get('streets',{}))>=425, 'Stale official importer'
                   assert len(supplement.get('streets',{}))>=511, 'Stale GIS importer'
+                  assert sum(len(v.get('streets',{})) for v in supplement.get('localities',{}).values())>=480, 'Stale village GIS/OSM enrichment'
                   print('Verified live Beta: v'+release['version'])
                   print('Verified address names: official city',len(address['streets']),
                         'GIS city',len(supplement['streets']))
                   print('Verified Filatova and Ivana Kozheduba on actual Beta origin')
+                  print('Verified geo-located village street names:',sum(len(v.get('streets',{})) for v in supplement['localities'].values()))
                   break
               except Exception as error:
                   last=str(error)
