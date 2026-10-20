@@ -50,8 +50,8 @@ test('feedback lifecycle emits nonprivate revision events only after persisted c
 test('live sync uses one private batch endpoint and never sends ticket content by WebSocket',()=>{
  const frontend=fs.readFileSync(path.join(root,'feedback.js'),'utf8');
  const server=fs.readFileSync(path.join(root,'push-server/server.js'),'utf8');
- assert.match(server,/\/'api\/ticket\/sync'/);
- assert.match(frontend,/post\('\/api\/ticket\/sync'/);
+ assert.ok(server.includes("'/api/ticket/sync'"));
+ assert.ok(frontend.includes("post('/api/ticket/sync'"));
  assert.match(frontend,/item\.deleted/);
  assert.match(server,/\{type:'feedback',revision\}/);
  assert.match(server,/originPolicy\.isAllowed\(req\.headers\.origin/);
