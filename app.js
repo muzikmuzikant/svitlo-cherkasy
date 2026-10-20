@@ -668,13 +668,17 @@ function checkLookup(){
   nohouse:house&&known.length?'Будинок '+house+' відсутній у доступному списку точних адрес. Підчергу не визначено автоматично.':'Для цієї адреси немає однозначного запису. Виберіть підчергу вручну.',
   exact:`Будинок ${house}: підтверджена підчерга ${r.queue} за адресним переліком.`,
   street:`Для цієї вулиці вказано підчергу ${r.queue}; суперечливих будинкових записів не знайдено.`,
-  possible:r.reason==='external-only'?'Вулицю знайдено в географічному довіднику. Її підчерга ще не підтверджена оператором. Звірте підчергу на офіційному сайті.':r.reason==='reported-only'?'Вулицю додано за зверненням користувача. Підчерга ще не підтверджена. Звірте її в обленерго.':r.reason==='archived-only'?('Цю вулицю відновлено з попереднього офіційного довідника. У поточному імпорті її немає. '+(list?'Архівні підчерги: '+list+'. ':'')+'Звірте актуальну підчергу на сайті оператора й оберіть вручну.'):
+  possible:r.reason==='split-rename'?'Цю вулицю поділено на різні ділянки з новими назвами: '+(r.splitNewNames||[]).join(' та ')+'. Оберіть сучасну вулицю з підказок і звірте підчергу свого будинку.':r.reason==='external-only'?'Вулицю знайдено в географічному довіднику. Її підчерга ще не підтверджена оператором. Звірте підчергу на офіційному сайті.':r.reason==='reported-only'?'Вулицю додано за зверненням користувача. Підчерга ще не підтверджена. Звірте її в обленерго.':r.reason==='archived-only'?('Цю вулицю відновлено з попереднього офіційного довідника. У поточному імпорті її немає. '+(list?'Архівні підчерги: '+list+'. ':'')+'Звірте актуальну підчергу на сайті оператора й оберіть вручну.'):
     r.reason==='house-conflict'?`Будинок ${house} згадується в різних підчергах: ${list}. Звірте дані з оператором.`:
     r.reason==='no-house-index'?`${house?'Будинок '+house+': точного запису немає. ':''}Для вулиці можливі підчерги ${list}. У джерелі немає розподілу за номерами будинків. Виберіть підчергу нижче.`:
     r.reason==='house-unlisted'?`Будинку ${house} немає серед точних записів цієї вулиці. Можливі підчерги: ${list}. Виберіть підтверджену вами підчергу.`:
     `Для вулиці є підчерги ${list}. Уточніть номер будинку, щоб перевірити точний збіг, або виберіть відому підчергу.`
  };
- hint.textContent=messages[r.status]||'Не вдалося визначити підчергу.';
+ const rename=SvitloAddressLookup.renameHint(localIndex(),$('street').value);
+ const renameNote=rename?(SvitloAddressLookup.normalize($('street').value)===SvitloAddressLookup.normalize(rename.oldName)
+   ?' Цю вулицю перейменовано на «'+rename.newName+'».'
+   :' У старих документах ця вулиця може називатися «'+rename.oldName+'».'):'';
+ hint.textContent=(messages[r.status]||'Не вдалося визначити підчергу.')+renameNote;
  const coverage=$('houseCoverage'),choices=$('houseChoices');
  choices.replaceChildren();choices.hidden=true;coverage.hidden=true;
  if(r.streetKey&&r.status!=='exact'){
@@ -704,7 +708,7 @@ function checkLookup(){
   }
  }
  manual.hidden=['incomplete','exact','street'].includes(r.status);
- $('manualExplanation').textContent=r.reason==='external-only'?'Назва є в географічному довіднику, але черга не підтверджена. Перевірте її в оператора.':r.reason==='reported-only'?'Назву додано за зверненням користувача. Підчергу необхідно перевірити.':r.reason==='archived-only'
+ $('manualExplanation').textContent=r.reason==='split-rename'?'Для колишньої вулиці є декілька сучасних назв. Виберіть точну ділянку та перевірте свою підчергу в оператора.':r.reason==='external-only'?'Назва є в географічному довіднику, але черга не підтверджена. Перевірте її в оператора.':r.reason==='reported-only'?'Назву додано за зверненням користувача. Підчергу необхідно перевірити.':r.reason==='archived-only'
   ?'Вулиця є в попередньому довіднику, але поточна підчерга не підтверджена. Не обирайте навмання: перевірте її в оператора.'
   :r.reason==='no-house-index'
   ?'Номери будинків у джерелі відсутні. Виберіть свою підчергу зі списку можливих або перевірте її на сайті оператора.'
@@ -730,7 +734,7 @@ function checkLookup(){
 function suggestions(){
  const root=$('streetSuggestions');root.replaceChildren();
  const matches=SvitloAddressLookup.suggest(localIndex(),$('street').value);
- root.hidden=!matches.length||SvitloAddressLookup.streetMatches(localIndex(),$('street').value).length===1;
+ root.hidden=!matches.length||(!SvitloAddressLookup.splitHint(localIndex(),$('street').value)&&SvitloAddressLookup.streetMatches(localIndex(),$('street').value).length===1);
  for(const [key,name] of matches){const b=el('button','',name);b.type='button';b.onclick=()=>{
    $('street').value=name;suggestion={key,label:name};root.hidden=true;checkLookup();
  };
@@ -740,6 +744,11 @@ function suggestions(){
        idx.externalStreetNames?.includes(key)?' · з географічного довідника':
        ' · з попереднього переліку';
      b.append(el('small','archive-street-tag',note));
+   }
+   const rename=SvitloAddressLookup.renameHint(idx,$('street').value);
+   if(rename && SvitloAddressLookup.normalize($('street').value)===
+       SvitloAddressLookup.normalize(rename.oldName)){
+     b.append(el('small','archive-street-tag',' · тепер '+rename.newName));
    }
    root.append(b)}
 }
@@ -905,16 +914,18 @@ async function refreshData(manual=false){
    if(refreshAuxiliary){
    lastAuxiliaryRefresh=Date.now();
    try{
-     const [remote,seed,geo]=await Promise.allSettled([
+     const [remote,seed,geo,renames]=await Promise.allSettled([
        fetch(`./data/addresses.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}),
        fetch(`./data/published_street_fallback.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}),
-       fetch(`./data/street_catalog.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()})
+       fetch(`./data/street_catalog.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}),
+       fetch(`./data/street_aliases.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()})
      ]);
-     if(remote.status==='fulfilled'||seed.status==='fulfilled'||geo.status==='fulfilled'){
+     if(remote.status==='fulfilled'||seed.status==='fulfilled'||geo.status==='fulfilled'||renames.status==='fulfilled'){
        const live=remote.status==='fulfilled'?remote.value:{};
        const backup=seed.status==='fulfilled'?seed.value:{};
        const catalog=geo.status==='fulfilled'?geo.value:{};
-       index=mergeIndexes(live,backup,{catalog});
+       const aliasCatalog=renames.status==='fulfilled'?renames.value:{};
+       index=mergeIndexes(live,backup,{catalog,aliasCatalog});
        try{const snapshot=JSON.stringify(index);if(snapshot.length<1700000)localStorage.setItem(OFFLINE_ADDRESSES,snapshot)}catch{}
        populateSettlements();
        if($('addressSheet').open){suggestions();checkLookup()}

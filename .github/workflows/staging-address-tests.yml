@@ -25,7 +25,7 @@ jobs:
       - name: Verify locality PDF extraction and GIS parser
         run: python -m pytest -q tests/test_district_import.py tests/test_published_fallback.py tests/test_address_catalog_v793.py tests/test_street_catalog_beta.py
       - name: Verify address search with independent source
-        run: node --test tests/test_staging_address_regression.mjs tests/test_address_lookup.cjs tests/test_data_merge_v720.cjs tests/test_real_village_lookup.cjs
+        run: node --test tests/test_staging_address_regression.mjs tests/test_staging_renamed_streets.mjs tests/test_address_lookup.cjs tests/test_data_merge_v720.cjs tests/test_real_village_lookup.cjs
       - name: Build actual offline PWA
         run: python scripts/build_pages.py
       - name: Verify syntactic correctness

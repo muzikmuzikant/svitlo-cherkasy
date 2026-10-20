@@ -63,7 +63,7 @@ test('staging PWA actively loads the public catalogue and caches it',()=>{
  const release=load('release.json');
  assert.equal(release.channel,'beta');
  assert.match(code,/street_catalog\.json/);
- assert.match(code,/index=mergeIndexes\(live,backup,\{catalog\}\)/);
+ assert.match(code,/index=mergeIndexes\(live,backup,\{catalog(?:,aliasCatalog)?\}\)/);
  assert.match(code,/return k===normTown\('Черкаси'\)\?index/);
  assert.ok(sw.includes('./data/street_catalog.json'));
  assert.ok(sw.includes('svitlo-cherkasy-shell-v'+release.version));
