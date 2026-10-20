@@ -546,7 +546,7 @@ function updatePushInvite(){
 function renderSettings(){for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).checked=!!prefs[key];const connected=!!pushConfig?.apiBase&&!!pushConfig?.publicKey;setText('pushHeadline','Сповіщення');setText('pushDescription',connected?'Отримуйте нагадування про відключення та зміни графіків, навіть коли застосунок закритий.':'Наразі нагадування доступні тільки під час використання застосунку.');setText('enableNotifications',connected?'Увімкнути сповіщення':'Дозволити нагадування');$('disableNotifications').hidden=!connected;}
 function fillQueueSelect(){const root=$('manualQueue');root.replaceChildren(new Option('Оберіть підчергу',''),...QUEUES.map(q=>new Option(q,q)))}
 function town(){return $('settlement').value==='Інше'?$('customSettlement').value.trim():$('settlement').value}
-function localIndex(){const k=normTown(town());return k===normTown('Черкаси')?{keys:index.keys||{},streets:index.streets||{},streetQueues:index.streetQueues||{}}:index.localities?.[k]||{keys:{},streets:{},streetQueues:{}}}
+function localIndex(){const k=normTown(town());return k===normTown('Черкаси')?{keys:index.keys||{},streets:index.streets||{},streetQueues:index.streetQueues||{},archiveOnlyStreets:index.archiveOnlyStreets||[],archivedStreetQueues:index.archivedStreetQueues||{},reportedStreetNames:index.reportedStreetNames||[]}:index.localities?.[k]||{keys:{},streets:{},streetQueues:{}}}
 function findQueue(){
  const idx=localIndex();
  const selectedKey=suggestion&&SvitloAddressLookup.normalize(suggestion.label)===SvitloAddressLookup.normalize($('street').value)?suggestion.key:null;
