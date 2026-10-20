@@ -78,3 +78,32 @@ def test_unlabelled_roads_go_only_to_confident_nearest_village():
     assert "вулиця|міська" not in names.get("слобода", {})
     assert "вулиця|далека" not in names.get("слобода", {})
     assert "іншесело" not in names
+
+
+def test_full_municipal_street_layer_paginates_and_excludes_queues():
+    from scripts.build_street_catalog import collect_city_gis, CITY_STREETS_API
+
+    assert '/opora/Streets_WGS84/MapServer/0/query' in CITY_STREETS_API
+    class Reply:
+        def raise_for_status(self): pass
+        def json(self):
+            return {'features': [{'attributes': {'street_ful': f'вулиця Героїв {i}'}} for i in range(1, 105)]}
+    class Source:
+        def get(self, url, params, timeout):
+            assert url == CITY_STREETS_API
+            assert params['returnGeometry'] == 'false'
+            assert params['outFields'] == 'street_ful'
+            return Reply()
+    streets=collect_city_gis(Source())
+    assert len(streets) == 104
+    assert 'вулиця|героїв15' in streets
+    assert not any('queue' in key.lower() for key in streets)
+
+
+def test_overpass_queries_are_local_and_use_functional_mirror():
+    from pathlib import Path
+    text=(Path(__file__).resolve().parents[1]/'scripts/build_street_catalog.py').read_text('utf8')
+    assert 'overpass.private.coffee' in text
+    assert 'area["name"="Черкаський район"]["admin_level"="6"]' in text
+    assert 'session.headers.update' in text
+    assert 'Origin' in text
