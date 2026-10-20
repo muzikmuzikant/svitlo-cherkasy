@@ -2,6 +2,7 @@
  * Keep DATA_FILE on Railway's persistent volume; keep VAPID private key in Railway Variables.
  */
 import http from 'node:http';
+import {WebSocketServer,WebSocket} from 'ws';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
@@ -40,7 +41,8 @@ function save(){
  try{fs.writeFileSync(DATA_FILE+'.tmp',JSON.stringify({subscribers,sent}));fs.renameSync(DATA_FILE+'.tmp',DATA_FILE)}
  catch(e){console.error('Persistent subscriber save failed:',e.message);throw e}
 }
-const feedback=createFeedbackStore({filePath:process.env.FEEDBACK_FILE||path.join(path.dirname(DATA_FILE),'feedback.json')});
+let publishSupportChange=()=>{};
+const feedback=createFeedbackStore({filePath:process.env.FEEDBACK_FILE||path.join(path.dirname(DATA_FILE),'feedback.json'),onChange:kind=>publishSupportChange(kind)});
 const extras=createAdminExtras({directory:path.dirname(DATA_FILE)});
 const analytics=createAnalyticsStore({filePath:path.join(path.dirname(DATA_FILE),'analytics.json')});
 const ads=createAdsStore({directory:path.dirname(DATA_FILE)});
@@ -247,6 +249,21 @@ async function readPayload(req,limit=12000){
 const statusAttempts=new Map();
 // Real-time one-way updates for iOS/Android/desktop without extra dependencies.
 const liveConnections=new Set();
+const supportSockets=new WebSocketServer({noServer:true,maxPayload:512,clientTracking:true});
+const supportHeartbeat=setInterval(()=>{
+ for(const peer of supportSockets.clients){
+  if(!peer.supportAlive){peer.terminate();continue}
+  peer.supportAlive=false;try{peer.ping()}catch{peer.terminate()}
+ }
+},30000);
+supportHeartbeat.unref?.();
+supportSockets.on('connection',peer=>{
+ peer.supportAlive=true;
+ peer.on('pong',()=>{peer.supportAlive=true});
+ // Support socket is receive-only. Never accept a ticket ID or access code.
+ peer.on('message',()=>peer.close(1008,'Receive only'));
+ peer.send(JSON.stringify({type:'connected',revision:Date.now()}));
+});
 function publishLive(kind,stamp){
  const message='event: '+kind+'\ndata: '+JSON.stringify({revision:stamp})+'\n\n';
  for(const res of liveConnections){
@@ -254,6 +271,12 @@ function publishLive(kind,stamp){
   catch{liveConnections.delete(res)}
  }
 }
+publishSupportChange=()=>{
+ const revision=Date.now();
+ publishLive('feedback',revision);
+ const wire=JSON.stringify({type:'feedback',revision});
+ for(const peer of supportSockets.clients)if(peer.readyState===WebSocket.OPEN){try{peer.send(wire)}catch{peer.terminate()}}
+};
 let lastConfigWire=JSON.stringify(siteControls.publicState());
 let lastScheduleWire=JSON.stringify(officialSchedules.status());
 setInterval(()=>{
@@ -471,6 +494,13 @@ const server=http.createServer(async(req,res)=>{
    automatic:subscribers[key]?.automatic||{}};
   save();response(res,200,{ok:true});
  }catch(e){response(res,e.message?.includes('save failed')?500:400,{error:'Invalid subscription request'})}
+});
+server.on('upgrade',(req,socket,head)=>{
+ let pathname='';try{pathname=new URL(req.url,'http://localhost').pathname}catch{}
+ if(pathname!=='/api/socket'||!originPolicy.isAllowed(req.headers.origin||'')||supportSockets.clients.size>=350){
+  socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');socket.destroy();return;
+ }
+ supportSockets.handleUpgrade(req,socket,head,peer=>supportSockets.emit('connection',peer,req));
 });
 server.listen(Number(PORT),()=>console.log('Push companion listening on port '+PORT));
 const reportSources={feedback,ads,push:manualPush,diagnostics:errorCounts,audit:()=>auditSchedule(officialSchedules.schedule()||lastLoadedSchedule)};
