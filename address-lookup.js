@@ -28,7 +28,7 @@
       .sort((a,b)=>a.number.localeCompare(b.number,'uk-UA',{numeric:true,sensitivity:'base'}));
   }
   function kindOf(street) {
-    const match=/^(пров(?:улок|\.)?|вул(?:иця)?\.?|просп(?:ект)?\.?|пр-т\.?|б-р\.?|бульвар|узвіз)\s+/i.exec(String(street||''));
+    const match=/^(пров(?:улок|\.)?|вул(?:иця)?\.?|просп(?:ект)?\.?|пр-т\.?|б-р\.?|бульвар|узвіз|алея|площа|майдан|шосе|набережна|тупик|проїзд)\s+/i.exec(String(street||''));
     if (!match) return null;
     const k=match[1].toLocaleLowerCase('uk-UA');
     if(k.startsWith('пров'))return 'провулок';
@@ -42,25 +42,74 @@
   function validQueues(values) {
     return [...new Set((Array.isArray(values)?values:[]).filter(q => /^[1-6]\.[12]$/.test(q)))].sort(queueSort);
   }
+  function directMatches(idx, typed) {
+    const kind=kindOf(typed),needle=normalize(typed);
+    if(!needle)return [];
+    return Object.entries(idx?.streets||{}).filter(([key,name]) =>
+      (normalize(key.split('|')[1])===needle || normalize(name)===needle) &&
+      (!kind || key.startsWith(kind+'|')));
+  }
+  function renamePairs(idx){
+    return Array.isArray(idx?.aliases)?idx.aliases.filter(pair=>
+      pair && typeof pair.oldName==='string' && typeof pair.newName==='string'):[];
+  }
+  function renamedCandidates(idx,typed,exactOnly=true){
+    const needle=normalize(typed),kind=kindOf(typed);
+    if(!needle)return [];
+    const out=new Map();
+    for(const pair of renamePairs(idx)){
+      // Aliases can cross street types: провулок -> вулиця or узвіз.
+      for(const [aliasName,otherName] of [[pair.oldName,pair.newName],[pair.newName,pair.oldName]]){
+        const key=normalize(aliasName);
+        if((exactOnly?key===needle:key.includes(needle)) && (!kind || kind===kindOf(aliasName))){
+          // Only names that actually exist in the index are eligible.
+          for(const [streetKey,label] of directMatches(idx,otherName))out.set(streetKey,label);
+        }
+      }
+    }
+    return [...out.entries()];
+  }
   function streetMatches(idx, typed, selectedKey) {
-    const kind=kindOf(typed);
-    const needle=normalize(typed);
-    if (!needle) return [];
-    const all=Object.entries(idx?.streets||{}).filter(([key,name]) =>
-      (normalize(key.split('|')[1])===needle || normalize(name)===needle) && (!kind || key.startsWith(kind+'|')));
-    if (selectedKey && all.some(([key]) => key === selectedKey)) return all.filter(([key]) => key===selectedKey);
-    return all;
+    const direct=directMatches(idx,typed);
+    // Exact current/archived source record always wins against an alias.
+    // Never join both names' house indexes or invent a queue.
+    const matches=direct.length?direct:renamedCandidates(idx,typed,true);
+    if (selectedKey && matches.some(([key])=>key===selectedKey))
+      return matches.filter(([key])=>key===selectedKey);
+    return matches;
   }
   function suggest(idx, typed, limit=12) {
-    const raw=normalize(typed);
-    const type=kindOf(typed);
+    const raw=normalize(typed),type=kindOf(typed);
     if(raw.length<2)return [];
-    return Object.entries(idx?.streets||{})
-      .filter(([key,name])=> (!type||key.startsWith(type+'|')) && (normalize(name).includes(raw)||normalize(key.split('|')[1]).includes(raw)))
-      .sort(([ka,na],[kb,nb])=>{
-        const sa=normalize(na),sb=normalize(nb),pa=sa.startsWith(raw)?0:1,pb=sb.startsWith(raw)?0:1;
-        return pa-pb||sa.localeCompare(sb,'uk-UA')||ka.localeCompare(kb,'uk-UA');
-      }).slice(0,limit);
+    const chosen=new Map();
+    for(const [key,name] of Object.entries(idx?.streets||{})){
+      if ((!type||key.startsWith(type+'|')) &&
+          (normalize(name).includes(raw)||normalize(key.split('|')[1]).includes(raw)))
+        chosen.set(key,name);
+    }
+    // Renamed-street suggestions only point to an existing street entry,
+    // and do not import obsolete queue assignments.
+    for(const [key,name] of renamedCandidates(idx,typed,false)){
+      if(!chosen.has(key))chosen.set(key,name);
+    }
+    function rank([key,name]){
+      const n=normalize(name),k=normalize(key.split('|')[1]);
+      if(n===raw||k===raw)return 0;
+      if(n.startsWith(raw)||k.startsWith(raw))return 1;
+      if(n.includes(raw)||k.includes(raw))return 2;
+      return 3; // matched a verified former/current name
+    }
+    return [...chosen.entries()].sort((a,b)=>rank(a)-rank(b)||
+      a[1].localeCompare(b[1],'uk-UA')||a[0].localeCompare(b[0],'uk-UA')).slice(0,limit);
+  }
+  function renameHint(idx,typed){
+    const needle=normalize(typed),kind=kindOf(typed);
+    for(const pair of renamePairs(idx)){
+      if((normalize(pair.oldName)===needle && (!kind||kind===kindOf(pair.oldName))) ||
+         (normalize(pair.newName)===needle && (!kind||kind===kindOf(pair.newName))))
+        return {oldName:pair.oldName,newName:pair.newName,source:pair.source||''};
+    }
+    return null;
   }
   function resolve({idx,street,house,settlement,selectedKey}={}) {
     street=String(street||'').trim();house=String(house||'').trim();
@@ -96,5 +145,5 @@
     return {...base,status:'nohouse',reason:house?'house-unlisted':'no-address-data'};
   }
 
-  return {normalize,houseKey,kindOf,streetMatches,suggest,knownHouses,resolve};
+  return {normalize,houseKey,kindOf,streetMatches,suggest,renameHint,knownHouses,resolve};
 });
