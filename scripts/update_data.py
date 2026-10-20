@@ -57,6 +57,14 @@ HOUSE_ITEM = re.compile(
     re.I,
 )
 STAR_NUMBER = re.compile(r'^\s*\d{1,4}\s*\*\s*\d{1,4}\s*$')
+# One *final* valid house may be followed by the next company/section label
+# without a separating comma. Do not confuse any unit qualifier with a house.
+HOUSE_AT_PROSE = re.compile(
+    r'^\s*(?P<number>\d{1,4}(?:\s*[-/]\s*\d{1,4}|\s*/\s*[а-яіїєґa-z])?'
+    r'(?:\s*[- ]?\s*[а-яіїєґa-z])?)'
+    r'(?=\s+(?!кв\.?\b|квартира\b|корпус\b|приміщення\b)[^\d\s]|\s*;)',
+    re.I,
+)
 
 def parse_house_numbers(value):
     """Return only exact, whole-building tokens, without apartment guesses."""
@@ -70,6 +78,13 @@ def parse_house_numbers(value):
             continue
         match = HOUSE_ITEM.fullmatch(part)
         if not match:
+            # The last listed house sometimes directly precedes prose or
+            # a company name. Preserve that exact house, then STOP.
+            prefix = HOUSE_AT_PROSE.match(part)
+            if prefix:
+                number = normalize(prefix.group('number').replace('-', ''))
+                if number:
+                    result.append(number)
             break
         if match.group('unit'):
             continue
