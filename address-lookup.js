@@ -242,10 +242,15 @@
     // the queue on a street with multiple possible queues.
     if(exact.length===1)return {...base,status:'exact',queue:exact[0],method:'automatic'};
     if(exact.length>1)return {...base,status:'possible',queues:exact,reason:'house-conflict'};
-    // Preserve existing single-street automatic resolution where no other
-    // known house contradicts the street-wide record.
-    if(streetOnly.length===1 && houseQueues.every(q=>q===streetOnly[0]))
+    // A PDF that lists SPECIFIC house numbers does not prove that an
+    // unlisted building belongs to their queue, even when they all agree.
+    // Auto-resolve whole streets only when there is no house-level index.
+    if(!houses.length && streetOnly.length===1)
       return {...base,status:'street',queue:streetOnly[0],method:'street-auto'};
+    if(houses.length && !house && options.length===1)
+      return {...base,status:'needhouse',reason:'needs-house'};
+    if(houses.length && house && options.length===1)
+      return {...base,status:'nohouse',reason:'house-unlisted'};
     if(options.length>1){
       return {...base,status:'possible',reason:houses.length?(house?'house-unlisted':'needs-house'):'no-house-index'};
     }
