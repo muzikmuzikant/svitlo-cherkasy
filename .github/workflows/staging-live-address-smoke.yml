@@ -1,0 +1,62 @@
+name: Verify live Beta site address catalogue
+on:
+  push:
+    branches: [staging]
+    paths:
+      - .github/workflows/staging-live-address-smoke.yml
+      - data/addresses.json
+      - data/street_catalog.json
+      - data/published_street_fallback.json
+      - app.js
+      - release.json
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-origin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Verify real Cloudflare Beta origin after deployment
+        env:
+          BETA_URL: https://svitlo-cherkasy.pages.dev
+        run: |
+          python - <<'PY'
+          import json,os,time,urllib.request,urllib.error
+          base=os.environ['BETA_URL']
+          paths=['release.json','data/addresses.json','data/street_catalog.json',
+                 'data/published_street_fallback.json','app.js']
+          headers={'User-Agent':'SvitloCherkasy-Beta-Smoke/1.0','Cache-Control':'no-cache'}
+          last=''
+          for attempt in range(1,23):
+              try:
+                  values={}
+                  for name in paths:
+                      url=base+'/'+name+'?address_audit='+str(attempt)+'_'+str(time.time_ns())
+                      req=urllib.request.Request(url,headers=headers)
+                      with urllib.request.urlopen(req,timeout=12) as result:
+                          payload=result.read(2_500_000)
+                      values[name]=payload.decode('utf-8')
+                  release=json.loads(values['release.json'])
+                  address=json.loads(values['data/addresses.json'])
+                  supplement=json.loads(values['data/street_catalog.json'])
+                  seed=json.loads(values['data/published_street_fallback.json'])
+                  assert release.get('channel')=='beta', 'Not Beta channel'
+                  assert tuple(map(int,release['version'].split('.'))) >= (7,9,13), 'Stale Beta deployment'
+                  assert 'street_catalog.json' in values['app.js'], 'App missing merged catalogue'
+                  assert seed['streets']['вулиця|іванакожедуба']=='Вулиця Івана Кожедуба'
+                  assert seed['localities']['слобода']['streets']['вулиця|філатова']=='Вулиця Філатова'
+                  assert len(address.get('streets',{}))>=425, 'Stale official importer'
+                  assert len(supplement.get('streets',{}))>=511, 'Stale GIS importer'
+                  print('Verified live Beta: v'+release['version'])
+                  print('Verified address names: official city',len(address['streets']),
+                        'GIS city',len(supplement['streets']))
+                  print('Verified Filatova and Ivana Kozheduba on actual Beta origin')
+                  break
+              except Exception as error:
+                  last=str(error)
+                  print(f'Attempt {attempt}: {last}',flush=True)
+                  time.sleep(12)
+          else:
+              raise SystemExit('Beta not proven live: '+last)
+          PY
