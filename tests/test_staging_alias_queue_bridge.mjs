@@ -38,7 +38,9 @@ test('modern Mystetskyi lane resolves officially listed old Hastello lane at hou
 test('modern Monastyrskyi lane retrieves old Nekrasova houses with same queue',()=>{
  const r=check('провулок Монастирський','5','4.1');
  assert.equal(r.sourceStreet,'Провулок Некрасова');
- assert.equal(lookup.resolve({idx,street:'провулок Монастирський',house:'1222',settlement:'Черкаси'}).queue,'4.1');
+ const unknown=lookup.resolve({idx,street:'провулок Монастирський',house:'1222',settlement:'Черкаси'});
+ assert.equal(unknown.queue,undefined, 'Unknown house is not verified by other houses on the street');
+ assert.equal(unknown.status,'nohouse');
 });
 test('retyped old lane now a modern STREET crosses types only on cited renaming',()=>{
  const r=check('вулиця Агатангела Кримського','10','1.1');

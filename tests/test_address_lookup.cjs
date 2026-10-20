@@ -7,9 +7,11 @@ const ix={
  keys:{'вулиця|соборна|42':['1.1'],'вулиця|героївмайдану|12':['5.1'],'вулиця|героївмайдану|22':['6.1'],'вулиця|лісова|5':['4.2'],'вулиця|узбережна|1':['1.2'],'вулиця|узбережна|3':['1.2']}
 };
 const find=(street,house='',selectedKey)=>resolve({idx:ix,street,house,settlement:'Слобода',selectedKey});
-test('single street-wide queue saved without house, even with same-queue known houses',()=>{
- assert.deepEqual([find('Соборна').status,find('Соборна').queue],['street','1.1']);
- assert.deepEqual([find('Соборна','100').status,find('Соборна','100').queue],['street','1.1']);
+test('a single listed house is not proof of a queue for all unlisted houses',()=>{
+ assert.equal(find('Соборна').status,'needhouse');
+ assert.equal(find('Соборна','100').status,'nohouse');
+ assert.equal(find('Соборна','100').queue,undefined);
+ assert.deepEqual([find('Соборна','42').status,find('Соборна','42').queue],['exact','1.1']);
 });
 test('an exact address overrides conflicting general street hints',()=>{
  assert.deepEqual([find('Вулиця Лісова','5').status,find('Вулиця Лісова','5').queue],['exact','4.2']);
