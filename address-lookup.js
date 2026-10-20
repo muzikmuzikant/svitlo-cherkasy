@@ -6,10 +6,18 @@
   else root.SvitloAddressLookup = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
+  function withPrefixSpaces(s){
+    // Operator PDFs also contain "вул.Зінченко" and "Вулиця вул. Зінченко".
+    // Normalize punctuation safely without matching different actual streets.
+    return String(s||'').replace(/^\s*(вул\.|пров\.|просп\.|пр-т\.|б-р\.)\s*/i,'$1 ');
+  }
+  function cleanStreetLabel(s){
+    return String(s||'').replace(/^(Вулиця|Провулок|Проспект|Узвіз|Бульвар)\s+(?:вул\.?|пров\.?|просп\.?|пр-т\.?|б-р\.?)\s*/i,'$1 ');
+  }
   function normalize(s) {
-    return String(s || '').toLocaleLowerCase('uk-UA')
+    return withPrefixSpaces(s).toLocaleLowerCase('uk-UA')
       .replace(/[’ʼ`]/g, "'")
-      .replace(/^(вул(?:иця)?\.?|пров(?:улок|\.)?|просп(?:ект)?\.?|пр-т\.?|б-р\.?|бульвар|узвіз|алея|площа|майдан|шосе|набережна|тупик|проїзд)\s+/i,'')
+      .replace(/^(?:(?:вул(?:иця)?\.?|пров(?:улок|\.)?|просп(?:ект)?\.?|пр-т\.?|б-р\.?|бульвар|узвіз|алея|площа|майдан|шосе|набережна|тупик|проїзд)\s+){1,3}/i,'')
       .replace(/[^\p{L}\p{N}/]+/gu,'');
   }
   // Official PDFs normally use Cyrillic suffixes (12-А), while phone keyboards
@@ -28,7 +36,7 @@
       .sort((a,b)=>a.number.localeCompare(b.number,'uk-UA',{numeric:true,sensitivity:'base'}));
   }
   function kindOf(street) {
-    const match=/^(пров(?:улок|\.)?|вул(?:иця)?\.?|просп(?:ект)?\.?|пр-т\.?|б-р\.?|бульвар|узвіз|алея|площа|майдан|шосе|набережна|тупик|проїзд)\s+/i.exec(String(street||''));
+    const match=/^(пров(?:улок|\.)?|вул(?:иця)?\.?|просп(?:ект)?\.?|пр-т\.?|б-р\.?|бульвар|узвіз|алея|площа|майдан|шосе|набережна|тупик|проїзд)\s+/i.exec(withPrefixSpaces(street));
     if (!match) return null;
     const k=match[1].toLocaleLowerCase('uk-UA');
     if(k.startsWith('пров'))return 'провулок';
@@ -108,7 +116,7 @@
       return 3; // matched a verified former/current name
     }
     return [...chosen.entries()].sort((a,b)=>rank(a)-rank(b)||
-      a[1].localeCompare(b[1],'uk-UA')||a[0].localeCompare(b[0],'uk-UA')).slice(0,limit);
+      a[1].localeCompare(b[1],'uk-UA')||a[0].localeCompare(b[0],'uk-UA')).slice(0,limit).map(([key,name])=>[key,cleanStreetLabel(name)]);
   }
   function renameHint(idx,typed){
     const needle=normalize(typed),kind=kindOf(typed);
@@ -137,7 +145,8 @@
     const matches=streetMatches(idx,street,selectedKey);
     if(matches.length===0)return {status:'nostreet'};
     if(matches.length>1)return {status:'ambiguous'};
-    const [key,display]=matches[0];
+    const [key,rawLabel]=matches[0];
+    const display=cleanStreetLabel(rawLabel);
     // Archived entries are searchable but cannot automatically confirm a queue.
     if(Array.isArray(idx.archiveOnlyStreets)&&idx.archiveOnlyStreets.includes(key))
       return {status:'possible',reason:Array.isArray(idx.reportedStreetNames)&&idx.reportedStreetNames.includes(key)?'reported-only':Array.isArray(idx.externalStreetNames)&&idx.externalStreetNames.includes(key)?'external-only':'archived-only',street:display,streetKey:key,
