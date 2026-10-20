@@ -46,6 +46,7 @@ async function diagnostics(){
  }catch(e){message('Не вдалося отримати діагностику: '+e.message,false)}
 }
 function signOut(revoke=true){
+ stopAdminSupportLive();
  const oldToken=sessionToken,oldServer=server;
  if(revoke&&oldToken&&oldServer){fetch(oldServer+'/api/admin/logout',{method:'POST',headers:{authorization:'Bearer '+oldToken,'content-type':'application/json'},body:'{}'}).catch(()=>{})}
  remote=false;canPublish=false;sessionToken='';sha='';adminRole='owner';document.body.dataset.adminRole='';
@@ -356,9 +357,9 @@ function renderSupportTemplateEditor(){
  save.onclick=async()=>{save.disabled=true;try{const result=await api('feedback/templates',{method:'PUT',body:JSON.stringify({templates:supportTemplates.filter(Boolean)})});supportTemplates=result.templates;renderSupportTemplateEditor()}catch(e){alert(e.message);save.disabled=false}};
  box.append(add,save)
 }
-async function refreshTickets(){
+async function refreshTickets(silent=false){
  if(!remote)return;
- $('ticketsSummary').textContent='Оновлюємо звернення…';
+ if(!silent)$('ticketsSummary').textContent='Оновлюємо звернення…';
  try{
   const [result,templ]=await Promise.all([api('feedback'),api('feedback/templates')]);supportTickets=Array.isArray(result.items)?result.items:[];supportTemplates=Array.isArray(templ.templates)?templ.templates:[];renderSupportTemplateEditor();
   if(!supportTickets.some(t=>t.id===supportSelected))supportSelected=supportTickets[0]?.id||'';
@@ -366,4 +367,60 @@ async function refreshTickets(){
   document.dispatchEvent(new Event('svitlo:tickets-loaded'));
  }catch(e){$('ticketsSummary').textContent='Помилка завантаження: '+e.message}
 }
-$('refreshTickets').addEventListener('click',refreshTickets);
+$('refreshTickets').addEventListener('click',()=>refreshTickets());
+let adminSupportSocket=null,adminSupportEvents=null,adminSupportTimer=0,adminSupportPending=false;
+function adminLiveState(message,up=false){
+ const el=$('adminSupportLive');if(!el)return;
+ el.textContent=message;el.classList.toggle('is-connected',up);
+}
+function stopAdminSupportLive(){
+ if(adminSupportTimer){clearTimeout(adminSupportTimer);adminSupportTimer=0}
+ if(adminSupportSocket){const socket=adminSupportSocket;adminSupportSocket=null;socket.onclose=null;socket.close()}
+ if(adminSupportEvents){adminSupportEvents.close();adminSupportEvents=null}
+}
+function scheduleAdminSupportRefresh(){
+ if(!remote)return;
+ const active=document.activeElement;
+ // Do not discard an unfinished admin reply, status edit or internal note.
+ if(active&&$('ticketDetail').contains(active)&&/^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)){
+  adminSupportPending=true;return
+ }
+ if(adminSupportTimer)return;
+ adminSupportTimer=setTimeout(()=>{
+  adminSupportTimer=0;adminSupportPending=false;
+  if(remote)refreshTickets(true).catch(()=>{})
+ },900)
+}
+document.addEventListener('focusout',event=>{
+ if(adminSupportPending&&$('ticketDetail').contains(event.target))setTimeout(scheduleAdminSupportRefresh,150)
+});
+function adminSupportFallback(){
+ if(!remote||document.hidden||adminSupportEvents)return;
+ try{
+  const events=new EventSource(server+'/api/events');
+  adminSupportEvents=events;
+  events.addEventListener('feedback',scheduleAdminSupportRefresh);
+  events.onopen=()=>{adminLiveState('Оновлюється наживо',true);scheduleAdminSupportRefresh()};
+  events.onerror=()=>adminLiveState('Перепідключення…')
+ }catch{adminLiveState('Доступне ручне оновлення')}
+}
+function connectAdminSupportLive(){
+ if(!remote||document.hidden||adminSupportSocket||adminSupportEvents)return;
+ try{
+  const url=new URL('/api/socket',server);url.protocol='wss:';
+  const socket=new WebSocket(url.href);adminSupportSocket=socket;
+  socket.onopen=()=>{adminLiveState('Оновлюється наживо',true);scheduleAdminSupportRefresh()};
+  socket.onmessage=event=>{
+   try{if(JSON.parse(event.data).type==='feedback')scheduleAdminSupportRefresh()}catch{}
+  };
+  socket.onclose=()=>{if(adminSupportSocket!==socket)return;adminSupportSocket=null;adminSupportFallback()};
+  socket.onerror=()=>{adminLiveState('Перепідключення…');socket.close()}
+ }catch{adminSupportFallback()}
+}
+document.addEventListener('svitlo:admin-ready',connectAdminSupportLive);
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden)stopAdminSupportLive();
+ else if(remote){connectAdminSupportLive();scheduleAdminSupportRefresh()}
+});
+window.addEventListener('online',()=>{if(remote){connectAdminSupportLive();scheduleAdminSupportRefresh()}});
+window.addEventListener('pagehide',stopAdminSupportLive);
