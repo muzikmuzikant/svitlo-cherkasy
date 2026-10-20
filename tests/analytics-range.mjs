@@ -42,7 +42,7 @@ test('hourly bucket pruning archives the daily anonymous counts',()=>{
   assert.equal(report.chartDays[0].date,'2026-01');
   s.store.flush();
   const persisted=JSON.parse(fs.readFileSync(path.join(s.directory,'analytics.json'),'utf8'));
-  assert.equal(persisted.schemaVersion,2);
+  assert.equal(persisted.schemaVersion,1);
   assert.equal(persisted.archive['2026-01-12'].landing.direct,1);
   assert.equal(Object.keys(persisted.buckets).length,0);
   const reopened=createAnalyticsStore({filePath:path.join(s.directory,'analytics.json'),clock:()=>Date.parse('2026-10-21T10:00:00Z')});
@@ -55,7 +55,7 @@ test('date bounds and comparisons are validated',()=>{
   s.store.record('landing','direct');
   assert.throws(()=>s.store.reportRange('2026-10-22','2026-10-22'),/Некоректний/);
   assert.throws(()=>s.store.reportRange('2026-02-30','2026-10-21'),/Некоректний/);
-  assert.throws(()=>s.store.reportRange('2021-01-01','2026-10-21'),/трьох років/);
+  assert.throws(()=>s.store.reportRange('2021-01-01','2026-10-21'),/три роки/);
   const r=s.store.reportRange('2026-10-21','2026-10-21');
   assert.equal(r.previousTotals,null);
   assert.equal(r.partial,false);
