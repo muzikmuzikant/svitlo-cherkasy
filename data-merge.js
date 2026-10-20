@@ -9,7 +9,7 @@
  const obj=v=>v && typeof v==='object' && !Array.isArray(v)?v:{};
  const valid=v=>Array.isArray(v)?[...new Set(v.filter(q=>/^[1-6]\.[12]$/.test(q)))].sort((a,b)=>Number(a)-Number(b)):[];
  const hasContent=idx=>!!(Object.keys(obj(idx.keys)).length||Object.keys(obj(idx.streets)).length||Object.keys(obj(idx.streetQueues)).length);
- function mergeIndexes(current, historical, {manual=false}={}){
+ function mergeIndexes(current, historical, {manual=false,catalog=null}={}){
    const live=obj(current), backup=obj(historical);
    function combine(a,b){
      a=obj(a);b=obj(b);
@@ -52,6 +52,36 @@
    const places={...obj(backup.localities),...obj(live.localities)};
    for(const key of Object.keys(places))places[key]=combine(obj(live.localities)[key],obj(backup.localities)[key]);
    result.localities=places;
+   // A separate geographic catalogue expands discoverability only. It must
+   // NEVER supply a queue, house number, or verification status.
+   if(!manual && catalog && typeof catalog==='object' && !Array.isArray(catalog)){
+     function supplement(target,geo){
+       if(!geo||typeof geo!=='object')return target;
+       const existing=obj(target.streets),streetNames=obj(geo.streets);
+       const archive=new Set(Array.isArray(target.archiveOnlyStreets)?target.archiveOnlyStreets:[]);
+       const external=new Set(Array.isArray(target.externalStreetNames)?target.externalStreetNames:[]);
+       const addition={};
+       for(const [key,label] of Object.entries(streetNames)){
+         if(!/^(вулиця|провулок|проспект|бульвар|узвіз|алея|площа|майдан|шосе|набережна|тупик|проїзд)\|[\p{L}\p{N}]{2,90}$/u.test(key)
+           ||typeof label!=='string'||label.length>105)continue;
+         if(!(key in existing)){
+           addition[key]=label;
+           archive.add(key);external.add(key);
+         }
+       }
+       for(const key of external){
+         if(!archive.has(key)||key in obj(target.streetQueues))external.delete(key);
+       }
+       return {...target,streets:{...existing,...addition},
+         archiveOnlyStreets:[...archive].sort(),
+         externalStreetNames:[...external].sort()};
+     }
+     Object.assign(result,supplement(result,catalog));
+     const geoPlaces=obj(catalog.localities);
+     for(const town of Object.keys(result.localities)){
+       if(geoPlaces[town])result.localities[town]=supplement(result.localities[town],geoPlaces[town]);
+     }
+   }
    result.updatedAt=live.updatedAt||backup.updatedAt||null;
    result.source=live.source||backup.source||null;
    return result;
