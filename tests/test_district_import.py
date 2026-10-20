@@ -114,3 +114,32 @@ def test_street_initials_without_whitespace_are_not_city_markers(monkeypatch):
     result=importer.extract_sections(b'%PDF-realistic')
     assert set(result)=={'Слобода','Хацьки'}
     assert 'Леонтовича' in result['Слобода']
+
+
+def test_unprefixed_comma_separated_streets_are_no_longer_dropped():
+    # A common operator row contains one "вул." prefix followed by several
+    # street names before the next explicitly marked street.
+    rows='вул. Лісова, Польова, Соборна, Перемоги, Франка, 50 років Перемоги, вул. Травнева 12, 14, 16, ТОВ "Тест"'
+    street_names={label for _kind,_key,label in importer.street_only_entries(rows)}
+    assert {'Лісова','Польова','Соборна','Перемоги','Франка','50 років Перемоги','Травнева'} <= street_names
+    assert '14' not in street_names
+    assert 'ТОВ "Тест"' not in street_names
+    assert not importer.street_entries('вул. Лісова, Польова, Соборна')
+
+
+def test_continuations_cannot_escape_own_village(monkeypatch):
+    import fitz
+    source='''ВСП Черкаські районні ЕМ
+с.Слобода: вул. Філатова, Лісова, Берегова, Озерна
+с.Хацьки: вул. Центральна, Шкільна, Польова
+ВСП Черкаські міські ЕМ
+вул. Івана Кожедуба 59, 61'''
+    monkeypatch.setattr(fitz,'open',lambda **kwargs:[FakePDFPage(source)])
+    sections=importer.extract_sections(b'%PDF-bulk')
+    sloboda={key for _kind,key,_name in importer.street_only_entries(sections['Слобода'])}
+    hatsky={key for _kind,key,_name in importer.street_only_entries(sections['Хацьки'])}
+    assert {'філатова','лісова','берегова','озерна'} <= sloboda
+    assert {'центральна','шкільна','польова'} <= hatsky
+    assert 'центральна' not in sloboda
+    assert 'філатова' not in hatsky
+    assert ('вулиця','іванакожедуба','59','Івана Кожедуба') in importer.street_entries(sections['Черкаси'])
