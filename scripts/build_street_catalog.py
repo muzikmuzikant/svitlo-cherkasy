@@ -26,8 +26,8 @@ CITY_STREETS_API = (
     "https://mgis.chmr.gov.ua/server/rest/services/opora/"
     "Streets_WGS84/MapServer/0/query"
 )
-OSM_API = "https://overpass.private.coffee/api/interpreter"
-OSM_FALLBACK = "https://overpass-api.de/api/interpreter"
+OSM_API = "https://overpass-api.de/api/interpreter"
+OSM_FALLBACK = "https://overpass.private.coffee/api/interpreter"
 SOURCES = {
     "city": "https://mgis.chmr.gov.ua/server/rest/services/opora/Streets_WGS84/MapServer/0",
     "district": "https://www.openstreetmap.org/copyright",
@@ -46,7 +46,10 @@ TYPE_NAMES = {
     "проїзд": "проїзд"
 }
 TOWN_ALIASES = {"червонаслобода": "слобода", "первомайське": "соснове",
-                "іванівка": "яничі"}
+                "іванівка": "яничі", "великіканівці": "вканівці",
+                "хрестителеве": "хрестителево"}
+TOWN_SEARCH_NAMES = {"вканівці": ["Великі Канівці"],
+                     "хрестителево": ["Хрестителеве"]}
 LOG = logging.getLogger("street-catalog")
 
 
@@ -242,6 +245,87 @@ def collect_osm_roads_near_localities(session, expected_towns):
     raise RuntimeError("No locality road query succeeded: " + str(last_error))
 
 
+
+def collect_osm_targeted_villages(session, official, previous, expected_towns):
+    """Search named roads near *specific* under-covered villages across oblast.
+
+    The original district search could never find settlements belonging to
+    Zolotonosha/Zvenyhorodka/Uman areas. Fetch all nearby place nodes as
+    competitors. If two villages share a name, skip that ambiguous label.
+    Never infer a power-outage subqueue from OSM names.
+    """
+    from collections import Counter
+
+    places = official.get("localities", {})
+    seen = previous.get("localities", {}) if isinstance(previous, dict) else {}
+    targets = {}
+    for key, obj in places.items():
+        known_geo = seen.get(key, {}).get("streets", {})
+        known_official = obj.get("streets", {})
+        if len(known_geo) >= 12 and len(known_official) >= 15:
+            continue
+        labels = TOWN_SEARCH_NAMES.get(key, [])
+        label = obj.get("label") or key
+        cleaned = re.sub(r"^\s*(?:с\.?|село|смт\.?|м\.?)\s+", "", label, flags=re.I)
+        if cleaned and not re.search(r"(?i)^в\s+", cleaned):
+            labels = labels + [cleaned]
+        for name in labels:
+            if not name or len(name) > 60:
+                continue
+            targets[name] = key
+    if not targets:
+        return {}
+    # Escape OSM regex syntax, not the text used for display.
+    alternation = "|".join(re.escape(x) for x in sorted(targets, key=len, reverse=True))
+    query = f"""[out:json][timeout:80];
+    area["name"="Черкаська область"]["admin_level"="4"]->.region;
+    node(area.region)["place"]["name"]->.places;
+    node.places["name"~"^({alternation})$"]->.targets;
+    (
+      .places;
+      way(around.targets:1600)["highway"]["name"];
+      node(around.targets:1600)["addr:street"];
+      way(around.targets:1600)["addr:street"];
+    );
+    out center tags;"""
+    last_error = None
+    for url in (OSM_API, OSM_FALLBACK):
+        try:
+            origin = url.split("/api/")[0]
+            reply = session.post(url, data={"data": query},
+                headers={"Origin": origin, "Referer": origin+"/"},
+                timeout=(12, 95))
+            reply.raise_for_status()
+            elements = reply.json().get("elements")
+            if not isinstance(elements, list) or not elements:
+                raise ValueError("Targeted OSM query returned no places or roads")
+            counts = Counter(town_key((item.get("tags") or {}).get("name"))
+                for item in elements if (item.get("tags") or {}).get("place")
+                and (item.get("tags") or {}).get("name"))
+            safe_expected = {
+                key for key in expected_towns
+                if key in targets.values() and counts[key] == 1
+            }
+            # Convert addr:street records into name-bearing candidate points.
+            clean = []
+            for item in elements:
+                tags = item.get("tags") or {}
+                if tags.get("addr:street") and not tags.get("highway"):
+                    clean.append({**item, "tags": {**tags,
+                        "highway": "residential", "name": tags["addr:street"]}})
+                clean.append(item)
+            names = extract_roads_near_places(clean, safe_expected)
+            if not names:
+                raise ValueError("No unambiguous roads near underserved villages")
+            return names
+        except (requests.RequestException, ValueError) as error:
+            last_error = error
+            LOG.warning("Targeted village source unavailable %s: %s", url, error)
+    LOG.warning("Under-covered village enrichment unavailable: %s", last_error)
+    return {}
+
+
+
 def merge_catalog(previous, city_names, locality_names, official):
     old = previous if isinstance(previous, dict) else {}
     live_localities = official.get("localities", {})
@@ -278,7 +362,7 @@ def main():
     official = json.loads(OFFICIAL_FILE.read_text("utf-8"))
     expected = set(official.get("localities", {})) | {"черкаси"}
     session = requests.Session()
-    retry = Retry(total=2, connect=2, read=2, backoff_factor=1,
+    retry = Retry(total=1, connect=1, read=0, backoff_factor=1,
                   status_forcelist=[429, 500, 502, 503, 504],
                   allowed_methods=frozenset(["GET", "POST"]))
     session.mount("https://", HTTPAdapter(max_retries=retry))
@@ -309,6 +393,15 @@ def main():
             district[town] = {**streets, **district[town]}
     except Exception as error:
         LOG.warning("OSM locality street lookup unavailable: %s", error)
+    try:
+        targeted = collect_osm_targeted_villages(session, official, old, expected)
+        LOG.info("OSM targeted under-covered localities: %s names in %s villages",
+                 sum(len(x) for x in targeted.values()), len(targeted))
+        for town, streets in targeted.items():
+            # Explicit street entries and current district listings take precedence.
+            district[town] = {**streets, **district.get(town, {})}
+    except Exception as error:
+        LOG.warning("Targeted locality enrichment failed: %s", error)
     if not city and not district:
         raise RuntimeError("All enrichment sources failed; preserving existing catalogue unchanged")
     if "черкаси" in district:
