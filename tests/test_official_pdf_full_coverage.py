@@ -117,3 +117,10 @@ def test_special_asterisk_notation_is_not_turned_into_a_different_house():
     assert '223' not in got
     assert '2231' not in got
     assert i.parse_house_numbers('12-А, 12/1, 12, 15')==['12а','12/1','12','15']
+
+
+def test_final_house_before_company_text_is_retained_without_guessing_units():
+    assert i.parse_house_numbers('104с КП Черкасиелектротранс')==['104с']
+    assert i.parse_house_numbers('208/1д ТОВ Енерго')==['208/1д']
+    assert i.parse_house_numbers('2/2 кв 3, 2/1, 2/2')==['2/1','2/2']
+    assert i.parse_house_numbers('1 2 3')==[]
