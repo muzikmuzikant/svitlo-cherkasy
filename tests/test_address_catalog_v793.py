@@ -12,6 +12,8 @@ def test_all_sloboda_streets_are_already_in_current_import():
     village=live['localities']['слобода']
     old=historical['localities']['слобода']
     assert set(old['streets']) - set(old.get('reportedStreetNames', [])) <= set(village['streets'])
+    assert 'вулиця|філатова' in old['streets']
+    assert 'вулиця|філатова' not in old.get('streetQueues',{})
     assert len(village['streets']) >= 96
     # Until the parser refresh, legacy labels stay searchable without guessed
     # queues. After a successful refresh, fresh PDF mappings take precedence.
