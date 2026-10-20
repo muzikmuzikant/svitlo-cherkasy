@@ -15,6 +15,8 @@ test('every address suggestion is only a plain street button, no source/status c
  const text=app.slice(app.indexOf('function suggestions(){'),app.indexOf('function populateSettlements(){'));
  assert.match(text,/fragment\.append\(button\)/);
  assert.ok(!text.includes('archive-street-tag'));
+ assert.ok(!app.includes('додано за зверненням'));
+ assert.ok(!app.includes('є в географічному довіднику'));
  assert.ok(!text.includes('matched.verifiedRename'));
  assert.ok(!text.includes('hasPublishedQueue'));
  assert.ok(!text.includes('SvitloAddressLookup.resolve('));
