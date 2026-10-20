@@ -733,7 +733,15 @@ function suggestions(){
  root.hidden=!matches.length||SvitloAddressLookup.streetMatches(localIndex(),$('street').value).length===1;
  for(const [key,name] of matches){const b=el('button','',name);b.type='button';b.onclick=()=>{
    $('street').value=name;suggestion={key,label:name};root.hidden=true;checkLookup();
- };if(Array.isArray(localIndex().archiveOnlyStreets)&&localIndex().archiveOnlyStreets.includes(key))b.append(el('small','archive-street-tag',' · з попереднього переліку'));root.append(b)}
+ };
+   const idx=localIndex();
+   if(Array.isArray(idx.archiveOnlyStreets)&&idx.archiveOnlyStreets.includes(key)){
+     const note=idx.reportedStreetNames?.includes(key)?' · додано за зверненням':
+       idx.externalStreetNames?.includes(key)?' · з географічного довідника':
+       ' · з попереднього переліку';
+     b.append(el('small','archive-street-tag',note));
+   }
+   root.append(b)}
 }
 function populateSettlements(){
  const select=$('settlement');
