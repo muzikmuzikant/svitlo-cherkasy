@@ -9,7 +9,7 @@
  const obj=v=>v && typeof v==='object' && !Array.isArray(v)?v:{};
  const valid=v=>Array.isArray(v)?[...new Set(v.filter(q=>/^[1-6]\.[12]$/.test(q)))].sort((a,b)=>Number(a)-Number(b)):[];
  const hasContent=idx=>!!(Object.keys(obj(idx.keys)).length||Object.keys(obj(idx.streets)).length||Object.keys(obj(idx.streetQueues)).length);
- function mergeIndexes(current, historical, {manual=false,catalog=null}={}){
+ function mergeIndexes(current, historical, {manual=false,catalog=null,aliasCatalog=null}={}){
    const live=obj(current), backup=obj(historical);
    function combine(a,b){
      a=obj(a);b=obj(b);
@@ -80,6 +80,21 @@
      const geoPlaces=obj(catalog.localities);
      for(const town of Object.keys(result.localities)){
        if(geoPlaces[town])result.localities[town]=supplement(result.localities[town],geoPlaces[town]);
+     }
+   }
+   // Curated municipal rename aliases are search metadata ONLY. No alias is
+   // converted into a house record, queue, or unverified street assignment.
+   if(!manual && aliasCatalog && typeof aliasCatalog==='object'){
+     const aliases=obj(aliasCatalog.localities);
+     for(const [locality,sourcePairs] of Object.entries(aliases)){
+       const target=locality==='черкаси'?result:result.localities[locality];
+       if(!target||!Array.isArray(sourcePairs))continue;
+       const pairs=sourcePairs.filter(pair=>
+         pair && typeof pair==='object' && typeof pair.oldName==='string' &&
+         typeof pair.newName==='string' && pair.oldName.length<110 && pair.newName.length<110 &&
+         pair.oldName!==pair.newName && typeof pair.source==='string' &&
+         /^https:\/\/chmr\.golos\.net\.ua\//.test(pair.source));
+       target.aliases=pairs.map(({oldName,newName,source})=>({oldName,newName,source}));
      }
    }
    result.updatedAt=live.updatedAt||backup.updatedAt||null;
