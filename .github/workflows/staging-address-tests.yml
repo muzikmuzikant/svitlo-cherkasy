@@ -26,6 +26,31 @@ jobs:
         run: python -m pytest -q tests/test_district_import.py tests/test_published_fallback.py tests/test_address_catalog_v793.py tests/test_street_catalog_beta.py tests/test_official_pdf_full_coverage.py
       - name: Verify address search with independent source
         run: node --test tests/test_staging_address_regression.mjs tests/test_staging_renamed_streets.mjs tests/test_staging_alias_queue_bridge.mjs tests/test_staging_street_search_perf.mjs tests/test_address_lookup.cjs tests/test_data_merge_v720.cjs tests/test_real_village_lookup.cjs
+      - name: Check ALL real official PDF files before deploying parser changes
+        if: github.event_name == 'pull_request'
+        run: |
+          python scripts/update_data.py --addresses-only
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('data/addresses.json').read_text(encoding='utf8'))
+          a=json.loads(Path('data/address_audit.json').read_text(encoding='utf8'))
+          assert a['verifiedPdfCount']==12
+          assert all(x['verifiedPdfTitleQueue']==x['queue'] for x in a['sourceFiles'])
+          assert a['totals']['indexedCityHouseKeys']>=9000
+          assert a['totals']['missingCityHouseKeysSincePrevious'] < 300, 'Excessive drop in verified houses: inspect before merge'
+          assert len(d['localities'])>=40
+          assert len([k for k in d['keys'] if k.startswith('вулиця|14грудня|')])>=10, 'Numbered street 14 Грудня lost operator houses'
+          import subprocess
+          before=json.loads(subprocess.check_output(['git','show','HEAD:data/addresses.json']))
+          gone=sorted(set(before['keys'])-set(d['keys']))
+          gained=sorted(set(d['keys'])-set(before['keys']))
+          print('REMOVED KEYS REQUIRING REVIEW:',[(k,before['keys'][k]) for k in gone])
+          print('ADDED KEYS SAMPLE:',gained[:40])
+          print('Live source audit:',a['totals'])
+          for row in a['sourceFiles']:
+              print(row['queue'],row['cityHouseMentions'],'city house tokens,',row['citySpecialNotationsForReview'] if 'citySpecialNotationsForReview' in row else 0,'special city notations')
+          PY
       - name: Build actual offline PWA
         run: python scripts/build_pages.py
       - name: Verify syntactic correctness

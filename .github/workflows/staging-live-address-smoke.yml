@@ -47,7 +47,7 @@ jobs:
                   seed=json.loads(values['data/published_street_fallback.json'])
                   aliases=json.loads(values['data/street_aliases.json'])
                   assert release.get('channel')=='beta', 'Not Beta channel'
-                  assert tuple(map(int,release['version'].split('.'))) >= (7,9,16), 'Stale Beta deployment'
+                  assert tuple(map(int,release['version'].split('.'))) >= (7,9,17), 'Stale Beta deployment'
                   assert 'street_catalog.json' in values['app.js'], 'App missing merged catalogue'
                   assert 'street_aliases.json' in values['app.js'], 'Beta app missing renamed-street data'
                   assert 'splitHint' in values['address-lookup.js'], 'No safe split-street lookup'
@@ -59,7 +59,7 @@ jobs:
                   assert 'if(!houses.length && streetOnly.length===1)' in values['address-lookup.js'], 'Unknown houses may inherit guessed queues'
                   assert 'document.createDocumentFragment' in values['app.js'], 'Clean suggestions rendering not deployed'
                   assert 'додано за зверненням' not in values['app.js'], 'Developer street labels remain in Beta UI'
-                  assert 'svitlo-cherkasy-shell-v7.9.16-beta-precision-audit-v1' in values['sw.js'], 'Old PWA cache still deployed'
+                  assert ('svitlo-cherkasy-shell-v'+release['version']+'-beta-') in values['sw.js'], 'Published PWA service worker is not built from the current release'
                   assert 'archive-street-tag' not in values['app.js'].split('function suggestions(){',1)[1].split('function populateSettlements(){',1)[0], 'Old suggestion captions remain'
                   assert len(aliases.get('spellingVariants',{}).get('черкаси',[]))>=19, 'Operator abbreviations have not deployed'
                   assert address['streetQueues']['вулиця|самброса']==['1.1','3.1','4.1'], 'Published Am brosa source queue data missing'

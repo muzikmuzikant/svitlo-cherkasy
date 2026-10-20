@@ -44,9 +44,55 @@ LOCALITY_IN_ROW = re.compile(
     r'(?=\s*[:;]|\s*,\s*(?:вул\.|пров\.|просп\.)|\s+(?:вул\.|пров\.|просп\.))',re.I)
 
 STREET = re.compile(r'(?<!\w)(?P<type>вул(?:иця)?\.?|пров(?:улок|\.)?|просп(?:ект)?\.?|пр-т\.?|прв\.?|б-р\.?|бульвар|узвіз)\s*',re.I)
-STREET_NAME = re.compile(r'^\s*(?P<name>[^\d,;:]{3,85}?)\s*[,;:]?\s*(?=\d{1,4}(?:[/\-]?\d{1,4})?\s*[а-яіїєґa-z]?\b)',re.I)
+STREET_NAME = re.compile(r'^\s*(?P<name>[^,;:]{3,85}?)\s*[,;:]?\s*(?=\d{1,4}(?:[/\-*]?\d{1,4})?\s*[а-яіїєґa-z]?\b)',re.I)
 HOUSE_LIST = re.compile(r'^\s*(?P<houses>\d{1,4}(?:\s*[-/]\s*\d{1,4})?(?:\s*[- ]?\s*[а-яіїєґa-z])?(?:\s*,\s*\d{1,4}(?:\s*[-/]\s*\d{1,4})?(?:\s*[- ]?\s*[а-яіїєґa-z])?)*)',re.I)
 HOUSE = re.compile(r'\d{1,4}(?:\s*[-/]\s*\d{1,4})?(?:\s*[- ]?\s*[а-яіїєґa-z])?',re.I)
+# Strictly tokenize comma-separated houses. A unit ("кв 3") or the weird
+# literal "223*1" found in the 2026 operator PDF does not confirm the whole
+# building. Skip that token but continue reading the remaining valid houses.
+HOUSE_ITEM = re.compile(
+    r'^\s*(?P<number>\d{1,4}(?:\s*[-/]\s*\d{1,4}|\s*/\s*[а-яіїєґa-z])?'
+    r'(?:\s*[- ]?\s*[а-яіїєґa-z])?)\s*'
+    r'(?P<unit>(?:кв\.?|квартира)\s*\d+[а-яіїєґa-z]?)?\s*$',
+    re.I,
+)
+STAR_NUMBER = re.compile(r'^\s*\d{1,4}\s*\*\s*\d{1,4}\s*$')
+# One *final* valid house may be followed by the next company/section label
+# without a separating comma. Do not confuse any unit qualifier with a house.
+HOUSE_AT_PROSE = re.compile(
+    r'^\s*(?P<number>\d{1,4}(?:\s*[-/]\s*\d{1,4}|\s*/\s*[а-яіїєґa-z])?'
+    r'(?:\s*[- ]?\s*[а-яіїєґa-z])?)'
+    r'(?=\s+(?!кв\.?\b|квартира\b|корпус\b|приміщення\b)[^\d\s]|\s*;)',
+    re.I,
+)
+
+def parse_house_numbers(value):
+    """Return only exact, whole-building tokens, without apartment guesses."""
+    result = []
+    value = str(value).lstrip(' \t\r\n,;:')
+    for piece in value.split(','):
+        part = piece.strip()
+        if not part:
+            continue
+        if STAR_NUMBER.fullmatch(part):
+            continue
+        match = HOUSE_ITEM.fullmatch(part)
+        if not match:
+            # The last listed house sometimes directly precedes prose or
+            # a company name. Preserve that exact house, then STOP.
+            prefix = HOUSE_AT_PROSE.match(part)
+            if prefix:
+                number = normalize(prefix.group('number').replace('-', ''))
+                if number:
+                    result.append(number)
+            break
+        if match.group('unit'):
+            continue
+        number = normalize(match.group('number').replace('-', ''))
+        if number:
+            result.append(number)
+    return result
+
 LOG = logging.getLogger('svitlo')
 
 
@@ -463,14 +509,13 @@ def street_entries(text):
         match=STREET_NAME.match(chunk)
         if not match:continue
         display=match.group('name').strip(' ,.:-')
-        if len(display)<3 or len(display)>55 or any(c.isdigit() for c in display):continue
-        hm=HOUSE_LIST.match(chunk[match.end():])
-        if not hm:continue
+        if len(display)<3 or len(display)>55 or not re.search(r'[а-яіїєґa-z]',display,re.I):continue
+        houses=parse_house_numbers(chunk[match.end():])
+        if not houses:continue
         kindraw=t.group('type').lower()
         kind='провулок' if kindraw.startswith(('пров','прв')) else 'проспект' if kindraw.startswith(('просп','пр-т')) else 'бульвар' if kindraw.startswith(('б-р','буль')) else 'узвіз' if kindraw.startswith('узв') else 'вулиця'
-        for h in HOUSE.findall(hm.group('houses')):
-            house=normalize(h.replace('-',''))
-            if house:found.append((kind,normalize(display),house,display))
+        for house in houses:
+            found.append((kind,normalize(display),house,display))
     return found
 
 
@@ -490,14 +535,13 @@ def street_house_lists(text):
             name=m.group(1).strip(' ,.:-')
             if not name or len(name)>55:continue
             end=streets[i+1].start() if i+1<len(streets) else min(len(part),m.end()+1200)
-            houses=HOUSE_LIST.match(part[m.end():end])
+            houses=parse_house_numbers(part[m.end():end])
             if not houses:continue
             kind='вулиця'
             clean=normalize(name)
-            if not clean or any(x.isdigit() for x in name):continue
-            for number in HOUSE.findall(houses.group('houses')):
-                h=normalize(number.replace('-',''))
-                if h:found.append((kind,clean,h,name))
+            if not clean or not re.search(r'[а-яіїєґa-z]',name,re.I):continue
+            for house in houses:
+                found.append((kind,clean,house,name))
     return found
 
 
@@ -540,7 +584,7 @@ def street_only_entries(text):
             if re.search(r'\b(?:ТОВ|ФОП|АТ|КП|ПП|ПРАТ|будинок|будинки)\b',
                          candidate, re.I):
                 continue
-            if re.match(r'^\d+\s+(?!років|Травня|Вересня)', candidate, re.I):
+            if re.match(r'^\d+\s+(?!років|січня|лютого|березня|квітня|травня|червня|липня|серпня|вересня|жовтня|листопада|грудня)', candidate, re.I):
                 continue
             # Reject address numbers and ambiguous prose, not geographic
             # labels. Comma-separated ordinary names stay discoverable.
@@ -812,6 +856,13 @@ def address_audit(index, sources, previous=None, now=None):
         },
         'queues': q_counts,
         'localities': by_locality,
+        # Previously included numbers are NOT carried as confirmed when the
+        # fresh official PDF parser no longer corroborates them. Review exact
+        # removed keys separately, preserving their old queue for comparison.
+        'removedHouseKeysForReview': [
+            {'key': key, 'previousQueues': sorted(previous['keys'][key])}
+            for key in sorted(oldcity - cityset)[:200]
+        ],
         # Only samples, not a claim these represent errors: in the official
         # network the same building can appear on several feeding lines.
         'multipleQueueExamples': conflicts[:80]
@@ -855,6 +906,9 @@ def update_addresses(session,now=None):
                 which='city' if key == clean_locality('Черкаси') else 'district'
                 meta[which+'HouseMentions']+=len(houses)
                 meta[which+'StreetMentions']+=len(names)
+                meta[which+'SpecialNotationsForReview']=meta.get(which+'SpecialNotationsForReview',0)+len(
+                    re.findall(r'\b\d{1,4}\s*\*\s*\d{1,4}\b|'
+                               r'\b\d{1,4}(?:/\d{1,4})?\s*кв\.?\s*\d+',content,re.I))
                 for kind,street,house,label in houses:
                     if not street or not house:continue
                     collected[key][f'{kind}|{street}|{house}'].add(queue)

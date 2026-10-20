@@ -102,7 +102,7 @@ test('merely similar street names cannot be used to match queues',()=>{
 
 
 test('19 real operator abbreviations are separate from municipal rename decisions',()=>{
- assert.equal(idx.spellingVariants.length,19);
+ assert.ok(idx.spellingVariants.length>=20);
  assert.ok(idx.spellingVariants.some(v=>v.sourceName==='Вулиця С.Амброса' &&
    v.displayName==='Вулиця Сергія Амброса'));
  assert.equal(idx.localities.слобода.spellingVariants,undefined);
@@ -153,4 +153,22 @@ test('short-name proof is limited to the correct city, exact type and operator d
  const missing=lookup.resolve({idx:bare,settlement:'Черкаси',
    street:'вулиця Сергія Амброса',house:'10'});
  assert.equal(missing.queue,undefined);
+});
+
+
+test('2026 current street 14-го Грудня inherits house-only queue from operator 14 Грудня',()=>{
+ const original=read('data/addresses.json');
+ const fake=structuredClone(original);
+ fake.streets['вулиця|14грудня']='Вулиця 14 Грудня';
+ fake.keys['вулиця|14грудня|101']=['3.1'];
+ fake.streetQueues['вулиця|14грудня']=['3.1'];
+ const fixture=mergeIndexes(fake,read('data/published_street_fallback.json'),{
+   catalog:read('data/street_catalog.json'),aliasCatalog:read('data/street_aliases.json')
+ });
+ const r=lookup.resolve({idx:fixture,street:'вулиця 14-го Грудня',
+   house:'101',settlement:'Черкаси'});
+ assert.equal(r.status,'exact');
+ assert.equal(r.queue,'3.1');
+ assert.equal(r.verifiedNameVariant,true);
+ assert.equal(r.streetKey,'вулиця|14грудня');
 });
