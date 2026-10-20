@@ -40,6 +40,12 @@ jobs:
           assert a['totals']['indexedCityHouseKeys']>=9000
           assert a['totals']['missingCityHouseKeysSincePrevious'] < 300, 'Excessive drop in verified houses: inspect before merge'
           assert len(d['localities'])>=40
+          import subprocess
+          before=json.loads(subprocess.check_output(['git','show','HEAD:data/addresses.json']))
+          gone=sorted(set(before['keys'])-set(d['keys']))
+          gained=sorted(set(d['keys'])-set(before['keys']))
+          print('REMOVED KEYS REQUIRING REVIEW:',[(k,before['keys'][k]) for k in gone])
+          print('ADDED KEYS SAMPLE:',gained[:40])
           print('Live source audit:',a['totals'])
           for row in a['sourceFiles']:
               print(row['queue'],row['cityHouseMentions'],'city house tokens,',row['citySpecialNotationsForReview'] if 'citySpecialNotationsForReview' in row else 0,'special city notations')
