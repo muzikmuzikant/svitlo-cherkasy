@@ -726,11 +726,16 @@ def pdf_source_metadata(raw, expected_queue):
     vary, therefore prefer the text of the document's first page.
     """
     import fitz
-    with fitz.open(stream=raw, filetype='pdf') as document:
+    document = fitz.open(stream=raw, filetype='pdf')
+    try:
         if not len(document):
             raise RuntimeError('Empty official PDF')
         title = document[0].get_text('text', sort=True)[:3500]
         pages = len(document)
+    finally:
+        closer = getattr(document, 'close', None)
+        if callable(closer):
+            closer()
     match = re.search(
         r'(?<!\d)([1-6])\s*черга\s*[,.;:]?\s*'
         r'(ІІ|І|II|I)\s*підчерга',
