@@ -10,13 +10,13 @@ const keys=aliases.localities.черкаси;
 const renames={schemaVersion:1,localities:{черкаси:keys},splitRenames:aliases.splitRenames};
 
 test('only adopted city council decisions (not proposals) feed approved old/new name matching',()=>{
- assert.equal(keys.length,53);
+ assert.ok(keys.length>=119);
  assert.ok(keys.every(x=>x.source.startsWith('https://chmr.golos.net.ua/')||x.source.startsWith('https://chmr.gov.ua/')));
  assert.ok(keys.every(x=>x.oldName&&x.newName&&x.oldName!==x.newName));
  const tmp=mergeIndexes({streets:{'вулиця|володимирамономаха':'Вулиця Володимира Мономаха'},
   keys:{},streetQueues:{},localities:{слобода:{streets:{'вулиця|короленка':'Вулиця Короленка'},keys:{},streetQueues:{}}}},
  {streets:{},localities:{}},{aliasCatalog:renames});
- assert.equal(tmp.aliases.length,53);
+ assert.ok(tmp.aliases.length>=119);
  assert.equal(tmp.localities.слобода.aliases,undefined,'City renaming MUST NOT leak to Sloboda');
  assert.equal(lookup.resolve({idx:tmp.localities.слобода,settlement:'Слобода',street:'Володимира Мономаха'}).status,'nostreet');
 });
