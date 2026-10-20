@@ -732,5 +732,161 @@
         "description": "Ділянки колишньої вулиці перейменовано по-різному відповідно до рішення №43-58 від 13.07.2023. Підчерга визначається лише за точною сучасною адресою."
       }
     ]
+  },
+  "spellingVariants": {
+    "черкаси": [
+      {
+        "sourceKey": "вулиця|сєфремова",
+        "displayKey": "вулиця|академікасергіяєфремова",
+        "sourceName": "Вулиця С.Єфремова",
+        "displayName": "Вулиця Академіка Сергія Єфремова",
+        "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
+        "evidence": "Exact published operator street entry + independently indexed full form in Cherkasy municipal/geo street catalog; same town and street type; no approximate queue inference."
+      },
+      {
+        "sourceKey": "вулиця|алупиноса",
+        "displayKey": "вулиця|анатоліялупиноса",
+        "sourceName": "Вулиця А.Лупиноса",
+        "displayName": "Вулиця Анатолія Лупиноса",
+        "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
+        "evidence": "Exact published operator street entry + independently indexed full form in Cherkasy municipal/geo street catalog; same town and street type; no approximate queue inference."
+      },
+      {
+        "sourceKey": "вулиця|городецького",
+        "displayKey": "вулиця|архітекторагородецького",
+        "sourceName": "Вулиця Городецького",
+        "displayName": "Вулиця Архітектора Городецького",
+        "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
+        "evidence": "Exact published operator street entry + independently indexed full form in Cherkasy municipal/geo street catalog; same town and street type; no approximate queue inference."
+      },
+      {
+        "sourceKey": "вулиця|вгалви",
+        "displayKey": "вулиця|вячеславагалви",
+        "sourceName": "Вулиця В.Галви",
+        "displayName": "Вулиця В'ячеслава Галви",
+        "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
+        "evidence": "Exact published operator street entry + independently indexed full form in Cherkasy municipal/geo street catalog; same town and street type; no approximate queue inference."
+      },
+      {
+        "sourceKey": "вулиця|вчорновола",
+        "displayKey": "вулиця|вячеславачорновола",
+        "sourceName": "Вулиця вул. В.Чорновола",
+        "displayName": "Вулиця В'ячеслава Чорновола",
+        "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
+        "evidence": "Exact published operator street entry + independently indexed full form in Cherkasy municipal/geo street catalog; same town and street type; no approximate queue inference."
+      },
+      {
+        "sourceKey": "вулиця|млисенка",
+        "displayKey": "вулиця|композиторамиколилисенка",
+        "sourceName": "Вулиця М.Лисенка",
+        "displayName": "Вулиця Композитора Миколи Лисенка",
+        "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
+        "evidence": "Exact published operator street entry + independently indexed full form in Cherkasy municipal/geo street catalog; same town and street type; no approximate queue inference."
+      },
+      {
+        "sourceKey": "вулиця|мгрушевського",
+        "displayKey": "вулиця|михайлагрушевського",
+        "sourceName": "Вулиця вул. М.Грушевського",
+        "displayName": "Вулиця Михайла Грушевського",
+        "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
+        "evidence": "Exact published operator street entry + independently indexed full form in Cherkasy municipal/geo street catalog; same town and street type; no approximate queue inference."
+      },
+      {
+        "sourceKey": "вулиця|ммаксимовича",
+        "displayKey": "вулиця|михайламаксимовича",
+        "sourceName": "Вулиця М.Максимовича",
+        "displayName": "Вулиця Михайла Максимовича",
+        "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
+        "evidence": "Exact published operator street entry + independently indexed full form in Cherkasy municipal/geo street catalog; same town and street type; no approximate queue inference."
+      },
+      {
+        "sourceKey": "вулиця|опанченка",
+        "displayKey": "вулиця|олексіяпанченка",
+        "sourceName": "Вулиця О.Панченка",
+        "displayName": "Вулиця Олексія Панченка",
+        "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
+        "evidence": "Exact published operator street entry + independently indexed full form in Cherkasy municipal/geo street catalog; same town and street type; no approximate queue inference."
+      },
+      {
+        "sourceKey": "вулиця|дашковича",
+        "displayKey": "вулиця|остафіядашковича",
+        "sourceName": "Вулиця Дашковича",
+        "displayName": "Вулиця Остафія Дашковича",
+        "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
+        "evidence": "Exact published operator street entry + independently indexed full form in Cherkasy municipal/geo street catalog; same town and street type; no approximate queue inference."
+      },
+      {
+        "sourceKey": "вулиця|птичини",
+        "displayKey": "вулиця|павлатичини",
+        "sourceName": "Вулиця П.Тичини",
+        "displayName": "Вулиця Павла Тичини",
+        "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
+        "evidence": "Exact published operator street entry + independently indexed full form in Cherkasy municipal/geo street catalog; same town and street type; no approximate queue inference."
+      },
+      {
+        "sourceKey": "вулиця|самброса",
+        "displayKey": "вулиця|сергіяамброса",
+        "sourceName": "Вулиця С.Амброса",
+        "displayName": "Вулиця Сергія Амброса",
+        "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
+        "evidence": "Exact published operator street entry + independently indexed full form in Cherkasy municipal/geo street catalog; same town and street type; no approximate queue inference."
+      },
+      {
+        "sourceKey": "вулиця|кириченка",
+        "displayKey": "вулиця|спиридонакириченка",
+        "sourceName": "Вулиця Кириченка",
+        "displayName": "Вулиця Спиридона Кириченка",
+        "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
+        "evidence": "Exact published operator street entry + independently indexed full form in Cherkasy municipal/geo street catalog; same town and street type; no approximate queue inference."
+      },
+      {
+        "sourceKey": "вулиця|битюцького",
+        "displayKey": "вулиця|старшоголейтенантабитюцького",
+        "sourceName": "Вулиця Битюцького",
+        "displayName": "Вулиця Старшого лейтенанта Битюцького",
+        "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
+        "evidence": "Exact published operator street entry + independently indexed full form in Cherkasy municipal/geo street catalog; same town and street type; no approximate queue inference."
+      },
+      {
+        "sourceKey": "вулиця|ікулика",
+        "displayKey": "вулиця|іванакулика",
+        "sourceName": "Вулиця І.Кулика",
+        "displayName": "Вулиця Івана Кулика",
+        "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
+        "evidence": "Exact published operator street entry + independently indexed full form in Cherkasy municipal/geo street catalog; same town and street type; no approximate queue inference."
+      },
+      {
+        "sourceKey": "вулиця|франка",
+        "displayKey": "вулиця|іванафранка",
+        "sourceName": "Вулиця Франка",
+        "displayName": "Вулиця Івана Франка",
+        "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
+        "evidence": "Exact published operator street entry + independently indexed full form in Cherkasy municipal/geo street catalog; same town and street type; no approximate queue inference."
+      },
+      {
+        "sourceKey": "провулок|апашкевича",
+        "displayKey": "провулок|анатоліяпашкевича",
+        "sourceName": "Провулок А.Пашкевича",
+        "displayName": "Провулок Анатолія Пашкевича",
+        "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
+        "evidence": "Exact published operator street entry + independently indexed full form in Cherkasy municipal/geo street catalog; same town and street type; no approximate queue inference."
+      },
+      {
+        "sourceKey": "провулок|мкалашника",
+        "displayKey": "провулок|миколикалашника",
+        "sourceName": "Провулок М.Калашника",
+        "displayName": "Провулок Миколи Калашника",
+        "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
+        "evidence": "Exact published operator street entry + independently indexed full form in Cherkasy municipal/geo street catalog; same town and street type; no approximate queue inference."
+      },
+      {
+        "sourceKey": "провулок|мсержантакаравайського",
+        "displayKey": "провулок|молодшогосержантакаравайського",
+        "sourceName": "Провулок М.сержанта Каравайського",
+        "displayName": "Провулок Молодшого сержанта Каравайського",
+        "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
+        "evidence": "Exact published operator street entry + independently indexed full form in Cherkasy municipal/geo street catalog; same town and street type; no approximate queue inference."
+      }
+    ]
   }
 }
