@@ -23,13 +23,13 @@ DATA = ROOT / "data"
 CATALOG_FILE = DATA / "street_catalog.json"
 OFFICIAL_FILE = DATA / "addresses.json"
 CITY_STREETS_API = (
-    "https://mgis.chmr.gov.ua/server/rest/services/different/"
-    "Streets_of_Heroes/MapServer/0/query"
+    "https://mgis.chmr.gov.ua/server/rest/services/opora/"
+    "Streets_WGS84/MapServer/0/query"
 )
-OSM_API = "https://overpass.kumi.systems/api/interpreter"
+OSM_API = "https://overpass.private.coffee/api/interpreter"
 OSM_FALLBACK = "https://overpass-api.de/api/interpreter"
 SOURCES = {
-    "city": "https://mgis.chmr.gov.ua/server/rest/services/different/Streets_of_Heroes/MapServer/0",
+    "city": "https://mgis.chmr.gov.ua/server/rest/services/opora/Streets_WGS84/MapServer/0",
     "district": "https://www.openstreetmap.org/copyright",
 }
 TYPE_RE = re.compile(
@@ -107,8 +107,8 @@ def collect_city_gis(session):
 
 def collect_osm_address_streets(session, expected_towns):
     """Explicit addr:city prevents assigning a neighbouring village's roads."""
-    query = """[out:json][timeout:160];
-    area["name"="Черкаська область"]["admin_level"="4"]->.region;
+    query = """[out:json][timeout:80];
+    area["name"="Черкаський район"]["admin_level"="6"]->.region;
     (
       node(area.region)["addr:city"]["addr:street"];
       way(area.region)["addr:city"]["addr:street"];
@@ -118,7 +118,8 @@ def collect_osm_address_streets(session, expected_towns):
     last_error = None
     for url in (OSM_API, OSM_FALLBACK):
         try:
-            reply = session.post(url, data={"data": query}, timeout=(15, 190))
+            headers={"Origin": url.split("/api/")[0], "Referer": url.split("/api/")[0]+"/"}
+            reply = session.post(url, data={"data": query}, headers=headers, timeout=(12, 105))
             reply.raise_for_status()
             payload = reply.json()
             if "remark" in payload and not payload.get("elements"):
@@ -217,7 +218,7 @@ def collect_osm_roads_near_localities(session, expected_towns):
     as competing centres, preventing neighbouring localities from sharing
     roads through a simple radius-based search.
     """
-    query = """[out:json][timeout:160];
+    query = """[out:json][timeout:80];
     area["name"="Черкаський район"]["admin_level"="6"]->.region;
     (
       node(area.region)["place"]["name"];
@@ -227,7 +228,8 @@ def collect_osm_roads_near_localities(session, expected_towns):
     last_error = None
     for url in (OSM_API, OSM_FALLBACK):
         try:
-            response = session.post(url, data={"data": query}, timeout=(15, 190))
+            headers={"Origin": url.split("/api/")[0], "Referer": url.split("/api/")[0]+"/"}
+            response = session.post(url, data={"data": query}, headers=headers, timeout=(12, 105))
             response.raise_for_status()
             payload = response.json()
             elements = payload.get("elements")
@@ -280,6 +282,10 @@ def main():
                   status_forcelist=[429, 500, 502, 503, 504],
                   allowed_methods=frozenset(["GET", "POST"]))
     session.mount("https://", HTTPAdapter(max_retries=retry))
+    session.headers.update({
+        "User-Agent": "SvitloCherkasy-StreetCatalog/1.0 (+https://svitlo-cherkasy.pp.ua)",
+        "Accept": "application/json,*/*;q=0.5",
+    })
     city = {}
     district = {}
     try:
