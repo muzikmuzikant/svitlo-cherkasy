@@ -480,7 +480,7 @@ def street_only_entries(text):
     This extracts *street-level hints* only, never assigns house numbers.
     """
     found = []
-    clean = re.sub(r'\\s+', ' ', text.replace('\\u00ad', '').replace('\\xa0', ' '))
+    clean = re.sub(r'\s+', ' ', text.replace('\u00ad', '').replace('\xa0', ' '))
     markers = list(STREET.finditer(clean))
     for i, marker in enumerate(markers):
         end = min(len(clean), marker.end() + 450,
@@ -489,8 +489,8 @@ def street_only_entries(text):
         # Some PDF cells join a street list with company names or a second
         # locality. Do not mistake those unrelated fragments for streets.
         chunk = re.split(
-            r'\\b(?:ТОВ|ФОП|ПРАТ|ПрАТ|КП|ПП|ВСП|філія|Населення|'
-            r'Приватні\\s+підприємства)\\b',
+            r'\b(?:ТОВ|ФОП|ПРАТ|ПрАТ|КП|ПП|ВСП|філія|Населення|'
+            r'Приватні\s+підприємства)\b',
             chunk, maxsplit=1, flags=re.I
         )[0]
         kindraw = marker.group('type').lower()
@@ -503,14 +503,14 @@ def street_only_entries(text):
             # Only a final isolated number is a house number. Preserve
             # actual numbered names, e.g. "50 років Перемоги".
             candidate = re.sub(
-                r'(?<!^)\\s+\\d{1,4}(?:/\\d+)?[а-яіїєґa-z]?$', '',
+                r'(?<!^)\s+\d{1,4}(?:/\d+)?[а-яіїєґa-z]?$', '',
                 candidate, flags=re.I).strip(' .–-')
             if not 3 <= len(candidate) <= 58:
                 continue
-            if re.search(r'\\b(?:ТОВ|ФОП|АТ|КП|ПП|ПРАТ|будинок|будинки)\\b',
+            if re.search(r'\b(?:ТОВ|ФОП|АТ|КП|ПП|ПРАТ|будинок|будинки)\b',
                          candidate, re.I):
                 continue
-            if re.match(r'^\\d+\\s+(?!років|Травня|Вересня)', candidate, re.I):
+            if re.match(r'^\d+\s+(?!років|Травня|Вересня)', candidate, re.I):
                 continue
             # Reject address numbers and ambiguous prose, not geographic
             # labels. Comma-separated ordinary names stay discoverable.
