@@ -678,7 +678,7 @@ function checkLookup(){
  const renameNote=rename?(SvitloAddressLookup.normalize($('street').value)===SvitloAddressLookup.normalize(rename.oldName)
    ?' Цю вулицю перейменовано на «'+rename.newName+'».'
    :' У старих документах ця вулиця може називатися «'+rename.oldName+'».'):'';
- hint.textContent=(messages[r.status]||'Не вдалося визначити підчергу.')+renameNote;
+ hint.textContent=(messages[r.status]||'Не вдалося визначити підчергу.')+(r.verifiedRename?' Підчергу звірено за попередньою назвою «'+r.sourceStreet+'» в офіційному переліку обленерго.':'')+renameNote;
  const coverage=$('houseCoverage'),choices=$('houseChoices');
  choices.replaceChildren();choices.hidden=true;coverage.hidden=true;
  if(r.streetKey&&r.status!=='exact'){
@@ -739,7 +739,13 @@ function suggestions(){
    $('street').value=name;suggestion={key,label:name};root.hidden=true;checkLookup();
  };
    const idx=localIndex();
-   if(Array.isArray(idx.archiveOnlyStreets)&&idx.archiveOnlyStreets.includes(key)){
+   const matched=SvitloAddressLookup.resolve({idx,settlement:town(),street:name,house:$('house').value});
+   if(matched.verifiedRename){
+     b.append(el('small','archive-street-tag',' · підчерга в списку за старою назвою'));
+   }else if(SvitloAddressLookup.hasPublishedQueue(idx,key)){
+     b.append(el('small','archive-street-tag',' · є в переліку обленерго'));
+   }
+   if(!matched.verifiedRename && Array.isArray(idx.archiveOnlyStreets)&&idx.archiveOnlyStreets.includes(key)){
      const note=idx.reportedStreetNames?.includes(key)?' · додано за зверненням':
        idx.externalStreetNames?.includes(key)?' · з географічного довідника':
        ' · з попереднього переліку';
