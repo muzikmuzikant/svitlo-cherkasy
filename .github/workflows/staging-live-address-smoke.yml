@@ -9,6 +9,8 @@ on:
       - data/street_aliases.json
       - data/published_street_fallback.json
       - app.js
+      - address-lookup.js
+      - data-merge.js
       - release.json
   workflow_dispatch:
 permissions:
@@ -48,6 +50,8 @@ jobs:
                   assert 'street_catalog.json' in values['app.js'], 'App missing merged catalogue'
                   assert 'street_aliases.json' in values['app.js'], 'Beta app missing renamed-street data'
                   assert 'splitHint' in values['address-lookup.js'], 'No safe split-street lookup'
+                  assert 'withPrefixSpaces' in values['address-lookup.js'], 'No malformed prefix normalization'
+                  assert 'cleanStreetLabel' in values['address-lookup.js'], 'No duplicate publisher label cleanup'
                   assert len(aliases.get('localities',{}).get('черкаси',[]))>=53, 'Renamed streets have not deployed'
                   assert any(p['oldName']=='вулиця Генерала Путейка' and p['newName']=='вулиця Івана Кожедуба' for p in aliases['localities']['черкаси'])
                   assert seed['streets']['вулиця|іванакожедуба']=='Вулиця Івана Кожедуба'
