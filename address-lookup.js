@@ -71,7 +71,7 @@
     const [key,display]=matches[0];
     // Archived entries are searchable but cannot automatically confirm a queue.
     if(Array.isArray(idx.archiveOnlyStreets)&&idx.archiveOnlyStreets.includes(key))
-      return {status:'possible',reason:'archived-only',street:display,streetKey:key,
+      return {status:'possible',reason:Array.isArray(idx.reportedStreetNames)&&idx.reportedStreetNames.includes(key)?'reported-only':Array.isArray(idx.externalStreetNames)&&idx.externalStreetNames.includes(key)?'external-only':'archived-only',street:display,streetKey:key,
         queues:validQueues(idx.archivedStreetQueues?.[key]),knownHouses:[],hasHouseData:false};
     const streetOnly=validQueues(idx.streetQueues?.[key]);
     const houses=knownHouses(idx,key);

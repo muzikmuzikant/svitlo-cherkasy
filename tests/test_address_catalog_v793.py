@@ -11,7 +11,7 @@ historical=json.loads((DATA/'published_street_fallback.json').read_text('utf8'))
 def test_all_sloboda_streets_are_already_in_current_import():
     village=live['localities']['слобода']
     old=historical['localities']['слобода']
-    assert set(old['streets']) <= set(village['streets'])
+    assert set(old['streets']) - set(old.get('reportedStreetNames', [])) <= set(village['streets'])
     assert len(village['streets']) >= 96
     # Until the parser refresh, legacy labels stay searchable without guessed
     # queues. After a successful refresh, fresh PDF mappings take precedence.

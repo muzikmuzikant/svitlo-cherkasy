@@ -498,28 +498,55 @@ def street_house_lists(text):
 
 
 def street_only_entries(text):
-    """Extract street-level hints (with or without enumerated house numbers).
+    """Extract explicit street names, including comma-delimited continuations.
 
-    PDF rows are inconsistent: ``вул.Соборна, вул.50 років Перемоги,``
-    and ``вул.Лісова вул.Польова`` both occur. Records are suggestions,
-    never evidence that an arbitrary house is in the listed subqueue.
+    Operator PDFs commonly write "вул. Лісова, Польова, Соборна" with only
+    the first street prefixed by "вул.". The previous parser indexed only
+    Лісова, which silently discarded the other two streets in every locality.
+    This extracts *street-level hints* only, never assigns house numbers.
     """
-    found=[]
-    clean=re.sub(r'\s+',' ',text.replace('\u00ad','').replace('\xa0',' '))
-    markers=list(STREET.finditer(clean))
-    for i,marker in enumerate(markers):
-        end=min(len(clean),marker.end()+110,markers[i+1].start() if i+1<len(markers) else len(clean))
-        chunk=clean[marker.end():end]
-        candidate=re.split(r'[,;:\n]',chunk,maxsplit=1)[0].strip(' .–-')
-        # Avoid treating a street + its house number as a new street name.
-        # Leading numbers in names (e.g. "50 років Перемоги") are valid.
-        candidate=re.sub(r'(?<!^)\s+\d{1,4}(?:/\d+)?[а-яіїєґa-z]?$', '', candidate,flags=re.I).strip()
-        if not 3<=len(candidate)<=58:continue
-        if re.search(r'\b(?:ТОВ|ФОП|АТ|КП|ПП|ПРАТ)\b',candidate,re.I):continue
-        kindraw=marker.group('type').lower()
-        kind='провулок' if kindraw.startswith(('пров','прв')) else 'проспект' if kindraw.startswith(('просп','пр-т')) else 'бульвар' if kindraw.startswith(('б-р','буль')) else 'узвіз' if kindraw.startswith('узв') else 'вулиця'
-        if normalize(candidate):found.append((kind,normalize(candidate),candidate))
-    return found
+    found = []
+    clean = re.sub(r'\s+', ' ', text.replace('\u00ad', '').replace('\xa0', ' '))
+    markers = list(STREET.finditer(clean))
+    for i, marker in enumerate(markers):
+        end = min(len(clean), marker.end() + 450,
+                  markers[i + 1].start() if i + 1 < len(markers) else len(clean))
+        chunk = clean[marker.end():end]
+        # Some PDF cells join a street list with company names or a second
+        # locality. Do not mistake those unrelated fragments for streets.
+        chunk = re.split(
+            r'\b(?:ТОВ|ФОП|ПРАТ|ПрАТ|КП|ПП|ВСП|філія|Населення|'
+            r'Приватні\s+підприємства)\b',
+            chunk, maxsplit=1, flags=re.I
+        )[0]
+        kindraw = marker.group('type').lower()
+        kind = ('провулок' if kindraw.startswith(('пров', 'прв')) else
+                'проспект' if kindraw.startswith(('просп', 'пр-т')) else
+                'бульвар' if kindraw.startswith(('б-р', 'буль')) else
+                'узвіз' if kindraw.startswith('узв') else 'вулиця')
+        for part in re.split(r'[,;:]', chunk)[:35]:
+            candidate = part.strip(' .–-')
+            # Only a final isolated number is a house number. Preserve
+            # actual numbered names, e.g. "50 років Перемоги".
+            candidate = re.sub(
+                r'(?<!^)\s+\d{1,4}(?:/\d+)?[а-яіїєґa-z]?$', '',
+                candidate, flags=re.I).strip(' .–-')
+            if not 3 <= len(candidate) <= 58:
+                continue
+            if re.search(r'\b(?:ТОВ|ФОП|АТ|КП|ПП|ПРАТ|будинок|будинки)\b',
+                         candidate, re.I):
+                continue
+            if re.match(r'^\d+\s+(?!років|Травня|Вересня)', candidate, re.I):
+                continue
+            # Reject address numbers and ambiguous prose, not geographic
+            # labels. Comma-separated ordinary names stay discoverable.
+            if not re.search(r'[А-ЯІЇЄҐа-яіїєґ]', candidate):
+                continue
+            label = normalize(candidate)
+            if label:
+                found.append((kind, label, candidate))
+    # Deduplicate deterministicly in source order.
+    return list(dict.fromkeys(found))
 
 
 def extract_city_streets(text):return street_entries(text)
@@ -648,6 +675,13 @@ def preserve_street_catalogue(result, previous, historical):
                 if hints:
                     archive_hints.setdefault(street, set()).update(hints)
         if archived:
+            reported = set()
+            for source in sources:
+                if isinstance(source, dict):
+                    reported.update(key for key in source.get('reportedStreetNames', [])
+                                    if isinstance(key, str) and key in archived)
+            if reported:
+                target['reportedStreetNames'] = sorted(reported)
             target['archiveOnlyStreets'] = sorted(archived)
             target['archivedStreetQueues'] = {
                 key: sorted(archive_hints[key]) for key in sorted(archive_hints)
