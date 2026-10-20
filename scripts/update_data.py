@@ -856,6 +856,13 @@ def address_audit(index, sources, previous=None, now=None):
         },
         'queues': q_counts,
         'localities': by_locality,
+        # Previously included numbers are NOT carried as confirmed when the
+        # fresh official PDF parser no longer corroborates them. Review exact
+        # removed keys separately, preserving their old queue for comparison.
+        'removedHouseKeysForReview': [
+            {'key': key, 'previousQueues': sorted(previous['keys'][key])}
+            for key in sorted(oldcity - cityset)[:200]
+        ],
         # Only samples, not a claim these represent errors: in the official
         # network the same building can appear on several feeding lines.
         'multipleQueueExamples': conflicts[:80]
