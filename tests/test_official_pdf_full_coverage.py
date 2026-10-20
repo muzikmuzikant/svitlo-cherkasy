@@ -86,3 +86,34 @@ def test_audit_does_not_claim_unlisted_village_houses_as_verified(monkeypatch,tm
     assert audit['localities']['слобода']['indexedHouses']==0
     assert audit['localities']['слобода']['operatorStreets']==2
     assert audit['verifiedPdfCount']==12
+
+
+def test_pdf_numbered_cherkasy_street_names_preserve_exact_house_numbers():
+    cases=[
+        ('вул. 14-го Грудня 12, 14, 16', '14гогрудня', {'12','14','16'}),
+        ('вул. 14 Грудня 12, 14', '14грудня', {'12','14'}),
+    ]
+    for text,name,expected in cases:
+        found={house for kind,street,house,label in i.street_entries(text)
+               if kind=='вулиця' and street==name}
+        assert found==expected
+    hints=i.street_only_entries('вул. 14-го Грудня, 14 Грудня, Лісова')
+    assert ('вулиця','14гогрудня','14-го Грудня') in hints
+    assert ('вулиця','14грудня','14 Грудня') in hints
+
+def test_apartment_subaddresses_are_never_invented_as_whole_house_queues():
+    text='вул. Симиренківська 2/2 кв 3, 2/1, 2/2, 4, 9, 10'
+    got={house for kind,street,house,label in i.street_entries(text)
+         if street=='симиренківська'}
+    assert got=={'2/1','2/2','4','9','10'}, got
+    # The apartment number 3 is not a verified full building on its own.
+    assert '3' not in got
+
+def test_special_asterisk_notation_is_not_turned_into_a_different_house():
+    text='вул. Гетьмана Сагайдачного 223*1, 223*2, 225*1, 225, 227, 233'
+    got={house for kind,street,house,label in i.street_entries(text)
+         if street=='гетьманасагайдачного'}
+    assert got=={'225','227','233'}, got
+    assert '223' not in got
+    assert '2231' not in got
+    assert i.parse_house_numbers('12-А, 12/1, 12, 15')==['12а','12/1','12','15']
