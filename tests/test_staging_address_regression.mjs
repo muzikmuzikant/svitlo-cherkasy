@@ -68,3 +68,19 @@ test('staging PWA actively loads the public catalogue and caches it',()=>{
  assert.ok(sw.includes('./data/street_catalog.json'));
  assert.ok(sw.includes('svitlo-cherkasy-shell-v'+release.version));
 });
+
+test('street-type search supports squares, lanes and embankments without false queue proof',()=>{
+ const idx={streets:{
+  'площа|соборна':'Площа Соборна',
+  'алея|героїв':'Алея Героїв',
+  'набережна|дніпровська':'Набережна Дніпровська',
+  'проїзд|лісовий':'Проїзд Лісовий',
+  'шосе|київське':'Шосе Київське'
+ },keys:{},streetQueues:{},archiveOnlyStreets:['площа|соборна']};
+ for(const [street,key] of [['Площа Соборна','площа|соборна'],['Алея Героїв','алея|героїв'],['Набережна Дніпровська','набережна|дніпровська'],['Проїзд Лісовий','проїзд|лісовий'],['Шосе Київське','шосе|київське']]){
+  assert.ok(suggest(idx,street.split(' ').slice(1).join(' ')).some(([k])=>k===key));
+  const r=resolve({idx,settlement:'Черкаси',street});
+  assert.equal(r.streetKey,key);
+  assert.equal(r.queue,undefined);
+ }
+});
