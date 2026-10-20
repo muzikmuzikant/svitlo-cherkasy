@@ -567,7 +567,7 @@ function checkLookup(){
   nohouse:house&&known.length?'Будинок '+house+' відсутній у доступному списку точних адрес. Підчергу не визначено автоматично.':'Для цієї адреси немає однозначного запису. Виберіть підчергу вручну.',
   exact:`Будинок ${house}: підтверджена підчерга ${r.queue} за адресним переліком.`,
   street:`Для цієї вулиці вказано підчергу ${r.queue}; суперечливих будинкових записів не знайдено.`,
-  possible:r.reason==='archived-only'?('Цю вулицю відновлено з попереднього офіційного довідника. У поточному імпорті її немає. '+(list?'Архівні підчерги: '+list+'. ':'')+'Звірте актуальну підчергу на сайті оператора й оберіть вручну.'):
+  possible:r.reason==='reported-only'?'Назву вулиці додано за зверненням користувача. Підчерга ще не перевірена за офіційним переліком. Перевірте її на сайті оператора та оберіть вручну.':r.reason==='archived-only'?('Цю вулицю відновлено з попереднього офіційного довідника. У поточному імпорті її немає. '+(list?'Архівні підчерги: '+list+'. ':'')+'Звірте актуальну підчергу на сайті оператора й оберіть вручну.'):
     r.reason==='house-conflict'?`Будинок ${house} згадується в різних підчергах: ${list}. Звірте дані з оператором.`:
     r.reason==='no-house-index'?`${house?'Будинок '+house+': точного запису немає. ':''}Для вулиці можливі підчерги ${list}. У джерелі немає розподілу за номерами будинків. Виберіть підчергу нижче.`:
     r.reason==='house-unlisted'?`Будинку ${house} немає серед точних записів цієї вулиці. Можливі підчерги: ${list}. Виберіть підтверджену вами підчергу.`:
@@ -579,7 +579,7 @@ function checkLookup(){
  if(r.streetKey&&r.status!=='exact'){
   coverage.hidden=false;
   if(!known.length){
-   coverage.hidden=r.reason==='no-house-index'||r.reason==='archived-only';
+   coverage.hidden=['no-house-index','archived-only','reported-only'].includes(r.reason);
    coverage.className='house-coverage no-house-list';
    coverage.textContent=house?'Для будинку '+house+' автоматичне визначення недоступне: номери будинків у джерелі не вказані.':'Номерів будинків у джерелі немає. Не потрібно підбирати номер: оберіть підчергу або звірте адресу з оператором.';
   }else{
@@ -603,7 +603,9 @@ function checkLookup(){
   }
  }
  manual.hidden=['incomplete','exact','street'].includes(r.status);
- $('manualExplanation').textContent=r.reason==='archived-only'
+ $('manualExplanation').textContent=r.reason==='reported-only'
+  ?'Вулиця додана до пошуку за зверненням користувача. Її підчерга ще не підтверджена, перевірте її в оператора.'
+  :r.reason==='archived-only'
   ?'Вулиця є в попередньому довіднику, але поточна підчерга не підтверджена. Не обирайте навмання: перевірте її в оператора.'
   :r.reason==='no-house-index'
   ?'Номери будинків у джерелі відсутні. Виберіть свою підчергу зі списку можливих або перевірте її на сайті оператора.'
@@ -612,7 +614,7 @@ function checkLookup(){
  possible.replaceChildren();
  if(r.status==='possible'&&r.queues?.length){
    possible.hidden=false;
-   possible.append(el('div','possible-title',r.reason==='archived-only'?'Архівні підчерги (непідтверджені). Оберіть після звірки:':'Можливі підчерги — натисніть свою:'));
+   possible.append(el('div','possible-title',['archived-only','reported-only'].includes(r.reason)?'Непідтверджені підчерги. Перевірте їх в оператора:':'Можливі підчерги — натисніть свою:'));
    for(const q of r.queues){
      const b=el('button','possible-queue'+($('manualQueue').value===q?' selected':''),`Підчерга ${q}`);
      b.type='button';b.setAttribute('aria-pressed',String($('manualQueue').value===q));
