@@ -46,7 +46,7 @@ jobs:
                   seed=json.loads(values['data/published_street_fallback.json'])
                   aliases=json.loads(values['data/street_aliases.json'])
                   assert release.get('channel')=='beta', 'Not Beta channel'
-                  assert tuple(map(int,release['version'].split('.'))) >= (7,9,14), 'Stale Beta deployment'
+                  assert tuple(map(int,release['version'].split('.'))) >= (7,9,15), 'Stale Beta deployment'
                   assert 'street_catalog.json' in values['app.js'], 'App missing merged catalogue'
                   assert 'street_aliases.json' in values['app.js'], 'Beta app missing renamed-street data'
                   assert 'splitHint' in values['address-lookup.js'], 'No safe split-street lookup'
@@ -54,6 +54,9 @@ jobs:
                   assert 'hasPublishedQueue' in values['address-lookup.js'], 'Street rename queue matching missing'
                   assert 'verifiedRename' in values['address-lookup.js'], 'Street queue source metadata missing'
                   assert 'verifiedNameVariant' in values['address-lookup.js'], 'Short/full-name queue resolver not deployed'
+                  assert 'cachedIndex' in values['address-lookup.js'] and 'houseIndex' in values['address-lookup.js'], 'Fast indexed search missing'
+                  assert 'document.createDocumentFragment' in values['app.js'], 'Clean suggestions rendering not deployed'
+                  assert 'archive-street-tag' not in values['app.js'].split('function suggestions(){',1)[1].split('function populateSettlements(){',1)[0], 'Old suggestion captions remain'
                   assert len(aliases.get('spellingVariants',{}).get('черкаси',[]))>=19, 'Operator abbreviations have not deployed'
                   assert address['streetQueues']['вулиця|самброса']==['1.1','3.1','4.1'], 'Published Am brosa source queue data missing'
                   assert 'cleanStreetLabel' in values['address-lookup.js'], 'No duplicate publisher label cleanup'
