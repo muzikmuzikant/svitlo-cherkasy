@@ -102,3 +102,20 @@ test('split Gagarin street is never mapped to one arbitrary subqueue',()=>{
  assert.equal(lookup.splitHint(idx,'вулиця Гагаріна').newNames.length,2);
  assert.equal(lookup.splitHint(idx,'провулок Гагаріна'),null);
 });
+
+
+test('real PDF formatting glitches are normalized, but a lane is not a street',()=>{
+ const idx={streets:{'вулиця|зінченко':'Вулиця вул. Зінченко'},
+   keys:{},streetQueues:{},localities:{}};
+ assert.equal(lookup.normalize('вул.Зінченко'),'зінченко');
+ assert.equal(lookup.normalize('вулиця вул. Зінченко'),'зінченко');
+ assert.equal(lookup.kindOf('вул.Зінченко'),'вулиця');
+ assert.equal(lookup.kindOf('пров.Зінченко'),'провулок');
+ const result=lookup.resolve({idx,settlement:'Черкаси',street:'вул.Зінченко'});
+ assert.equal(result.streetKey,'вулиця|зінченко');
+ assert.equal(result.street,'Вулиця Зінченко');
+ assert.equal(lookup.resolve({idx,settlement:'Черкаси',street:'пров.Зінченко'}).status,'nostreet');
+ assert.deepEqual(lookup.suggest(idx,'вул.Зінченко'),[
+  ['вулиця|зінченко','Вулиця Зінченко']
+ ]);
+});
