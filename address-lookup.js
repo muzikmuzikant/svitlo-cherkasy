@@ -89,6 +89,14 @@
     }
     // Renamed-street suggestions only point to an existing street entry,
     // and do not import obsolete queue assignments.
+    // One old street can have two different new names; suggest BOTH, never
+    // collapse their house/queue records into one key.
+    const split=splitHint(idx,typed);
+    if(split){
+      for(const modern of split.newNames){
+        for(const [key,name] of directMatches(idx,modern))if(!chosen.has(key))chosen.set(key,name);
+      }
+    }
     for(const [key,name] of renamedCandidates(idx,typed,false)){
       if(!chosen.has(key))chosen.set(key,name);
     }
@@ -111,10 +119,21 @@
     }
     return null;
   }
+  function splitHint(idx,typed){
+    const needle=normalize(typed),kind=kindOf(typed);
+    if(!needle)return null;
+    return (Array.isArray(idx?.splitRenames)?idx.splitRenames:[]).find(p=>
+      p && typeof p.oldName==='string' && Array.isArray(p.newNames) &&
+      normalize(p.oldName)===needle && (!kind || kind===kindOf(p.oldName)))||null;
+  }
   function resolve({idx,street,house,settlement,selectedKey}={}) {
     street=String(street||'').trim();house=String(house||'').trim();
     if(!String(settlement||'').trim()||!street)return {status:'incomplete'};
     if(!Object.keys(idx?.streets||{}).length)return {status:'unavailable'};
+    const split=splitHint(idx,street);
+    if(split)return {status:'possible',reason:'split-rename',street,
+      queues:[],knownHouses:[],hasHouseData:false,
+      splitNewNames:split.newNames.slice(0,6)};
     const matches=streetMatches(idx,street,selectedKey);
     if(matches.length===0)return {status:'nostreet'};
     if(matches.length>1)return {status:'ambiguous'};
@@ -145,5 +164,5 @@
     return {...base,status:'nohouse',reason:house?'house-unlisted':'no-address-data'};
   }
 
-  return {normalize,houseKey,kindOf,streetMatches,suggest,renameHint,knownHouses,resolve};
+  return {normalize,houseKey,kindOf,streetMatches,suggest,renameHint,splitHint,knownHouses,resolve};
 });
