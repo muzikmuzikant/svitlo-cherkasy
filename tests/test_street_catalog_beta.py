@@ -107,3 +107,65 @@ def test_overpass_queries_are_local_and_use_functional_mirror():
     assert 'area["name"="Черкаський район"]["admin_level"="6"]' in text
     assert 'session.headers.update' in text
     assert 'Origin' in text
+
+
+
+def test_targeted_oblast_lookup_recovers_missing_villages_without_guessing_queues():
+    from scripts.build_street_catalog import collect_osm_targeted_villages
+
+    points = [
+        {"type": "node", "lat": 49.41, "lon": 32.00,
+         "tags": {"place": "village", "name": "Стара Гута"}},
+        {"type": "node", "lat": 49.51, "lon": 32.00,
+         "tags": {"place": "village", "name": "Лящівка"}},
+        {"type": "way", "center": {"lat": 49.4102, "lon": 32.0001},
+         "tags": {"highway": "residential", "name": "вулиця Зарічна"}},
+        {"type": "way", "center": {"lat": 49.5102, "lon": 32.0001},
+         "tags": {"highway": "residential", "name": "вулиця Польова"}}
+    ]
+    class Reply:
+        def raise_for_status(self): pass
+        def json(self): return {"elements": points}
+    class Client:
+        def post(self, url, data, headers, timeout):
+            assert 'Черкаська область' in data['data']
+            assert 'around.targets:1600' in data['data']
+            assert 'Стара' in data['data'] and 'Лящівка' in data['data']
+            assert 'Origin' in headers
+            return Reply()
+    official = {"localities": {
+        "старагута": {"label": "Стара Гута", "streets": {}},
+        "лящівка": {"label": "Лящівка", "streets": {}}
+    }}
+    known = {"localities": {}}
+    names=collect_osm_targeted_villages(Client(), official, known,
+                                          {"старагута", "лящівка"})
+    assert names["старагута"]["вулиця|зарічна"] == "Вулиця Зарічна"
+    assert names["лящівка"]["вулиця|польова"] == "Вулиця Польова"
+    assert "вулиця|польова" not in names["старагута"]
+    assert "streetQueues" not in names["старагута"]
+
+
+def test_ambiguous_duplicate_village_names_never_import_in_bulk():
+    from scripts.build_street_catalog import collect_osm_targeted_villages
+
+    points=[
+      {"type":"node","lat":49.41,"lon":32.00,"tags":{"place":"village","name":"Стара Гута"}},
+      {"type":"node","lat":49.80,"lon":32.40,"tags":{"place":"village","name":"Стара Гута"}},
+      {"type":"node","lat":49.51,"lon":32.00,"tags":{"place":"village","name":"Лящівка"}},
+      {"type":"way","center":{"lat":49.4102,"lon":32.0001},
+       "tags":{"highway":"residential","name":"вулиця Спільна"}},
+      {"type":"way","center":{"lat":49.5102,"lon":32.0001},
+       "tags":{"highway":"residential","name":"вулиця Івана Франка"}}
+    ]
+    class Reply:
+        def raise_for_status(self):pass
+        def json(self):return {"elements":points}
+    class Client:
+        def post(self, *args, **kwargs):return Reply()
+    entries=collect_osm_targeted_villages(Client(),
+        {"localities":{"старагута":{"label":"Стара Гута","streets":{}},
+                       "лящівка":{"label":"Лящівка","streets":{}}}},
+        {"localities":{}}, {"старагута","лящівка"})
+    assert "старагута" not in entries
+    assert "вулиця|іванафранка" in entries["лящівка"]
