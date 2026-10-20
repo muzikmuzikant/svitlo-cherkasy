@@ -65,7 +65,7 @@ if(data.lastChecked)saveCachedSchedule(data);
   savePrefs();
  }
 const id=()=>crypto.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;
-function norm(s){return String(s||'').toLocaleLowerCase('uk-UA').replace(/[’ʼ`]/g,"'").replace(/^(вул(?:иця)?\.?|пров(?:улок|\.)?|просп(?:ект)?\.?|пр-т\.?|б-р\.?|бульвар|узвіз)\s+/i,'').replace(/[^\p{L}\p{N}/]+/gu,'')}
+function norm(s){return String(s||'').toLocaleLowerCase('uk-UA').replace(/[’ʼ`]/g,"'").replace(/^(вул(?:иця)?\.?|пров(?:улок|\.)?|просп(?:ект)?\.?|пр-т\.?|б-р\.?|бульвар|узвіз|алея|площа|майдан|шосе|набережна|тупик|проїзд)\s+/i,'').replace(/[^\p{L}\p{N}/]+/gu,'')}
 function normTown(s){
   const key=norm(String(s||'').replace(/^(с\.|смт\.?|село|місто|м\.|селище)\s*/i,''));
   return ({'червонаслобода':'слобода','первомайське':'соснове','іванівка':'яничі'})[key]||key;
