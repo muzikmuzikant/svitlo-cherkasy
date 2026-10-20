@@ -241,8 +241,8 @@ function renderTicketList(){
     if(item.priority==='high')meta.append(supportNode('b','● Важливе'));
   if(item.messages?.length)meta.append(supportNode('span','↩ '+item.messages.length));
   card.append(meta);card.addEventListener('click',()=>{supportSelected=item.id;renderTicketList();renderTicketDetail()});root.append(card);
-  root.scrollTop=lastScroll;
  }
+ root.scrollTop=lastScroll;
 }
 function supportThreadEntry(item){
  const div=supportNode('div',undefined,'support-thread-entry '+(item.from==='admin'?'is-admin':''));
