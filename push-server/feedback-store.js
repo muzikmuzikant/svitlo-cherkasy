@@ -156,7 +156,7 @@ export function createFeedbackStore({filePath,clock=()=>Date.now(),onChange=()=>
   if(found.status!=='resolved')throw bad('Оцінювання доступне після закриття звернення.',409);
   if(!Number.isInteger(value)||value<1||value>5)throw bad('Оберіть оцінку від 1 до 5.');
   if(found.rating!=null)throw bad('Оцінку цього звернення вже збережено.',409);
-  const updated={...found,rating:value,ratedAt:new Date(clock()).toISOString()},index=items.indexOf(found);items[index]=updated;
+  const updated={...found,rating:value,ratedAt:new Date(clock()).toISOString(),updatedAt:new Date(clock()).toISOString()},index=items.indexOf(found);items[index]=updated;
   try{save()}catch{items[index]=found;throw bad('Помилка збереження оцінки.',503)}
   notify('rated');
   return {ok:true,rating:value}
