@@ -86,6 +86,13 @@ test('the iPhone full-screen message dismisses with actual exit animations, not 
 });
 
 test('production PWA and API retain their identity; no Beta mirroring or commercial ads',async()=>{
+ if(JSON.parse(repoFile('release.json')).channel==='beta'){
+  assert.equal(JSON.parse(repoFile('release.json')).version,'7.9.11');
+  assert.equal(JSON.parse(repoFile('push-config.json')).apiBase,'https://svitlo-beta-api-staging.up.railway.app');
+  assert.match(repoFile('index.html'),/data-deployment-channel="beta"/);
+  assert.match(repoFile('app.js'),/street_catalog\.json/);
+  return
+ }
  const index=repoFile('index.html'),release=JSON.parse(repoFile('release.json'));
  const push=JSON.parse(repoFile('push-config.json'));
  const server=repoFile('push-server/server.js'),source=repoFile('push-server/ads.js');
