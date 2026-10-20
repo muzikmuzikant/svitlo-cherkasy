@@ -1,0 +1,1157 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-20T23:15:27+03:00",
+  "effectiveSource": "https://www.cherkasyoblenergo.com/perelik-gpv?lang=uk",
+  "expectedPdfCount": 12,
+  "verifiedPdfCount": 12,
+  "sourceFiles": [
+    {
+      "queue": "1.1",
+      "url": "https://www.cherkasyoblenergo.com/cherkasyoblenergo/uploads/pages/files/30a2df3e-5bc0-425e-b6f2-fa497bad54e9.pdf",
+      "sha256": "23800c4065e840539d64e3fd75b0e2ec7770b7581a30eb01b8f8fdadb3e98b46",
+      "pages": 22,
+      "verifiedPdfTitleQueue": "1.1",
+      "cityHouseMentions": 3165,
+      "districtHouseMentions": 0,
+      "cityStreetMentions": 163,
+      "districtStreetMentions": 202,
+      "localities": 15
+    },
+    {
+      "queue": "1.2",
+      "url": "https://www.cherkasyoblenergo.com/cherkasyoblenergo/uploads/pages/files/4a3858af-8bb2-420a-a857-7bc1751ef1ae.pdf",
+      "sha256": "a871b6ec3937003fc12d80cc3df3ea73fce32d9d1c9e26c1d84b2ed00093ce6e",
+      "pages": 4,
+      "verifiedPdfTitleQueue": "1.2",
+      "cityHouseMentions": 0,
+      "districtHouseMentions": 0,
+      "cityStreetMentions": 0,
+      "districtStreetMentions": 0,
+      "localities": 0
+    },
+    {
+      "queue": "2.1",
+      "url": "https://www.cherkasyoblenergo.com/cherkasyoblenergo/uploads/pages/files/a3679955-4545-4721-9cd6-282fe3ddefb6.pdf",
+      "sha256": "368ccfa46895ec34b29ec9e49e1732237795aa93f0013bd87351120dd4de227a",
+      "pages": 27,
+      "verifiedPdfTitleQueue": "2.1",
+      "cityHouseMentions": 3750,
+      "districtHouseMentions": 1,
+      "cityStreetMentions": 157,
+      "districtStreetMentions": 168,
+      "localities": 14
+    },
+    {
+      "queue": "2.2",
+      "url": "https://www.cherkasyoblenergo.com/cherkasyoblenergo/uploads/pages/files/7935eb4b-1a31-41d3-adfa-b901a5b2ddc2.pdf",
+      "sha256": "d47445ad542419cdf540df290a0c268841719633f2faaff3b974094f997ec80c",
+      "pages": 6,
+      "verifiedPdfTitleQueue": "2.2",
+      "cityHouseMentions": 0,
+      "districtHouseMentions": 0,
+      "cityStreetMentions": 0,
+      "districtStreetMentions": 0,
+      "localities": 0
+    },
+    {
+      "queue": "3.1",
+      "url": "https://www.cherkasyoblenergo.com/cherkasyoblenergo/uploads/pages/files/d585ac05-a11b-4404-a9e3-415b77771018.pdf",
+      "sha256": "251e9620dae765a6175aa6443b313090d599b410fe3fca7d8151e898b74c2f97",
+      "pages": 28,
+      "verifiedPdfTitleQueue": "3.1",
+      "cityHouseMentions": 1881,
+      "districtHouseMentions": 10,
+      "cityStreetMentions": 137,
+      "districtStreetMentions": 176,
+      "localities": 10
+    },
+    {
+      "queue": "3.2",
+      "url": "https://www.cherkasyoblenergo.com/cherkasyoblenergo/uploads/pages/files/70d213bb-6275-41e9-bf50-d5262a6624eb.pdf",
+      "sha256": "af6e18db7104a7f66c3b381e83d6e21f5f914a315261ebffdd5c0860a9af5a72",
+      "pages": 5,
+      "verifiedPdfTitleQueue": "3.2",
+      "cityHouseMentions": 0,
+      "districtHouseMentions": 0,
+      "cityStreetMentions": 0,
+      "districtStreetMentions": 0,
+      "localities": 0
+    },
+    {
+      "queue": "4.1",
+      "url": "https://www.cherkasyoblenergo.com/cherkasyoblenergo/uploads/pages/files/affa2da7-4a50-49eb-b5ea-8bebbe7962e7.pdf",
+      "sha256": "a5773967b7e01a8426874307518a559d3318d028c8fd79830ce04c5a03067604",
+      "pages": 26,
+      "verifiedPdfTitleQueue": "4.1",
+      "cityHouseMentions": 1607,
+      "districtHouseMentions": 6,
+      "cityStreetMentions": 98,
+      "districtStreetMentions": 185,
+      "localities": 11
+    },
+    {
+      "queue": "4.2",
+      "url": "https://www.cherkasyoblenergo.com/cherkasyoblenergo/uploads/pages/files/2e0a34c5-ac70-43f2-905e-d4e36e614314.pdf",
+      "sha256": "896a70c195a01141455928c9f085b7bfc466aa48709c86d4ea680d96b9798c1c",
+      "pages": 6,
+      "verifiedPdfTitleQueue": "4.2",
+      "cityHouseMentions": 0,
+      "districtHouseMentions": 0,
+      "cityStreetMentions": 0,
+      "districtStreetMentions": 0,
+      "localities": 0
+    },
+    {
+      "queue": "5.1",
+      "url": "https://www.cherkasyoblenergo.com/cherkasyoblenergo/uploads/pages/files/0ca3bca0-112c-4699-adb8-e3fa05c83ea1.pdf",
+      "sha256": "402cfe0214004968cd975441b73103b5f4f000e8c5712a2f63674bf24a9cffdf",
+      "pages": 18,
+      "verifiedPdfTitleQueue": "5.1",
+      "cityHouseMentions": 0,
+      "districtHouseMentions": 1,
+      "cityStreetMentions": 0,
+      "districtStreetMentions": 149,
+      "localities": 12
+    },
+    {
+      "queue": "5.2",
+      "url": "https://www.cherkasyoblenergo.com/cherkasyoblenergo/uploads/pages/files/8d245972-8b36-47f4-94ae-1b8a3c92acd1.pdf",
+      "sha256": "879719e7c0000ed67a9fdd95cdfd7c968aac4f303f340c7809de7e4e9b8f6e67",
+      "pages": 5,
+      "verifiedPdfTitleQueue": "5.2",
+      "cityHouseMentions": 0,
+      "districtHouseMentions": 0,
+      "cityStreetMentions": 0,
+      "districtStreetMentions": 0,
+      "localities": 0
+    },
+    {
+      "queue": "6.1",
+      "url": "https://www.cherkasyoblenergo.com/cherkasyoblenergo/uploads/pages/files/2c166b66-b814-45a8-99bb-9509b04cf96c.pdf",
+      "sha256": "c33c11799193efa1bddd2dff5102328049b7c62a367c93320965d0b7ac9f88a4",
+      "pages": 25,
+      "verifiedPdfTitleQueue": "6.1",
+      "cityHouseMentions": 0,
+      "districtHouseMentions": 1,
+      "cityStreetMentions": 0,
+      "districtStreetMentions": 184,
+      "localities": 9
+    },
+    {
+      "queue": "6.2",
+      "url": "https://www.cherkasyoblenergo.com/cherkasyoblenergo/uploads/pages/files/17fe67d1-9c99-4d0f-8325-7d5654e7d805.pdf",
+      "sha256": "463bbd67f681eea88969d73160980bbfcd76c572b8b12d7206731cd5385d5140",
+      "pages": 5,
+      "verifiedPdfTitleQueue": "6.2",
+      "cityHouseMentions": 0,
+      "districtHouseMentions": 0,
+      "cityStreetMentions": 0,
+      "districtStreetMentions": 0,
+      "localities": 0
+    }
+  ],
+  "totals": {
+    "indexedCityHouseKeys": 9435,
+    "indexedDistrictHouseKeys": 19,
+    "conflictedHouseKeys": 116,
+    "operatorStreetEntries": 1423,
+    "knownLocalities": 42,
+    "newCityHouseKeysSincePrevious": 110,
+    "missingCityHouseKeysSincePrevious": 2
+  },
+  "queues": {
+    "1.1": {
+      "houses": 2848,
+      "streetHints": 362
+    },
+    "1.2": {
+      "houses": 0,
+      "streetHints": 0
+    },
+    "2.1": {
+      "houses": 3470,
+      "streetHints": 323
+    },
+    "2.2": {
+      "houses": 0,
+      "streetHints": 0
+    },
+    "3.1": {
+      "houses": 1738,
+      "streetHints": 310
+    },
+    "3.2": {
+      "houses": 0,
+      "streetHints": 0
+    },
+    "4.1": {
+      "houses": 1513,
+      "streetHints": 282
+    },
+    "4.2": {
+      "houses": 0,
+      "streetHints": 0
+    },
+    "5.1": {
+      "houses": 1,
+      "streetHints": 149
+    },
+    "5.2": {
+      "houses": 0,
+      "streetHints": 0
+    },
+    "6.1": {
+      "houses": 1,
+      "streetHints": 184
+    },
+    "6.2": {
+      "houses": 0,
+      "streetHints": 0
+    }
+  },
+  "localities": {
+    "байбузи": {
+      "name": "Байбузи",
+      "indexedHouses": 0,
+      "operatorStreets": 19,
+      "discoveredStreetNames": 19,
+      "conflictedHouses": 0
+    },
+    "березняки": {
+      "name": "Березняки",
+      "indexedHouses": 0,
+      "operatorStreets": 12,
+      "discoveredStreetNames": 12,
+      "conflictedHouses": 0
+    },
+    "будище": {
+      "name": "Будище",
+      "indexedHouses": 0,
+      "operatorStreets": 28,
+      "discoveredStreetNames": 28,
+      "conflictedHouses": 0
+    },
+    "бузуків": {
+      "name": "Бузуків",
+      "indexedHouses": 1,
+      "operatorStreets": 6,
+      "discoveredStreetNames": 7,
+      "conflictedHouses": 0
+    },
+    "білозіря": {
+      "name": "Білозір'я",
+      "indexedHouses": 0,
+      "operatorStreets": 100,
+      "discoveredStreetNames": 100,
+      "conflictedHouses": 0
+    },
+    "вергуни": {
+      "name": "Вергуни",
+      "indexedHouses": 0,
+      "operatorStreets": 22,
+      "discoveredStreetNames": 22,
+      "conflictedHouses": 0
+    },
+    "вканівці": {
+      "name": "Великі Канівці",
+      "indexedHouses": 0,
+      "operatorStreets": 5,
+      "discoveredStreetNames": 5,
+      "conflictedHouses": 0
+    },
+    "геронимівка": {
+      "name": "Геронимівка",
+      "indexedHouses": 0,
+      "operatorStreets": 49,
+      "discoveredStreetNames": 49,
+      "conflictedHouses": 0
+    },
+    "дубіївка": {
+      "name": "Дубіївка",
+      "indexedHouses": 0,
+      "operatorStreets": 36,
+      "discoveredStreetNames": 36,
+      "conflictedHouses": 0
+    },
+    "думанці": {
+      "name": "Думанці",
+      "indexedHouses": 0,
+      "operatorStreets": 11,
+      "discoveredStreetNames": 11,
+      "conflictedHouses": 0
+    },
+    "канівці": {
+      "name": "Канівці",
+      "indexedHouses": 1,
+      "operatorStreets": 36,
+      "discoveredStreetNames": 37,
+      "conflictedHouses": 0
+    },
+    "кумейки": {
+      "name": "Кумейки",
+      "indexedHouses": 0,
+      "operatorStreets": 13,
+      "discoveredStreetNames": 13,
+      "conflictedHouses": 0
+    },
+    "леськи": {
+      "name": "Леськи",
+      "indexedHouses": 0,
+      "operatorStreets": 31,
+      "discoveredStreetNames": 31,
+      "conflictedHouses": 0
+    },
+    "лозівок": {
+      "name": "Лозівок",
+      "indexedHouses": 0,
+      "operatorStreets": 22,
+      "discoveredStreetNames": 22,
+      "conflictedHouses": 0
+    },
+    "лящівка": {
+      "name": "Лящівка",
+      "indexedHouses": 1,
+      "operatorStreets": 1,
+      "discoveredStreetNames": 2,
+      "conflictedHouses": 0
+    },
+    "мошни": {
+      "name": "Мошни",
+      "indexedHouses": 1,
+      "operatorStreets": 54,
+      "discoveredStreetNames": 55,
+      "conflictedHouses": 0
+    },
+    "нечаївка": {
+      "name": "Нечаївка",
+      "indexedHouses": 0,
+      "operatorStreets": 12,
+      "discoveredStreetNames": 12,
+      "conflictedHouses": 0
+    },
+    "новоселівка": {
+      "name": "Новоселівка",
+      "indexedHouses": 0,
+      "operatorStreets": 3,
+      "discoveredStreetNames": 3,
+      "conflictedHouses": 0
+    },
+    "руськаполяна": {
+      "name": "Руська Поляна",
+      "indexedHouses": 0,
+      "operatorStreets": 54,
+      "discoveredStreetNames": 54,
+      "conflictedHouses": 0
+    },
+    "сагунівка": {
+      "name": "Сагунівка",
+      "indexedHouses": 0,
+      "operatorStreets": 53,
+      "discoveredStreetNames": 54,
+      "conflictedHouses": 0
+    },
+    "свидівок": {
+      "name": "Свидівок",
+      "indexedHouses": 0,
+      "operatorStreets": 35,
+      "discoveredStreetNames": 35,
+      "conflictedHouses": 0
+    },
+    "слобода": {
+      "name": "Слобода",
+      "indexedHouses": 0,
+      "operatorStreets": 98,
+      "discoveredStreetNames": 99,
+      "conflictedHouses": 0
+    },
+    "сокирно": {
+      "name": "Сокирно",
+      "indexedHouses": 0,
+      "operatorStreets": 8,
+      "discoveredStreetNames": 8,
+      "conflictedHouses": 0
+    },
+    "соснове": {
+      "name": "Соснове",
+      "indexedHouses": 0,
+      "operatorStreets": 13,
+      "discoveredStreetNames": 13,
+      "conflictedHouses": 0
+    },
+    "софіївка": {
+      "name": "Софіївка",
+      "indexedHouses": 0,
+      "operatorStreets": 11,
+      "discoveredStreetNames": 11,
+      "conflictedHouses": 0
+    },
+    "станіславчик": {
+      "name": "Станіславчик",
+      "indexedHouses": 0,
+      "operatorStreets": 5,
+      "discoveredStreetNames": 5,
+      "conflictedHouses": 0
+    },
+    "старагута": {
+      "name": "Стара Гута",
+      "indexedHouses": 0,
+      "operatorStreets": 2,
+      "discoveredStreetNames": 2,
+      "conflictedHouses": 0
+    },
+    "степанки": {
+      "name": "Степанки",
+      "indexedHouses": 0,
+      "operatorStreets": 22,
+      "discoveredStreetNames": 22,
+      "conflictedHouses": 0
+    },
+    "тубільці": {
+      "name": "Тубільці",
+      "indexedHouses": 0,
+      "operatorStreets": 26,
+      "discoveredStreetNames": 26,
+      "conflictedHouses": 0
+    },
+    "франківка": {
+      "name": "Франківка",
+      "indexedHouses": 3,
+      "operatorStreets": 4,
+      "discoveredStreetNames": 7,
+      "conflictedHouses": 0
+    },
+    "хацьки": {
+      "name": "Хацьки",
+      "indexedHouses": 0,
+      "operatorStreets": 23,
+      "discoveredStreetNames": 23,
+      "conflictedHouses": 0
+    },
+    "хрестителево": {
+      "name": "Хрестителеве",
+      "indexedHouses": 2,
+      "operatorStreets": 2,
+      "discoveredStreetNames": 4,
+      "conflictedHouses": 0
+    },
+    "хрещатик": {
+      "name": "Хрещатик",
+      "indexedHouses": 0,
+      "operatorStreets": 8,
+      "discoveredStreetNames": 8,
+      "conflictedHouses": 0
+    },
+    "худяки": {
+      "name": "Худяки",
+      "indexedHouses": 0,
+      "operatorStreets": 29,
+      "discoveredStreetNames": 29,
+      "conflictedHouses": 0
+    },
+    "хутори": {
+      "name": "Хутори",
+      "indexedHouses": 0,
+      "operatorStreets": 16,
+      "discoveredStreetNames": 16,
+      "conflictedHouses": 0
+    },
+    "черкаси": {
+      "name": "Черкаси",
+      "indexedHouses": 9435,
+      "operatorStreets": 450,
+      "discoveredStreetNames": 470,
+      "conflictedHouses": 116
+    },
+    "чорнобай": {
+      "name": "Чорнобай",
+      "indexedHouses": 10,
+      "operatorStreets": 15,
+      "discoveredStreetNames": 17,
+      "conflictedHouses": 0
+    },
+    "чорнявка": {
+      "name": "Чорнявка",
+      "indexedHouses": 0,
+      "operatorStreets": 9,
+      "discoveredStreetNames": 9,
+      "conflictedHouses": 0
+    },
+    "чубіївка": {
+      "name": "Чубіївка",
+      "indexedHouses": 0,
+      "operatorStreets": 9,
+      "discoveredStreetNames": 9,
+      "conflictedHouses": 0
+    },
+    "шелепухи": {
+      "name": "Шелепухи",
+      "indexedHouses": 0,
+      "operatorStreets": 11,
+      "discoveredStreetNames": 11,
+      "conflictedHouses": 0
+    },
+    "яснозіря": {
+      "name": "Яснозір'я",
+      "indexedHouses": 0,
+      "operatorStreets": 44,
+      "discoveredStreetNames": 44,
+      "conflictedHouses": 0
+    },
+    "єлизаветівка": {
+      "name": "Єлизаветівка",
+      "indexedHouses": 0,
+      "operatorStreets": 4,
+      "discoveredStreetNames": 4,
+      "conflictedHouses": 0
+    },
+    "ірдинь": {
+      "name": "Ірдинь",
+      "indexedHouses": 0,
+      "operatorStreets": 12,
+      "discoveredStreetNames": 12,
+      "conflictedHouses": 0
+    }
+  },
+  "multipleQueueExamples": [
+    {
+      "locality": "черкаси",
+      "streetHouse": "бульвар|шевченка|367",
+      "queues": [
+        "2.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "бульвар|шевченка|411",
+      "queues": [
+        "1.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|берегова|4",
+      "queues": [
+        "1.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|благовісна|120",
+      "queues": [
+        "2.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|благовісна|244",
+      "queues": [
+        "1.1",
+        "2.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|благовісна|421",
+      "queues": [
+        "2.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|благовісна|433",
+      "queues": [
+        "2.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|благовісна|436",
+      "queues": [
+        "1.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|благовісна|519",
+      "queues": [
+        "1.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|благовісна|547",
+      "queues": [
+        "1.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|будіндустрії|3",
+      "queues": [
+        "1.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|верхнягорова|97",
+      "queues": [
+        "1.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|вчорновола|156/4",
+      "queues": [
+        "2.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|гоголя|261/1",
+      "queues": [
+        "2.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|гоголя|261/2",
+      "queues": [
+        "2.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|гоголя|261/3",
+      "queues": [
+        "2.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|гоголя|580",
+      "queues": [
+        "1.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|дахнівська|1",
+      "queues": [
+        "1.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|дахнівська|3",
+      "queues": [
+        "1.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|дахнівська|5",
+      "queues": [
+        "1.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|дахнівська|9",
+      "queues": [
+        "1.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|дашковича|19",
+      "queues": [
+        "1.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|захисниківукраїни|34",
+      "queues": [
+        "1.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|захисниківукраїни|36",
+      "queues": [
+        "1.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|лісова|1",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|максимазалізняка|138",
+      "queues": [
+        "1.1",
+        "2.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|максимазалізняка|142",
+      "queues": [
+        "1.1",
+        "2.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|максимазалізняка|151",
+      "queues": [
+        "1.1",
+        "2.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|максимазалізняка|165",
+      "queues": [
+        "1.1",
+        "2.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|максимазалізняка|167",
+      "queues": [
+        "1.1",
+        "2.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|114",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|118",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|119",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|120",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|121",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|122",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|123",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|124",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|125",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|126",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|128",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|130",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|132",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|134",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|138",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|140",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|142",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|144",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|146",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|148",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|150",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|152",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|нижнягорова|154",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|новопречистенська|1",
+      "queues": [
+        "1.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|новопречистенська|50",
+      "queues": [
+        "1.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|петрадорошенка|15",
+      "queues": [
+        "1.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|петрадорошенка|2",
+      "queues": [
+        "1.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|петрадорошенка|3",
+      "queues": [
+        "1.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|припортова|46",
+      "queues": [
+        "1.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|різдвяна|55",
+      "queues": [
+        "2.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|різдвяна|9",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|самброса|173",
+      "queues": [
+        "1.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|самброса|175",
+      "queues": [
+        "1.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|самброса|179",
+      "queues": [
+        "1.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|самброса|183",
+      "queues": [
+        "1.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|самброса|43",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|самброса|94",
+      "queues": [
+        "1.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|самброса|96/2",
+      "queues": [
+        "1.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|самброса|96/3",
+      "queues": [
+        "1.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|самброса|98",
+      "queues": [
+        "1.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|самійлакішки|189/1",
+      "queues": [
+        "1.1",
+        "2.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|самійлакішки|191",
+      "queues": [
+        "1.1",
+        "2.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|самійлакішки|210",
+      "queues": [
+        "1.1",
+        "2.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|самійлакішки|210/1",
+      "queues": [
+        "1.1",
+        "2.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|смілянська|164",
+      "queues": [
+        "1.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|смілянська|165",
+      "queues": [
+        "1.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|соломянська|20",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|соломянська|22",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|соломянська|43",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|соломянська|45",
+      "queues": [
+        "3.1",
+        "4.1"
+      ]
+    }
+  ]
+}
