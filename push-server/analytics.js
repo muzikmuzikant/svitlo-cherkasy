@@ -27,7 +27,7 @@ export function createAnalyticsStore({filePath,clock=()=>Date.now()}={}){
  try{
   const previous=JSON.parse(fs.readFileSync(filePath,'utf8'));
   if([1,2].includes(previous?.schemaVersion)&&previous.buckets&&typeof previous.buckets==='object'&&!Array.isArray(previous.buckets)){
-   if(previous.schemaVersion===2&&previous.archive&&typeof previous.archive==='object'&&!Array.isArray(previous.archive)){
+   if(previous.archive&&typeof previous.archive==='object'&&!Array.isArray(previous.archive)){
     for(const [day,events] of Object.entries(previous.archive)){
      if(!/^20\d{2}-\d{2}-\d{2}$/.test(day)||!events||typeof events!=='object')continue;
      archive[day]={};
@@ -80,7 +80,7 @@ export function createAnalyticsStore({filePath,clock=()=>Date.now()}={}){
   timer=null;
   try{
    prune();fs.mkdirSync(path.dirname(filePath),{recursive:true});
-   const temp=filePath+'.tmp';fs.writeFileSync(temp,JSON.stringify({schemaVersion:2,since,lastUpdated,buckets,archive}),{mode:0o600});
+   const temp=filePath+'.tmp';fs.writeFileSync(temp,JSON.stringify({schemaVersion:1,since,lastUpdated,buckets,archive}),{mode:0o600});
    fs.renameSync(temp,filePath);
   }catch(e){console.error('[analytics] Failed to persist aggregate counters:',e.message)}
  };
@@ -226,7 +226,7 @@ export function createAnalyticsStore({filePath,clock=()=>Date.now()}={}){
    return [metric,{items:visible,other:entries.reduce((n,[,count])=>n+count,0)-visible.reduce((n,row)=>n+row.count,0)}];
   }));
   const firstAvailable=[...Object.keys(archive),...Object.keys(buckets).map(k=>k.slice(0,10))].sort()[0]||null;
-  return {schemaVersion:2,since,lastUpdated,earliestAvailable:firstAvailable,range:from&&to?reportRange(from,to):null,days,hours:hours48.slice(-24),hours48,
+  return {schemaVersion:1,since,lastUpdated,earliestAvailable:firstAvailable,range:from&&to?reportRange(from,to):null,days,hours:hours48.slice(-24),hours48,
    popularity48:ranking('48'),popularity7:ranking('7'),popularity30:ranking('30'),
    totals7:total(all7,recent7),totals30:total(all30,channels),totals48:total(all48,recent48),
    sources7:recent7,sources30:channels,sources48:recent48,
