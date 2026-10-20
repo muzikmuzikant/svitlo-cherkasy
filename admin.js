@@ -221,7 +221,7 @@ function renderTicketCounts(){
  }
 }
 function renderTicketList(){
- const root=$('ticketsList');root.replaceChildren();
+ const root=$('ticketsList'),lastScroll=root.scrollTop;root.replaceChildren();
  const q=$('ticketSearch').value.trim().toLocaleLowerCase('uk-UA'),status=$('ticketFilter').value,topic=$('ticketTopicFilter').value,priority=$('ticketPriorityFilter').value;
  const visible=supportTickets.filter(t=>(status==='all'||t.status===status)&&(topic==='all'||t.topic===topic)&&(priority==='all'||(t.priority||'normal')===priority)&&(!q||[t.id,t.subject,t.message,t.queue,t.email,(t.tags||[]).join(' '),TICKET_TOPICS[t.topic],...(t.messages||[]).map(m=>m.text)].join(' ').toLocaleLowerCase('uk-UA').includes(q)));
  visible.sort((a,b)=>({new:0,in_progress:1,resolved:2}[a.status]??9)-({new:0,in_progress:1,resolved:2}[b.status]??9) || Number(b.priority==='high')-Number(a.priority==='high')||Date.parse(b.updatedAt||b.createdAt)-Date.parse(a.updatedAt||a.createdAt));
@@ -241,6 +241,7 @@ function renderTicketList(){
     if(item.priority==='high')meta.append(supportNode('b','● Важливе'));
   if(item.messages?.length)meta.append(supportNode('span','↩ '+item.messages.length));
   card.append(meta);card.addEventListener('click',()=>{supportSelected=item.id;renderTicketList();renderTicketDetail()});root.append(card);
+  root.scrollTop=lastScroll;
  }
 }
 function supportThreadEntry(item){
@@ -361,9 +362,11 @@ async function refreshTickets(silent=false){
  if(!remote)return;
  if(!silent)$('ticketsSummary').textContent='Оновлюємо звернення…';
  try{
+  const oldSelected=supportTickets.find(t=>t.id===supportSelected),oldFingerprint=JSON.stringify(oldSelected||null);
   const [result,templ]=await Promise.all([api('feedback'),api('feedback/templates')]);supportTickets=Array.isArray(result.items)?result.items:[];supportTemplates=Array.isArray(templ.templates)?templ.templates:[];renderSupportTemplateEditor();
   if(!supportTickets.some(t=>t.id===supportSelected))supportSelected=supportTickets[0]?.id||'';
-  renderTicketCounts();renderTicketList();renderTicketDetail();
+  renderTicketCounts();renderTicketList();
+  if(!silent||oldFingerprint!==JSON.stringify(supportTickets.find(t=>t.id===supportSelected)||null))renderTicketDetail();
   document.dispatchEvent(new Event('svitlo:tickets-loaded'));
  }catch(e){$('ticketsSummary').textContent='Помилка завантаження: '+e.message}
 }
