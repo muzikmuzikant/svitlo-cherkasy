@@ -546,7 +546,7 @@ function updatePushInvite(){
 function renderSettings(){for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).checked=!!prefs[key];const connected=!!pushConfig?.apiBase&&!!pushConfig?.publicKey;setText('pushHeadline','Сповіщення');setText('pushDescription',connected?'Отримуйте нагадування про відключення та зміни графіків, навіть коли застосунок закритий.':'Наразі нагадування доступні тільки під час використання застосунку.');setText('enableNotifications',connected?'Увімкнути сповіщення':'Дозволити нагадування');$('disableNotifications').hidden=!connected;}
 function fillQueueSelect(){const root=$('manualQueue');root.replaceChildren(new Option('Оберіть підчергу',''),...QUEUES.map(q=>new Option(q,q)))}
 function town(){return $('settlement').value==='Інше'?$('customSettlement').value.trim():$('settlement').value}
-function localIndex(){const k=normTown(town());return k===normTown('Черкаси')?{keys:index.keys||{},streets:index.streets||{},streetQueues:index.streetQueues||{},archiveOnlyStreets:index.archiveOnlyStreets||[],archivedStreetQueues:index.archivedStreetQueues||{},reportedStreetNames:index.reportedStreetNames||[]}:index.localities?.[k]||{keys:{},streets:{},streetQueues:{}}}
+function localIndex(){const k=normTown(town());return k===normTown('Черкаси')?index:index.localities?.[k]||{keys:{},streets:{},streetQueues:{}}}
 function findQueue(){
  const idx=localIndex();
  const selectedKey=suggestion&&SvitloAddressLookup.normalize(suggestion.label)===SvitloAddressLookup.normalize($('street').value)?suggestion.key:null;
@@ -567,7 +567,7 @@ function checkLookup(){
   nohouse:house&&known.length?'Будинок '+house+' відсутній у доступному списку точних адрес. Підчергу не визначено автоматично.':'Для цієї адреси немає однозначного запису. Виберіть підчергу вручну.',
   exact:`Будинок ${house}: підтверджена підчерга ${r.queue} за адресним переліком.`,
   street:`Для цієї вулиці вказано підчергу ${r.queue}; суперечливих будинкових записів не знайдено.`,
-  possible:r.reason==='reported-only'?'Назву вулиці додано за зверненням користувача. Підчерга ще не перевірена за офіційним переліком. Перевірте її на сайті оператора та оберіть вручну.':r.reason==='archived-only'?('Цю вулицю відновлено з попереднього офіційного довідника. У поточному імпорті її немає. '+(list?'Архівні підчерги: '+list+'. ':'')+'Звірте актуальну підчергу на сайті оператора й оберіть вручну.'):
+  possible:r.reason==='external-only'?'Назва вулиці є в географічному довіднику, але її підчергу оператор не підтвердив. Перевірте свою підчергу на офіційному сайті та оберіть вручну.':r.reason==='reported-only'?'Назву вулиці додано за зверненням користувача. Підчерга ще не перевірена за офіційним переліком. Перевірте її на сайті оператора та оберіть вручну.':r.reason==='archived-only'?('Цю вулицю відновлено з попереднього офіційного довідника. У поточному імпорті її немає. '+(list?'Архівні підчерги: '+list+'. ':'')+'Звірте актуальну підчергу на сайті оператора й оберіть вручну.'):
     r.reason==='house-conflict'?`Будинок ${house} згадується в різних підчергах: ${list}. Звірте дані з оператором.`:
     r.reason==='no-house-index'?`${house?'Будинок '+house+': точного запису немає. ':''}Для вулиці можливі підчерги ${list}. У джерелі немає розподілу за номерами будинків. Виберіть підчергу нижче.`:
     r.reason==='house-unlisted'?`Будинку ${house} немає серед точних записів цієї вулиці. Можливі підчерги: ${list}. Виберіть підтверджену вами підчергу.`:
@@ -579,7 +579,7 @@ function checkLookup(){
  if(r.streetKey&&r.status!=='exact'){
   coverage.hidden=false;
   if(!known.length){
-   coverage.hidden=['no-house-index','archived-only','reported-only'].includes(r.reason);
+   coverage.hidden=['no-house-index','archived-only','reported-only','external-only'].includes(r.reason);
    coverage.className='house-coverage no-house-list';
    coverage.textContent=house?'Для будинку '+house+' автоматичне визначення недоступне: номери будинків у джерелі не вказані.':'Номерів будинків у джерелі немає. Не потрібно підбирати номер: оберіть підчергу або звірте адресу з оператором.';
   }else{
@@ -603,7 +603,9 @@ function checkLookup(){
   }
  }
  manual.hidden=['incomplete','exact','street'].includes(r.status);
- $('manualExplanation').textContent=r.reason==='reported-only'
+ $('manualExplanation').textContent=r.reason==='external-only'
+  ?'Вулиця знайдена в географічному каталозі. Відомостей про її підчергу немає, перевірте на офіційному сайті оператора.'
+  :r.reason==='reported-only'
   ?'Вулиця додана до пошуку за зверненням користувача. Її підчерга ще не підтверджена, перевірте її в оператора.'
   :r.reason==='archived-only'
   ?'Вулиця є в попередньому довіднику, але поточна підчерга не підтверджена. Не обирайте навмання: перевірте її в оператора.'
@@ -614,7 +616,7 @@ function checkLookup(){
  possible.replaceChildren();
  if(r.status==='possible'&&r.queues?.length){
    possible.hidden=false;
-   possible.append(el('div','possible-title',['archived-only','reported-only'].includes(r.reason)?'Непідтверджені підчерги. Перевірте їх в оператора:':'Можливі підчерги — натисніть свою:'));
+   possible.append(el('div','possible-title',['archived-only','reported-only','external-only'].includes(r.reason)?'Непідтверджені підчерги. Перевірте їх в оператора:':'Можливі підчерги — натисніть свою:'));
    for(const q of r.queues){
      const b=el('button','possible-queue'+($('manualQueue').value===q?' selected':''),`Підчерга ${q}`);
      b.type='button';b.setAttribute('aria-pressed',String($('manualQueue').value===q));
@@ -775,15 +777,17 @@ async function refreshData(manual=false){
    if(refreshAuxiliary){
    lastAuxiliaryRefresh=Date.now();
    try{
-     const [remote,seed]=await Promise.allSettled([
-       fetch(`./data/addresses.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}),
-       fetch(`./data/published_street_fallback.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()})
-     ]);
-     if(remote.status==='fulfilled'||seed.status==='fulfilled'){
-       const live=remote.status==='fulfilled'?remote.value:{};
-       const backup=seed.status==='fulfilled'?seed.value:{};
-       index=mergeIndexes(live,backup);
-       try{const snapshot=JSON.stringify(index);if(snapshot.length<1700000)localStorage.setItem(OFFLINE_ADDRESSES,snapshot)}catch{}
+     const [remote,seed,geo]=await Promise.allSettled([
+        fetch(`./data/addresses.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}),
+        fetch(`./data/published_street_fallback.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}),
+        fetch(`./data/street_catalog.json?refresh=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()})
+      ]);
+      if(remote.status==='fulfilled'||seed.status==='fulfilled'||geo.status==='fulfilled'){
+        const live=remote.status==='fulfilled'?remote.value:{};
+        const backup=seed.status==='fulfilled'?seed.value:{};
+        const catalog=geo.status==='fulfilled'?geo.value:{};
+        index=mergeIndexes(live,backup,{catalog});
+        try{const snapshot=JSON.stringify(index);if(snapshot.length<1700000)localStorage.setItem(OFFLINE_ADDRESSES,snapshot)}catch{}
        populateSettlements();
        if($('addressSheet').open){suggestions();checkLookup()}
      }else{
