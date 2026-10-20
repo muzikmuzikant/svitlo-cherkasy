@@ -325,6 +325,12 @@ const server=http.createServer(async(req,res)=>{
   catch{response(res,400,{error:'Invalid diagnostics event'})}
   return
  }
+  // Only the PUBLIC VAPID key is exposed. Beta clients discover the key of
+  // the same API origin that stores their subscriptions, not a production key.
+  if(requestPath==='/api/client-config'&&req.method==='GET'){
+   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+   response(res,200,{publicKey:VAPID_PUBLIC_KEY});return
+  }
   if(requestPath==='/api/legal'&&req.method==='GET'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}response(res,200,legal.publicState());return}
  if(requestPath==='/api/ads'&&req.method==='GET'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}response(res,200,ads.publicState());return}
  if(requestPath==='/api/ads/event'&&req.method==='POST'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}try{const body=await readPayload(req,500);response(res,ads.event(String(body.id||'').slice(0,55),body.type,crypto.createHash('sha256').update(String(req.socket.remoteAddress||'')+new Date().toISOString().slice(0,10)).digest('hex').slice(0,20))?202:400,{ok:true})}catch{response(res,400,{error:'Bad event'})}return}
