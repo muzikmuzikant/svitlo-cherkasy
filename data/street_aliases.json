@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "updatedAt": "2026-10-20",
-  "description": "Only officially adopted, verified municipal renames. These records are search aliases, NEVER sources for outage queue or house assignments. Segment-split renames (for example Gagarin Street in 2023) are intentionally omitted to prevent false queue mapping.",
+  "description": "Officially adopted, locality-scoped historical/current street names (2022 consolidated city council PDF; 2023/2024 resolutions; 2016 city council records). Queue assignments only come from the contemporary electricity operator PDFs. Split street names do not get automatic queue inheritance.",
   "localities": {
     "черкаси": [
       {
@@ -321,6 +321,402 @@
         "newName": "провулок Кузьми Скрябіна",
         "source": "https://chmr.gov.ua/ua/newsread.php?s=1&s1=17&view=11414",
         "decision": "245-2016"
+      },
+      {
+        "oldName": "провулок Дачний",
+        "newName": "провулок Цуперів",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Декабристів",
+        "newName": "вулиця Андрія Туренка",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "вулиця Джаліля",
+        "newName": "вулиця Филона Джалалія",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "вулиця Добровольського",
+        "newName": "вулиця Сінна",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Енергетичний",
+        "newName": "провулок Василя Доманицького",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Жуковського",
+        "newName": "провулок Кирила Стеценка",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Зв’язківців",
+        "newName": "провулок Вільяма Гесте",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "вулиця Зелінського",
+        "newName": "вулиця Івана Виговського",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Зелінського",
+        "newName": "провулок Семена Палія",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Зої Космодем’янської",
+        "newName": "провулок Станіслава Губаря",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "вулиця Івана Ле",
+        "newName": "вулиця Ольги Чемерис",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "узвіз Івана Франка",
+        "newName": "узвіз Зарубинецький",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "вулиця Карбишева",
+        "newName": "вулиця Вікентія Хвойки",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Комунальний",
+        "newName": "провулок Амет-Хана Султана",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "вулиця Космонавтів",
+        "newName": "вулиця Павла Поповича",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Космонавтів",
+        "newName": "провулок Леоніда Каденюка",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Коцюбинського",
+        "newName": "провулок Олекси Влизька",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "вулиця Крилова",
+        "newName": "вулиця Василя Стуса",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Крилова",
+        "newName": "провулок Івана Сірка",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Кутузова",
+        "newName": "провулок Лавріна Капусти",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Лермонтова",
+        "newName": "провулок Сестер Гоменюк",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Ломоносова",
+        "newName": "провулок Михайла Слабошпицького",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Макаренка",
+        "newName": "провулок Чорний Яр",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Макарова",
+        "newName": "провулок Макара Мухи",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Матросова",
+        "newName": "провулок Діани Петриненко",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Маяковського",
+        "newName": "провулок Івана Фізера",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "вулиця Менделєєва",
+        "newName": "вулиця Святителя-хірурга Луки",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Мічуріна",
+        "newName": "провулок Дмитра Бочкова",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "вулиця Можайського",
+        "newName": "вулиця Степана Бандери",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Можайського",
+        "newName": "провулок Княгині Ольги",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Молоткова",
+        "newName": "провулок Юрія Липи",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Нахімова",
+        "newName": "провулок Михайла Білинського",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Невського",
+        "newName": "провулок Хмільник",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "вулиця Некрасова",
+        "newName": "вулиця Михайла Брайчевського",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Нестерова",
+        "newName": "провулок Яська Воронченка",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Олега Кошового",
+        "newName": "провулок Чорних Запорожців",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Осипенка",
+        "newName": "провулок Наталі Лівицької-Холодної",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Павлова",
+        "newName": "провулок Івася Коновченка",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Панфіловців",
+        "newName": "провулок Галини Дидик",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "узвіз Парковий",
+        "newName": "узвіз Князів Коріатовичів",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "узвіз Пастерівський",
+        "newName": "узвіз Єрмилівський",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Пастерівський",
+        "newName": "провулок Петра Гулака-Артемовського",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "вулиця Пацаєва",
+        "newName": "вулиця Петра Дорошенка",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Пацаєва",
+        "newName": "провулок Віри Борушевської",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Першотравневий",
+        "newName": "провулок Ежена Деслава",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Попова",
+        "newName": "провулок Мирослава Скорика",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Праці",
+        "newName": "вулиця Євгена Чикаленка",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Пржевальського",
+        "newName": "провулок Надії Суровцової",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Пугачова",
+        "newName": "провулок Надії Попової",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "вулиця Пушкіна",
+        "newName": "вулиця Праведниці Шулежко",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Пушкіна",
+        "newName": "провулок Василя Захарченка",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "узвіз Пушкіна",
+        "newName": "узвіз Дубіївський",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Радищева",
+        "newName": "провулок Василя Кричевського",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Раскової",
+        "newName": "провулок Марії Приймаченко",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Рєпіна",
+        "newName": "провулок Григорія Лапченка",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Робітничий",
+        "newName": "провулок Ратниківський",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "вулиця Титова",
+        "newName": "вулиця Титарська",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Тимірязєва",
+        "newName": "провулок Івана Гроссе",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "вулиця Толстого",
+        "newName": "вулиця Солом’янська",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Транспортний",
+        "newName": "провулок Северина Наливайка",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "вулиця Тургенєва",
+        "newName": "вулиця Митрополита Липківського",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Хімічний",
+        "newName": "провулок Івана Їжакевича",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Хоменка",
+        "newName": "провулок Сергія Проскурні",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "вулиця Чайковського",
+        "newName": "вулиця Івана Мазепи",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "провулок Юнацький",
+        "newName": "узвіз Заячий",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
+      },
+      {
+        "oldName": "вулиця Яцика",
+        "newName": "вулиця Волонтерська",
+        "source": "https://chmr.gov.ua/_upload/shchodo_pereymenuvannya_vulyts.pdf",
+        "decision": "22.12.2022, municipal council adopted resolution (see consolidated official council table)"
       }
     ]
   },
