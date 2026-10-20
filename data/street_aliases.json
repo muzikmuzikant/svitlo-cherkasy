@@ -886,6 +886,14 @@
         "displayName": "Провулок Молодшого сержанта Каравайського",
         "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
         "evidence": "Exact published operator street entry + independently indexed full form in Cherkasy municipal/geo street catalog; same town and street type; no approximate queue inference."
+      },
+      {
+        "sourceKey": "вулиця|14грудня",
+        "displayKey": "вулиця|14гогрудня",
+        "sourceName": "Вулиця 14 Грудня",
+        "displayName": "Вулиця 14-го Грудня",
+        "source": "https://www.cherkasyoblenergo.com/static/perelik-gpv",
+        "evidence": "The electricity operator lists '14 Грудня' in the official 2026 subqueue PDF. The contemporary Cherkasy geographical catalog records '14-го Грудня'. Exact same locality and street type, grammatical ordinal variant, not a different road."
       }
     ]
   }
