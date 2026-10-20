@@ -494,7 +494,7 @@ def street_entries(text):
         match=STREET_NAME.match(chunk)
         if not match:continue
         display=match.group('name').strip(' ,.:-')
-        if len(display)<3 or len(display)>55 or any(c.isdigit() for c in display):continue
+        if len(display)<3 or len(display)>55 or not re.search(r'[а-яіїєґa-z]',display,re.I):continue
         houses=parse_house_numbers(chunk[match.end():])
         if not houses:continue
         kindraw=t.group('type').lower()
@@ -524,7 +524,7 @@ def street_house_lists(text):
             if not houses:continue
             kind='вулиця'
             clean=normalize(name)
-            if not clean or any(x.isdigit() for x in name):continue
+            if not clean or not re.search(r'[а-яіїєґa-z]',name,re.I):continue
             for house in houses:
                 found.append((kind,clean,house,name))
     return found
@@ -569,7 +569,7 @@ def street_only_entries(text):
             if re.search(r'\b(?:ТОВ|ФОП|АТ|КП|ПП|ПРАТ|будинок|будинки)\b',
                          candidate, re.I):
                 continue
-            if re.match(r'^\d+\s+(?!років|Травня|Вересня)', candidate, re.I):
+            if re.match(r'^\d+\s+(?!років|січня|лютого|березня|квітня|травня|червня|липня|серпня|вересня|жовтня|листопада|грудня)', candidate, re.I):
                 continue
             # Reject address numbers and ambiguous prose, not geographic
             # labels. Comma-separated ordinary names stay discoverable.
