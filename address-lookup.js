@@ -97,7 +97,7 @@
         return former||modern;
       });
       if(pair){
-        const other=directMatches(idx, directMatches(idx,p.oldName).some(([k])=>k===key)
+        const other=directMatches(idx, directMatches(idx,pair.oldName).some(([k])=>k===key)
           ?pair.newName:pair.oldName).filter(([k])=>hasPublishedQueue(idx,k));
         if(other.length===1)return other;
       }
