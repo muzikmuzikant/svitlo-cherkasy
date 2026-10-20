@@ -675,6 +675,13 @@ def preserve_street_catalogue(result, previous, historical):
                 if hints:
                     archive_hints.setdefault(street, set()).update(hints)
         if archived:
+            reported = set()
+            for source in sources:
+                if isinstance(source, dict):
+                    reported.update(key for key in source.get('reportedStreetNames', [])
+                                    if isinstance(key, str) and key in archived)
+            if reported:
+                target['reportedStreetNames'] = sorted(reported)
             target['archiveOnlyStreets'] = sorted(archived)
             target['archivedStreetQueues'] = {
                 key: sorted(archive_hints[key]) for key in sorted(archive_hints)
