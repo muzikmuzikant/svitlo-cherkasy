@@ -23,17 +23,52 @@
   // Official PDFs normally use Cyrillic suffixes (12-А), while phone keyboards
   // frequently insert Latin lookalikes (12-A). Do not conflate real distinct
   // letters or different fractions of the same building.
+  // Build a tiny search table ONCE for each immutable merged locality index.
+  // The 9k+ city house keys must never be scanned on every iPhone keystroke.
+  const indexCache=new WeakMap();
+  function cachedIndex(idx){
+    if(!idx||typeof idx!=='object')return {entries:[],exact:new Map(),streetCount:0,houses:new Map()};
+    let saved=indexCache.get(idx);
+    if(saved)return saved;
+    const entries=[],exact=new Map();
+    for(const [key,name] of Object.entries(idx.streets||{})){
+      const kind=key.split('|',1)[0],clean=cleanStreetLabel(name);
+      const entry={key,name,kind,normalKey:normalize(key.split('|')[1]),normalName:normalize(name)};
+      entries.push(entry);
+      for(const normalized of new Set([entry.normalKey,entry.normalName])){
+        if(!exact.has(normalized))exact.set(normalized,[]);
+        exact.get(normalized).push(entry);
+      }
+    }
+    saved={entries,exact,streetCount:entries.length,houses:null,pairs:null};
+    indexCache.set(idx,saved);
+    return saved;
+  }
+  function houseIndex(idx){
+    const saved=cachedIndex(idx);
+    if(saved.houses!==null)return saved.houses;
+    const byStreet=new Map();
+    for(const [key,queues] of Object.entries(idx?.keys||{})){
+      const separator=key.lastIndexOf('|');
+      if(separator<0)continue;
+      const valid=validQueues(queues);
+      if(!valid.length)continue;
+      const street=key.slice(0,separator);
+      if(!byStreet.has(street))byStreet.set(street,[]);
+      byStreet.get(street).push({number:key.slice(separator+1),queues:valid});
+    }
+    for(const entries of byStreet.values())
+      entries.sort((a,b)=>a.number.localeCompare(b.number,'uk-UA',{numeric:true,sensitivity:'base'}));
+    saved.houses=byStreet;
+    return byStreet;
+  }
   function houseKey(value) {
     const lookalikes={a:'а',c:'с',e:'е',h:'н',i:'і',k:'к',m:'м',o:'о',p:'р',t:'т',x:'х',y:'у'};
     return normalize(String(value||'').replace(/^\s*(?:буд(?:инок|\.)?|№|#)\s*/i,''))
       .replace(/[acehikmoptxy]/g,c=>lookalikes[c]||c);
   }
   function knownHouses(idx,streetKey){
-    const prefix=streetKey+'|';
-    return Object.entries(idx?.keys||{})
-      .filter(([key,queues])=>key.startsWith(prefix)&&key.length>prefix.length&&validQueues(queues).length)
-      .map(([key,queues])=>({number:key.slice(prefix.length),queues:validQueues(queues)}))
-      .sort((a,b)=>a.number.localeCompare(b.number,'uk-UA',{numeric:true,sensitivity:'base'}));
+    return houseIndex(idx).get(streetKey)||[];
   }
   function kindOf(street) {
     const match=/^(пров(?:улок|\.)?|вул(?:иця)?\.?|просп(?:ект)?\.?|пр-т\.?|б-р\.?|бульвар|узвіз|алея|площа|майдан|шосе|набережна|тупик|проїзд)\s+/i.exec(withPrefixSpaces(street));
@@ -53,22 +88,25 @@
   function directMatches(idx, typed) {
     const kind=kindOf(typed),needle=normalize(typed);
     if(!needle)return [];
-    return Object.entries(idx?.streets||{}).filter(([key,name]) =>
-      (normalize(key.split('|')[1])===needle || normalize(name)===needle) &&
-      (!kind || key.startsWith(kind+'|')));
+    return (cachedIndex(idx).exact.get(needle)||[])
+      .filter(entry=>!kind||entry.kind===kind)
+      .map(entry=>[entry.key,entry.name]);
   }
   function renamePairs(idx){
     return Array.isArray(idx?.aliases)?idx.aliases.filter(pair=>
       pair && typeof pair.oldName==='string' && typeof pair.newName==='string'):[];
   }
   function equivalentPairs(idx){
+    const saved=cachedIndex(idx);
+    if(saved.pairs!==null)return saved.pairs;
     const variants=Array.isArray(idx?.spellingVariants)?idx.spellingVariants.filter(v=>
       v && typeof v.sourceName==='string' && typeof v.displayName==='string' &&
       v.sourceKey in (idx?.streets||{})):[];
-    return [...renamePairs(idx),...variants.map(v=>({
+    saved.pairs=[...renamePairs(idx),...variants.map(v=>({
       oldName:v.sourceName,newName:v.displayName,
       source:v.source,operatorVariant:true
     }))];
+    return saved.pairs;
   }
   function renamedCandidates(idx,typed,exactOnly=true){
     const needle=normalize(typed),kind=kindOf(typed);
@@ -119,10 +157,10 @@
     const raw=normalize(typed),type=kindOf(typed);
     if(raw.length<2)return [];
     const chosen=new Map();
-    for(const [key,name] of Object.entries(idx?.streets||{})){
-      if ((!type||key.startsWith(type+'|')) &&
-          (normalize(name).includes(raw)||normalize(key.split('|')[1]).includes(raw)))
-        chosen.set(key,name);
+    for(const entry of cachedIndex(idx).entries){
+      if ((!type||entry.kind===type) &&
+          (entry.normalName.includes(raw)||entry.normalKey.includes(raw)))
+        chosen.set(entry.key,entry.name);
     }
     // Renamed-street suggestions only point to an existing street entry,
     // and do not import obsolete queue assignments.
@@ -166,7 +204,7 @@
   function resolve({idx,street,house,settlement,selectedKey}={}) {
     street=String(street||'').trim();house=String(house||'').trim();
     if(!String(settlement||'').trim()||!street)return {status:'incomplete'};
-    if(!Object.keys(idx?.streets||{}).length)return {status:'unavailable'};
+    if(!cachedIndex(idx).streetCount)return {status:'unavailable'};
     const split=splitHint(idx,street);
     if(split)return {status:'possible',reason:'split-rename',street,
       queues:[],knownHouses:[],hasHouseData:false,
