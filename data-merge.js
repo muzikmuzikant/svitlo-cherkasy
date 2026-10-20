@@ -34,7 +34,8 @@
        for(const key of Object.keys(archivedQueues))if(!archived.has(key))delete archivedQueues[key];
        return {...a,keys:{...obj(a.keys)},streets:{...missing,...official},
          streetQueues:{...confirmedQueues},
-         archiveOnlyStreets:[...archived].sort(),archivedStreetQueues:archivedQueues};
+         archiveOnlyStreets:[...archived].sort(),archivedStreetQueues:archivedQueues,
+         reportedStreetNames:[...new Set([...(Array.isArray(a.reportedStreetNames)?a.reportedStreetNames:[]),...(Array.isArray(b.reportedStreetNames)?b.reportedStreetNames:[])])].filter(key=>archived.has(key))};
      }
      if(!manual)return {...b,keys:{...obj(b.keys)},streets:{...obj(b.streets)},streetQueues:{...obj(b.streetQueues)}};
      // Admin corrections are explicit, not a fuzzy merge of conflicting queues.
