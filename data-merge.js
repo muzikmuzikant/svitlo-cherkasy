@@ -93,7 +93,7 @@
          pair && typeof pair==='object' && typeof pair.oldName==='string' &&
          typeof pair.newName==='string' && pair.oldName.length<110 && pair.newName.length<110 &&
          pair.oldName!==pair.newName && typeof pair.source==='string' &&
-         /^https:\/\/chmr\.golos\.net\.ua\//.test(pair.source));
+         /^https:\/\/(?:chmr\.golos\.net\.ua|chmr\.gov\.ua)\//.test(pair.source));
        target.aliases=pairs.map(({oldName,newName,source})=>({oldName,newName,source}));
      }
    }
