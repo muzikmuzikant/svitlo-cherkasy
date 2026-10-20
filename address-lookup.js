@@ -61,11 +61,20 @@
     return Array.isArray(idx?.aliases)?idx.aliases.filter(pair=>
       pair && typeof pair.oldName==='string' && typeof pair.newName==='string'):[];
   }
+  function equivalentPairs(idx){
+    const variants=Array.isArray(idx?.spellingVariants)?idx.spellingVariants.filter(v=>
+      v && typeof v.sourceName==='string' && typeof v.displayName==='string' &&
+      v.sourceKey in (idx?.streets||{})):[];
+    return [...renamePairs(idx),...variants.map(v=>({
+      oldName:v.sourceName,newName:v.displayName,
+      source:v.source,operatorVariant:true
+    }))];
+  }
   function renamedCandidates(idx,typed,exactOnly=true){
     const needle=normalize(typed),kind=kindOf(typed);
     if(!needle)return [];
     const out=new Map();
-    for(const pair of renamePairs(idx)){
+    for(const pair of equivalentPairs(idx)){
       // Aliases can cross street types: провулок -> вулиця or узвіз.
       for(const [aliasName,otherName] of [[pair.oldName,pair.newName],[pair.newName,pair.oldName]]){
         const key=normalize(aliasName);
@@ -91,7 +100,7 @@
     // Underlying HOUSE keys stay on the source record, no house remapping.
     if(matches.length===1&&!hasPublishedQueue(idx,matches[0][0])){
       const [key]=matches[0];
-      const pair=renamePairs(idx).find(p=>{
+      const pair=equivalentPairs(idx).find(p=>{
         const former=directMatches(idx,p.oldName).some(([k])=>k===key);
         const modern=directMatches(idx,p.newName).some(([k])=>k===key);
         return former||modern;
@@ -167,7 +176,7 @@
     if(matches.length>1)return {status:'ambiguous'};
     const [key,rawLabel]=matches[0];
     const matchedName=directMatches(idx,street).some(([k])=>k===key);
-    const pair=renamePairs(idx).find(p=>
+    const pair=equivalentPairs(idx).find(p=>
       (directMatches(idx,p.oldName).some(([k])=>k===key) &&
        normalize(p.newName)===normalize(street) &&
        (!kindOf(street)||kindOf(street)===kindOf(p.newName))) ||
@@ -176,7 +185,8 @@
        (!kindOf(street)||kindOf(street)===kindOf(p.oldName))));
     const bridge=!!pair && !matchedName && hasPublishedQueue(idx,key);
     const display=cleanStreetLabel(bridge?pair.newName:rawLabel);
-    const bridgeMeta=bridge?{verifiedRename:true,
+    const bridgeMeta=bridge?{verifiedRename:!pair.operatorVariant,
+      verifiedNameVariant:!!pair.operatorVariant,
       sourceStreet:cleanStreetLabel(rawLabel),
       matchedStreet:cleanStreetLabel(street),
       renameSource:pair.source}:{};

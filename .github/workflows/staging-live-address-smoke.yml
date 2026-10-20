@@ -53,6 +53,9 @@ jobs:
                   assert 'withPrefixSpaces' in values['address-lookup.js'], 'No malformed prefix normalization'
                   assert 'hasPublishedQueue' in values['address-lookup.js'], 'Street rename queue matching missing'
                   assert 'verifiedRename' in values['address-lookup.js'], 'Street queue source metadata missing'
+                  assert 'verifiedNameVariant' in values['address-lookup.js'], 'Short/full-name queue resolver not deployed'
+                  assert len(aliases.get('spellingVariants',{}).get('черкаси',[]))>=19, 'Operator abbreviations have not deployed'
+                  assert address['streetQueues']['вулиця|самброса']==['1.1','3.1','4.1'], 'Published Am brosa source queue data missing'
                   assert 'cleanStreetLabel' in values['address-lookup.js'], 'No duplicate publisher label cleanup'
                   assert len(aliases.get('localities',{}).get('черкаси',[]))>=119, 'Renamed streets have not deployed'
                   assert any(p['oldName']=='вулиця Генерала Путейка' and p['newName']=='вулиця Івана Кожедуба' for p in aliases['localities']['черкаси'])

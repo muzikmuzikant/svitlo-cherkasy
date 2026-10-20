@@ -95,6 +95,20 @@
          pair.oldName!==pair.newName && typeof pair.source==='string' &&
          /^https:\/\/(?:chmr\.golos\.net\.ua|chmr\.gov\.ua)\//.test(pair.source));
        target.aliases=pairs.map(({oldName,newName,source})=>({oldName,newName,source}));
+       // These are NOT municipal renames. They are exact, reviewed FULL name
+       // variants of abbreviated names in the operator's actual PDF lists.
+       const variants=obj(aliasCatalog.spellingVariants)[locality];
+       if(Array.isArray(variants)){
+         target.spellingVariants=variants.filter(v=>
+           v && typeof v.sourceKey==='string' && typeof v.displayKey==='string' &&
+           typeof v.sourceName==='string' && typeof v.displayName==='string' &&
+           v.sourceKey!==v.displayKey && v.sourceName!==v.displayName &&
+           v.sourceKey in obj(target.streets) &&
+           obj(target.streets)[v.sourceKey]===v.sourceName &&
+           /^https:\/\/www\.cherkasyoblenergo\.com\/static\/perelik-gpv$/.test(v.source||''))
+           .map(({sourceKey,displayKey,sourceName,displayName,source})=>
+             ({sourceKey,displayKey,sourceName,displayName,source}));
+       }
        const split=obj(aliasCatalog.splitRenames)[locality];
        if(Array.isArray(split)){
          target.splitRenames=split.filter(p=>

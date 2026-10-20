@@ -97,3 +97,58 @@ test('merely similar street names cannot be used to match queues',()=>{
  const r=lookup.resolve({idx,street:'вулиця Володимира Мономахова',house:'10',settlement:'Черкаси'});
  assert.equal(r.queue,undefined);
 });
+
+
+test('19 real operator abbreviations are separate from municipal rename decisions',()=>{
+ assert.equal(idx.spellingVariants.length,19);
+ assert.ok(idx.spellingVariants.some(v=>v.sourceName==='Вулиця С.Амброса' &&
+   v.displayName==='Вулиця Сергія Амброса'));
+ assert.equal(idx.localities.слобода.spellingVariants,undefined);
+});
+
+test('Serhiia Ambrosa full form preserves different house-specific 2026 queues',()=>{
+ const one=check('вулиця Сергія Амброса','1','4.1');
+ const ten=check('вулиця Сергія Амброса','10','3.1');
+ assert.equal(one.streetKey,'вулиця|самброса');
+ assert.equal(one.sourceStreet,'Вулиця С.Амброса');
+ assert.equal(one.verifiedNameVariant,true);
+ assert.equal(one.verifiedRename,false);
+ assert.equal(ten.verifiedNameVariant,true);
+ const noExact=lookup.resolve({idx,street:'вулиця Сергія Амброса',
+   house:'99999',settlement:'Черкаси'});
+ assert.equal(noExact.queue,undefined,'Cannot guess subqueue on a multi-queue street');
+ assert.equal(noExact.status,'possible');
+});
+
+test('Viacheslava Chornovola and Akademika Serhiia Yefremova resolve official abbreviated house records',()=>{
+ const ch=check("Вулиця В'ячеслава Чорновола",'100','2.1');
+ assert.equal(ch.streetKey,'вулиця|вчорновола');
+ assert.equal(check('вулиця Академіка Сергія Єфремова','10','3.1').streetKey,
+  'вулиця|сєфремова');
+ assert.equal(check('вулиця Михайла Грушевського','13','4.1').streetKey,
+  'вулиця|мгрушевського');
+});
+
+test('multiple official queues on Anatoliia Pashkevycha are NOT collapsed after full-name matching',()=>{
+ const a=check('провулок Анатолія Пашкевича','1/1т','1.1');
+ const b=check('провулок Анатолія Пашкевича','8','2.1');
+ assert.equal(a.verifiedNameVariant,true);
+ assert.equal(b.verifiedNameVariant,true);
+ const missing=lookup.resolve({idx,street:'провулок Анатолія Пашкевича',
+  house:'99999',settlement:'Черкаси'});
+ assert.equal(missing.queue,undefined);
+});
+
+test('short-name proof is limited to the correct city, exact type and operator data',()=>{
+ const wrongTown=lookup.resolve({idx:idx.localities.слобода,settlement:'Слобода',
+   street:'Сергія Амброса',house:'10'});
+ assert.equal(wrongTown.queue,undefined);
+ const wrongKind=lookup.resolve({idx,settlement:'Черкаси',
+   street:'провулок Сергія Амброса',house:'10'});
+ assert.equal(wrongKind.queue,undefined);
+ const bare=mergeIndexes({streets:{'вулиця|самброса':'Вулиця С.Амброса'},keys:{},
+   streetQueues:{},localities:{}},{},{aliasCatalog:read('data/street_aliases.json')});
+ const missing=lookup.resolve({idx:bare,settlement:'Черкаси',
+   street:'вулиця Сергія Амброса',house:'10'});
+ assert.equal(missing.queue,undefined);
+});
