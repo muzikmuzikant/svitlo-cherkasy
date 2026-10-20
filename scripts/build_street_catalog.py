@@ -144,6 +144,102 @@ def collect_osm_address_streets(session, expected_towns):
     raise RuntimeError("No OSM source succeeded: " + str(last_error))
 
 
+
+def _point(element):
+    centre = element.get("center", element)
+    lat, lon = centre.get("lat"), centre.get("lon")
+    try:
+        if lat is None or lon is None:
+            return None
+        return float(lat), float(lon)
+    except (TypeError, ValueError):
+        return None
+
+
+def _distance_meters(one, other):
+    """Approximate distance for matching within a few kilometres."""
+    import math
+    lat1, lon1 = one
+    lat2, lon2 = other
+    avg = math.radians((lat1 + lat2) * 0.5)
+    dy = math.radians(lat2 - lat1)
+    dx = math.radians(lon2 - lon1) * math.cos(avg)
+    return 6371000 * math.hypot(dx, dy)
+
+
+def extract_roads_near_places(elements, expected_towns):
+    """Very conservative geographic matching, never evidence of an outage queue.
+
+    The nearest mapped place must be significantly closer than every competing
+    place, including places NOT served by the app; road segments on a border
+    are deliberately skipped instead of being assigned to the wrong village.
+    """
+    centres = []
+    for element in elements:
+        tags = element.get("tags") or {}
+        if not tags.get("place") or not tags.get("name"):
+            continue
+        coords = _point(element)
+        if coords:
+            centres.append((town_key(tags["name"]), coords))
+    if not centres:
+        raise ValueError("No OSM place centres to match road labels")
+    results = {}
+    for element in elements:
+        tags = element.get("tags") or {}
+        if not tags.get("highway") or not tags.get("name"):
+            continue
+        coords = _point(element)
+        if coords is None:
+            continue
+        street = street_entry(tags["name"])
+        if not street:
+            continue
+        nearest = sorted(
+            ((_distance_meters(coords, centre), key) for key, centre in centres),
+            key=lambda item: item[0]
+        )
+        best, town = nearest[0]
+        # A road on the urban fringe or between two villages is ambiguous.
+        if town not in expected_towns or town == "черкаси" or best > 2200:
+            continue
+        runner_up = next((distance for distance, key in nearest[1:] if key != town), float("inf"))
+        if runner_up < best * 1.65 + 450:
+            continue
+        results.setdefault(town, {})[street[0]] = street[1]
+    return results
+
+
+def collect_osm_roads_near_localities(session, expected_towns):
+    """Use named mapped road segments when addr:city tags are absent.
+
+    The query stays inside Cherkasy Raion and includes all settlement labels
+    as competing centres, preventing neighbouring localities from sharing
+    roads through a simple radius-based search.
+    """
+    query = """[out:json][timeout:160];
+    area["name"="Черкаський район"]["admin_level"="6"]->.region;
+    (
+      node(area.region)["place"]["name"];
+      way(area.region)["highway"~"^(residential|living_street|tertiary|unclassified|pedestrian|service|secondary)$"]["name"];
+    );
+    out center tags;"""
+    last_error = None
+    for url in (OSM_API, OSM_FALLBACK):
+        try:
+            response = session.post(url, data={"data": query}, timeout=(15, 190))
+            response.raise_for_status()
+            payload = response.json()
+            elements = payload.get("elements")
+            if not isinstance(elements, list) or not elements:
+                raise ValueError("No place/road elements in the region")
+            return extract_roads_near_places(elements, expected_towns)
+        except (requests.RequestException, ValueError) as error:
+            last_error = error
+            LOG.warning("Mapped locality road source unavailable %s: %s", url, error)
+    raise RuntimeError("No locality road query succeeded: " + str(last_error))
+
+
 def merge_catalog(previous, city_names, locality_names, official):
     old = previous if isinstance(previous, dict) else {}
     live_localities = official.get("localities", {})
@@ -197,6 +293,16 @@ def main():
                  sum(len(x) for x in district.values()), len(district))
     except Exception as error:
         LOG.warning("OSM unavailable: %s", error)
+    try:
+        mapped = collect_osm_roads_near_localities(session, expected)
+        LOG.info("OSM named roads: %s streets assigned conservatively to %s villages",
+                 sum(len(x) for x in mapped.values()), len(mapped))
+        for town, streets in mapped.items():
+            # Explicit address tags (addr:city) are preferred over proximity.
+            district.setdefault(town, {})
+            district[town] = {**streets, **district[town]}
+    except Exception as error:
+        LOG.warning("OSM locality street lookup unavailable: %s", error)
     if not city and not district:
         raise RuntimeError("All enrichment sources failed; preserving existing catalogue unchanged")
     if "черкаси" in district:
