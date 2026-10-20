@@ -84,3 +84,14 @@ test('street-type search supports squares, lanes and embankments without false q
   assert.equal(r.queue,undefined);
  }
 });
+
+test('old locality abbreviations search under complete contemporary village names',()=>{
+ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ const importer=fs.readFileSync(path.join(root,'scripts/update_data.py'),'utf8');
+ assert.ok(app.includes("'великіканівці':'вканівці'"));
+ assert.ok(app.includes("'хрестителеве':'хрестителево'"));
+ assert.ok(app.includes("Великі Канівці"));
+ assert.ok(app.includes("Хрестителеве"));
+ assert.ok(importer.includes("'вканівці':'Великі Канівці'"));
+ assert.ok(importer.includes("'хрестителево':'Хрестителеве'"));
+});
