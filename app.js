@@ -943,7 +943,18 @@ async function checkPushDelivery(force=false){
 async function getPushConfig(){
  try{
   const r=await fetch('./push-config.json',{cache:'no-store'});
-  if(r.ok){const c=await r.json();if(/^https:\/\/[^\s]+$/.test(c?.apiBase||'')&&typeof c.publicKey==='string'&&/^[A-Za-z0-9_-]{87}$/.test(c.publicKey))pushConfig=c}
+   if(r.ok){
+    const c=await r.json();
+    if(/^https:\/\/[^\s]+$/.test(c?.apiBase||'')){
+     let key=typeof c.publicKey==='string'?c.publicKey:'';
+     try{
+      const url=new URL('/api/client-config',c.apiBase);
+      const remote=await fetch(url.href,{cache:'no-store',signal:AbortSignal.timeout(6500)});
+      if(remote.ok){const data=await remote.json();if(/^[A-Za-z0-9_-]{87}$/.test(data.publicKey||''))key=data.publicKey}
+     }catch(error){console.warn('Public Push key discovery:',error.message)}
+     if(/^[A-Za-z0-9_-]{87}$/.test(key))pushConfig={...c,publicKey:key}
+    }
+   }
   if(pushConfig&&'Notification' in window&&Notification.permission==='granted'&&localStorage.getItem(PUSH_CONSENT)!=='no'){
    // Existing subscribers are migrated; new users must tap the consent button.
    const existing=await (await navigator.serviceWorker.ready).pushManager.getSubscription();
