@@ -9,7 +9,7 @@
   function normalize(s) {
     return String(s || '').toLocaleLowerCase('uk-UA')
       .replace(/[’ʼ`]/g, "'")
-      .replace(/^(вул(?:иця)?\.?|пров(?:улок|\.)?|просп(?:ект)?\.?|пр-т\.?|б-р\.?|бульвар|узвіз)\s+/i,'')
+      .replace(/^(вул(?:иця)?\.?|пров(?:улок|\.)?|просп(?:ект)?\.?|пр-т\.?|б-р\.?|бульвар|узвіз|алея|площа|майдан|шосе|набережна|тупик|проїзд)\s+/i,'')
       .replace(/[^\p{L}\p{N}/]+/gu,'');
   }
   // Official PDFs normally use Cyrillic suffixes (12-А), while phone keyboards
@@ -35,6 +35,7 @@
     if(k.startsWith('просп')||k.startsWith('пр-т'))return 'проспект';
     if(k.startsWith('буль')||k.startsWith('б-р'))return 'бульвар';
     if(k.startsWith('узв'))return 'узвіз';
+    if(['алея','площа','майдан','шосе','набережна','тупик','проїзд'].includes(k))return k;
     return 'вулиця';
   }
   function queueSort(a,b) { return Number(a)-Number(b); }
