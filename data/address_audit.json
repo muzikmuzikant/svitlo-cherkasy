@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "checkedAt": "2026-10-20T23:15:27+03:00",
+  "checkedAt": "2026-10-20T23:32:52+03:00",
   "effectiveSource": "https://www.cherkasyoblenergo.com/perelik-gpv?lang=uk",
   "expectedPdfCount": 12,
   "verifiedPdfCount": 12,
@@ -11,11 +11,13 @@
       "sha256": "23800c4065e840539d64e3fd75b0e2ec7770b7581a30eb01b8f8fdadb3e98b46",
       "pages": 22,
       "verifiedPdfTitleQueue": "1.1",
-      "cityHouseMentions": 3165,
+      "cityHouseMentions": 3199,
       "districtHouseMentions": 0,
-      "cityStreetMentions": 163,
+      "cityStreetMentions": 164,
       "districtStreetMentions": 202,
-      "localities": 15
+      "localities": 15,
+      "districtSpecialNotationsForReview": 0,
+      "citySpecialNotationsForReview": 5
     },
     {
       "queue": "1.2",
@@ -35,11 +37,13 @@
       "sha256": "368ccfa46895ec34b29ec9e49e1732237795aa93f0013bd87351120dd4de227a",
       "pages": 27,
       "verifiedPdfTitleQueue": "2.1",
-      "cityHouseMentions": 3750,
-      "districtHouseMentions": 1,
-      "cityStreetMentions": 157,
+      "cityHouseMentions": 3808,
+      "districtHouseMentions": 0,
+      "cityStreetMentions": 159,
       "districtStreetMentions": 168,
-      "localities": 14
+      "localities": 14,
+      "districtSpecialNotationsForReview": 0,
+      "citySpecialNotationsForReview": 0
     },
     {
       "queue": "2.2",
@@ -59,11 +63,13 @@
       "sha256": "251e9620dae765a6175aa6443b313090d599b410fe3fca7d8151e898b74c2f97",
       "pages": 28,
       "verifiedPdfTitleQueue": "3.1",
-      "cityHouseMentions": 1881,
-      "districtHouseMentions": 10,
+      "cityHouseMentions": 1938,
+      "districtHouseMentions": 9,
       "cityStreetMentions": 137,
       "districtStreetMentions": 176,
-      "localities": 10
+      "localities": 10,
+      "districtSpecialNotationsForReview": 0,
+      "citySpecialNotationsForReview": 7
     },
     {
       "queue": "3.2",
@@ -83,11 +89,13 @@
       "sha256": "a5773967b7e01a8426874307518a559d3318d028c8fd79830ce04c5a03067604",
       "pages": 26,
       "verifiedPdfTitleQueue": "4.1",
-      "cityHouseMentions": 1607,
+      "cityHouseMentions": 1599,
       "districtHouseMentions": 6,
       "cityStreetMentions": 98,
       "districtStreetMentions": 185,
-      "localities": 11
+      "localities": 11,
+      "districtSpecialNotationsForReview": 0,
+      "citySpecialNotationsForReview": 0
     },
     {
       "queue": "4.2",
@@ -108,10 +116,11 @@
       "pages": 18,
       "verifiedPdfTitleQueue": "5.1",
       "cityHouseMentions": 0,
-      "districtHouseMentions": 1,
+      "districtHouseMentions": 0,
       "cityStreetMentions": 0,
       "districtStreetMentions": 149,
-      "localities": 12
+      "localities": 12,
+      "districtSpecialNotationsForReview": 0
     },
     {
       "queue": "5.2",
@@ -135,7 +144,8 @@
       "districtHouseMentions": 1,
       "cityStreetMentions": 0,
       "districtStreetMentions": 184,
-      "localities": 9
+      "localities": 9,
+      "districtSpecialNotationsForReview": 0
     },
     {
       "queue": "6.2",
@@ -151,33 +161,33 @@
     }
   ],
   "totals": {
-    "indexedCityHouseKeys": 9435,
-    "indexedDistrictHouseKeys": 19,
-    "conflictedHouseKeys": 116,
-    "operatorStreetEntries": 1423,
+    "indexedCityHouseKeys": 9552,
+    "indexedDistrictHouseKeys": 16,
+    "conflictedHouseKeys": 117,
+    "operatorStreetEntries": 1425,
     "knownLocalities": 42,
-    "newCityHouseKeysSincePrevious": 110,
-    "missingCityHouseKeysSincePrevious": 2
+    "newCityHouseKeysSincePrevious": 181,
+    "missingCityHouseKeysSincePrevious": 64
   },
   "queues": {
     "1.1": {
-      "houses": 2848,
-      "streetHints": 362
+      "houses": 2866,
+      "streetHints": 363
     },
     "1.2": {
       "houses": 0,
       "streetHints": 0
     },
     "2.1": {
-      "houses": 3470,
-      "streetHints": 323
+      "houses": 3525,
+      "streetHints": 325
     },
     "2.2": {
       "houses": 0,
       "streetHints": 0
     },
     "3.1": {
-      "houses": 1738,
+      "houses": 1791,
       "streetHints": 310
     },
     "3.2": {
@@ -185,7 +195,7 @@
       "streetHints": 0
     },
     "4.1": {
-      "houses": 1513,
+      "houses": 1503,
       "streetHints": 282
     },
     "4.2": {
@@ -193,7 +203,7 @@
       "streetHints": 0
     },
     "5.1": {
-      "houses": 1,
+      "houses": 0,
       "streetHints": 149
     },
     "5.2": {
@@ -233,7 +243,7 @@
     },
     "бузуків": {
       "name": "Бузуків",
-      "indexedHouses": 1,
+      "indexedHouses": 0,
       "operatorStreets": 6,
       "discoveredStreetNames": 7,
       "conflictedHouses": 0
@@ -310,7 +320,7 @@
     },
     "лящівка": {
       "name": "Лящівка",
-      "indexedHouses": 1,
+      "indexedHouses": 0,
       "operatorStreets": 1,
       "discoveredStreetNames": 2,
       "conflictedHouses": 0
@@ -457,14 +467,14 @@
     },
     "черкаси": {
       "name": "Черкаси",
-      "indexedHouses": 9435,
-      "operatorStreets": 450,
-      "discoveredStreetNames": 470,
-      "conflictedHouses": 116
+      "indexedHouses": 9552,
+      "operatorStreets": 452,
+      "discoveredStreetNames": 471,
+      "conflictedHouses": 117
     },
     "чорнобай": {
       "name": "Чорнобай",
-      "indexedHouses": 10,
+      "indexedHouses": 9,
       "operatorStreets": 15,
       "discoveredStreetNames": 17,
       "conflictedHouses": 0
@@ -512,6 +522,392 @@
       "conflictedHouses": 0
     }
   },
+  "removedHouseKeysForReview": [
+    {
+      "key": "бульвар|шевченка|208/1д",
+      "previousQueues": [
+        "4.1"
+      ]
+    },
+    {
+      "key": "бульвар|шевченка|208/1т",
+      "previousQueues": [
+        "4.1"
+      ]
+    },
+    {
+      "key": "бульвар|шевченка|352",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "бульвар|шевченка|380/3",
+      "previousQueues": [
+        "2.1"
+      ]
+    },
+    {
+      "key": "вулиця|андріятуренка|1а",
+      "previousQueues": [
+        "2.1"
+      ]
+    },
+    {
+      "key": "вулиця|берегова|20т",
+      "previousQueues": [
+        "4.1"
+      ]
+    },
+    {
+      "key": "вулиця|встуса|95п",
+      "previousQueues": [
+        "4.1"
+      ]
+    },
+    {
+      "key": "вулиця|вчорновола|51в",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "вулиця|геронимівська|1в",
+      "previousQueues": [
+        "3.1"
+      ]
+    },
+    {
+      "key": "вулиця|героївдніпра|69с",
+      "previousQueues": [
+        "3.1"
+      ]
+    },
+    {
+      "key": "вулиця|героївдніпра|85",
+      "previousQueues": [
+        "3.1"
+      ]
+    },
+    {
+      "key": "вулиця|героївхолодногояру|68п",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "вулиця|гетьманасагайдачного|121",
+      "previousQueues": [
+        "2.1"
+      ]
+    },
+    {
+      "key": "вулиця|гетьманасагайдачного|173т",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "вулиця|гоголя|333",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "вулиця|грибна|36",
+      "previousQueues": [
+        "3.1"
+      ]
+    },
+    {
+      "key": "вулиця|дахнівська|21г",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "вулиця|дахнівська|77к",
+      "previousQueues": [
+        "3.1"
+      ]
+    },
+    {
+      "key": "вулиця|дачнийузвіз|8",
+      "previousQueues": [
+        "4.1"
+      ]
+    },
+    {
+      "key": "вулиця|кобзарська|201в",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "вулиця|кобзарська|79",
+      "previousQueues": [
+        "4.1"
+      ]
+    },
+    {
+      "key": "вулиця|лейтенантамукана|30т",
+      "previousQueues": [
+        "2.1"
+      ]
+    },
+    {
+      "key": "вулиця|нижнягорова|3",
+      "previousQueues": [
+        "3.1"
+      ]
+    },
+    {
+      "key": "вулиця|нова|9к",
+      "previousQueues": [
+        "3.1"
+      ]
+    },
+    {
+      "key": "вулиця|перемоги|14г",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "вулиця|петрадорошенка|2/1с",
+      "previousQueues": [
+        "4.1"
+      ]
+    },
+    {
+      "key": "вулиця|припортова|34т",
+      "previousQueues": [
+        "3.1"
+      ]
+    },
+    {
+      "key": "вулиця|припортова|42п",
+      "previousQueues": [
+        "3.1"
+      ]
+    },
+    {
+      "key": "вулиця|південна|31с",
+      "previousQueues": [
+        "3.1"
+      ]
+    },
+    {
+      "key": "вулиця|різдвяна|173/6ф",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "вулиця|різдвяна|290",
+      "previousQueues": [
+        "2.1"
+      ]
+    },
+    {
+      "key": "вулиця|самійлакішки|0",
+      "previousQueues": [
+        "2.1"
+      ]
+    },
+    {
+      "key": "вулиця|святителяхірургалуки|14/2о",
+      "previousQueues": [
+        "3.1"
+      ]
+    },
+    {
+      "key": "вулиця|симиренківська|2/2к",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "вулиця|смілянська|181с",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "вулиця|сумгаїтська|10с",
+      "previousQueues": [
+        "4.1"
+      ]
+    },
+    {
+      "key": "вулиця|сєфремова|10с",
+      "previousQueues": [
+        "3.1"
+      ]
+    },
+    {
+      "key": "вулиця|трояндова|33",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "вулиця|хрещатик|5",
+      "previousQueues": [
+        "3.1"
+      ]
+    },
+    {
+      "key": "вулиця|хіміків|7а",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "вулиця|чехова|104с",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "вулиця|чигиринська|15/2",
+      "previousQueues": [
+        "4.1"
+      ]
+    },
+    {
+      "key": "вулиця|чигиринська|21с",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "вулиця|шевченка|208п",
+      "previousQueues": [
+        "4.1"
+      ]
+    },
+    {
+      "key": "вулиця|шевченка|380/3",
+      "previousQueues": [
+        "2.1"
+      ]
+    },
+    {
+      "key": "вулиця|юріяіллєнка|27/6",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "вулиця|юріяіллєнка|27т",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "вулиця|юріяіллєнка|28к",
+      "previousQueues": [
+        "3.1"
+      ]
+    },
+    {
+      "key": "вулиця|іванавиговського|11",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "вулиця|ігорятурчина|7/1",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "провулок|аметханасултана|29т",
+      "previousQueues": [
+        "2.1"
+      ]
+    },
+    {
+      "key": "провулок|апашкевича|1/1т",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "провулок|вишневий|37/1б",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "провулок|крайній|1",
+      "previousQueues": [
+        "2.1"
+      ]
+    },
+    {
+      "key": "провулок|миколибіляшівського|8",
+      "previousQueues": [
+        "2.1"
+      ]
+    },
+    {
+      "key": "провулок|мирний|10",
+      "previousQueues": [
+        "2.1"
+      ]
+    },
+    {
+      "key": "провулок|некрасова|7/2",
+      "previousQueues": [
+        "4.1"
+      ]
+    },
+    {
+      "key": "провулок|поліграфічний|3с",
+      "previousQueues": [
+        "1.1"
+      ]
+    },
+    {
+      "key": "провулок|промисловий|46ч",
+      "previousQueues": [
+        "3.1"
+      ]
+    },
+    {
+      "key": "провулок|тобілевича|4",
+      "previousQueues": [
+        "4.1"
+      ]
+    },
+    {
+      "key": "провулок|улки|8б",
+      "previousQueues": [
+        "2.1"
+      ]
+    },
+    {
+      "key": "провулок|хіміків|8с",
+      "previousQueues": [
+        "2.1"
+      ]
+    },
+    {
+      "key": "провулок|яськаворонченка|1",
+      "previousQueues": [
+        "2.1"
+      ]
+    },
+    {
+      "key": "провулок|яськаворонченка|68к",
+      "previousQueues": [
+        "2.1"
+      ]
+    }
+  ],
   "multipleQueueExamples": [
     {
       "locality": "черкаси",
@@ -595,14 +991,6 @@
     },
     {
       "locality": "черкаси",
-      "streetHouse": "вулиця|будіндустрії|3",
-      "queues": [
-        "1.1",
-        "4.1"
-      ]
-    },
-    {
-      "locality": "черкаси",
       "streetHouse": "вулиця|верхнягорова|97",
       "queues": [
         "1.1",
@@ -659,6 +1047,14 @@
     },
     {
       "locality": "черкаси",
+      "streetHouse": "вулиця|дахнівська|21",
+      "queues": [
+        "1.1",
+        "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
       "streetHouse": "вулиця|дахнівська|3",
       "queues": [
         "1.1",
@@ -679,14 +1075,6 @@
       "queues": [
         "1.1",
         "3.1"
-      ]
-    },
-    {
-      "locality": "черкаси",
-      "streetHouse": "вулиця|дашковича|19",
-      "queues": [
-        "1.1",
-        "4.1"
       ]
     },
     {
@@ -983,6 +1371,14 @@
       "queues": [
         "1.1",
         "3.1"
+      ]
+    },
+    {
+      "locality": "черкаси",
+      "streetHouse": "вулиця|різдвяна|173/6",
+      "queues": [
+        "1.1",
+        "2.1"
       ]
     },
     {
