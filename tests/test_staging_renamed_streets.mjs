@@ -7,7 +7,7 @@ const lookup=require('../address-lookup.js');
 const {mergeIndexes}=require('../data-merge.js');
 const aliases=JSON.parse(fs.readFileSync(new URL('../data/street_aliases.json',import.meta.url),'utf8'));
 const keys=aliases.localities.черкаси;
-const renames={schemaVersion:1,localities:{черкаси:keys}};
+const renames={schemaVersion:1,localities:{черкаси:keys},splitRenames:aliases.splitRenames};
 
 test('only adopted city council decisions (not proposals) feed approved old/new name matching',()=>{
  assert.equal(keys.length,53);
