@@ -135,7 +135,7 @@ function bubble(from,value,at){
  return box;
 }
 function showConversation(ticket,{scroll=true}={}){
- selectedTicket={id:ticket.id,token:saved.find(x=>x.id===ticket.id)?.token||''};
+ selectedTicket={id:ticket.id,token:saved.find(x=>x.id===ticket.id)?.token||'',revision:ticket.updatedAt};
  $('ticketConversation').hidden=false;$('conversationId').textContent=ticket.id;
  $('conversationHeading').textContent=ticket.subject||TOPICS[ticket.topic]||'Ваше звернення';
  $('conversationStatus').replaceWith(Object.assign(statusNode(ticket.status),{id:'conversationStatus'}));
@@ -225,30 +225,35 @@ let syncRunning=null,syncQueued=false;
 async function syncTickets(){
  if(syncRunning){syncQueued=true;return syncRunning}
  syncRunning=(async()=>{
-  const existing=saved.slice(0,60),removed=[],updated=new Map();
-  // Limit the number of parallel status calls to avoid tripping server rate limits.
-  for(let start=0;start<existing.length;start+=3){
-   await Promise.all(existing.slice(start,start+3).map(async item=>{
-    try{updated.set(item.id,await loadTicket(item.id,item.token))}
-    catch(error){if(error.status===404)removed.push(item.id)}
-   }));
+  const existing=saved.slice(0,60);
+  if(!existing.length)return;
+  const response=await post('/api/ticket/sync',{receipts:existing.map(item=>({id:item.id,token:item.token||''}))});
+  const results=Array.isArray(response.items)?response.items:[];
+  const removed=results.filter(item=>item.deleted).map(item=>item.id);
+  const updated=new Map(results.filter(item=>item.ticket).map(item=>[item.id,item.ticket]));
+  for(const id of removed)forgetTicket(id,false);
+  if(removed.length)alertAt('lookupMessage',removed.length===1?
+   'Видалене звернення прибрано з вашого списку.':'Видалені звернення прибрано з вашого списку.',true);
+  let changed=removed.length>0;
+  for(const item of saved)if(updated.has(item.id)){
+   const fresh=updated.get(item.id);
+   if(item.status!==fresh.status)changed=true;
+   item.status=fresh.status;
   }
-  if(removed.length){for(const id of removed)forgetTicket(id,false);
-   alertAt('lookupMessage',removed.length===1?'Видалене звернення прибрано з вашого списку.':'Видалені звернення прибрано з вашого списку.',true);
-  }
-  for(const item of saved)if(updated.has(item.id))item.status=updated.get(item.id).status;
-  storeTickets();updateSavedCount();renderSaved();
+  if(changed){storeTickets();updateSavedCount();renderSaved()}
   if(selectedTicket?.id&&updated.has(selectedTicket.id)&&!document.activeElement?.closest('#replyForm')){
-   const panel=$('ticketConversation');const oldScroll=window.scrollY;
-   showConversation(updated.get(selectedTicket.id),{scroll:false});
-   // Keep the reader in place when a new reply arrives.
-   if(!panel.hidden)window.scrollTo({top:oldScroll,behavior:'instant'});
+   const fresh=updated.get(selectedTicket.id),previous=selectedTicket.revision;
+   if(previous!==fresh.updatedAt||previous===undefined){
+    const panel=$('ticketConversation'),before=window.scrollY;
+    showConversation(fresh,{scroll:false});
+    if(!panel.hidden)window.scrollTo({top:before,behavior:'auto'})
+   }
   }
  })().finally(()=>{syncRunning=null;if(syncQueued){syncQueued=false;queueSync()}});
  return syncRunning
 }
 let syncTimer=0;
-function queueSync(){if(syncTimer)return;syncTimer=setTimeout(()=>{syncTimer=0;if(saved.length)syncTickets().catch(()=>{})},1000)}
+function queueSync(){if(syncTimer)return;syncTimer=setTimeout(()=>{syncTimer=0;if(saved.length)syncTickets().catch(error=>liveState(friendlyError(error)))},1100)}
 $('refreshSaved').addEventListener('click',async()=>{
  const button=$('refreshSaved');button.disabled=true;button.textContent='Перевіряємо…';
  try{await syncTickets()}finally{button.disabled=false;button.textContent='Оновити статуси ↻'}
