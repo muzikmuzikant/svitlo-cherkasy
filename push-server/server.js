@@ -405,6 +405,39 @@ const server=http.createServer(async(req,res)=>{
   }catch(e){response(res,e.statusCode||400,{error:e.statusCode?e.message:'Не вдалося перевірити номер.'})}
   return;
  }
+ // One authenticated synchronization request replaces 1-60 separate status
+ // requests, so large inboxes and live events cannot exhaust the old IP quota.
+ if(requestPath==='/api/ticket/sync'&&req.method==='POST'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  const ip=String(req.socket.remoteAddress||'unknown').slice(0,100),now=Date.now();
+  const rateKey='batch:'+ip;
+  for(const [key,entry] of statusAttempts)if(entry.until<now)statusAttempts.delete(key);
+  const rate=statusAttempts.get(rateKey)||{count:0,until:now+60000};
+  if(rate.count>=24){response(res,429,{error:'Забагато перевірок. Спробуйте за хвилину.'});return}
+  rate.count++;statusAttempts.set(rateKey,rate);
+  try{
+   const payload=await readPayload(req,12000),receipts=payload.receipts;
+   if(!Array.isArray(receipts)||receipts.length>60){response(res,400,{error:'Неправильний перелік звернень'});return}
+   const unique=new Set(),results=[];
+   for(const receipt of receipts){
+    const id=String(receipt?.id||'').toUpperCase();
+    if(!/^SC-[A-F0-9]{10}$/.test(id)||unique.has(id)){response(res,400,{error:'Невірний або повторний номер звернення'});return}
+    unique.add(id);
+    const token=receipt?.token;
+    if(token!==undefined&&token!==''&&(typeof token!=='string'||!/^[A-Za-z0-9_-]{32,80}$/.test(token))){
+     response(res,400,{error:'Неправильний код звернення'});return
+    }
+    try{results.push({id,ticket:feedback.getStatus(id,token)})}
+    catch(error){
+     if(error.statusCode===404)results.push({id,deleted:true});
+     else if(error.statusCode===403)results.push({id,unavailable:true});
+     else throw error
+    }
+   }
+   response(res,200,{items:results});
+  }catch(error){response(res,error.statusCode||400,{error:error.statusCode?error.message:'Не вдалося синхронізувати звернення'})}
+  return
+ }
  if(requestPath==='/api/ticket/rate'&&req.method==='POST'){
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   try{const data=await readPayload(req,1200),id=String(data.id||'').trim().toUpperCase();
