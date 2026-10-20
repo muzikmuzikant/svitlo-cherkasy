@@ -455,7 +455,11 @@ def street_entries(text):
     tokens=list(STREET.finditer(text))
     found=[]
     for i,t in enumerate(tokens):
-        chunk=text[t.end():min(t.end()+500,tokens[i+1].start() if i+1<len(tokens) else len(text))]
+        # Do NOT cap at 500 characters: official Oct-2026 Cherkasy PDF page
+        # 18 lists 100+ houses on Narbutivska and Nadpilna after a SINGLE
+        # street marker. The old bound silently discarded later houses.
+        # The NEXT explicit street marker is the safe semantic boundary.
+        chunk=text[t.end():tokens[i+1].start() if i+1<len(tokens) else len(text)]
         match=STREET_NAME.match(chunk)
         if not match:continue
         display=match.group('name').strip(' ,.:-')
@@ -509,7 +513,7 @@ def street_only_entries(text):
     clean = re.sub(r'\s+', ' ', text.replace('\u00ad', '').replace('\xa0', ' '))
     markers = list(STREET.finditer(clean))
     for i, marker in enumerate(markers):
-        end = min(len(clean), marker.end() + 450,
+        end = min(len(clean),
                   markers[i + 1].start() if i + 1 < len(markers) else len(clean))
         chunk = clean[marker.end():end]
         # Some PDF cells join a street list with company names or a second
@@ -524,7 +528,7 @@ def street_only_entries(text):
                 'проспект' if kindraw.startswith(('просп', 'пр-т')) else
                 'бульвар' if kindraw.startswith(('б-р', 'буль')) else
                 'узвіз' if kindraw.startswith('узв') else 'вулиця')
-        for part in re.split(r'[,;:]', chunk)[:35]:
+        for part in re.split(r'[,;:]', chunk)[:150]:
             candidate = part.strip(' .–-')
             # Only a final isolated number is a house number. Preserve
             # actual numbered names, e.g. "50 років Перемоги".
