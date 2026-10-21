@@ -165,3 +165,170 @@ body.svitlo-office .desk-pane .support-thread-entry:not(.is-admin){margin-left:0
 body.svitlo-office .desk-ticket-row>.ticket-row.is-awaiting-reply{border-color:#c5dfcc!important}
 body.svitlo-office .ticket-awaiting-label{display:inline-flex;align-items:center;width:fit-content;margin-top:7px;padding:4px 8px;border-radius:8px;background:#e1f4e9;color:#176746;font-size:10px;font-weight:750}
 body.svitlo-office .desk-ticket-row:not(:has(.ticket-row.selected)) .ticket-row:focus-visible{outline:2px solid #36916e;outline-offset:2px}
+
+/* STAGING / OFFICE QUALITY PASS
+ * Calm ASKOD-style workstation, consistent alignment and predictable reflow.
+ * Does not depend on a GitHub token or any change to admin API endpoints. */
+body.svitlo-office{
+ --desk-ink:#22384a;--desk-muted:#667e8e;--desk-edge:#dce5eb;
+ --desk-green:#187c5a;--desk-bg:#f4f7f8;
+}
+body.svitlo-office{max-width:100%;overflow-x:clip}
+body.svitlo-office :is(main,#adminDashboard,[data-admin-panel],.card,.office-context,.office-toolbar,.ops-workspace,.ops-section,.ops-editor-main,.ops-editor-sidebar,.support-workspace,.support-list,.support-detail,.registry-layout,.registry-editor){
+ min-width:0;box-sizing:border-box
+}
+body.svitlo-office :is(.card,.ops-editor-main,.ops-editor-sidebar,.control-subcard,.analytics-chart-card,.registry-editor,.desk-list-pane){
+ overflow-wrap:anywhere
+}
+body.svitlo-office button:active:not(:disabled){transform:none!important}
+body.svitlo-office #adminDashboard>[data-admin-panel]:not([hidden]){
+ animation:none!important;view-transition-name:none!important
+}
+body.svitlo-office #adminDashboard>[data-admin-panel][hidden]{display:none!important}
+body.svitlo-office :is(.motion-reveal,.motion-reveal.motion-visible){animation:none!important;opacity:1!important;transform:none!important}
+body.svitlo-office #adminDashboard>.admin-tabs{min-height:0;scrollbar-width:thin}
+body.svitlo-office #adminDashboard>.office-toolbar{min-width:0;flex-wrap:wrap;row-gap:8px}
+body.svitlo-office .office-crumbs{min-width:0}
+body.svitlo-office .office-current-title{line-height:1.25;overflow-wrap:anywhere}
+body.svitlo-office .office-search-open{min-width:0}
+body.svitlo-office :is(.office-create,.office-menu-button,.office-close-nav){flex-shrink:0}
+body.svitlo-office .auth-head :is(.control-brand,.control-head-actions){min-width:0}
+body.svitlo-office .control-head-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+body.svitlo-office .card .headline{min-width:0;flex-wrap:wrap;gap:10px}
+body.svitlo-office .card .headline>div{min-width:0}
+body.svitlo-office .card :is(h1,h2,h3,h4,p,.hint){overflow-wrap:anywhere}
+body.svitlo-office .card .field{min-width:0}
+body.svitlo-office #adminDashboard .card :is(input:not([type=checkbox]):not([type=radio]),select,textarea){
+ min-width:0;max-width:100%;box-sizing:border-box
+}
+body.svitlo-office .card :is(.two,.three,.analytics-grid,.control-cols,.control-design-grid,.registry-layout,.ops-edit-layout,.ops-editor-columns,.support-filters,.live-config-grid){
+ min-width:0
+}
+body.svitlo-office .card button{max-width:100%;overflow-wrap:anywhere}
+body.svitlo-office .card :is(.flex,.registry-toolbar,.support-toolbar,.analytics-toolbar,.analytics-actions,.control-panel-actions,.ops-bottom){
+ flex-wrap:wrap;min-width:0;row-gap:9px
+}
+body.svitlo-office :is(.registry-toolbar,.registry-actions,.support-toolbar-actions,.control-panel-actions,.ops-bottom .flex)>button{
+ min-height:39px
+}
+body.svitlo-office :is(.analytics-grid,.analytics-popularity-grid,.analytics-funnel-grid,.control-cols,.control-design-grid,.monitor-grid,.ops-health-grid,.ops-editor-columns)>*{min-width:0;max-width:100%}
+body.svitlo-office :is(.analytics-chart-card,.analytics-campaign-card,.analytics-funnel-card,.control-subcard,.registry-editor,.ops-section){
+ border-radius:12px
+}
+body.svitlo-office :is(.analytics-chart-card,.analytics-popularity-panel,.control-subcard,.control-check-list,.ops-section){
+ overflow-wrap:anywhere
+}
+body.svitlo-office :is(.analytics-chart-card,.ops-activity-chart,.analytics-trend,.analytics-hourly){
+ max-width:100%;overflow-x:auto;overscroll-behavior-x:contain
+}
+body.svitlo-office :is(.ops-notices,.ops-notice,.ops-notice-choice,.ops-preview,.ops-message-preview){
+ min-width:0;max-width:100%
+}
+body.svitlo-office .ops-notice-choice{text-align:left}
+body.svitlo-office .ops-editor-main :is(textarea,input,select){max-width:100%;min-width:0}
+body.svitlo-office .control-notice-filters{min-width:0;flex-wrap:wrap}
+body.svitlo-office .control-notice-filters>*{min-width:0}
+body.svitlo-office .control-notice-tools{min-width:0;flex-wrap:wrap}
+body.svitlo-office .support-admin .headline{align-items:center}
+body.svitlo-office .support-filters{align-items:end}
+body.svitlo-office .support-filters .field{min-width:0}
+body.svitlo-office .support-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px}
+body.svitlo-office #ticketsSummary{flex:1 1 200px;min-width:0;overflow-wrap:anywhere}
+body.svitlo-office .desk-tools{align-items:center;gap:8px}
+body.svitlo-office .desk-tool{min-height:39px!important}
+body.svitlo-office .desk-autosync{flex:0 0 auto}
+body.svitlo-office .support-workspace{width:100%;align-items:start}
+body.svitlo-office .desk-list-pane{align-self:stretch}
+body.svitlo-office #ticketsList{scrollbar-gutter:stable;overscroll-behavior:contain}
+body.svitlo-office .desk-ticket-row{align-items:stretch}
+body.svitlo-office .desk-ticket-row>input{align-self:center}
+body.svitlo-office .desk-ticket-row .ticket-row{min-width:0;width:100%;border-radius:10px!important}
+body.svitlo-office .desk-ticket-row .ticket-row-head{min-width:0}
+body.svitlo-office .desk-ticket-row .ticket-row-head>*{min-width:0}
+body.svitlo-office .desk-ticket-row .ticket-row strong{overflow-wrap:anywhere}
+body.svitlo-office #ticketDetail.desk-ticket{align-self:start;max-width:100%}
+body.svitlo-office #ticketDetail .desk-detail-head{min-width:0;flex-wrap:wrap}
+body.svitlo-office #ticketDetail .desk-detail-actions{min-width:0}
+body.svitlo-office #ticketDetail .desk-detail-actions button{min-height:41px!important}
+body.svitlo-office #ticketDetail .desk-detail-tabs{min-width:0;max-width:100%;scrollbar-width:none}
+body.svitlo-office #ticketDetail .desk-detail-tabs::-webkit-scrollbar{display:none}
+body.svitlo-office #ticketDetail .desk-pane{min-width:0;max-width:100%}
+body.svitlo-office #ticketDetail .desk-pane :is(input,select,textarea){max-width:100%;min-width:0}
+body.svitlo-office #ticketDetail .desk-pane textarea{resize:vertical;max-height:320px}
+body.svitlo-office #ticketDetail .desk-pane .support-thread-entry{box-sizing:border-box;min-width:0;max-width:89%}
+body.svitlo-office #ticketDetail .desk-pane .support-thread-entry p{white-space:pre-wrap;overflow-wrap:anywhere}
+body.svitlo-office #ticketDetail .desk-pane .support-thread-entry.is-admin{border-bottom-right-radius:5px}
+body.svitlo-office #ticketDetail .desk-pane .support-thread-entry:not(.is-admin){border-bottom-left-radius:5px}
+body.svitlo-office .desk-list-top{min-width:0;flex-wrap:wrap}
+body.svitlo-office .desk-select-all{margin-left:auto;white-space:nowrap}
+body.svitlo-office :is(.support-send,.desk-primary,.desk-soft){min-height:40px!important}
+body.svitlo-office .desk-hub-link{transform:none!important}
+body.svitlo-office .desk-hub-links{align-items:stretch}
+body.svitlo-office .desk-hub-link{justify-content:center;gap:6px}
+body.svitlo-office .desk-hub-link :is(strong,small){min-width:0;overflow-wrap:anywhere}
+@media(min-width:1051px){
+ body.svitlo-office #adminDashboard{column-gap:clamp(14px,1.4vw,23px)!important}
+ body.svitlo-office #adminDashboard>.admin-tabs{position:sticky!important;top:12px!important;max-height:calc(100dvh - 24px);min-height:0!important}
+ body.svitlo-office .support-workspace{grid-template-columns:minmax(240px,.84fr) minmax(0,1.55fr)!important}
+ body.svitlo-office #ticketsList{max-height:calc(100dvh - 200px);min-height:300px}
+}
+@media(min-width:761px) and (max-width:1050px){
+ body.svitlo-office .support-workspace{grid-template-columns:minmax(240px,.92fr) minmax(0,1.4fr)!important}
+ body.svitlo-office #ticketsList{max-height:640px}
+}
+@media(max-width:1050px){
+ body.svitlo-office #adminDashboard{width:100%;min-width:0}
+ body.svitlo-office #adminDashboard>.admin-tabs{min-height:0!important}
+ body.svitlo-office #adminDashboard>.office-toolbar{margin-bottom:0}
+ body.svitlo-office .office-search-open{margin:0 auto}
+ body.svitlo-office .desk-hub-links{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+ body.svitlo-office main{padding-inline:clamp(10px,3.2vw,16px)!important}
+ body.svitlo-office #adminDashboard>.auth-head{padding:12px 2px 8px!important}
+ body.svitlo-office .control-head-actions{gap:6px}
+ body.svitlo-office .office-toolbar{min-height:55px}
+ body.svitlo-office #adminDashboard>[data-admin-panel]:not([hidden]){width:100%;max-width:100%}
+ body.svitlo-office #adminDashboard .card{padding:clamp(12px,3.7vw,18px)!important}
+ body.svitlo-office .support-admin .headline{align-items:flex-start}
+ body.svitlo-office .support-workspace{grid-template-columns:minmax(0,1fr)!important}
+ body.svitlo-office #ticketsList{scrollbar-gutter:auto;max-height:none;min-height:0;overflow:visible}
+ body.svitlo-office .desk-ticket-row>.ticket-row{min-height:84px;padding:13px!important}
+ body.svitlo-office .desk-tools{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ body.svitlo-office .desk-autosync{margin:0;grid-column:1/-1}
+ body.svitlo-office #ticketDetail.desk-ticket{max-width:100%}
+ body.svitlo-office.desk-ticket-open #ticketDetail.desk-ticket{
+  width:100%!important;max-width:100%!important;height:100dvh!important;max-height:100dvh!important;
+  overflow-y:auto!important;overscroll-behavior:contain
+ }
+ body.svitlo-office .desk-detail-head{
+  position:sticky;top:0;z-index:3;background:#fff;
+  padding-top:max(10px,env(safe-area-inset-top))!important
+ }
+ body.svitlo-office .desk-detail-tabs{
+  position:relative!important;top:auto!important;z-index:1!important;background:#fff;
+ }
+ body.svitlo-office .desk-detail-actions{flex-wrap:wrap}
+ body.svitlo-office .desk-pane{padding:15px 13px 30px}
+ body.svitlo-office #ticketDetail .desk-pane .support-thread-entry{max-width:95%}
+ body.svitlo-office #adminDashboard .card :is(input:not([type=checkbox]):not([type=radio]),textarea,select){font-size:16px!important}
+ body.svitlo-office :is(.registry-toolbar,.support-toolbar,.control-notice-filters,.analytics-toolbar){gap:8px}
+ body.svitlo-office :is(.registry-toolbar,.support-toolbar,.control-notice-filters,.analytics-toolbar)>*{max-width:100%}
+ body.svitlo-office .analytics-grid,.control-cols{grid-template-columns:minmax(0,1fr)!important}
+}
+@media(max-width:420px){
+ body.svitlo-office .desk-hub-links{grid-template-columns:minmax(0,1fr)}
+ body.svitlo-office .support-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.svitlo-office .support-filters .field:first-child{grid-column:1/-1}
+ body.svitlo-office .support-filters .field{min-width:0}
+ body.svitlo-office .desk-detail-actions button{flex:1 1 135px}
+ body.svitlo-office .desk-bulk{grid-template-columns:minmax(0,1fr)!important}
+ body.svitlo-office .desk-bulk select,body.svitlo-office .desk-bulk button{width:100%!important}
+ body.svitlo-office .desk-bulk .desk-bulk-status{grid-column:1}
+ body.svitlo-office .office-crumbs{max-width:calc(100% - 105px)}
+ body.svitlo-office .office-current-title{font-size:12px}
+ body.svitlo-office #adminDashboard>.office-toolbar{gap:5px}
+}
+@media(prefers-reduced-motion:reduce){
+ body.svitlo-office *,body.svitlo-office *::before,body.svitlo-office *::after{animation:none!important;scroll-behavior:auto!important}
+}
