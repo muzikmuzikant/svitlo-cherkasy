@@ -87,6 +87,8 @@
   return (addresses.find(x=>x.id===settings.primaryId)||addresses[0])?.queue||null};
  const validUrl=url=>{try{const u=new URL(url,location.href);return u.protocol==='https:'&&(u.origin===location.origin||/(^|\.)cherkasyoblenergo\.com$/.test(u.hostname))?u.href:''}catch{return ''}};
  const isGraph=item=>item.kind==='schedule'||item.kind==='push'&&/(графік|підчерг|відключення через|відновлення через)/i.test(item.title+' '+item.body);
+ const ticketId=item=>/^ticket:(SC-[A-F0-9]{10}):(?:reply|status):/.exec(String(item?.id||''))?.[1]||'';
+ const openTicket=id=>{if(!id)return;const path='./feedback.html?tab=tickets&ticket='+encodeURIComponent(id);closeDetail(()=>{if(window.SvitloInternalPages?.open)window.SvitloInternalPages.open(path);else location.href=path})};
  function graphDate(item){
   const found=String(item.id).match(/:(20\d{2}-\d{2}-\d{2})(?=:|$)/);
   if(found)return found[1];
@@ -151,7 +153,7 @@
   activeDetail=id;content.replaceChildren();
   trackNotice(id,'opened');
   const top=el('div','','inbox-detail-top');
-  top.append(el('span',({schedule:'Графіки',emergency:'Важливо',announcement:'Повідомлення',push:'Push'})[item.kind]||'Повідомлення','inbox-detail-category'),el('time',time(item.at)));
+  top.append(el('span',({schedule:'Графіки',emergency:'Важливо',announcement:'Повідомлення',push:'Push',support:'Підтримка'})[item.kind]||'Повідомлення','inbox-detail-category'),el('time',time(item.at)));
   content.append(top,el('h2',item.title),el('p',item.body,'inbox-detail-summary'));
   if(item.images?.length){
    const gallery=el('div','','inbox-gallery');
@@ -167,6 +169,7 @@
   if(isGraph(item)){const graph=el('button','📅 Відкрити графік','inbox-detail-primary');graph.type='button';graph.onclick=()=>{
    closeDetail(()=>window.dispatchEvent(new CustomEvent('svitlo:open-schedule',{detail:{date:graphDate(item)}})));
   };buttons.append(graph)}
+  if(item.kind==='support'&&ticketId(item)){const button=el('button','💬 Відкрити звернення','inbox-detail-primary');button.type='button';button.onclick=()=>openTicket(ticketId(item));buttons.append(button)}
   if(validUrl(item.url)){const a=el('a','Офіційне джерело ↗');a.href=validUrl(item.url);a.target='_blank';a.rel='noopener noreferrer';buttons.append(a)}
   content.append(buttons);
   if(!dialog.open)try{dialog.showModal()}catch{dialog.setAttribute('open','')}
@@ -181,7 +184,7 @@
   const unread=rows.filter(x=>!x.read).length;
   $('inboxUnread').hidden=!unread;$('inboxUnread').textContent=unread>99?'99+':String(unread);
   $('navUnread').hidden=!unread;$('navUnread').textContent=unread>9?'9+':String(unread);
-  const visible=rows.filter(x=>selected==='all'||selected==='unread'&&!x.read||selected==='schedule'&&x.kind==='schedule'||selected==='important'&&['emergency','announcement'].includes(x.kind));
+  const visible=rows.filter(x=>selected==='all'||selected==='unread'&&!x.read||selected==='schedule'&&x.kind==='schedule'||selected==='important'&&['emergency','announcement','support'].includes(x.kind));
   const root=$('inboxList');root.replaceChildren();
   if(!visible.length){const empty=el('div','Тут поки тихо ✨','inbox-empty');empty.append(el('p',selected==='unread'?'Нових повідомлень немає.':'Важливі оновлення з’являться тут.'));root.append(empty)}
   const grouped=new Map();
@@ -198,7 +201,7 @@
    const opener=el('button','','inbox-card-opener');opener.type='button';
    opener.setAttribute('aria-label','Відкрити повідомлення: '+item.title);
    opener.onclick=()=>open(item.id);
-   const head=el('div','','inbox-item-head');head.append(el('span',item.pinned?'📌 Закріплено':({schedule:'Графіки',emergency:'Важливе',announcement:'Оголошення',push:'Push'})[item.kind],'inbox-kind'),el('time',time(item.at),'inbox-time'));
+   const head=el('div','','inbox-item-head');head.append(el('span',item.pinned?'📌 Закріплено':({schedule:'Графіки',emergency:'Важливе',announcement:'Оголошення',push:'Push',support:'Підтримка'})[item.kind],'inbox-kind'),el('time',time(item.at),'inbox-time'));
    opener.append(head,el('strong',item.title),el('p',item.body));
    opener.append(el('span','Переглянути детальніше  →','inbox-more'));
    if(item.images?.length){const img=document.createElement('img');img.src=item.images[0];img.alt='';img.loading='lazy';img.className='inbox-cover';opener.append(img)}
@@ -239,7 +242,8 @@
    action(item.read?'Позначити непрочитаним':'Позначити прочитаним',async()=>{
      if(item.read)await store.unmark([item.id]);else await store.mark([item.id]);await refresh();
    },{afterClose:true});
-   action('Копіювати текст',async()=>{await navigator.clipboard.writeText(item.title+'\n'+item.body)});
+   if(item.kind==='support')action('Відкрити звернення',()=>openTicket(ticketId(item)));
+   if(item.kind!=='support')action('Копіювати текст',async()=>{await navigator.clipboard.writeText(item.title+'\n'+item.body)});
    // A share is a deep link to the message, never a pasted copy of its text.
    const messageLink=()=>{
      const url=new URL('./',location.href);
@@ -251,8 +255,8 @@
      if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(link);
      else window.prompt?.('Скопіюйте посилання на повідомлення:',link);
    };
-   action('Копіювати посилання',copyLink);
-   action('Поділитися',async()=>{
+   if(item.kind!=='support')action('Копіювати посилання',copyLink);
+   if(item.kind!=='support')action('Поділитися',async()=>{
      const link=messageLink();
      if(navigator.share){
        try{await navigator.share({title:item.title,url:link})}
@@ -406,6 +410,7 @@
   sync().catch(console.warn);
  });
  window.addEventListener('svitlo:content-updated',()=>sync().catch(console.warn));
+ window.addEventListener('svitlo:support-inbox-updated',()=>refresh().catch(console.warn));
  navigator.serviceWorker?.addEventListener('message',event=>{
   if(event.data?.type==='SVITLO_INBOX_UPDATED'){
    window.dispatchEvent(new CustomEvent('svitlo:refresh-content'));
