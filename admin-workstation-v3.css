@@ -1,0 +1,140 @@
+/* Svitlo Office V3. Workspace-first layout, deliberately independent of GitHub publish. */
+body.svitlo-office .desk-hub{background:#fff;border:1px solid #d9e7df;border-radius:13px;padding:19px;margin:13px 0 18px;box-shadow:0 6px 18px #224c2d08;grid-column:1/-1;min-width:0}
+body.svitlo-office .desk-hub-overline{font-size:10px;letter-spacing:.14em;color:#21805e;font-weight:850;margin:0 0 6px}
+body.svitlo-office .desk-hub h3{font-size:21px;letter-spacing:-.5px;color:#223a32;margin:0 0 6px}
+body.svitlo-office .desk-hub>p{margin:0 0 14px;max-width:780px;color:#647b71}
+body.svitlo-office .desk-hub-links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:15px 0 12px}
+body.svitlo-office .desk-hub-link{border:1px solid #d9e6dd!important;background:#f8fbf9!important;color:#244337!important;border-radius:10px!important;min-height:86px!important;display:flex;flex-direction:column;text-align:left;align-items:flex-start;justify-content:center;padding:15px!important;gap:6px;min-width:0;transition:transform .18s,border-color .18s,background .18s}
+body.svitlo-office .desk-hub-link:hover{border-color:#70b89a!important;background:#ecf7f0!important;transform:translateY(-1px)}
+body.svitlo-office .desk-hub-link strong{font-size:13px;font-weight:800}
+body.svitlo-office .desk-hub-link small{font-size:11px;color:#708479;line-height:1.4;font-weight:500}
+body.svitlo-office .desk-capability{font-size:11px;color:#396c50;border:1px solid #d8ecdd;background:#f2faf5;padding:10px 13px;border-radius:8px;margin:12px 0 0}
+body.svitlo-office .desk-capability[data-level="partial"]{background:#fff9ea;color:#8f631b;border-color:#ecdeb9}
+body.svitlo-office .desk-capability[data-level="error"]{background:#fff2f1;color:#b04d45;border-color:#f1d5d2}
+body.svitlo-office .desk-github-note{padding:14px 16px;background:#f4f7fb;border:1px solid #d7e3ef;border-radius:10px;margin:4px 0 16px;color:#315479}
+body.svitlo-office .desk-github-note strong{font-size:13px}
+body.svitlo-office .desk-github-note p{margin:5px 0 0;font-size:11px;color:#607a92}
+body.svitlo-office .support-admin{overflow:visible}
+body.svitlo-office .support-admin .office-context{margin-bottom:10px!important}
+body.svitlo-office .support-admin>.headline{margin:4px 0 13px}
+body.svitlo-office .support-admin .headline h2{font-size:23px;color:#243b32;margin:0}
+body.svitlo-office .support-admin .headline p{max-width:650px}
+body.svitlo-office .desk-tools{display:flex;flex-wrap:wrap;gap:7px;padding:0 0 12px;border-bottom:1px solid #e3ece6}
+body.svitlo-office .desk-tool{border:1px solid #d4e6db!important;background:#f5faf7!important;color:#286b4e!important;font-size:11px!important;padding:9px 13px!important;border-radius:8px!important;min-height:36px!important}
+body.svitlo-office .desk-tool:hover{background:#e8f5ec!important}
+body.svitlo-office .office-ticket-views{gap:8px;padding-top:4px;white-space:normal}
+body.svitlo-office .office-ticket-views button{font-size:11px!important;padding:9px 12px!important}
+body.svitlo-office .support-filters{gap:9px}
+body.svitlo-office .support-filters label{font-size:11px;color:#607b70}
+body.svitlo-office .support-toolbar{margin:14px 0 5px}
+body.svitlo-office .desk-bulk{display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding:12px 13px;background:#eaf7ee;border:1px solid #bee2c9;border-radius:11px;margin:9px 0 11px}
+body.svitlo-office .desk-bulk[hidden]{display:none!important}
+body.svitlo-office .desk-bulk strong{font-size:12px;color:#216245}
+body.svitlo-office .desk-bulk select{font-size:12px!important;min-height:39px;max-width:210px;width:auto!important;background:white;color:#204233}
+body.svitlo-office .desk-bulk button{font-size:11px!important;min-height:39px!important;padding:9px 13px!important}
+body.svitlo-office .desk-bulk-status{font-size:11px;color:#46735a;overflow-wrap:anywhere}
+body.svitlo-office .support-workspace{display:grid!important;grid-template-columns:minmax(250px,.76fr) minmax(0,1.65fr)!important;gap:12px!important;min-height:520px}
+body.svitlo-office .desk-list-pane{min-width:0;border:1px solid #dce7e1;background:#f9fbfa;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:10px}
+body.svitlo-office .desk-list-top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 5px 7px;border-bottom:1px solid #e3ebe5}
+body.svitlo-office .desk-list-top strong{font-size:12px;color:#304d3f}
+body.svitlo-office .desk-select-all{display:flex;align-items:center;gap:6px;cursor:pointer;color:#718679;font-size:10px;font-weight:650}
+body.svitlo-office .desk-select-all input,.desk-ticket-row>input{width:18px!important;height:18px!important;min-width:18px!important;flex:none;accent-color:#13875e;padding:0!important;margin:0!important;border-radius:5px}
+body.svitlo-office #ticketsList{max-height:min(980px,calc(100dvh - 210px));overflow-y:auto;min-height:120px;scrollbar-width:thin;display:grid;align-content:start;gap:7px}
+body.svitlo-office .desk-ticket-row{display:flex;gap:8px;align-items:center;min-width:0}
+body.svitlo-office .desk-ticket-row>input{margin-left:2px!important}
+body.svitlo-office .desk-ticket-row>.ticket-row{flex:1;min-width:0;width:auto;margin:0;display:block;text-align:left;background:white!important}
+body.svitlo-office .desk-ticket-row.desk-selected>.ticket-row{background:#eaf7ee!important;border-color:#9dd4b1!important}
+body.svitlo-office .desk-ticket-row .ticket-row strong{font-size:13px;font-weight:760;color:#263f35;line-height:1.45}
+body.svitlo-office .desk-ticket-row .ticket-row p{font-size:11px;line-height:1.5;margin:6px 0;color:#62766c;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+body.svitlo-office .desk-ticket-row .ticket-row-meta{margin-top:9px;display:flex;flex-wrap:wrap}
+body.svitlo-office .desk-ticket-row .ticket-row-head{align-items:center;gap:6px;display:flex;justify-content:space-between}
+body.svitlo-office #ticketDetail.desk-ticket{padding:0!important;min-width:0;overflow:visible;border:1px solid #dce8e0;border-radius:10px;background:#fff}
+body.svitlo-office .desk-detail-head{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:14px 18px 10px;border-bottom:1px solid #e4eee8}
+body.svitlo-office .desk-back{display:none}
+body.svitlo-office .desk-number{font-size:11px;color:#6a8676;font-weight:800;letter-spacing:.03em}
+body.svitlo-office .desk-detail-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:12px 17px}
+body.svitlo-office .desk-detail-actions button{border-radius:7px!important;font-size:11px!important;padding:9px 13px!important;min-height:39px!important}
+body.svitlo-office .desk-primary{background:#13825a!important;color:#fff!important}
+body.svitlo-office .desk-soft{background:#f0f6f3!important;border:1px solid #d9e9dd!important;color:#295e47!important}
+body.svitlo-office .desk-detail-tabs{display:flex;gap:0;overflow-x:auto;scrollbar-width:none;padding:0 12px;max-width:100%;border-bottom:1px solid #e5ece7}
+body.svitlo-office .desk-detail-tabs button{background:transparent!important;color:#697e73!important;border:0!important;border-radius:0!important;white-space:nowrap;flex:0 0 auto;font-weight:750!important;font-size:12px!important;padding:14px 13px!important;min-height:45px!important;box-shadow:none!important}
+body.svitlo-office .desk-detail-tabs button[aria-pressed="true"]{color:#127b55!important;box-shadow:inset 0 -3px #18875d!important}
+body.svitlo-office .desk-pane{padding:17px 20px 24px;min-width:0}
+body.svitlo-office .desk-pane[hidden]{display:none!important}
+body.svitlo-office .desk-pane .support-detail-head{padding-bottom:11px}
+body.svitlo-office .desk-pane .support-detail-head h3{font-size:20px;line-height:1.25;color:#263e34}
+body.svitlo-office .desk-pane .support-detail-meta{margin-bottom:11px;flex-wrap:wrap}
+body.svitlo-office .desk-technical{background:#f8faf9;border:1px solid #e1eae4;border-radius:9px;margin-top:17px;padding:12px}
+body.svitlo-office .desk-technical summary{font-size:12px;font-weight:750;color:#517866;cursor:pointer}
+body.svitlo-office .desk-technical .support-device-info{border:0;padding:8px 0 0;margin:0;background:transparent}
+body.svitlo-office .desk-thread-notice{font-size:11px;color:#657c6d;background:#f2faf5;padding:10px 12px;border-radius:7px;margin:0 0 15px}
+body.svitlo-office .desk-pane .support-thread{border-top:0;margin:0}
+body.svitlo-office .desk-pane .support-compose{margin:14px 0 0}
+body.svitlo-office .desk-pane .support-compose textarea{font-size:14px!important;line-height:1.55}
+body.svitlo-office .desk-reply-counter{font-size:11px;color:#72877a;margin-right:8px}
+body.svitlo-office .desk-pane .office-correspondence-route{border-radius:9px}
+body.svitlo-office .desk-pane .office-route-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+body.svitlo-office .desk-pane .office-route-fields label:last-child{grid-column:1/-1}
+body.svitlo-office .desk-pane .office-route-notice{background:#fff8ea;border:1px solid #f1e4c6;color:#8d6928;padding:12px;border-radius:8px;font-size:12px}
+body.svitlo-office .desk-pane .support-internal{padding:15px;background:#fbfcfb;border:1px solid #e0e9e2;border-radius:9px;margin:12px 0}
+body.svitlo-office .desk-pane .support-internal h4{margin:0 0 7px;font-size:13px}
+body.svitlo-office .desk-pane .support-internal textarea,body.svitlo-office .desk-pane .support-internal input{font-size:14px!important;max-width:100%}
+body.svitlo-office .desk-danger{margin-top:20px;border-top:1px solid #ece1e0;padding-top:12px}
+body.svitlo-office .desk-danger summary{font-size:11px;color:#ad5f53;cursor:pointer}
+body.svitlo-office .desk-danger .support-delete{margin:11px 0}
+body.svitlo-office .desk-pane .office-route-audit{border:0;padding:0}
+body.svitlo-office .desk-pane .office-route-audit>summary{display:none}
+body.svitlo-office .desk-pane .office-route-audit ol{padding-left:20px}
+@media(max-width:1150px){
+ body.svitlo-office .desk-hub-links{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.svitlo-office .support-workspace{grid-template-columns:minmax(225px,.9fr) minmax(0,1.4fr)!important}
+}
+@media(max-width:760px){
+ body.svitlo-office .desk-hub{padding:14px;margin:10px 0}
+ body.svitlo-office .desk-hub h3{font-size:19px}
+ body.svitlo-office .desk-hub-links{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ body.svitlo-office .desk-hub-link{min-height:78px!important;padding:12px!important}
+ body.svitlo-office .support-admin{padding:12px!important}
+ body.svitlo-office .support-admin>.headline h2{font-size:20px}
+ body.svitlo-office .support-admin>.headline p{font-size:11px}
+ body.svitlo-office .desk-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ body.svitlo-office .desk-tool{min-height:42px!important}
+ body.svitlo-office .office-ticket-views{flex-wrap:nowrap!important;overflow-x:auto;white-space:nowrap}
+ body.svitlo-office .office-ticket-views button{min-height:43px!important}
+ body.svitlo-office .desk-bulk{display:grid;grid-template-columns:1fr 1fr;align-items:center;padding:11px}
+ body.svitlo-office .desk-bulk select{max-width:100%;width:100%!important}
+ body.svitlo-office .desk-bulk .desk-bulk-status{grid-column:1/-1}
+ body.svitlo-office .support-workspace{grid-template-columns:minmax(0,1fr)!important;display:grid;gap:10px}
+ body.svitlo-office .desk-list-pane{padding:9px;max-width:100%}
+ body.svitlo-office #ticketsList{max-height:none;overflow:visible;min-height:70px}
+ body.svitlo-office .desk-ticket-row{gap:10px}
+ body.svitlo-office .desk-ticket-row>input{width:20px!important;height:20px!important}
+ body.svitlo-office .desk-ticket-row>.ticket-row{min-height:92px;padding:14px!important}
+ body.svitlo-office #ticketDetail:not(.desk-ticket){display:none}
+ body.svitlo-office #ticketDetail.desk-ticket{display:none!important}
+ body.svitlo-office.desk-ticket-open{overflow:hidden!important}
+ body.svitlo-office.desk-ticket-open #ticketDetail.desk-ticket{
+  display:block!important;position:fixed!important;inset:0!important;z-index:16000!important;width:100vw!important;
+  max-height:100dvh!important;height:100dvh!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;
+  overscroll-behavior:contain;padding:calc(env(safe-area-inset-top,0px) + 5px) 0 calc(env(safe-area-inset-bottom,0px) + 34px)!important;
+  margin:0!important;background:#fff!important;border:0!important;border-radius:0!important
+ }
+ body.svitlo-office.desk-ticket-open .office-mobile-dock{display:none!important}
+ body.svitlo-office .desk-detail-head{position:sticky;top:0;z-index:2;background:#fff;padding:9px 15px 10px;border-bottom:1px solid #e1e9e4}
+ body.svitlo-office .desk-back{display:block!important;background:#ecf7f0!important;color:#187c57!important;border:1px solid #d6e9de!important;padding:9px 12px!important;font-size:12px!important;min-height:42px!important;border-radius:9px!important}
+ body.svitlo-office .desk-detail-actions{padding:11px 12px;gap:6px}
+ body.svitlo-office .desk-detail-actions button{flex:1 1 100px;min-height:42px!important}
+ body.svitlo-office .desk-detail-tabs{position:sticky;top:61px;z-index:2;background:#fff;padding:0 7px}
+ body.svitlo-office .desk-detail-tabs button{padding:12px 11px!important;font-size:11px!important}
+ body.svitlo-office .desk-pane{padding:15px 14px 28px}
+ body.svitlo-office .desk-pane .support-detail-controls{grid-template-columns:1fr 1fr!important}
+ body.svitlo-office .desk-pane .office-route-fields{grid-template-columns:minmax(0,1fr)!important}
+ body.svitlo-office .desk-pane .office-route-fields label:last-child{grid-column:auto}
+ body.svitlo-office .desk-pane .support-thread-entry{margin:0}
+ body.svitlo-office .desk-pane .support-template{min-height:42px!important}
+}
+@media(max-width:360px){
+ body.svitlo-office .desk-hub-links{grid-template-columns:minmax(0,1fr)}
+ body.svitlo-office .desk-detail-tabs button{font-size:10px!important;padding:12px 7px!important}
+}
+@media(prefers-reduced-motion:reduce){body.svitlo-office .desk-hub-link{transition:none}}
