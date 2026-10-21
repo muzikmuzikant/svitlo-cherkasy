@@ -28,5 +28,7 @@ jobs:
         run: python tests/internal_pages_browser.py
       - name: Confirm dark theme contrast and iPhone dock in real Chromium
         run: python tests/theme_browser.py
+      - name: Audit dark panels and text contrast on every linked page
+        run: python tests/dark_secondary_pages_browser.py
       - name: Test Svitlo Office admin in real Chromium with mock backend
         run: python tests/admin_office_browser.py
