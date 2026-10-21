@@ -84,7 +84,7 @@
   const url=URL.createObjectURL(blob),a=node('a');a.href=url;a.download='svitlo-register-'+new Date().toISOString().slice(0,10)+'.csv';
   document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
  });
- window.SvitloTicketWorkflow={matches,compare,sync,setView:selectView,reset,isOverdue};
+ window.SvitloTicketWorkflow={matches,compare,sync,setView:selectView,reset,isOverdue,list:()=>items.slice(),canRoute:()=>routingAvailable};
  window.SvitloTicketEnhance=(ticket,detail,save)=>{
   const existing=detail.querySelector('.support-detail-controls');
   const unit=node('section',undefined,'office-correspondence-route');
