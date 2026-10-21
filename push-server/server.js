@@ -269,6 +269,7 @@ async function readPayload(req,limit=12000){
  return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 const statusAttempts=new Map();
+const attachmentAttempts=new Map();
 // Real-time one-way updates for iOS/Android/desktop without extra dependencies.
 const liveConnections=new Set();
 function publishLive(kind,stamp){
@@ -422,6 +423,11 @@ const server=http.createServer(async(req,res)=>{
   try{
    const data=await readPayload(req,1200),id=String(data.id||'').trim().toUpperCase();
    if(!/^SC-[0-9A-F]{10}$/.test(id)){response(res,400,{error:'Некоректний номер звернення'});return}
+   const now=Date.now(),key=id+'|'+String(req.socket.remoteAddress||'unknown').slice(0,90);
+   for(const [entry,info] of attachmentAttempts)if(info.until<now)attachmentAttempts.delete(entry);
+   const limit=attachmentAttempts.get(key)||{count:0,until:now+60000};
+   if(limit.count>=20){response(res,429,{error:'Забагато завантажень. Повторіть за хвилину.'});return}
+   limit.count++;attachmentAttempts.set(key,limit);
    response(res,200,feedback.getAttachment(id,data.attachmentId,data.token));
   }catch(error){response(res,error.statusCode||400,{error:error.message||'Файл недоступний'})}
   return;
