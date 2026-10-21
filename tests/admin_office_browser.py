@@ -130,7 +130,7 @@ def main():
         page.wait_for_function("document.querySelectorAll('#ticketsList .desk-ticket-row').length===1",timeout=6000)
         assert page.locator("#ticketDetail .desk-detail-tabs button").count()==4
         assert page.locator(".desk-github-note").count()==1
-        assert page.locator(".desk-hub-link").count()==6
+        assert page.locator(".desk-hub-link").count()==10
         page.locator("#ticketsList .ticket-row").click()
         page.wait_for_function("document.body.classList.contains('desk-ticket-open')",timeout=5000)
         assert page.locator("#ticketDetail").is_visible()
