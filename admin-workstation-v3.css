@@ -161,3 +161,7 @@ body.svitlo-office .desk-pane .support-thread-entry.is-admin{margin-left:auto;ba
 body.svitlo-office .desk-pane .support-thread-entry:not(.is-admin){margin-left:0;margin-right:auto;background:#f3f6f9;border-color:#dde6ee;border-bottom-left-radius:5px}
 @media(max-width:760px){body.svitlo-office .desk-pane .support-thread-entry{max-width:94%}body.svitlo-office .desk-detail-tabs{-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}body.svitlo-office #ticketDetail.desk-ticket{min-height:0;overscroll-behavior:contain}}
 @media(prefers-reduced-motion:reduce){body.svitlo-office .desk-ticket-row>.ticket-row{transition:none!important}}
+
+body.svitlo-office .desk-ticket-row>.ticket-row.is-awaiting-reply{border-color:#c5dfcc!important}
+body.svitlo-office .ticket-awaiting-label{display:inline-flex;align-items:center;width:fit-content;margin-top:7px;padding:4px 8px;border-radius:8px;background:#e1f4e9;color:#176746;font-size:10px;font-weight:750}
+body.svitlo-office .desk-ticket-row:not(:has(.ticket-row.selected)) .ticket-row:focus-visible{outline:2px solid #36916e;outline-offset:2px}
