@@ -13,6 +13,10 @@ const OFFLINE_CORE=['./','./index.html','./app.js','./style.css','./theme.js','.
 const OFFLINE_BOOT=[...OFFLINE_CORE,'./install.css','./notification-text.js',
  './inbox-ui.js','./support-inbox.js','./version-check.js','./site-mode.js','./beta-ads.js',
  './client-errors.js','./internal-pages.js','./internal-pages.css',
+ // Keep informational screens functional on a freshly installed offline PWA.
+ './help.html','./help.js','./help.css','./feedback.html','./feedback.js','./feedback.css',
+ './privacy.html','./terms.html','./about.html','./advertising.html',
+ './support-project.html','./ad-detail.html',
  './legal-consent.js','./legal-consent.css','./motion.js','./motion.css',
  './maintenance-ui.css','./assets/icon-192-v692.png'];
 
@@ -70,6 +74,10 @@ self.addEventListener('fetch',event=>{
  }
  const scopePath=new URL(self.registration.scope).pathname;
  const relative=u.pathname.startsWith(scopePath)?'./'+u.pathname.slice(scopePath.length):null;
+ const appShell=u.pathname===scopePath||relative==='./index.html';
+ const subsidiaryPages=new Set(['./help.html','./feedback.html','./privacy.html','./terms.html',
+  './about.html','./advertising.html','./support-project.html','./ad-detail.html']);
+ const subsidiary=relative&&subsidiaryPages.has(relative);
  // On the network, refresh HTML and essential JS/CSS so installed iPhone
  // PWAs can pick up a deployed release rather than always showing old cache.
  // Offline fallback preserves the last complete shell. Shared-link params are
@@ -78,16 +86,25 @@ self.addEventListener('fetch',event=>{
   event.respondWith((async()=>{
    const cache=await caches.open(VERSION),key=new Request(u.origin+u.pathname);
    const cached=await cache.match(key);
-   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),2500);
+   // Secondary pages are complete HTML documents, NOT a substitute index.html.
+   // Returning index.html from a help/feedback iframe makes its contents look blank
+   // or like a nested PWA installer. Always use that page's own cached document.
+   const fallback=async()=>{
+    if(cached)return offlineCopy(cached);
+    if(appShell)return (await cache.match('./index.html'))||Response.error();
+    if(subsidiary)return new Response('<!doctype html><html lang="uk"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font:16px system-ui;padding:24px"><main id="svitloInternalOffline"><h1>Немає з’єднання</h1><p>Не вдалося завантажити цю сторінку. Підключіться до інтернету та спробуйте ще раз.</p></main></body></html>',{status:503,headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
+    return Response.error();
+   };
+   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),req.mode==='navigate'?6500:2500);
    try{
     const fresh=await fetch(new Request(req,{cache:'no-store',signal:controller.signal}));
     if(fresh.ok){
      await cache.put(key,fresh.clone()).catch(()=>{});
      return fresh;
     }
-    return cached||(req.mode==='navigate'?(await cache.match('./index.html')):null)||fresh;
+    return await fallback();
    }catch{
-    return cached||(req.mode==='navigate'?(await cache.match('./index.html')):null)||Response.error();
+    return await fallback();
    }finally{clearTimeout(timeout)}
   })());return;
  }
