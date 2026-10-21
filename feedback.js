@@ -82,18 +82,60 @@ async function refreshOpenChat(){
   $('replyForm').hidden=ticket.canReply!==true;
   if(!$('viewTickets').classList.contains('is-reading'))renderSaved();
  }catch(error){
-  if(generation===chatGeneration)chatIndicator('З’єднання нестабільне · повторюємо перевірку','error');
+  if(generation!==chatGeneration)return;
+  if(wasDeleted(error)){forgetDeletedTicket(id);return}
+  chatIndicator('З’єднання нестабільне · повторюємо перевірку','error');
  }finally{chatRequestBusy=false}
 }
 setInterval(()=>{void refreshOpenChat()},CHAT_REFRESH_MS);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refreshOpenChat()});
-window.addEventListener('online',()=>void refreshOpenChat());
-window.addEventListener('focus',()=>void refreshOpenChat());
+window.addEventListener('online',()=>{void refreshOpenChat();scanVisibleReceipts(8)});
+window.addEventListener('focus',()=>{void refreshOpenChat();scanVisibleReceipts(8)});
 $('chatRefresh')?.addEventListener('click',()=>void refreshOpenChat());
 
 const safeTickets=()=>saved.filter(x=>x&&/^SC-[A-F0-9]{10}$/.test(x.id)&&(!x.token||/^[a-zA-Z0-9_-]{32,80}$/.test(x.token))).slice(0,60);
 saved=safeTickets();
 const storeTickets=()=>{try{localStorage.setItem(SAVED,JSON.stringify(saved))}catch{}};
+// Only an authenticated lookup returning an exact missing-ticket 404 may
+// remove a receipt. Temporary network, session and throttling failures do not.
+const wasDeleted=error=>error?.status===404&&error?.message==='Звернення не знайдено.';
+function syncSavedReceipts(){
+ const current=read(SAVED,[]);
+ saved=Array.isArray(current)?current:[];
+ saved=safeTickets();
+ if(selectedTicket&&!saved.some(row=>row.id===selectedTicket.id)){
+  chatGeneration++;chatFingerprint='';
+  selectedTicket=null;
+  $('ticketConversation').hidden=true;
+  $('viewTickets').classList.remove('is-reading');
+  const notice=$('supportTicketsNotice');
+  if(notice){notice.textContent='Це звернення видалено службою підтримки. Воно більше не доступне.';notice.hidden=false}
+ }
+ updateSavedCount();renderSaved();
+}
+function forgetDeletedTicket(id){
+ if(!/^SC-[A-F0-9]{10}$/.test(id))return;
+ const handled=window.SvitloSupportInbox?.forgetDeleted?.(id);
+ if(!handled){
+  const current=read(SAVED,[]);
+  if(Array.isArray(current)&&current.some(row=>row?.id===id)){
+   try{localStorage.setItem(SAVED,JSON.stringify(current.filter(row=>row?.id!==id)))}catch{}
+  }
+ }
+ syncSavedReceipts();
+}
+window.addEventListener('svitlo:support-ticket-deleted',event=>{
+ if(event.detail?.id)syncSavedReceipts();
+});
+window.addEventListener('storage',event=>{
+ if(event.key===SAVED||event.key===null)syncSavedReceipts();
+});
+function scanVisibleReceipts(limit=4){
+ if(document.hidden||$('viewTickets').hidden||!$('ticketConversation').hidden)return;
+ window.SvitloSupportInbox?.scan?.({limit})?.catch?.(()=>{});
+}
+setInterval(()=>scanVisibleReceipts(4),20000);
+
 function service(){
  if(basePromise)return basePromise;
  basePromise=fetch('./push-config.json',{cache:'no-store',signal:AbortSignal.timeout(10000)})
@@ -106,7 +148,11 @@ async function post(route,payload){
  const base=await service();
  const response=await fetch(base+route,{method:'POST',headers:{'content-type':'application/json'},cache:'no-store',signal:AbortSignal.timeout(17000),body:JSON.stringify(payload)});
  const value=await response.json().catch(()=>({}));
- if(!response.ok)throw Error(value.error||'Не вдалося зв’язатися з підтримкою.');
+ if(!response.ok){
+  const error=new Error(value.error||'Не вдалося зв’язатися з підтримкою.');
+  error.status=response.status;
+  throw error;
+ }
  return value;
 }
 function friendlyError(error){
@@ -121,7 +167,7 @@ function chooseTab(name){
   $(id).classList.toggle('selected',active);$(id).setAttribute('aria-selected',String(active));
  }
  if(newer){chatGeneration++;$('viewTickets').classList.remove('is-reading');$('ticketConversation').hidden=true;selectedTicket=null;}
- if(!newer)renderSaved();
+ if(!newer){syncSavedReceipts();scanVisibleReceipts(8)}
 }
 function setTopic(){
  const topic=$('topic').value;
@@ -231,7 +277,10 @@ async function openTicket(id){
   item.status=result.status;storeTickets();renderSaved();showConversation(result);
   chatIndicator('На зв’язку · повідомлення оновлюються автоматично');
   if(changingCase)$('viewTickets').scrollIntoView({block:'start',behavior:'auto'});
- }catch(e){if(requestGeneration===chatGeneration){alertAt('conversationMessage',friendlyError(e));$('conversationHeading').textContent='Не вдалося отримати звернення';}}
+ }catch(e){if(requestGeneration===chatGeneration){
+  if(wasDeleted(e)){forgetDeletedTicket(id);return}
+  alertAt('conversationMessage',friendlyError(e));$('conversationHeading').textContent='Не вдалося отримати звернення';
+ }}
 }
 $('tabNew').addEventListener('click',()=>chooseTab('new'));
 $('tabTickets').addEventListener('click',()=>chooseTab('tickets'));
@@ -286,8 +335,15 @@ $('copyReceipt').addEventListener('click',async()=>{
 $('refreshSaved').addEventListener('click',async()=>{
  const button=$('refreshSaved');button.disabled=true;button.textContent='Перевіряємо…';
  try{
-  await Promise.all(saved.map(async item=>{try{const status=await loadTicket(item.id,item.token);item.status=status.status}catch{}}));
-  storeTickets();renderSaved();
+  const copies=saved.slice();
+  await Promise.all(copies.map(async item=>{
+   try{
+    const result=await loadTicket(item.id,item.token);
+    const actual=saved.find(row=>row.id===item.id);
+    if(actual)actual.status=result.status;
+   }catch(error){if(wasDeleted(error))forgetDeletedTicket(item.id)}
+  }));
+  storeTickets();updateSavedCount();renderSaved();
  }finally{button.disabled=false;button.textContent='Оновити статуси ↻'}
 });
 $('lookupForm')?.addEventListener('submit',async event=>{
@@ -309,7 +365,8 @@ $('replyForm').addEventListener('submit',async event=>{
   await post('/api/ticket/reply',{id:selectedTicket.id,token:selectedTicket.token,message:$('replyMessage').value.trim()});
   const id=selectedTicket.id;$('replyForm').reset();await openTicket(id);
   alertAt('conversationMessage','Доповнення надіслано. Підтримка побачить його у зверненні.',true);
- }catch(e){alertAt('conversationMessage',friendlyError(e))}
+ }catch(e){if(wasDeleted(e))forgetDeletedTicket(selectedTicket?.id||'');
+  else alertAt('conversationMessage',friendlyError(e))}
  finally{button.disabled=false;button.textContent='Надіслати →'}
 });
 const topicQuery=new URLSearchParams(location.search).get('topic');if(TOPICS[topicQuery])$('topic').value=topicQuery;
