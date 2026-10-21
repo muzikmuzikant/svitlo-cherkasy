@@ -1,1 +1,36 @@
 /* Dedicated phone layout for Svitlo Office. */
+
+@media(max-width:760px){
+body.svitlo-office main{width:100%!important;max-width:100%!important;padding:8px 10px 95px!important;overflow-x:clip}
+body.svitlo-office #adminDashboard:not([hidden]){display:flex!important;flex-direction:column!important;width:100%!important;min-width:0!important;gap:10px!important}
+body.svitlo-office #adminDashboard>.auth-head{padding:8px 2px!important;margin:0!important;gap:7px}
+body.svitlo-office .auth-head h1{font-size:15px!important;margin:0!important}
+body.svitlo-office #adminDashboard>.office-toolbar{position:sticky!important;top:0!important;z-index:90!important;min-height:54px!important;padding:6px!important;border-radius:10px!important;background:#fffffff2!important}
+body.svitlo-office .office-menu-button,body.svitlo-office .office-search-open{min-width:44px!important;min-height:44px!important}
+body.svitlo-office #adminDashboard>[data-admin-panel]:not([hidden]){display:block!important;width:100%!important;min-width:0!important;max-width:100%!important}
+body.svitlo-office #adminDashboard>.card{padding:13px!important;margin:0!important}
+body.svitlo-office .office-context{padding:12px!important;gap:10px!important;margin-bottom:13px!important}
+body.svitlo-office .office-context-lead{width:100%;min-width:0}
+body.svitlo-office .office-context-actions{width:100%;display:flex;gap:6px;flex-wrap:wrap}
+body.svitlo-office .office-context-actions button{min-height:43px!important;flex:1 1 135px}
+body.svitlo-office :is(.two,.three,.registry-layout,.live-config-grid,.ops-edit-layout,.ops-editor-columns,.feature-group-grid,.support-workspace){grid-template-columns:minmax(0,1fr)!important;min-width:0!important}
+body.svitlo-office #adminDashboard :is(input:not([type=checkbox]):not([type=radio]),select,textarea){font-size:16px!important;max-width:100%;min-width:0;width:100%}
+body.svitlo-office #adminDashboard button{min-height:43px}
+body.svitlo-office .registry-head{display:none}
+body.svitlo-office .registry-toolbar,.registry-actions{flex-wrap:wrap!important}
+body.svitlo-office .registry-toolbar>*{flex:1 1 145px}
+body.svitlo-office .ops-preview,.ops-editor-sidebar{position:static!important}
+body.svitlo-office .ops-editor-main{padding:12px!important}
+body.svitlo-office .office-desk-grid{grid-template-columns:minmax(0,1fr)!important}
+body.svitlo-office .office-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+body.svitlo-office .support-list{max-height:none!important;overflow:visible!important}
+body.svitlo-office .support-workspace{gap:12px!important}
+body.svitlo-office .ticket-counts{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
+body.svitlo-office .support-filters{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+body.svitlo-office .support-filters .field:first-child{grid-column:1/-1!important}
+body.svitlo-office .support-toolbar-actions{display:flex;flex-wrap:wrap;gap:7px}
+body.svitlo-office .office-ticket-views{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none}
+body.svitlo-office .office-ticket-views button{white-space:nowrap;flex:0 0 auto;min-height:43px!important}
+body.svitlo-office #adminDashboard>.admin-tabs{width:min(350px,92vw)!important;max-width:min(350px,92vw)!important;padding-top:calc(env(safe-area-inset-top,0px) + 12px)!important}
+body.svitlo-office .support-detail-controls,body.svitlo-office .office-route-fields{grid-template-columns:1fr!important}
+}
