@@ -5,8 +5,10 @@ const read=(p)=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
 
 test('Support Center provides two distinct usable workflows on phone',()=>{
  const html=read('feedback.html'),css=read('feedback.css'),js=read('feedback.js');
- for(const id of ['viewNew','viewTickets','topic','subject','queue','message','email','send','savedTickets','ticketConversation','replyForm','lookupForm','lookupToken','copyReceipt'])
+ for(const id of ['viewNew','viewTickets','topic','subject','queue','message','email','send','savedTickets','ticketConversation','replyForm','copyReceipt'])
   assert.ok(html.includes('id="'+id+'"'),id);
+ assert.doesNotMatch(html,/id="lookupToken"/,'Private recovery codes must not clutter user-facing tickets');
+ assert.match(html,/placeholder="Повідомлення"/);
  assert.match(js,/sessionStorage\.setItem\(DRAFT/);
  assert.match(js,/localStorage\.setItem\(SAVED/);
  assert.match(js,/\/api\/ticket\/status/);
