@@ -1,6 +1,6 @@
 /* Shared private support attachments. No public or persistent URLs. */
 (()=>{'use strict';
- const TYPES={'image/jpeg':2*1048576,'image/png':2*1048576,'image/webp':2*1048576,
+ const TYPES={'image/jpeg':4*1048576,'image/png':4*1048576,'image/webp':4*1048576,'image/heic':4*1048576,'image/heif':4*1048576,
   'video/mp4':8*1048576,'video/quicktime':8*1048576,'video/webm':8*1048576};
  const LIMIT=9*1048576,MAX=3;
  const isVideo=mime=>mime.startsWith('video/');
@@ -11,9 +11,9 @@
   if(selected.length>MAX)error('Не більше трьох фото або відео на одне повідомлення.');
   let total=0;
   for(const file of selected){
-   if(!TYPES[file.type])error('Формати: JPG, PNG, WebP, MP4, MOV або WebM.');
+   if(!TYPES[file.type])error('Формати: JPG, PNG, WebP, HEIC, HEIF, MP4, MOV або WebM.');
    if(!file.size||file.size>TYPES[file.type])
-    error(isVideo(file.type)?'Відео повинне бути до 8 МБ.':'Фото повинне бути до 2 МБ.');
+    error(isVideo(file.type)?'Відео повинне бути до 8 МБ.':'Фото повинне бути до 4 МБ.');
    total+=file.size;
   }
   if(total>LIMIT)error('Загальний розмір вкладень до 9 МБ.');
@@ -97,7 +97,7 @@
  }
  async function openFile(info,fetcher){
   const request=++activeMediaRequest;
-  if(!info?.id||!['image/jpeg','image/png','image/webp','video/mp4','video/quicktime','video/webm'].includes(info.mime))return;
+  if(!info?.id||!['image/jpeg','image/png','image/webp','image/heic','image/heif','video/mp4','video/quicktime','video/webm'].includes(info.mime))return;
   const dialog=viewer(),content=dialog.querySelector('.ticket-media-content');
   if(dialog.open)dialog.close();
   dialog.querySelector('.ticket-media-title').textContent=info.name||'Вкладення';
