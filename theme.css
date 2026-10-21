@@ -668,3 +668,47 @@ html,body{touch-action:pan-x pan-y;overscroll-behavior-x:none;-webkit-text-size-
  margin-left:0;margin-right:auto;background:#262e3a!important;border-color:#3f4a59!important;border-bottom-left-radius:5px
 }
 :root[data-theme="dark"] .support-shell .conversation-bubble :is(p,strong,time){color:#edf4fc}
+
+/* STAGING / EMBEDDED & STANDALONE PAGE GEOMETRY
+ * Consistent responsive geometry even when a page opens inside the PWA iframe. */
+body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page){
+ min-width:0;max-width:100%;overflow-x:clip;overflow-wrap:break-word
+}
+body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page) :is(.layout,.wrapper,.shell,main,.section,.hero,.article,.aside,.body,.nav,.top,.contact,.search,.filters,.benefit,.plan,.method,.goal,.empty,.faq){
+ min-width:0;box-sizing:border-box
+}
+body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page) :is(img,video,iframe){
+ max-width:100%
+}
+body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page) :is(.hero h1,.hero h2,.section-heading h2,.article h2,.body h2,.faq summary,.method h3,.benefit h3,.nav-tools,.contact,.method-details){
+ overflow-wrap:anywhere
+}
+body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page) :is(input,textarea,select){
+ min-width:0;max-width:100%;box-sizing:border-box
+}
+body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page) :is(button,.btn,.action,.action-primary,.action-secondary,.hero-cta,.back){
+ max-width:100%;box-sizing:border-box;overflow-wrap:anywhere
+}
+body.svitlo-help-page :is(.quick-grid,.articles,.search,.contact){min-width:0}
+body.svitlo-help-page .search input{min-width:0;flex:1}
+body.svitlo-help-page .articles summary{min-width:0;overflow-wrap:anywhere}
+body.svitlo-ad-detail-page .layout>*{min-width:0}
+body.svitlo-ad-detail-page .copy{overflow-wrap:anywhere}
+body.svitlo-privacy-page .wrapper,body.svitlo-terms-page .wrapper{max-width:100%}
+body.svitlo-support-project-page :is(.methods,.method,.method-actions){min-width:0}
+body.svitlo-advertising-page :is(.benefits,.plans,.contact-banner,.contacts){min-width:0}
+@media(max-width:620px){
+ body.svitlo-ad-detail-page .layout{grid-template-columns:minmax(0,1fr)}
+ body.svitlo-advertising-page :is(.benefits,.plans){grid-template-columns:minmax(0,1fr)}
+ body.svitlo-support-project-page .methods{grid-template-columns:minmax(0,1fr)}
+ body.svitlo-help-page .quick-grid{grid-template-columns:minmax(0,1fr)}
+ body:is(.svitlo-privacy-page,.svitlo-terms-page) .wrapper{width:100%;padding-inline:clamp(12px,4vw,20px)}
+}
+@media(max-width:390px){
+ body.svitlo-help-page .hero{padding:24px 18px}
+ body.svitlo-ad-detail-page .article{padding:20px 16px}
+ body.svitlo-advertising-page .hero-copy{padding:24px 19px}
+ body.svitlo-support-project-page .hero-copy{padding:25px 20px}
+ body.svitlo-support-project-page .method{padding:20px 16px}
+ body.svitlo-help-page .search{gap:7px}
+}
