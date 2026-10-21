@@ -73,7 +73,7 @@ test('support notifications never have public share buttons and link only to an 
  const ui=file('inbox-ui.js'),html=file('feedback.html'),feedback=file('feedback.js');
  assert.ok(ui.includes("if(item.kind!=='support')action('Поділитися'"));
  assert.ok(ui.includes("if(item.kind!=='support')action('Копіювати посилання'"));
- assert.ok(ui.includes('support:\\'Підтримка\\''));
+ assert.ok(ui.includes("support:'Підтримка'"));
  assert.ok(ui.includes('feedback.html?tab=tickets&ticket='));
  assert.ok(feedback.includes("ticketParams.get('ticket')"));
  assert.ok(html.includes('./support-inbox.js'));
