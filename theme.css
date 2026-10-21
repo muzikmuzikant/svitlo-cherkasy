@@ -2,6 +2,11 @@
    One graphite color system. Only the appearance changes; schedules and status remain factual.
    Loaded last on user pages. Daytime styles live in style.css. */
 :root[data-theme="dark"]{
+ /* An older cached site-mode.js might still inject light CSS variables inline.
+    These scoped declarations are deliberately stronger than inline normal styles. */
+ --bg:#090b0f!important;
+ --surface:#161a21!important;
+ --blue:#83b5ff!important;
  color-scheme:dark;
  --bg:#090b0f;
  --surface:#161a21;
