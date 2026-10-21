@@ -9,13 +9,13 @@
  const goto=id=>dashboard.querySelector('[data-admin-tab="'+id+'"]')?.click();
  const api=(route,opts)=>window.svitloAdminApi(route,opts);
  const list=()=>window.SvitloTicketWorkflow?.list()||[];
- let activeSheet='overview',drawer=false,selected=new Set(),busy=false,refreshing=false,actor='',focusReturn=null;
+ let activeSheet='overview',drawer=false,selected=new Set(),busy=false,refreshing=false,focusReturn=null,autoSync=true,lastNewCount=null;
  const role=()=>document.body.dataset.adminRole||'viewer';
  const writable=()=>role()!=='viewer';
  const bulk=mk('section',undefined,'desk-bulk');bulk.hidden=true;bulk.setAttribute('aria-live','polite');
  const bulkCount=mk('strong','0 вибрано');
  const bulkAction=mk('select');bulkAction.setAttribute('aria-label','Масова дія зі зверненнями');
- for(const [v,t] of [['','Оберіть дію'],['in_progress','Взяти в роботу'],['resolved','Завершити'],['new','Повернути до нових'],['high','Високий пріоритет'],['normal','Звичайний пріоритет']])bulkAction.add(new Option(t,v));
+ for(const [v,t] of [['','Оберіть дію'],['in_progress','Взяти в роботу'],['resolved','Завершити'],['new','Повернути до нових'],['high','Високий пріоритет'],['normal','Звичайний пріоритет'],['assign_self','Призначити мені']])bulkAction.add(new Option(t,v));
  const bulkRun=mk('button','Застосувати','support-send');bulkRun.type='button';
  const bulkCancel=mk('button','Скасувати вибір','secondary');bulkCancel.type='button';
  const bulkResult=mk('span','','desk-bulk-status');bulkResult.setAttribute('role','status');
@@ -30,6 +30,11 @@
   {id:'work',label:'Доручення',action:()=>goto('registry')}
  ];
  for(const item of workButtons){const button=mk('button',item.label,'desk-tool');button.type='button';button.onclick=item.action;quick.append(button)}
+ const autoLabel=mk('label',undefined,'desk-autosync');
+ const autoCheck=mk('input');autoCheck.type='checkbox';autoCheck.checked=true;
+ autoCheck.onchange=()=>{autoSync=autoCheck.checked};
+ autoLabel.append(autoCheck,mk('span','Автооновлення'));
+ quick.append(autoLabel);
  const title=feedback.querySelector('.headline');
  title?.after(quick);
  const detailed=$('ticketDetail'),ticketList=$('ticketsList'),ticketWorkspace=feedback.querySelector('.support-workspace');
@@ -175,8 +180,10 @@
   const ids=[...selected].slice(0,50);
   if(ids.length===0)return;
   const status=['new','in_progress','resolved'].includes(action);
-  const patch=status?{status:action}:{priority:action};
-  if(!confirm('Змінити '+(status?'статус':'пріоритет')+' у '+ids.length+' зверненнях?'))return;
+  const assign=action==='assign_self';
+  if(assign&&!window.SvitloTicketWorkflow?.canRoute()){bulkResult.textContent='Для призначення виконавця потрібно оновити сервер Railway.';return}
+  const patch=assign?{assignedTo:($('adminUsername')?.value||'owner').trim().slice(0,60)}:status?{status:action}:{priority:action};
+  if(!confirm('Змінити '+(assign?'виконавця':status?'статус':'пріоритет')+' у '+ids.length+' зверненнях?'))return;
   busy=true;bulkRun.disabled=true;bulkResult.textContent='Збережено 0 із '+ids.length;
   let ok=0;const errors=[];
   for(const id of ids){
@@ -216,7 +223,30 @@
  // No secrets, email, tickets, or private text are copied to persistent storage.
  document.addEventListener('svitlo:admin-ready',()=>{selected.clear();syncSelected();probe()});
  document.addEventListener('svitlo:admin-logout',()=>{selected.clear();closeTicket();syncSelected();note.textContent=''});
- document.addEventListener('svitlo:tickets-loaded',()=>{wrapRows();if(drawer&&detailed.querySelector('.desk-back')===null)closeTicket()});
+ const navEntry=dashboard.querySelector('[data-admin-tab="feedback"]');
+ const navCount=mk('span','','desk-unread');
+ navCount.setAttribute('aria-label','Нові звернення');
+ navEntry?.append(navCount);
+ const syncCounters=()=>{
+  const newCount=list().filter(t=>t.status==='new').length;
+  navCount.textContent=newCount?String(newCount):'';
+  navCount.hidden=!newCount;
+  lastNewCount=newCount;
+ };
+ document.addEventListener('svitlo:tickets-loaded',()=>{
+  wrapRows();syncCounters();
+  if(drawer&&detailed.querySelector('.desk-back')===null)closeTicket()
+ });
+ // Only update the register while it is visible and idle. Do not touch active
+ // replies, opened cases, bulk selections, hidden sessions or background tabs.
+ const autoTimer=window.setInterval(async()=>{
+  if(!autoSync||dashboard.hidden||feedback.hidden||document.hidden||drawer||busy||selected.size||refreshing)return;
+  if(feedback.contains(document.activeElement)&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||''))return;
+  refreshing=true;
+  try{await window.refreshTickets?.()}finally{refreshing=false}
+ },60_000);
+ document.addEventListener('svitlo:admin-logout',()=>{navCount.hidden=true});
+
  document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&drawer){e.preventDefault();closeTicket()}
   if(e.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||'')&&!feedback.hidden){e.preventDefault();$('ticketSearch')?.focus()}
