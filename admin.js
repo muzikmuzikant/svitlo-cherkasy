@@ -250,7 +250,7 @@ function renderTicketList(){
   else if(item.status==='new'&&Date.now()-Date.parse(item.createdAt||'')>86400000)meta.append(supportNode('b','Потребує уваги понад добу','support-attention'));
     if(item.priority==='high')meta.append(supportNode('b','● Важливе'));
   if(item.messages?.length)meta.append(supportNode('span','↩ '+item.messages.length));
-  card.append(meta);card.addEventListener('click',()=>{supportSelected=item.id;renderTicketList();renderTicketDetail()});root.append(card);
+  card.append(meta);card.addEventListener('click',()=>{supportSelected=item.id;renderTicketList();renderTicketDetail();window.SvitloMobileAdmin?.openTicket()});root.append(card);
  }
 }
 function supportThreadEntry(item){
@@ -278,7 +278,7 @@ async function saveSupport(id,data,success){
 }
 function renderTicketDetail(){
  const root=$('ticketDetail'),ticket=supportTickets.find(t=>t.id===supportSelected);root.replaceChildren();
- if(!ticket){root.append(supportNode('div','Оберіть звернення у списку, щоб переглянути історію та відповісти.','support-empty'));return}
+ if(!ticket){root.append(supportNode('div','Оберіть звернення у списку, щоб переглянути історію та відповісти.','support-empty'));window.SvitloMobileAdmin?.decorateTicket(root,null);return}
  const top=supportNode('div',undefined,'support-detail-head'),info=supportNode('div');
  info.append(supportNode('small',ticket.id),supportNode('h3',ticket.subject||TICKET_TOPICS[ticket.topic]||'Звернення'));
  top.append(info,supportBadge(ticket.status));root.append(top);
@@ -354,6 +354,7 @@ function renderTicketDetail(){
   root.append(remove);
  }
  window.SvitloTicketEnhance?.(ticket,root,saveSupport);
+ window.SvitloMobileAdmin?.decorateTicket(root,ticket);
 }
 window.betaAdminAdsApi=async(method='GET',settings)=>api('ads',{method,body:method==='PUT'?JSON.stringify(settings):undefined});
 window.betaAdminUploadAdPhoto=async(file)=>{
