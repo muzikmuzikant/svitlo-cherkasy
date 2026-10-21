@@ -28,5 +28,6 @@ for(const tab of root.querySelectorAll('[data-admin-tab]'))new MutationObserver(
 new MutationObserver(render).observe(root,{attributes:true,attributeFilter:['hidden']});
 document.addEventListener('svitlo:admin-ready',render);
 document.addEventListener('svitlo:admin-logout',render);
+window.SvitloMobileAdmin={openTicket(){if(window.innerWidth<=760)document.getElementById('ticketDetail')?.scrollIntoView({behavior:'smooth',block:'start'})},decorateTicket(){}};
 render();
 })();
