@@ -32,10 +32,15 @@
  for(const item of workButtons){const button=mk('button',item.label,'desk-tool');button.type='button';button.onclick=item.action;quick.append(button)}
  const autoLabel=mk('label',undefined,'desk-autosync');
  const autoCheck=mk('input');autoCheck.type='checkbox';autoCheck.checked=true;
- autoCheck.onchange=()=>{autoSync=autoCheck.checked};
+ autoCheck.onchange=()=>{autoSync=autoCheck.checked;
+  liveText.textContent=autoSync?'Очікуємо синхронізацію':'Автооновлення призупинено';
+  liveText.dataset.state=autoSync?'ok':'paused';};
  window.svitloTicketAutoSyncEnabled=()=>autoSync;
  autoLabel.append(autoCheck,mk('span','Автооновлення'));
  quick.append(autoLabel);
+ const liveText=mk('span','Очікуємо синхронізацію','desk-live-status');
+ liveText.setAttribute('role','status');liveText.setAttribute('aria-live','off');
+ quick.append(liveText);
  const title=feedback.querySelector('.headline');
  title?.after(quick);
  const detailed=$('ticketDetail'),ticketList=$('ticketsList'),ticketWorkspace=feedback.querySelector('.support-workspace');
@@ -218,7 +223,7 @@
  }
  hub.append(links);
  const note=mk('p','','desk-capability');note.id='deskCapabilities';note.setAttribute('role','status');hub.append(note);
- main?.querySelector('.office-context')?.after(hub);
+ (main?.querySelector('.office-modulebar')||main?.querySelector('.office-context'))?.after(hub);
  // Prefer task names over developer file names. Nothing in ordinary settings
  // should imply a repository token is necessary.
  for(const [id,label] of [['data','Файли GitHub'],['tools','Файлові інструменти'],['planner','Графіки вручну']]){
@@ -247,7 +252,7 @@
  });
  const configToken=mk('div',undefined,'desk-github-note');
  configToken.append(mk('strong','Технічний редактор файлів'),mk('p','Лише публікація статичних JSON-файлів у GitHub потребує окремих прав репозиторію. Звичайні дії адмінпанелі не повинні вимагати токен.'));
- const filePanel=dashboard.querySelector('[data-admin-panel="data"]');filePanel?.querySelector('.office-context')?.after(configToken);
+ const filePanel=dashboard.querySelector('[data-admin-panel="data"]');(filePanel?.querySelector('.office-modulebar')||filePanel?.querySelector('.office-context'))?.after(configToken);
  async function probe(){
   if(dashboard.hidden)return;
   const checks=[['feedback','Звернення'],['app-config','Налаштування'],['work-items','Доручення'],['push/status','Push'],['address-corrections','Уточнення адрес']];
@@ -273,6 +278,8 @@
   lastNewCount=newCount;
  };
  document.addEventListener('svitlo:tickets-loaded',()=>{
+  liveText.textContent='Оновлено о '+new Date().toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
+  liveText.dataset.state='ok';
   wrapRows();syncCounters();
   if(drawer&&detailed.querySelector('.desk-back')===null)closeTicket()
  });
@@ -281,7 +288,7 @@
  // Ticket synchronization now happens on the live interval in admin.js.
  // Its rendered DOM is updated incrementally to preserve form focus/drafts.
 
- document.addEventListener('svitlo:admin-logout',()=>{navCount.hidden=true});
+ document.addEventListener('svitlo:admin-logout',()=>{navCount.hidden=true;liveText.textContent='Сеанс завершено';liveText.dataset.state='paused'});
 
  document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&drawer){e.preventDefault();closeTicket()}
