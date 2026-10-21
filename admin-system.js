@@ -70,6 +70,7 @@
  const when=value=>{try{return value?new Date(value).toLocaleDateString('uk-UA'):'—'}catch{return '—'}};
  function fill(item){
   selectedId=item?.id||'';
+  if(noteInput)noteInput.value='';
   for(const key of ['title','details','assignee','reference','dueDate'])$('work'+key[0].toUpperCase()+key.slice(1)).value=item?.[key]||'';
   $('workKind').value=item?.kind||'other';
   $('workPriority').value=item?.priority||'normal';
@@ -206,10 +207,12 @@
   const item=entries.find(x=>x.id===wanted);
   if(item){fill(item);render()}else message('adminRegisterMessage','Картку не знайдено або немає доступу.',true);
  });
- window.addEventListener('svitlo:open-work',e=>{
+ window.addEventListener('svitlo:open-work',async e=>{
   document.querySelector('[data-admin-tab="registry"]')?.click();
-  if(e.detail?.title&&canEdit){fill(null);$('workTitle').value=String(e.detail.title).slice(0,120);
-   $('workDetails').value=String(e.detail.details||'').slice(0,1800);
-   $('workReference').value=String(e.detail.reference||'').slice(0,100);}
+  await loadRegister();
+  if(canEdit){fill(null);$('workTitle').value=String(e.detail?.title||'').slice(0,120);
+   $('workDetails').value=String(e.detail?.details||'').slice(0,1800);
+   $('workReference').value=String(e.detail?.reference||'').slice(0,100);
+   $('workTitle').focus();}
  });
 })();
