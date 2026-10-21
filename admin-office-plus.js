@@ -66,6 +66,29 @@
   }
   header.append(lead,actions);
   host.prepend(header);contextByTab.set(id,header);
+  const refreshIds={overview:'monitorRefresh',registry:'adminRegisterReload',corrections:'corrReload',
+   insights:'controlInsightsReload',quality:'controlRunChecks',operations:'opsReload',push:'refreshPush',
+   media:'controlMediaReload',feedback:'refreshTickets',live:'liveReload',features:'featuresReload',
+   sources:'sourceRefresh',planner:'plannerReload',security:'securityReload',audit:'auditRefresh',
+   revisions:'opsHistoryRefresh'};
+  const strip=node('div',undefined,'office-modulebar');strip.dataset.module=id;
+  const identity=node('div',undefined,'office-modulebar-id');
+  const index=String(tabs.findIndex(b=>b.dataset.adminTab===id)+1).padStart(2,'0');
+  identity.append(node('span','МОДУЛЬ '+index,'office-modulecode'),node('strong',names[id]||id,'office-module-label'));
+  const tools=node('div',undefined,'office-module-actions');
+  const reloadTarget=document.getElementById(refreshIds[id]||'');
+  if(reloadTarget){
+   const reload=node('button','Оновити дані','office-module-refresh');reload.type='button';
+   reload.setAttribute('aria-label','Оновити дані розділу '+(names[id]||id));
+   reload.onclick=()=>{if(!reloadTarget.disabled)reloadTarget.click()};
+   tools.append(reload);
+  }
+  const quickSearch=host.querySelector('input[type="search"]');
+  if(quickSearch){
+   const button=node('button','Пошук у реєстрі','office-module-search');button.type='button';
+   button.onclick=()=>quickSearch.focus({preventScroll:false});tools.append(button);
+  }
+  strip.append(identity,tools);header.after(strip);
  }
  const toolbar=dashboard.querySelector(':scope > .office-toolbar');
  const recent=node('details',undefined,'office-recent');
@@ -73,6 +96,32 @@
  const recentList=node('div',undefined,'office-recent-list');
  recent.append(summary,recentList);
  toolbar?.append(recent);
+ const density=node('button','Компактний режим','office-density');
+ density.type='button';density.setAttribute('aria-pressed','false');
+ density.setAttribute('title','Щільність реєстрів та форм');
+ function applyDensity(compact){
+  document.body.dataset.officeDensity=compact?'compact':'normal';
+  density.setAttribute('aria-pressed',String(compact));
+  density.textContent=compact?'Звичайний режим':'Компактний режим';
+ }
+ let compact=false;
+ try{compact=sessionStorage.getItem('svitlo-office-density')==='compact'}catch{}
+ applyDensity(compact);
+ density.onclick=()=>{
+  compact=!compact;applyDensity(compact);
+  try{sessionStorage.setItem('svitlo-office-density',compact?'compact':'normal')}catch{}
+ };
+ toolbar?.append(density);
+ const workStatus=node('div',undefined,'office-work-status');
+ const statusSection=node('span','Робочий стіл','office-status-module');
+ const roleStatus=node('span','Захищений сеанс','office-status-role');
+ workStatus.append(statusSection,roleStatus,node('span','Ctrl + K: пошук команд','office-status-help'));
+ dashboard.append(workStatus);
+ document.addEventListener('svitlo:admin-ready',()=>{
+  const roles={owner:'Власник',editor:'Редактор',operator:'Оператор',viewer:'Перегляд'};
+  roleStatus.textContent='Роль: '+(roles[document.body.dataset.adminRole]||'Користувач');
+ });
+ document.addEventListener('svitlo:admin-logout',()=>{roleStatus.textContent='Сеанс завершено'});
  let history=[];
  try{const initial=JSON.parse(sessionStorage.getItem('svitlo-office-recent-tabs')||'[]');if(Array.isArray(initial))history=initial.filter(x=>names[x]).slice(0,5)}catch{}
  const active=()=>tabs.find(b=>b.getAttribute('aria-pressed')==='true')?.dataset.adminTab||'overview';
@@ -95,6 +144,8 @@
   const current=contextByTab.get(id);
   if(current)current.dataset.active='true';
   document.documentElement.dataset.officeWorkspace=id;
+  statusSection.textContent=names[id]||'Робочий стіл';
+  dashboard.dataset.officeActive=id;
  }
  for(const button of tabs)new MutationObserver(sync).observe(button,{attributes:true,attributeFilter:['aria-pressed']});
  document.addEventListener('svitlo:admin-logout',()=>{recent.open=false});
