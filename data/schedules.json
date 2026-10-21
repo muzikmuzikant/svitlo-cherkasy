@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "lastChecked": "2026-10-21T09:27:36+03:00",
+  "lastChecked": "2026-10-21T13:09:57+03:00",
   "reviewPending": false,
   "unresolvedDates": [],
   "confirmedNoScheduleDates": [
@@ -448,8 +448,8 @@
     },
     {
       "date": "2026-10-21",
-      "publishedAt": "2026-10-20T19:23+03:00",
-      "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-21-zhovtnya?lang=uk",
+      "publishedAt": "2026-10-21T11:36+03:00",
+      "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-19-zhovtnya?lang=uk",
       "verified": true,
       "queues": {
         "1.1": {
@@ -482,8 +482,8 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "08:00",
-              "10:00"
+              "12:30",
+              "14:00"
             ],
             [
               "16:00",
@@ -499,10 +499,6 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "08:00",
-              "10:00"
-            ],
-            [
               "16:00",
               "18:00"
             ],
@@ -515,10 +511,6 @@
         "3.1": {
           "knownFrom": "00:00",
           "off": [
-            [
-              "08:00",
-              "10:00"
-            ],
             [
               "14:00",
               "16:00"
@@ -533,10 +525,6 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "08:00",
-              "10:00"
-            ],
-            [
               "14:00",
               "16:00"
             ],
@@ -549,10 +537,6 @@
         "4.1": {
           "knownFrom": "00:00",
           "off": [
-            [
-              "06:00",
-              "08:00"
-            ],
             [
               "12:00",
               "14:00"
@@ -567,10 +551,6 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "06:00",
-              "08:00"
-            ],
-            [
               "14:00",
               "16:00"
             ],
@@ -583,10 +563,6 @@
         "5.1": {
           "knownFrom": "00:00",
           "off": [
-            [
-              "10:00",
-              "11:00"
-            ],
             [
               "14:00",
               "16:00"
@@ -637,13 +613,31 @@
           ]
         }
       },
-      "revisions": 1,
-      "planFingerprint": "a8f7836eac28a0d90933",
+      "revisions": 2,
+      "planFingerprint": "077d1c669e42a6d15c87",
       "noScheduledOutages": [],
       "publications": [
         {
           "publishedAt": "2026-10-20T19:23+03:00",
           "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-21-zhovtnya?lang=uk",
+          "queues": [
+            "1.1",
+            "1.2",
+            "2.1",
+            "2.2",
+            "3.1",
+            "3.2",
+            "4.1",
+            "4.2",
+            "5.1",
+            "5.2",
+            "6.1",
+            "6.2"
+          ]
+        },
+        {
+          "publishedAt": "2026-10-21T11:36+03:00",
+          "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-19-zhovtnya?lang=uk",
           "queues": [
             "1.1",
             "1.2",
@@ -830,6 +824,22 @@
         "5.1",
         "5.2",
         "6.1"
+      ]
+    },
+    {
+      "date": "2026-10-21",
+      "publishedAt": "2026-10-21T11:36+03:00",
+      "detectedAt": "2026-10-21T13:09:57+03:00",
+      "revisionId": "077d1c669e42a6d15c87",
+      "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-19-zhovtnya?lang=uk",
+      "queues": [
+        "2.1",
+        "2.2",
+        "3.1",
+        "3.2",
+        "4.1",
+        "4.2",
+        "5.1"
       ]
     }
   ]
