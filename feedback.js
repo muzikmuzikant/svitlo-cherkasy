@@ -125,7 +125,12 @@ function forgetDeletedTicket(id){
  syncSavedReceipts();
 }
 window.addEventListener('svitlo:support-ticket-deleted',event=>{
- if(event.detail?.id)syncSavedReceipts();
+ if(!event.detail?.id)return;
+ syncSavedReceipts();
+ if(!$('viewTickets').hidden){
+  const notice=$('supportTicketsNotice');
+  if(notice){notice.textContent='Видалене службою підтримки звернення прибрано з вашого списку.';notice.hidden=false}
+ }
 });
 window.addEventListener('storage',event=>{
  if(event.key===SAVED||event.key===null)syncSavedReceipts();
@@ -263,6 +268,7 @@ $('ticketRatingOptions')?.addEventListener('click',async event=>{
  finally{button.disabled=false}
 });
 async function openTicket(id){
+ const notice=$('supportTicketsNotice');if(notice)notice.hidden=true;
  const item=saved.find(x=>x.id===id);if(!item)return;
  const changingCase=selectedTicket?.id!==id;
  const requestGeneration=++chatGeneration;
