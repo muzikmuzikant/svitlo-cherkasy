@@ -51,7 +51,7 @@ function validate(kind,obj){
    if(typeof places!=='object'||Array.isArray(places)||Object.keys(places).length>250)throw Error('Некоректний довідник ручних адрес');
    if(Object.keys(places).length&&!isOfficial(obj.addressesSource))throw Error('Для ручних адрес потрібне офіційне джерело');
    for(const [town,local] of Object.entries(places)){
-    if(!/^[\\p{L}\\p{N}]{2,65}$/u.test(town)||!local||typeof local!=='object')throw Error('Неправильний населений пункт');
+    if(!/^[\p{L}\p{N}]{2,65}$/u.test(town)||!local||typeof local!=='object')throw Error('Неправильний населений пункт');
     for(const field of ['streetQueues','keys']){
      const values=local[field]||{};
      if(typeof values!=='object'||Array.isArray(values)||Object.keys(values).length>3000)throw Error('Некоректні записи адрес');
@@ -60,7 +60,7 @@ function validate(kind,obj){
        throw Error('Некоректна адреса або підчерга');
     }
     for(const name of Object.values(local.streets||{}))
-     if(typeof name!=='string'||name.length>130||/[<>\\x00-\\x1f]/.test(name))throw Error('Некоректна назва вулиці');
+     if(typeof name!=='string'||name.length>130||/[<>\x00-\x1f]/.test(name))throw Error('Некоректна назва вулиці');
    }
   if(obj.emergency.events.some(e=>!isOfficial(e.source)||!e.title||!['active','notice','ended'].includes(e.status)||!Number.isFinite(new Date(e.publishedAt).getTime())||new Date(e.publishedAt).getTime()>Date.now()+5*60_000))throw Error('Невірне аварійне повідомлення або час публікації');
  }
