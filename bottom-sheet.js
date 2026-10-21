@@ -9,7 +9,8 @@
  const bound=new WeakMap(),CLOSE_MS=330;
  const nativeClose=dialog=>{if(dialog?.open)dialog.close()};
  function bind(dialog,onDismiss){
-  if(!dialog||bound.has(dialog))return;
+  if(!dialog)return;
+  if(bound.has(dialog)){bound.get(dialog).onDismiss=onDismiss;return}
   const state={onDismiss,closing:false,gesture:null,animation:null,timer:null};
   bound.set(dialog,state);
   dialog.classList.add('svitlo-draggable');
@@ -78,7 +79,7 @@
       window.matchMedia('(min-width: 601px)').matches)return;
    const target=event.target;
    if(!(target instanceof Element))return;
-   const grabber=target.closest('.sheet-handle,.sheet-top,.share-preview-head,.inbox-drag-handle');
+   const grabber=target.closest('.sheet-handle,.sheet-top,.share-preview-grabber,.share-preview-head,.inbox-drag-handle');
    if(!grabber||grabber.closest('button,a,input,select,textarea,[contenteditable="true"]'))return;
    if(target.closest('button,a,input,select,textarea,[contenteditable="true"],label'))return;
    if(dialog.matches('.inbox-detail')&&!target.closest('.inbox-drag-handle'))return;
