@@ -5,9 +5,11 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 
 const TYPES={
- 'image/jpeg':{ext:'.jpg',max:2*1024*1024},
- 'image/png':{ext:'.png',max:2*1024*1024},
- 'image/webp':{ext:'.webp',max:2*1024*1024},
+ 'image/jpeg':{ext:'.jpg',max:4*1024*1024},
+ 'image/png':{ext:'.png',max:4*1024*1024},
+ 'image/webp':{ext:'.webp',max:4*1024*1024},
+ 'image/heic':{ext:'.heic',max:4*1024*1024},
+ 'image/heif':{ext:'.heif',max:4*1024*1024},
  'video/mp4':{ext:'.mp4',max:8*1024*1024},
  'video/quicktime':{ext:'.mov',max:8*1024*1024},
  'video/webm':{ext:'.webm',max:8*1024*1024}
@@ -20,6 +22,8 @@ const magic=(type,b)=>{
  if(type==='image/jpeg')return b[0]===0xff&&b[1]===0xd8&&b[2]===0xff;
  if(type==='image/png')return b.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex'));
  if(type==='image/webp')return b.toString('ascii',0,4)==='RIFF'&&b.toString('ascii',8,12)==='WEBP';
+ if(type==='image/heic'||type==='image/heif')
+  return b.toString('ascii',4,8)==='ftyp'&&/^(heic|heix|hevc|mif1|msf1)$/.test(b.toString('ascii',8,12));
  if(type==='video/webm')return b.subarray(0,4).equals(Buffer.from('1a45dfa3','hex'));
  if(type==='video/mp4'||type==='video/quicktime'){
   const brand=b.toString('ascii',4,12);
@@ -34,7 +38,7 @@ export function parseTicketMedia(raw){
  const files=raw.map(entry=>{
   if(!entry||typeof entry!=='object'||typeof entry.data!=='string')fail('Некоректне вкладення');
   const type=String(entry.mime||''),limits=TYPES[type];
-  if(!limits)fail('Дозволені JPG, PNG, WebP, MP4, MOV або WebM');
+  if(!limits)fail('Дозволені JPG, PNG, WebP, HEIC, HEIF, MP4, MOV або WebM');
   if(entry.data.length>Math.ceil(limits.max*4/3)+8||
     !/^[A-Za-z0-9+/]+={0,2}$/.test(entry.data))fail('Неприпустимі дані вкладення');
   const bytes=Buffer.from(entry.data,'base64');
