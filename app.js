@@ -836,6 +836,8 @@ function notifyEmergencyEvent(){
  const age=Date.now()-new Date(e.publishedAt).getTime();if(age<0||age>60*60*1000)return;
  notify('⚠️ Екстрені відключення','Оператор повідомив про позапланові обмеження. Звичайний графік може не діяти.',`emergency:${e.id||e.source}`);
 }
+let railwayAddressCorrections={keys:{},localities:{}},addressSourceIndex=null;
+const RAILWAY_ADDRESS_CACHE='svitlo-railway-address-corrections-v1';
 function applyOverrides(){
  const days=overrides.schedules?.days;
  if(Array.isArray(days)&&days.length){
@@ -849,7 +851,8 @@ function applyOverrides(){
    }
    data.days=[...map.values()].sort((a,b)=>a.date.localeCompare(b.date));
  }
- index=mergeIndexes(index,overrides.addresses||{},{manual:true});
+ index=mergeIndexes(addressSourceIndex||index,overrides.addresses||{},{manual:true});
+ index=mergeIndexes(index,railwayAddressCorrections,{manual:true});
 }
 function normalizeData(obj){if(!obj||!Array.isArray(obj.days))throw Error('Bad JSON');return {days:obj.days.filter(x=>/^20\d\d-\d\d-\d\d$/.test(x.date)&&x.verified===true),changes:Array.isArray(obj.changes)?obj.changes:[],lastChecked:obj.lastChecked||null,confirmedNoScheduleDates:Array.isArray(obj.confirmedNoScheduleDates)?obj.confirmedNoScheduleDates:undefined,reviewPending:obj.reviewPending===true,unresolvedDates:Array.isArray(obj.unresolvedDates)?obj.unresolvedDates.filter(x=>/^20\d\d-\d\d-\d\d$/.test(x)):undefined}}
 function mergeIndexes(live,backup,options={}){
@@ -949,12 +952,13 @@ async function refreshData(manual=false){
        const catalog=geo.status==='fulfilled'?geo.value:{};
        const aliasCatalog=renames.status==='fulfilled'?renames.value:{};
        index=mergeIndexes(live,backup,{catalog,aliasCatalog});
+       addressSourceIndex=index;
        try{const snapshot=JSON.stringify(index);if(snapshot.length<1700000)localStorage.setItem(OFFLINE_ADDRESSES,snapshot)}catch{}
        populateSettlements();
        if($('addressSheet').open){suggestions();checkLookup()}
      }else{
        const stored=safeJSON(OFFLINE_ADDRESSES,null);
-       if(stored?.keys&&stored?.streets){index=stored;populateSettlements()}
+       if(stored?.keys&&stored?.streets){index=stored;addressSourceIndex=index;populateSettlements()}
      }
    }catch(error){console.warn('Address fetch:',error)}
    try{
@@ -964,6 +968,22 @@ async function refreshData(manual=false){
      ]);
      if(alertRes.status==='fulfilled'&&alertRes.value.ok){const parsed=await alertRes.value.json();if(Array.isArray(parsed.events))emergency=parsed}
      if(overrideRes.status==='fulfilled'&&overrideRes.value.ok){const parsed=await overrideRes.value.json();if(parsed.schemaVersion===1)overrides=parsed}
+     try{
+      const apiBase=pushConfig?.apiBase;
+      if(apiBase&&/^https:\/\//.test(apiBase)){
+       const response=await fetch(apiBase.replace(/\/$/,'')+'/api/address-corrections',
+        {cache:'no-store',signal:AbortSignal.timeout(2100)});
+       if(!response.ok)throw Error('Address corrections HTTP '+response.status);
+       const update=await response.json();
+       if(update.schemaVersion!==1||!update.corrections||typeof update.corrections!=='object')
+        throw Error('Address correction format');
+       railwayAddressCorrections=update.corrections;
+       try{localStorage.setItem(RAILWAY_ADDRESS_CACHE,JSON.stringify(railwayAddressCorrections))}catch{}
+      }else railwayAddressCorrections=safeJSON(RAILWAY_ADDRESS_CACHE,railwayAddressCorrections);
+     }catch(error){
+      console.warn('Address correction source unavailable:',error.message);
+      railwayAddressCorrections=safeJSON(RAILWAY_ADDRESS_CACHE,railwayAddressCorrections);
+     }
      applyOverrides();
    }catch(error){console.warn('Bulletin or admin overrides:',error)}
    }

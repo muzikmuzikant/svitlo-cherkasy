@@ -64,7 +64,7 @@ async function github(path,method='GET',payload){
  return data;
 }
 async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
-export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal,auditSchedules,errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry){
+export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal,auditSchedules,errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry,addressCorrections){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(!originPolicy.isAllowed(req.headers.origin)){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const url=new URL(req.url,'http://localhost');
@@ -122,7 +122,8 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
  // Every privileged route is checked server-side. Hiding UI controls alone is not security.
  const pathName=url.pathname,method=req.method;
  const custom=session.managed;
- const permission=pathName.startsWith('/api/admin/work-items')?'settings':
+ const permission=pathName.startsWith('/api/admin/address-corrections')?'schedules':
+  pathName.startsWith('/api/admin/work-items')?'settings':
   pathName.startsWith('/api/admin/feedback')?'feedback':
   pathName.startsWith('/api/admin/help')?'help':
   pathName.startsWith('/api/admin/ads')?'ads':
@@ -143,6 +144,24 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    ||(pathName.startsWith('/api/admin/feedback/')&&method==='DELETE'));
  if(!allowed){send(res,403,{error:'Недостатньо прав для цієї дії'});return true}
  try{
+   if(pathName==='/api/admin/address-corrections'&&method==='GET'){
+    send(res,200,addressCorrections.list());return true;
+   }
+   if(pathName==='/api/admin/address-corrections'&&method==='POST'){
+    if(!['owner','editor'].includes(role)){send(res,403,{error:'Потрібні права редактора'});return true}
+    send(res,201,addressCorrections.create(await readJson(req,2300),session.username));return true;
+   }
+   if(pathName.startsWith('/api/admin/address-corrections/')&&['PATCH','DELETE'].includes(method)){
+    const id=decodeURIComponent(pathName.slice('/api/admin/address-corrections/'.length));
+    if(!/^AC-[A-F0-9]{12}$/.test(id)){send(res,400,{error:'Некоректний номер картки'});return true}
+    const body=await readJson(req,2300);
+    if(method==='PATCH'){
+     if(!['owner','editor'].includes(role)){send(res,403,{error:'Потрібні права редактора'});return true}
+     send(res,200,addressCorrections.edit(id,body,session.username,role==='owner'&&!session.managed));return true;
+    }
+    if(role!=='owner'||session.managed){send(res,403,{error:'Видаляти картки може лише власник'});return true}
+    send(res,200,addressCorrections.remove(id,body.expectedRevision));return true;
+   }
    // Private task registry and safe runtime configuration, persisted on Railway.
    if(pathName==='/api/admin/work-items'&&method==='GET'){send(res,200,workRegistry.list());return true}
    if(pathName==='/api/admin/work-items'&&method==='POST'){

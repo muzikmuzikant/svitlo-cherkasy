@@ -61,3 +61,6 @@ body.askod-workspace button:focus-visible,body.askod-workspace input:focus-visib
 @media(max-width:800px){.live-config-grid{grid-template-columns:1fr}.registry-head,.registry-row{grid-template-columns:80px minmax(110px,1fr) 105px 85px}.registry-type{display:none}.admin-register,.admin-live{padding:14px!important}}
 @media(max-width:470px){.registry-head,.registry-row{grid-template-columns:75px minmax(100px,1fr) 90px}.registry-priority{display:none}.registry-head span:last-child{display:none}.live-flags{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:no-preference){.registry-row,.registry-state{transition:background .16s ease,border-color .16s ease}}
+
+@media(max-width:800px){.registry-head span:nth-child(3){display:none}}
+@media(max-width:470px){.registry-head span:nth-child(5){display:none}}
