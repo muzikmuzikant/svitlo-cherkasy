@@ -216,7 +216,7 @@
  // Dynamic workspace context (only server-backed actions, not GitHub publish).
  const main=dashboard.querySelector('[data-admin-panel="overview"]');
  const hub=mk('section',undefined,'desk-hub');
- hub.append(mk('div','КОМАНДНИЙ ЦЕНТР','desk-hub-overline'),mk('h3','Працюйте без GitHub-токена'),mk('p','Звернення, відповіді, Push, публікації та більшість налаштувань працюють через захищений сервер. Редагування файлів графіків і довідника відокремлено в технічні інструменти.'));
+ hub.append(mk('div','РОБОЧЕ МІСЦЕ / ОПЕРАТИВНІ ЗАВДАННЯ','desk-hub-overline'),mk('h3','Черга робіт і службові реєстри'),mk('p','Оберіть реєстр для опрацювання звернень, погодження інформації, керування публікаціями або контролю виконання. Усі зміни зберігаються в захищених модулях відповідно до ваших прав доступу.'));
  const links=mk('div',undefined,'desk-hub-links');
  for(const [id,title,subtitle] of [['feedback','Опрацювати звернення','Листування, контроль, статуси'],['operations','Керувати повідомленнями','Створення і публікація'],['registry','Доручення','Робоча картотека'],['live','Налаштування сервісу','Функції й банери'],['push','Push-розсилки','Підписники та тестування'],['corrections','Уточнення адрес','Без редагування JSON'],['features','Функції застосунку','Увімкнути або вимкнути'],['design','Вигляд застосунку','Кольори, щільність, стиль'],['help','Центр допомоги','Редагування статей'],['ads','Рекламні кампанії','Розміщення та аналітика']]){
   const b=mk('button',undefined,'desk-hub-link');b.type='button';b.append(mk('strong',title),mk('small',subtitle));b.onclick=()=>goto(id);links.append(b);
@@ -260,8 +260,8 @@
   const available=parts.flatMap((x,i)=>x.status==='fulfilled'?[checks[i][1]]:[]);
   const missing=parts.flatMap((x,i)=>x.status==='rejected'?[checks[i][1]]:[]);
   note.textContent=available.length
-   ?'Доступні через Railway: '+available.join(' · ')+'.'+(missing.length?' Недоступні: '+missing.join(' · ')+'. Перевірте актуальність бета-сервера Railway.':'')
-   :'З’єднання із сервером потребує перевірки. Увійдіть повторно, якщо сеанс завершився.';
+   ?'Активні модулі: '+available.join(' · ')+'.'+(missing.length?' Потребують перевірки: '+missing.join(' · ')+'.':'')
+   :'Потрібно перевірити підключення до службової системи або повторити вхід.';
   note.dataset.level=missing.length===0?'ok':available.length?'partial':'error';
  }
  // No secrets, email, tickets, or private text are copied to persistent storage.
