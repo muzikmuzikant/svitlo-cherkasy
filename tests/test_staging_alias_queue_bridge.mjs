@@ -132,10 +132,16 @@ test('Viacheslava Chornovola and Akademika Serhiia Yefremova resolve official ab
 });
 
 test('multiple official queues on Anatoliia Pashkevycha are NOT collapsed after full-name matching',()=>{
- const a=check('провулок Анатолія Пашкевича','1/1т','1.1');
+ // The current source explicitly lists 1/1, not 1/1т. Never strip an
+ // unverified letter suffix and silently assign that separate building.
+ const a=check('провулок Анатолія Пашкевича','1/1','1.1');
  const b=check('провулок Анатолія Пашкевича','8','2.1');
  assert.equal(a.verifiedNameVariant,true);
  assert.equal(b.verifiedNameVariant,true);
+ const suffixed=lookup.resolve({idx,street:'провулок Анатолія Пашкевича',
+  house:'1/1т',settlement:'Черкаси'});
+ assert.equal(suffixed.queue,undefined,'Suffix-bearing house needs a source record');
+ assert.equal(suffixed.status,'possible');
  const missing=lookup.resolve({idx,street:'провулок Анатолія Пашкевича',
   house:'99999',settlement:'Черкаси'});
  assert.equal(missing.queue,undefined);
