@@ -24,7 +24,11 @@
   apply();
   window.dispatchEvent(new CustomEvent('svitlo:theme-change',{detail:{theme:root.dataset.theme,preference:choice}}));
  }
- media.addEventListener?.('change',()=>{if(choice==='system')apply()});
+ const syncSystem=()=>{if(choice==='system')apply()};
+ if(media.addEventListener)media.addEventListener('change',syncSystem);
+ else media.addListener?.(syncSystem);
+ window.addEventListener?.('pageshow',syncSystem);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncSystem()});
  document.addEventListener('DOMContentLoaded',()=>{
   document.querySelectorAll('input[name="appearanceTheme"]').forEach(input=>input.addEventListener('change',()=>{if(input.checked)set(input.value)}));
   apply();
