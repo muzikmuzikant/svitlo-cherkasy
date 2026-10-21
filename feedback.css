@@ -67,3 +67,36 @@ label{display:block;margin:19px 0 9px;font-size:12px;font-weight:780;color:#344d
 .reply-form{position:relative;min-width:0}
 .reply-form textarea{width:100%;min-width:0;max-width:100%;max-height:280px}
 @media(max-width:490px){.conversation-head #closeConversation{order:-1;margin-bottom:6px}.conversation-head{display:flex;align-items:flex-start;flex-direction:column;gap:5px}.conversation-head>div{width:100%}}
+
+/* Support correspondence live channel: no typing interruption or page reload. */
+.support-chat-meta{
+ display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+ padding:9px 0 10px;margin:3px 0 10px;border-bottom:1px solid #e5ebf2;min-width:0
+}
+.support-chat-live{
+ display:inline-flex;align-items:center;gap:7px;color:#52736c;font-size:11px;
+ font-weight:680;line-height:1.5;overflow-wrap:anywhere;min-width:0
+}
+.support-chat-live::before{content:"";width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:#1e9f73}
+.support-chat-live[data-state="error"]{color:#a16b36}
+.support-chat-live[data-state="error"]::before{background:#d89a40}
+.support-chat-refresh{
+ background:#edf5fa;color:#356479;border:1px solid #d2e4ef;
+ border-radius:9px;font-size:11px;font-weight:720;padding:8px 12px;min-height:38px;
+ flex:0 0 auto
+}
+.support-chat-refresh:focus-visible{outline:2px solid #398db2;outline-offset:2px}
+.conversation-messages{display:flex;flex-direction:column;align-items:stretch;gap:11px;min-width:0}
+.conversation-bubble{overflow-wrap:anywhere}
+.conversation-bubble.from-admin{margin-left:0;margin-right:auto}
+.conversation-bubble:not(.from-admin){margin-left:auto;margin-right:0}
+:root[data-theme="dark"] .support-chat-meta{border-color:#38475a}
+:root[data-theme="dark"] .support-chat-live{color:#badccf}
+:root[data-theme="dark"] .support-chat-live[data-state="error"]{color:#f2cea4}
+:root[data-theme="dark"] .support-chat-refresh{background:#273a4e;color:#d7eafe;border-color:#44607c}
+@media(max-width:490px){
+ .support-chat-meta{gap:6px}
+ .support-chat-live{font-size:10px;flex:1 1 145px}
+ .support-chat-refresh{padding:7px 10px}
+}
+@media(prefers-reduced-motion:reduce){.conversation-bubble{animation:none!important}}
