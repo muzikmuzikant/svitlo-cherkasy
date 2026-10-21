@@ -13,7 +13,7 @@ function boot(saved=null,systemDark=false){
  const summary={textContent:''};
  const media={matches:systemDark,listener:null,addEventListener(_name,cb){this.listener=cb}};
  let ready;
- const doc={documentElement:root,querySelector:()=>meta,querySelectorAll:()=>input,getElementById:()=>summary,addEventListener(_name,cb){ready=cb}};
+ const doc={documentElement:root,querySelector:()=>meta,querySelectorAll:()=>input,getElementById:()=>summary,addEventListener(name,cb){if(name==='DOMContentLoaded')ready=cb}};
  const events=[];
  const win={matchMedia:()=>media,dispatchEvent:event=>events.push(event.detail)};
  runInNewContext(file('theme.js'),{window:win,document:doc,localStorage:{getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v)},CustomEvent:class{constructor(type,args){this.type=type;this.detail=args.detail}}});
