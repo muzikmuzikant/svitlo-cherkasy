@@ -41,10 +41,10 @@
  for(const name of ['gesturestart','gesturechange','gestureend'])
   document.addEventListener(name,blockScale,{passive:false});
  document.addEventListener('touchmove',event=>{
-  if(event.touches?.length>1)blockScale(event);
+  if(event?.touches?.length>1)blockScale(event);
  },{passive:false});
  document.addEventListener('touchstart',event=>{
-  if(event.touches?.length>1)blockScale(event);
+  if(event?.touches?.length>1)blockScale(event);
  },{passive:false});
  window.SvitloTheme={get:()=>choice,set,apply};
  apply();
