@@ -64,7 +64,8 @@ async function refreshOpenChat(){
   const existing=[...root.querySelectorAll('.conversation-bubble')];
   const isPrefix=existing.length<=entries.length&&existing.every((node,i)=>node.dataset.messageKey===String(entries[i].id||i));
   if(isPrefix){
-   const nearBottom=window.innerHeight-(root.getBoundingClientRect().bottom)<135;
+   const nearBottom=(document.scrollingElement?.scrollHeight-(window.scrollY+window.innerHeight)<360)&&
+    document.activeElement!==$('replyMessage');
    for(const [i,entry] of entries.entries()){
     if(i<existing.length)continue;
     const node=bubble(entry.from,entry.text,entry.at);node.dataset.messageKey=String(entry.id||i);
@@ -218,17 +219,19 @@ $('ticketRatingOptions')?.addEventListener('click',async event=>{
 async function openTicket(id){
  const item=saved.find(x=>x.id===id);if(!item)return;
  const changingCase=selectedTicket?.id!==id;
- if(changingCase){chatGeneration++;chatFingerprint=''}
+ const requestGeneration=++chatGeneration;
+ if(changingCase)chatFingerprint='';
  $('viewTickets').classList.add('is-reading');
  $('ticketConversation').hidden=false;$('conversationId').textContent=id;
  $('conversationHeading').textContent='Завантажуємо звернення…';
  $('conversationMessages').replaceChildren();
  try{
   const result=await loadTicket(id,item.token);
+  if(requestGeneration!==chatGeneration)return;
   item.status=result.status;storeTickets();renderSaved();showConversation(result);
   chatIndicator('На зв’язку · повідомлення оновлюються автоматично');
   if(changingCase)$('viewTickets').scrollIntoView({block:'start',behavior:'auto'});
- }catch(e){alertAt('conversationMessage',friendlyError(e));$('conversationHeading').textContent='Не вдалося отримати звернення';}
+ }catch(e){if(requestGeneration===chatGeneration){alertAt('conversationMessage',friendlyError(e));$('conversationHeading').textContent='Не вдалося отримати звернення';}}
 }
 $('tabNew').addEventListener('click',()=>chooseTab('new'));
 $('tabTickets').addEventListener('click',()=>chooseTab('tickets'));
