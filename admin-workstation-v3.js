@@ -99,7 +99,7 @@
   const conversationHint=mk('p','Відповідь буде видимою користувачу в «Мої звернення». Внутрішні записи бачить лише підтримка.','desk-thread-notice');
   conversation.prepend(conversationHint);
   if(!history.children.length||history.children.length===1)history.append(mk('p','Поки немає записів історії.','support-empty'));
-  detail.prepend(nav,actions,head);
+  detail.prepend(head,actions,nav);
   detail.append(main,conversation,processing,history);
   // Prevent saving on repeated clicks and preserve drafts when switching panes.
   if(composer){
@@ -156,7 +156,7 @@
    check.disabled=!writable();
    check.addEventListener('change',()=>{if(check.checked)selected.add(ticket.id);else selected.delete(ticket.id);syncSelected()});
    card.addEventListener('click',()=>{activeSheet='overview'});
-   wrap.append(check,card);card.replaceWith(wrap);
+   card.replaceWith(wrap);wrap.append(check,card);
   }
   syncSelected();
  }
