@@ -34,7 +34,7 @@
   const caption=text('span',title);wrap.append(caption);
   const input=document.createElement('input');
   input.type=kind;input.value=value;input.maxLength=max;
-  input.autocomplete='off';input.disabled=!owner()||!loaded;wrap.append(input);
+  input.autocomplete='off';input.disabled=!owner()||!loaded||saving;wrap.append(input);
   return {wrap,input};
  }
  function preview(){
@@ -64,13 +64,13 @@
    head.append(text('strong','Канал '+String(index+1).padStart(2,'0')),
     text('small',link.id));
    const show=text('label',undefined,'social-admin-published');
-   const active=document.createElement('input');active.type='checkbox';active.checked=link.enabled!==false;active.disabled=!owner()||!loaded;
+   const active=document.createElement('input');active.type='checkbox';active.checked=link.enabled!==false;active.disabled=!owner()||!loaded||saving;
    active.onchange=()=>{link.enabled=active.checked;touch()};
    show.append(active,text('span','Показувати'));head.append(show);card.append(head);
    const grid=text('div',undefined,'social-admin-row-grid');
    const kind=text('label',undefined,'social-admin-field');
    kind.append(text('span','Платформа'));
-   const select=document.createElement('select');select.disabled=!owner()||!loaded;
+   const select=document.createElement('select');select.disabled=!owner()||!loaded||saving;
    for(const [value,title] of Object.entries(PLATFORMS)){
     const option=new Option(title,value);select.append(option);
    }
@@ -86,11 +86,11 @@
    const actions=text('div',undefined,'social-admin-row-actions');
    for(const [title,step] of [['Вище',-1],['Нижче',1]]){
     const b=text('button',title,'secondary');b.type='button';
-    b.disabled=!owner()||index+step<0||index+step>=state.links.length;
+    b.disabled=!owner()||saving||index+step<0||index+step>=state.links.length;
     b.onclick=()=>{const [row]=state.links.splice(index,1);state.links.splice(index+step,0,row);render();touch()};
     actions.append(b);
    }
-   const del=text('button','Видалити','danger');del.type='button';del.disabled=!owner();
+   const del=text('button','Видалити','danger');del.type='button';del.disabled=!owner()||saving;
    del.onclick=()=>{state.links.splice(index,1);render();touch()};
    actions.append(del);card.append(actions);target.append(card);
   });
