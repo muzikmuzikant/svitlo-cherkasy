@@ -17,7 +17,7 @@ test('routine Railway actions are explicitly separate from repository publicatio
  const github=read('push-server/admin.js');
  for(const route of ['feedback','app-config','work-items','push/status'])
   assert.ok(js.includes("'"+route+"'"),'Missing token-free action: '+route);
- assert.match(js,/api\('feedback\/\+'\s*encodeURIComponent/);
+ assert.ok(js.includes("api('feedback/'+encodeURIComponent"));
  assert.ok(!js.includes('GITHUB_TOKEN'),'UI must never read GitHub secret');
  assert.ok(!js.includes('localStorage.setItem('),'Ticket text may not be persisted in browser');
  assert.ok(github.includes("const ghReady=!!GH_TOKEN&&repoValid()"));
