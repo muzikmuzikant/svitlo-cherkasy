@@ -35,7 +35,7 @@ test('operator gets updates in the register even when the reply editor has focus
 test('all enterprise module bars call existing module actions',()=>{
  const source=read('admin-office-plus.js'),html=read('admin.html');
  const modules=[...new Set([...html.matchAll(/data-admin-panel="([^"]+)"/g)].map(m=>m[1]))];
- assert.equal(modules.length,23);
+ assert.equal(modules.length,24);
  for(const part of ["registry","corrections","insights","quality","operations","push",
    "media","feedback","live","features","sources","planner","security","audit","revisions"]){
   assert.ok(source.includes(part+":"),'Missing module action '+part);
