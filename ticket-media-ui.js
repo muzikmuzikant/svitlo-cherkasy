@@ -112,6 +112,13 @@
    el.src=url;if(isVideo(payload.mime)){el.controls=true;el.playsInline=true;el.preload='metadata'}
    else el.alt=info.name||'Додане фото';
    content.append(el);
+   // MOV codecs are not supported in every desktop browser: keep a secure
+   // download action as a fallback for authorized operators.
+   const download=document.createElement('a');
+   download.className='ticket-media-download';download.href=url;
+   download.download=String(payload.name||info.name||'support-file').slice(0,90);
+   download.textContent='Зберегти файл для перегляду';
+   content.append(download);
   }catch(e){if(dialog.open&&request===activeMediaRequest)content.textContent='Не вдалося відкрити вкладення: '+e.message}
  }
  function render(list,fetcher){
