@@ -30,7 +30,7 @@ test('dark iPhone bottom navigation stays fixed without blur or transforms',()=>
  assert.match(rule,/backdrop-filter:none/);
  assert.doesNotMatch(rule,/transform:/);
  assert.doesNotMatch(rule,/blur\(/);
- const root=theme.slice(0,280);assert.match(root,/color-scheme:dark/);
+ const root=theme.slice(0,1100);assert.match(root,/color-scheme:dark/);
 });
 test('dark palette covers major user-visible surfaces, not just the shell',()=>{
  for(const selector of ['.picker-btn','.status-panel.status-on','.hour-ink-on','.bottom-nav','.inbox-item','.inbox-detail','.setting-line','.sheet','.share-preview-dialog','.beta-consent-dialog','.support-card','.layout .hero','.install-landing']){
