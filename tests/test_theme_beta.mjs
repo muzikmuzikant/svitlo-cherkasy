@@ -14,17 +14,20 @@ function boot(saved=null,systemDark=false){
  const media={matches:systemDark,listener:null,addEventListener(_name,cb){this.listener=cb}};
  let ready;
  const doc={documentElement:root,querySelector:()=>meta,querySelectorAll:()=>input,getElementById:()=>summary,addEventListener(_name,cb){ready=cb}};
- const win={matchMedia:()=>media,dispatchEvent(){}};
+ const events=[];
+ const win={matchMedia:()=>media,dispatchEvent:event=>events.push(event.detail)};
  runInNewContext(file('theme.js'),{window:win,document:doc,localStorage:{getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v)},CustomEvent:class{constructor(type,args){this.type=type;this.detail=args.detail}}});
  ready();
- return {root,input,media,meta,summary,storage,api:win.SvitloTheme};
+ return {root,input,media,meta,summary,storage,events,api:win.SvitloTheme};
 }
 test('new installations follow the phone and change live',()=>{
  const x=boot(null,false);assert.equal(x.api.get(),'system');assert.equal(x.root.dataset.theme,'light');
  x.media.matches=true;x.media.listener();
- assert.equal(x.root.dataset.theme,'dark');assert.equal(x.meta.value,'#101823');
+ assert.equal(x.root.dataset.theme,'dark');assert.equal(x.meta.value,'#090b0f');
+ assert.equal(x.events.at(-1).theme,'dark');
  x.media.matches=false;x.media.listener();
  assert.equal(x.root.dataset.theme,'light');
+ assert.equal(x.events.at(-1).theme,'light');
 });
 test('explicit theme persists and ignores iOS appearance changes',()=>{
  const x=boot('dark',false);assert.equal(x.root.dataset.theme,'dark');
