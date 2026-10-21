@@ -619,3 +619,10 @@ html:not([data-app-mode="standalone"]) #appBootScreen,.app-boot-screen[hidden]{d
 .maintenance-inline.is-planned .maintenance-inline-eyebrow{color:var(--planned-accent,#347af0)}
 .maintenance-inline.is-planned .maintenance-inline-action{background:var(--planned-accent,#347af0)}
 @media(max-width:420px){.app-update-banner{min-height:0;padding:22px 19px}.app-update-heading strong{font-size:20px}}
+
+/* Address corrections: visible, independent user queue choice. */
+.manual-lookup{transition:border-color .2s ease,box-shadow .2s ease}
+.manual-lookup.user-selected{border-color:#9fc6fa;box-shadow:0 4px 18px #356dae12}
+.manual-lookup .queue-manual-note{display:block;color:#7b8ba0;font-size:11px;line-height:1.5;margin:8px 2px 13px}
+.suggestions .other-town-suggestion{background:#eef5ff;color:#315d94}
+@media(prefers-reduced-motion:reduce){.manual-lookup{transition:none}}
