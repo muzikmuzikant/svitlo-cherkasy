@@ -153,3 +153,28 @@
 :root[data-theme="dark"] .shell :is(.section-title p,.card p,.feature p,.method p,.plan p){color:#bacbe0}
 :root[data-theme="dark"] .top .back{background:#223448;border-color:#3e5770;color:#d9e8fa}
 :root[data-theme="dark"] main .info,:root[data-theme="dark"] main .info-card{background:#1b2b3d;border-color:#364c65;color:#edf5ff}
+
+/* Schedule pigments must follow the exact same minute boundaries in both themes. */
+:root[data-theme="dark"] .hour-ink-on{color:#c8f7db}
+:root[data-theme="dark"] .hour-ink-off{color:#f1f6fc}
+:root[data-theme="dark"] .hour-ink-unknown{color:#d0def0}
+:root[data-theme="dark"] .hour-cell.on{border-color:#387354!important}
+:root[data-theme="dark"] .hour-cell.off{border-color:#395069!important}
+:root[data-theme="dark"] .hour-cell.mixed{border-color:#507087!important}
+:root[data-theme="dark"] .hour-cell.current{outline-color:#85b4ff}
+:root[data-theme="dark"] .app-update-banner{background:linear-gradient(125deg,#233d59,#1a2c42);color:#eaf4ff;border-color:#3d6087;box-shadow:none}
+:root[data-theme="dark"] .app-update-banner :is(h2,h3,p,span){color:inherit}
+:root[data-theme="dark"] .push-invite{background:linear-gradient(115deg,#233d56,#17283b);color:#edf5ff;border-color:#365c81}
+:root[data-theme="dark"] .push-invite p{color:#b9cde4}
+:root[data-theme="dark"] .emergency-banner{background:#443629;color:#ffe1b0;border-color:#796040}
+:root[data-theme="dark"] .emergency-banner.is-note{background:#233b58;color:#c2dcff;border-color:#436286}
+:root[data-theme="dark"] .emergency-banner .emergency-icon{background:#74562b;color:#ffeca9}
+:root[data-theme="dark"] .quick-queue-lookup{background:linear-gradient(120deg,#1b3049,#1c2838);border-color:#37516b}
+:root[data-theme="dark"] .quick-queue-lookup :is(p,span){color:#c6d9e8}
+:root[data-theme="dark"] .maintenance-inline.is-active,:root[data-theme="dark"] .maintenance-inline.is-planned{background:#21354a!important;color:#dcecff;border-color:#43607a}
+:root[data-theme="dark"] .maintenance-inline.planned-highlight{background:#483c26!important;border-color:#78623b;color:#ffe6b4}
+:root[data-theme="dark"] .inbox-item.is-unread,:root[data-theme="dark"] .inbox-interactive.is-pinned{background:linear-gradient(135deg,#263e57,#1a293b);border-color:#53779b}
+:root[data-theme="dark"] .app-boot-screen{background:radial-gradient(ellipse at 50% 5%,#21374c,#0d1621 80%);color:#eaf4fd}
+:root[data-theme="dark"] .install-landing{--i-ink:#ebf3fd;--i-muted:#becde0;--i-border:#33485e;--i-surface:#1c2c3e;background:radial-gradient(ellipse at 76% 45%,#223b5790,transparent 78%),linear-gradient(150deg,#101b29,#172437);color:var(--i-ink)}
+:root[data-theme="dark"] .install-landing :is(.install-card,.install-faq,.install-step,.install-phone,.install-feature){background:#1a2a3d;border-color:#334960;color:#e9f3ff}
+:root[data-theme="dark"] .install-landing :is(.install-help-link,.install-footer a){color:#b8d9ff}
