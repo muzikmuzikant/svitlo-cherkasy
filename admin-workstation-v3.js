@@ -167,6 +167,10 @@
   }
   syncSelected();
  }
+ // Opening a case goes straight to the correspondence tab, without a second click.
+ ticketList.addEventListener('click',event=>{
+  if(event.target.closest('button.ticket-row'))activeSheet='conversation';
+ },true);
  const oldRender=window.renderTicketList;
  if(typeof oldRender==='function')window.renderTicketList=function(){oldRender();wrapRows()};
  choose.addEventListener('change',()=>{
