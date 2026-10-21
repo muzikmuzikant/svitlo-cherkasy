@@ -89,9 +89,13 @@
               inboxStarted = true;
               const inboxUi = document.createElement('script');
               inboxUi.src = './inbox-ui.js';
+              const support=document.createElement('script');
+              support.src='./support-inbox.js';
+              inboxUi.onload=()=>document.body.append(support);
               inboxUi.onerror = () => {
                 const panel = document.getElementById('inboxList');
                 if (panel) panel.textContent = 'Не вдалося завантажити повідомлення. Перевірте інтернет і оновіть застосунок.';
+                document.body.append(support);
               };
               document.body.append(inboxUi);
             };
