@@ -9,7 +9,7 @@ const ix={
 const find=(street,house='',selectedKey)=>resolve({idx:ix,street,house,settlement:'Слобода',selectedKey});
 test('single street-wide queue saved without house, even with same-queue known houses',()=>{
  assert.deepEqual([find('Соборна').status,find('Соборна').queue],['street','1.1']);
- assert.deepEqual([find('Соборна','100').status,find('Соборна','100').queue],['street','1.1']);
+ assert.equal(find('Соборна','100').status,'nohouse'); // Unlisted house is not an automatic match.
 });
 test('an exact address overrides conflicting general street hints',()=>{
  assert.deepEqual([find('Вулиця Лісова','5').status,find('Вулиця Лісова','5').queue],['exact','4.2']);
@@ -46,4 +46,17 @@ test('duplicate exact house rows do not auto-resolve',()=>{
  const broken={...ix,keys:{...ix.keys,'вулиця|соборна|42':['1.1','6.2']}};
  const r=resolve({idx:broken,settlement:'Слобода',street:'Соборна',house:'42'});
  assert.equal(r.status,'possible');assert.deepEqual(r.queues,['1.1','6.2']);
+});
+
+test('unlisted house is not automatically mapped from a partial street index',()=>{
+ const result=find('Соборна','100');
+ assert.equal(result.status,'nohouse');
+ assert.deepEqual(result.queues,['1.1']);
+ assert.equal(result.queue,undefined);
+});
+test('street auto still works when no house-specific records exist',()=>{
+ const idx={streets:{'вулиця|нова':'Вулиця Нова'},streetQueues:{'вулиця|нова':['2.1']},keys:{}};
+ const result=resolve({idx,settlement:'Слобода',street:'Нова',house:'44'});
+ assert.equal(result.status,'street');
+ assert.equal(result.queue,'2.1');
 });
