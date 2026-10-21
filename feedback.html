@@ -51,7 +51,7 @@
      <label for="message">Деталі звернення <span class="required">*</span></label>
      <textarea id="message" required minlength="12" maxlength="2000" placeholder="Що саме не працює? Коли це трапляється?"></textarea>
      <div class="form-help"><span>Потрібно щонайменше 12 символів.</span><span id="count" aria-live="polite">0 / 2000</span></div>
-      <div class="ticket-attach">
+      <div class="ticket-attach" id="newTicketMediaSection" hidden>
        <label for="newTicketFiles" class="ticket-attach-label"><span aria-hidden="true">＋</span> Додати фото або відео</label>
        <input id="newTicketFiles" class="ticket-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4,video/quicktime,video/webm" multiple>
        <p class="ticket-attach-note">До 3 файлів: фото до 4 МБ, відео до 8 МБ, загалом до 9 МБ. Файли бачите лише ви та уповноважена підтримка. Не надсилайте документи чи чужі персональні дані.</p>
@@ -88,7 +88,7 @@
   <section id="ticketConversation" class="conversation" hidden aria-labelledby="conversationHeading">
    <div class="conversation-head"><div><small id="conversationId"></small><h2 id="conversationHeading">Ваше звернення</h2><span id="conversationStatus" class="support-status"></span></div><button type="button" id="closeConversation" class="support-secondary">← До звернень</button></div>
    <div id="conversationMeta" class="conversation-meta"></div><div class="support-chat-meta"><span id="chatLiveStatus" class="support-chat-live" data-state="ok" role="status" aria-live="off">Повідомлення оновлюються автоматично</span><button type="button" id="chatRefresh" class="support-chat-refresh" title="Перевірити нові повідомлення">Оновити</button></div><div id="conversationMessages" class="conversation-messages" aria-live="polite" aria-relevant="additions"></div>
-   <form id="replyForm" class="reply-form" hidden><label for="replyMessage">Повідомлення</label><textarea id="replyMessage" minlength="3" maxlength="1200" placeholder="Повідомлення"></textarea><div class="ticket-attach ticket-attach-reply">
+   <form id="replyForm" class="reply-form" hidden><label for="replyMessage">Повідомлення</label><textarea id="replyMessage" minlength="3" maxlength="1200" placeholder="Повідомлення"></textarea><div class="ticket-attach ticket-attach-reply" id="replyTicketMediaSection" hidden>
        <label for="replyTicketFiles" class="ticket-attach-label"><span aria-hidden="true">＋</span> Фото або відео</label>
        <input id="replyTicketFiles" class="ticket-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4,video/quicktime,video/webm" multiple>
        <div id="replyTicketFilePreview" class="ticket-file-preview" aria-live="polite"></div>
