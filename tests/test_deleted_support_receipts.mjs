@@ -14,7 +14,7 @@ const receipt={id:ID,token:TOKEN,createdAt:'2026-10-21T10:00:00Z',status:'new'};
 const initial=()=>new Map([[KEY,JSON.stringify([receipt])],
  [SNAP,JSON.stringify({[ID]:{status:'new',replyIds:[]}})]]);
 
-function harness(code,storage=initial()){
+function harness(code,storage=initial(),message='Звернення не знайдено.'){
  const events=[],requests=[];
  const localStorage={
   getItem:key=>storage.get(key)??null,
@@ -22,7 +22,7 @@ function harness(code,storage=initial()){
  };
  const answer={
   ok:code===200,status:code,
-  async json(){return code===404?{error:'Звернення не знайдено.'}:
+  async json(){return code===404?{error:message}:
    code===200?{id:ID,status:'new',canReply:true,messages:[]}:
    {error:code===429?'Забагато перевірок. Спробуйте за хвилину.':'Недоступно'};}
  };
@@ -68,17 +68,19 @@ for(const code of [403,429,503]){
   assert.equal(h.events.some(e=>e.type==='svitlo:support-ticket-deleted'),false);
  });
 }
-test('only the authoritative not-found 404 can remove a ticket',async()=>{
- const h=harness(404);
- // Even a 404 route misconfiguration is not proof the case was deleted.
- const original=h.window.SvitloSupportInbox.scan;
- const s=source.replace("if(body?.error==='Звернення не знайдено.')return {deleted:true};",
-  "if(body?.error==='a different message')return {deleted:true};");
- const other=initial(),e=harness(429,other);
- assert.match(source,/if\(body\?\.error==='Звернення не знайдено\.'\)/);
- assert.ok(s.includes("a different message"));
- await e.window.SvitloSupportInbox.scan();
+test('404 from an unknown route does not erase a saved ticket',async()=>{
+ const other=initial(),h=harness(404,other,'Not Found');
+ await h.window.SvitloSupportInbox.scan();
  assert.equal(JSON.parse(other.get(KEY)).length,1);
+ assert.equal(h.events.filter(e=>e.type==='svitlo:support-ticket-deleted').length,0);
+});
+test('legacy status-only receipts also disappear once server confirms deletion',async()=>{
+ const state=initial();
+ state.set(KEY,JSON.stringify([{...receipt,token:''}]));
+ const h=harness(404,state);
+ await h.window.SvitloSupportInbox.scan();
+ assert.deepEqual(JSON.parse(state.get(KEY)),[]);
+ assert.equal(h.events.filter(e=>e.type==='svitlo:support-ticket-deleted').length,1);
 });
 test('user lists, open chats and other tabs reconcile deletion',()=>{
  assert.match(userSource,/function syncSavedReceipts\(\)/);
