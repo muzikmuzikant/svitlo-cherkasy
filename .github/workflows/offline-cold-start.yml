@@ -24,6 +24,8 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Open installed PWA online, disconnect, close and relaunch offline
         run: python tests/offline_pwa_browser.py
+      - name: Confirm internal PWA pages online and offline
+        run: python tests/internal_pages_browser.py
       - name: Confirm dark theme contrast and iPhone dock in real Chromium
         run: python tests/theme_browser.py
       - name: Test Svitlo Office admin in real Chromium with mock backend
