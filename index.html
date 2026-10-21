@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <button type="button" data-inbox-filter="unread" aria-pressed="false">Нові</button>
   <button type="button" data-inbox-filter="schedule" aria-pressed="false">Графіки</button>
   <button type="button" data-inbox-filter="important" aria-pressed="false">Важливе</button>
- </div><button class="inbox-mark" id="inboxMarkAll" type="button">Прочитати всі</button></div>
+ </div></div><div class="inbox-actions-bar"><button class="inbox-mark" id="inboxMarkAll" type="button"><span aria-hidden="true">✓✓</span><span>Прочитати всі</span></button><span class="inbox-unread-note" id="inboxUnreadNote" role="status" aria-live="polite"></span></div>
  <div id="inboxList" class="inbox-list" aria-live="polite"><div class="inbox-empty">Завантажуємо повідомлення…</div></div>
  <button id="inboxClear" class="inbox-clear" type="button">Очистити прочитані</button>
  <details class="inbox-history"><summary>Історія офіційних графіків <span aria-hidden="true">⌄</span></summary>
