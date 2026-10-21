@@ -2,7 +2,7 @@
  * Single stable ID deduplicates a public announcement and its Web Push.
  */
 (function(root){'use strict';
- const NAME='svitlo-inbox-v1',STORE='messages',FALLBACK='svitlo-inbox-fallback-v1',MAX=180;
+ const NAME='svitlo-inbox-v1',STORE='messages',FALLBACK='svitlo-inbox-fallback-v1',MAX=600;
  const LEGACY_ADMIN=/^push:svitlo-admin-/;
  const httpImage=u=>{try{const x=new URL(String(u));return x.protocol==='https:'&&x.href.length<=900?x.href:''}catch{return ''}};
  function normalize(item){
@@ -107,5 +107,5 @@
    return Boolean(date&&dates.has(date));
   },()=>null);
  }
- root.SvitloInbox={normalize,all,add,mark,unmark,clearRead,remove,reconcileAnnouncements,reconcileAutomated};
+ root.SvitloInbox={normalize,all,add,mark,unmark,remove,reconcileAnnouncements,reconcileAutomated};
 })(typeof self!=='undefined'?self:globalThis);
