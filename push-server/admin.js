@@ -287,6 +287,15 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
       if(input.confirm!==true){send(res,400,{error:'Підтвердіть відновлення'});return true}
       send(res,200,operationalControls.restore(input.revision,input.expectedRevision));return true;
     }
+    if(url.pathname==='/api/admin/home'&&method==='PUT'){
+      if(role!=='owner'||session.managed){send(res,403,{error:'Редактор головної доступний власнику'});return true}
+      const input=await readJson(req,1600),current=siteControls.get();
+      if(input.expectedUpdatedAt!==current.updatedAt){send(res,409,{error:'Оформлення змінилося. Оновіть дані перед збереженням.'});return true}
+      const home=input.home;
+      if(!home||typeof home!=='object'||Array.isArray(home)){send(res,400,{error:'Некоректні поля головної'});return true}
+      current.site={...current.site,home};
+      send(res,200,siteControls.update(current));return true;
+    }
     if(url.pathname==='/api/admin/app-config'&&req.method==='GET'){
      if(!siteControls){send(res,503,{error:'Керування застосунком недоступне'});return true}
      send(res,200,siteControls.get());return true;
