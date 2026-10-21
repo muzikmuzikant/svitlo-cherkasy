@@ -100,7 +100,10 @@
  }
  const dialog=document.createElement('dialog');dialog.className='inbox-detail';dialog.id='inboxDetail';
  const close=el('button','×','inbox-detail-close');close.type='button';close.setAttribute('aria-label','Закрити повідомлення');
- const content=el('div','','inbox-detail-content');dialog.append(close,content);document.body.append(dialog);
+ const dragHandle=el('div','','inbox-drag-handle');
+ dragHandle.setAttribute('aria-hidden','true');
+ const content=el('div','','inbox-detail-content');
+ dialog.append(dragHandle,close,content);document.body.append(dialog);
  let detailCloseTimer=null,detailClosing=false,afterDetailClose=null;
  const reducedDetailMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches||
   document.documentElement.classList.contains('feature-off-animations');
@@ -115,6 +118,7 @@
   detailClosing=true;dialog.classList.add('is-leaving');
   detailCloseTimer=setTimeout(()=>{detailCloseTimer=null;if(dialog.open)dialog.close()},300);
  }
+ window.SvitloSheetMotion?.bind(dialog,()=>closeDetail());
  close.onclick=()=>closeDetail();
  dialog.addEventListener('click',event=>{if(event.target===dialog)closeDetail()});
  dialog.addEventListener('cancel',event=>{event.preventDefault();closeDetail()});
