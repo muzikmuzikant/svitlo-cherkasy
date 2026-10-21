@@ -22,12 +22,24 @@
   try{const url=new URL(value);if(url.protocol==='https:'&&url.username===''&&url.password==='')return url.href}catch{}
   return fallback;
  }
+ // A public administrator's custom colors are for light appearance only.
+ // Inline --bg and --surface override dark CSS variables otherwise.
+ let latestAppearance={};
+ const paletteFields=[['--blue','accent','#377dff'],['--bg','background','#f6f8fc'],['--surface','surface','#ffffff']];
+ const validPaletteColor=value=>typeof value==='string'&&/^#[0-9a-fA-F]{6}$/.test(value);
+ function applyPalette(){
+  const root=document.documentElement,night=root.dataset.theme==='dark';
+  for(const [css,key,fallback] of paletteFields){
+   if(night)root.style.removeProperty(css);
+   else root.style.setProperty(css,validPaletteColor(latestAppearance[key])?latestAppearance[key]:fallback);
+  }
+ }
+ window.addEventListener('svitlo:theme-change',applyPalette);
  function applySite(site){
   const flags=site?.flags||{},links=site?.links||{},banner=site?.banner||{};
-  const appearance=site?.appearance||{},validColor=x=>typeof x==='string'&&/^#[0-9a-fA-F]{6}$/.test(x);
-  for(const [css,key,defaultValue] of [['--blue','accent','#377dff'],['--bg','background','#f6f8fc'],['--surface','surface','#ffffff']]){
-   document.documentElement.style.setProperty(css,validColor(appearance[key])?appearance[key]:defaultValue);
-  }
+  const appearance=site?.appearance||{};
+  latestAppearance=appearance;
+  applyPalette();
   document.documentElement.dataset.siteDensity=appearance.density==='compact'?'compact':'comfortable';
   document.documentElement.dataset.siteRounded=appearance.rounded===false?'false':'true';
   const featureKeys=["inbox","inboxFilters","inboxHistory","sharing","sharePreview","copySchedule","help","feedback","addressSearch","pushPrompt","pushSettings","tomorrowPreview","quickAddresses","homePlaces","dailyStats","overviewTimeline","statusCountdown","weekNavigation","dayStats","scheduleLegend","offlineStatus","scheduleSource","manualRefresh","homeQuickActions","animations","quickQueueLookup","nextChangeCard","dayShortcuts","detailSourceLink","hourlyLabels","inboxMarkAll","inboxClearRead","appUpdateCheck","editAddressFromGraph","syncStatus","settingsFooter","tomorrowOpenShortcut","scheduleOpenShortcut"];
