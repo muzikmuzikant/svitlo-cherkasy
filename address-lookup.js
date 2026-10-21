@@ -85,7 +85,7 @@
     if(exact.length>1)return {...base,status:'possible',queues:exact,reason:'house-conflict'};
     // Preserve existing single-street automatic resolution where no other
     // known house contradicts the street-wide record.
-    if(streetOnly.length===1 && houseQueues.every(q=>q===streetOnly[0]))
+    if(streetOnly.length===1 && houseQueues.every(q=>q===streetOnly[0]) && (!house || !houses.length))
       return {...base,status:'street',queue:streetOnly[0],method:'street-auto'};
     if(options.length>1){
       return {...base,status:'possible',reason:houses.length?(house?'house-unlisted':'needs-house'):'no-house-index'};
