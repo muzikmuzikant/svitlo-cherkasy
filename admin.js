@@ -254,7 +254,17 @@ function renderTicketList(){
   else if(item.status==='new'&&Date.now()-Date.parse(item.createdAt||'')>86400000)meta.append(supportNode('b','Потребує уваги понад добу','support-attention'));
     if(item.priority==='high')meta.append(supportNode('b','● Важливе'));
   if(item.messages?.length)meta.append(supportNode('span','↩ '+item.messages.length));
-  card.append(meta);card.addEventListener('click',()=>{supportSelected=item.id;renderTicketList();renderTicketDetail();window.SvitloMobileAdmin?.openTicket()});root.append(card);
+  card.append(meta);card.addEventListener('click',()=>{
+   supportSelected=item.id;
+   // Do not recreate every row when selecting a case: preserve list scroll,
+   // checkbox selection and keyboard focus for operators.
+   for(const row of root.querySelectorAll('button.ticket-row')){
+    const isActive=row===card;
+    row.classList.toggle('selected',isActive);
+    row.setAttribute('aria-pressed',String(isActive));
+   }
+   renderTicketDetail();window.SvitloMobileAdmin?.openTicket();
+  });root.append(card);
  }
 }
 function supportThreadEntry(item){
@@ -400,12 +410,12 @@ async function refreshTickets(){
    return; // Preserve editors, scroll, filters and pane on unchanged data.
   }
   const listScroll=$('ticketsList').scrollTop,detailScroll=$('ticketDetail').scrollTop;
-  lastTicketsFingerprint=fingerprint;
   supportTickets=incoming;supportTemplates=templates;
   window.SvitloTicketWorkflow?.sync(supportTickets,result.capabilities);renderSupportTemplateEditor();
   $('ticketsSummary').classList.remove('support-error');
   if(!supportTickets.some(t=>t.id===supportSelected))supportSelected=supportTickets[0]?.id||'';
   renderTicketCounts();renderTicketList();renderTicketDetail();
+  lastTicketsFingerprint=fingerprint;
   $('ticketsList').scrollTop=listScroll;$('ticketDetail').scrollTop=detailScroll;
   document.dispatchEvent(new Event('svitlo:tickets-loaded'));
  }catch(e){$('ticketsSummary').textContent='Помилка завантаження: '+e.message}
