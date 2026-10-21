@@ -795,3 +795,55 @@ body.svitlo-office .office-modal-list button{border-radius:4px!important}
   animation:none!important;transition:none!important;scroll-behavior:auto!important
  }
 }
+
+/* Workstation connection indicator reflects successful private API refreshes. */
+body.svitlo-office .desk-live-status{
+ display:inline-flex;gap:7px;align-items:center;color:#477363;
+ font-size:11px;font-weight:700;white-space:nowrap;min-height:34px
+}
+body.svitlo-office .desk-live-status::before{
+ content:"";width:7px;height:7px;border-radius:50%;background:#239b6f;flex:0 0 7px
+}
+body.svitlo-office .desk-live-status[data-state="paused"]{color:#a07649}
+body.svitlo-office .desk-live-status[data-state="paused"]::before{background:#c18b4c}
+body.svitlo-office #adminLoginScreen{
+ max-width:485px;margin:clamp(32px,7vh,75px) auto 55px;
+ color:#20384b
+}
+body.svitlo-office #adminLoginScreen .login-symbol{
+ border-radius:8px!important;background:#e1eee8!important;
+ border:1px solid #c3dbcf;color:#15694e!important;box-shadow:none!important
+}
+body.svitlo-office #adminLoginScreen .login-overline{
+ color:#316a5e!important;font-size:10px;letter-spacing:.09em
+}
+body.svitlo-office #adminLoginScreen h1{
+ font-size:29px;color:#20384b;letter-spacing:-.6px
+}
+body.svitlo-office #adminLoginScreen .login-card{
+ background:white!important;border:1px solid #cfdae2!important;
+ border-top:4px solid #196e54!important;border-radius:8px!important;
+ padding:24px!important;box-shadow:0 8px 24px #1e385015!important
+}
+body.svitlo-office #adminLoginScreen .login-card .field{gap:5px}
+body.svitlo-office #adminLoginScreen :is(input,button){
+ border-radius:6px!important;box-shadow:none!important
+}
+body.svitlo-office #adminLoginScreen input{
+ background:#fbfcfd;border:1px solid #bdcedb;color:#213e50;padding:11px 12px
+}
+body.svitlo-office #adminLoginScreen label{font-size:11px;color:#435e70}
+body.svitlo-office #adminLoginScreen #connect{background:#176e57!important}
+body.svitlo-office #adminLoginScreen #togglePassword{
+ background:#e6edf1!important;color:#345a67!important
+}
+body.svitlo-office #adminLoginScreen .login-lock-title{
+ border-radius:6px!important;color:#2b5264
+}
+body.svitlo-office #adminLoginScreen .login-assurance{
+ background:#f1f5f7!important;color:#647a89;border:1px solid #dde6eb;border-radius:6px!important
+}
+@media(max-width:760px){
+ body.svitlo-office .desk-live-status{grid-column:1/-1;justify-self:start;min-height:26px}
+ body.svitlo-office #adminLoginScreen .login-card{padding:19px!important}
+}
