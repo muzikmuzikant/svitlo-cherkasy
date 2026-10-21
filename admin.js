@@ -394,32 +394,91 @@ function renderSupportTemplateEditor(){
  save.onclick=async()=>{save.disabled=true;try{const result=await api('feedback/templates',{method:'PUT',body:JSON.stringify({templates:supportTemplates.filter(Boolean)})});supportTemplates=result.templates;renderSupportTemplateEditor()}catch(e){alert(e.message);save.disabled=false}};
  box.append(add,save)
 }
-let lastTicketsFingerprint='',ticketsReloading=false;
+// Keep all private correspondence in Railway. Only metadata is fetched
+// while the operator is authenticated and viewing the correspondence register.
+let lastTicketsFingerprint='',ticketsReloading=false,lastTemplateFetch=0,templateFingerprint='';
+const TICKET_LIVE_MS=4500;
+function updateLiveTicketThread(before,next){
+ if(!before||!next||before.id!==next.id)return false;
+ const root=$('ticketDetail');
+ const thread=root.querySelector('.support-thread');
+ if(!thread)return false;
+ // The same case and case settings: only messages/revision changed.
+ const immutable=(t)=>JSON.stringify([t.id,t.status,t.priority,t.assignedTo,t.dueAt,t.resolution,
+  t.internalNote,t.tags,t.rating,t.email,t.subject,t.extra,t.diagnostics]);
+ if(immutable(before)!==immutable(next))return false;
+ const prev=[{from:'user',text:before.message,at:before.createdAt},...(before.messages||[])];
+ const curr=[{from:'user',text:next.message,at:next.createdAt},...(next.messages||[])];
+ if(curr.length<prev.length||prev.some((m,i)=>JSON.stringify([m.id,m.from,m.text,m.at])!==
+  JSON.stringify([curr[i].id,curr[i].from,curr[i].text,curr[i].at])))return false;
+ const entries=thread.querySelectorAll('.support-thread-entry');
+ if(entries.length!==prev.length)return false;
+ // Appending messages never blurs the editor or overwrites unsent reply drafts.
+ const scroll=$('ticketDetail');
+ const atEnd=scroll.scrollHeight-scroll.scrollTop-scroll.clientHeight<110;
+ for(const entry of curr.slice(prev.length))thread.append(supportThreadEntry(entry));
+ if(atEnd&&curr.length>prev.length)scroll.scrollTop=scroll.scrollHeight;
+ return true;
+}
 async function refreshTickets(){
  if(!remote||ticketsReloading)return;
  ticketsReloading=true;
  if(!supportTickets.length)$('ticketsSummary').textContent='Завантажуємо звернення…';
  try{
   const result=await api('feedback');
-  const templ=await api('feedback/templates').catch(()=>({templates:supportTemplates}));
   const incoming=Array.isArray(result.items)?result.items:[];
-  const templates=Array.isArray(templ.templates)?templ.templates:supportTemplates;
-  const fingerprint=JSON.stringify([incoming,templates,result.capabilities||null]);
-  if(fingerprint===lastTicketsFingerprint){
-   $('ticketsSummary').classList.remove('support-error');
-   return; // Preserve editors, scroll, filters and pane on unchanged data.
+  let templates=supportTemplates;
+  if(!lastTemplateFetch||Date.now()-lastTemplateFetch>60000){
+   const fetched=await api('feedback/templates').catch(()=>null);
+   if(Array.isArray(fetched?.templates)){templates=fetched.templates;lastTemplateFetch=Date.now()}
   }
-  const listScroll=$('ticketsList').scrollTop,detailScroll=$('ticketDetail').scrollTop;
+  const fingerprint=JSON.stringify([incoming,templates,result.capabilities||null]);
+  if(fingerprint===lastTicketsFingerprint)return;
+  const list=$('ticketsList'),detail=$('ticketDetail'),listScroll=list.scrollTop,detailScroll=detail.scrollTop;
+  const prior=supportTickets.find(t=>t.id===supportSelected);
+  const templateNext=JSON.stringify(templates);
+  const templateChanged=templateNext!==templateFingerprint;
   supportTickets=incoming;supportTemplates=templates;
-  window.SvitloTicketWorkflow?.sync(supportTickets,result.capabilities);renderSupportTemplateEditor();
-  $('ticketsSummary').classList.remove('support-error');
+  window.SvitloTicketWorkflow?.sync(supportTickets,result.capabilities);
+  if(templateChanged){templateFingerprint=templateNext;renderSupportTemplateEditor()}
   if(!supportTickets.some(t=>t.id===supportSelected))supportSelected=supportTickets[0]?.id||'';
-  renderTicketCounts();renderTicketList();renderTicketDetail();
+  const updated=supportTickets.find(t=>t.id===supportSelected);
+  renderTicketCounts();renderTicketList();
+  const unchangedCase=updateLiveTicketThread(prior,updated);
+  if(!unchangedCase){
+   // Do not discard operator input during a concurrent status change.
+   const editing=detail.contains(document.activeElement)&&
+    /INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName||'');
+   if(!editing)renderTicketDetail();
+   else detail.dataset.pendingRefresh='true';
+  }else detail.dataset.pendingRefresh='';
   lastTicketsFingerprint=fingerprint;
-  $('ticketsList').scrollTop=listScroll;$('ticketDetail').scrollTop=detailScroll;
+  list.scrollTop=listScroll;detail.scrollTop=detailScroll;
+  $('ticketsSummary').classList.remove('support-error');
   document.dispatchEvent(new Event('svitlo:tickets-loaded'));
- }catch(e){$('ticketsSummary').textContent='Помилка завантаження: '+e.message}
- finally{ticketsReloading=false}
+ }catch(error){
+  if(!supportTickets.length)$('ticketsSummary').textContent='Зв’язок із сервером відсутній. Повторюємо перевірку.';
+  console.warn('Ticket refresh:',error?.message);
+ }finally{ticketsReloading=false}
 }
-$('refreshTickets').addEventListener('click',refreshTickets);
-document.addEventListener('svitlo:admin-logout',()=>{lastTicketsFingerprint='';supportDrafts.clear();noteDrafts.clear();tagDrafts.clear();supportTickets=[];supportSelected='';$('ticketsList').replaceChildren();$('ticketDetail').replaceChildren();window.SvitloTicketWorkflow?.reset()});
+window.refreshTickets=refreshTickets;
+$('ticketDetail').addEventListener('focusout',()=>{
+ if($('ticketDetail').dataset.pendingRefresh!=='true')return;
+ setTimeout(()=>{
+  const root=$('ticketDetail');
+  if(root.dataset.pendingRefresh!=='true'||root.contains(document.activeElement))return;
+  root.dataset.pendingRefresh='';renderTicketDetail();
+ },0);
+});
+setInterval(()=>{
+ if(!remote||document.hidden||$('adminDashboard').hidden)return;
+ const open=$('adminDashboard').querySelector('[data-admin-panel="feedback"]');
+ if(open&&!open.hidden)void refreshTickets();
+},TICKET_LIVE_MS);
+document.addEventListener('visibilitychange',()=>{
+ if(!document.hidden&&remote&&!$('adminDashboard').querySelector('[data-admin-panel="feedback"]')?.hidden)
+  void refreshTickets();
+});
+window.addEventListener('online',()=>{if(remote)void refreshTickets()});
+$('refreshTickets').addEventListener('click',()=>void refreshTickets());
+document.addEventListener('svitlo:admin-logout',()=>{lastTicketsFingerprint='';lastTemplateFetch=0;templateFingerprint='';supportDrafts.clear();noteDrafts.clear();tagDrafts.clear();supportTickets=[];supportSelected='';$('ticketsList').replaceChildren();$('ticketDetail').replaceChildren();window.SvitloTicketWorkflow?.reset()});
