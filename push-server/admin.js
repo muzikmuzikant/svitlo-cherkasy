@@ -135,7 +135,7 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
   :role==='owner'
   ||role==='viewer'&&method==='GET'
   ||role==='operator'&&(
-   method==='GET'&&(/\/api\/admin\/(?:monitor|audit|status|feedback|help|analytics|ads|security|work-items)$/.test(pathName)
+   method==='GET'&&(pathName.startsWith('/api/admin/feedback/attachment/')||/\/api\/admin\/(?:monitor|audit|status|feedback|help|analytics|ads|security|work-items)$/.test(pathName)
     ||pathName==='/api/admin/push/status')
    ||method==='PATCH'&&pathName.startsWith('/api/admin/feedback/'))
   ||role==='editor'&&!(pathName==='/api/admin/push/send'
@@ -314,6 +314,12 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
     const data=await readJson(req,50000);const result=feedback.setTemplates(data.templates);
     extras?.record('feedback.templates.update');send(res,200,result);return true
    }
+    if(url.pathname.startsWith('/api/admin/feedback/attachment/')&&req.method==='GET'){
+      const tail=url.pathname.slice('/api/admin/feedback/attachment/'.length).split('/');
+      if(tail.length!==2||!/^SC-[A-F0-9]{10}$/.test(tail[0])||
+         !/^[a-f0-9]{36}$/.test(tail[1])){send(res,400,{error:'Некоректне вкладення'});return true}
+      send(res,200,feedback.getAttachment(tail[0],tail[1],null,true));return true;
+    }
     if(url.pathname==='/api/admin/feedback'&&req.method==='GET'){send(res,200,feedback.list());return true}
    if(url.pathname.startsWith('/api/admin/feedback/')&&['PATCH','DELETE'].includes(req.method)){
      const id=decodeURIComponent(url.pathname.slice('/api/admin/feedback/'.length));
