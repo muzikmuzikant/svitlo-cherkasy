@@ -626,7 +626,7 @@ function checkLookup(){
  $('manualQueue').options[0].textContent=isAutomatic?'Автоматично · '+r.queue:'Оберіть підчергу';
  manual.classList.toggle('user-selected',QUEUES.includes(chosen));
  const allowed=r.status!=='incomplete'&&town().trim()&&$('street').value.trim();
- const finalQueue=QUEUES.includes(chosen)?chosen:(isAutomatic?r.queue:null);
+ const finalQueue=SvitloAddressLookup.selectQueue(r,chosen).queue;
  $('saveAddress').disabled=!(allowed&&QUEUES.includes(finalQueue));
  $('saveAddress').textContent=QUEUES.includes(finalQueue)?'Зберегти адресу · '+finalQueue:'Оберіть підчергу для збереження';
  return r;
@@ -686,14 +686,12 @@ function unlockSheet(){if($('addressSheet').open||$('placesSheet').open)return;d
 function closeSheet(dialog){if(dialog.open)dialog.close();unlockSheet()}
 function saveAddress(event){
  event.preventDefault();
- const r=checkLookup(),chosen=$('manualQueue').value,manual=QUEUES.includes(chosen);
- const automaticallyFound=['exact','street'].includes(r.status);
- const queue=manual?chosen:(automaticallyFound?r.queue:null);
+ const r=checkLookup();
+ const selection=SvitloAddressLookup.selectQueue(r,$('manualQueue').value);
+ const {queue,method}=selection,manual=selection.isManual;
  if(!town().trim()||!$('street').value.trim()||!QUEUES.includes(queue)){
   flash('Укажіть адресу та підчергу');return;
  }
- const method=manual?(automaticallyFound?'manual-override':r.status==='possible'&&r.queues?.includes(queue)?'street-choice':'manual'):
-  r.status==='exact'?'automatic':'street-auto';
  const a={
   id:editId||id(),nickname:$('nickname').value.trim(),street:$('street').value.trim(),
   house:$('house').value.trim(),settlement:normTown(town())==='слобода'?'Слобода':town(),
