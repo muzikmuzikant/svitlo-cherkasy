@@ -34,3 +34,18 @@ test('disallows unsafe categories, huge content and invalid status',()=>{
   assert.equal(registry.list().items[0].revision,1);
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });
+
+test('review notes capture actor and optimistic revision checks',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'svitlo-notes-'));
+ try{
+  const w=createWorkRegistry({directory:dir});
+  const item=w.create({title:'Перевірити звернення'},'owner');
+  assert.throws(()=>w.addNote(item.id,{expectedRevision:1,message:'  '},'editor'),/резолюції/);
+  const updated=w.addNote(item.id,{expectedRevision:1,message:'Дані передані на перевірку'},'editor');
+  assert.equal(updated.revision,2);
+  assert.equal(updated.events[0].actor,'editor');
+  assert.equal(updated.events[0].message,'Дані передані на перевірку');
+  assert.throws(()=>w.addNote(item.id,{expectedRevision:1,message:'Повтор'},'editor'),/Оновіть/);
+  assert.equal(createWorkRegistry({directory:dir}).list().items[0].events[0].message,updated.events[0].message);
+ }finally{fs.rmSync(dir,{recursive:true,force:true})}
+});

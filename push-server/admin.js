@@ -168,6 +168,11 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
     if(!['owner','editor'].includes(role)){send(res,403,{error:'Дію дозволено редактору або власнику'});return true}
     send(res,201,workRegistry.create(await readJson(req,4500),session.username));return true
    }
+   if(/^\/api\/admin\/work-items\/WR-[A-F0-9]{12}\/notes$/.test(pathName)&&method==='POST'){
+    if(!['owner','editor'].includes(role)){send(res,403,{error:'Редагування доручень недоступне'});return true}
+    const id=pathName.split('/')[4];
+    send(res,200,workRegistry.addNote(id,await readJson(req,1400),session.username));return true;
+   }
    if(pathName.startsWith('/api/admin/work-items/')&&['PATCH','DELETE'].includes(method)){
     const id=decodeURIComponent(pathName.slice('/api/admin/work-items/'.length));
     if(!/^WR-[A-F0-9]{12}$/.test(id)){send(res,400,{error:'Некоректний номер картки'});return true}

@@ -65,6 +65,22 @@ export function createWorkRegistry({directory,record=()=>{}}){
   persist();record('work.updated',id+' '+item.status);
   return {...item};
  };
+ // An immutable operational note is appended to the task's event history.
+ const addNote=(id,input,actor)=>{
+  reload();
+  const item=find(id);if(!item)throw Error('Картку не знайдено');
+  if(!Number.isSafeInteger(input?.expectedRevision)||input.expectedRevision!==item.revision){
+   const err=Error('Картку змінено. Оновіть перед додаванням резолюції.');err.statusCode=409;throw err;
+  }
+  const message=text(input?.message,900);
+  if(message.length<3||message.length>900)throw Error('Текст резолюції: від 3 до 900 символів');
+  const stamp=new Date().toISOString();
+  item.events=[{at:stamp,action:'note',actor:text(actor,50)||'administrator',message},
+   ...(item.events||[])].slice(0,80);
+  item.updatedAt=stamp;item.revision++;
+  persist();record('work.note',id);
+  return {...item};
+ };
  const remove=(id,expectedRevision,actor)=>{
   reload();
   const index=state.items.findIndex(item=>item.id===id);
@@ -75,5 +91,5 @@ export function createWorkRegistry({directory,record=()=>{}}){
   state.items.splice(index,1);persist();record('work.deleted',id+' by '+text(actor,50));
   return {ok:true,id};
  };
- return {list,create,patch,remove};
+ return {list,create,patch,addNote,remove};
 }
