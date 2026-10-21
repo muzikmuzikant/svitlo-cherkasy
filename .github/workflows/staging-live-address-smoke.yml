@@ -15,6 +15,9 @@ on:
       - data-merge.js
       - release.json
       - sw.js
+      - theme.js
+      - theme.css
+      - site-mode.js
   workflow_dispatch:
 permissions:
   contents: read
@@ -23,18 +26,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
+      - uses: actions/checkout@v4
       - name: Verify real Cloudflare Beta origin after deployment
         env:
           BETA_URL: https://svitlo-cherkasy.pages.dev
         run: |
           python - <<'PY'
           import json,os,time,urllib.request,urllib.error
+          from pathlib import Path
+          expected_version=json.loads(Path('release.json').read_text())['version']
           base=os.environ['BETA_URL']
           paths=['release.json','index.html','data/addresses.json','data/street_catalog.json',
-                 'data/published_street_fallback.json','data/street_aliases.json','app.js','address-lookup.js','sw.js']
+                 'data/published_street_fallback.json','data/street_aliases.json','app.js','address-lookup.js','sw.js','site-mode.js','theme.css','theme.js']
           headers={'User-Agent':'SvitloCherkasy-Beta-Smoke/1.0','Cache-Control':'no-cache'}
           last=''
-          for attempt in range(1,23):
+          for attempt in range(1,13):
               try:
                   values={}
                   for name in paths:
@@ -49,7 +55,10 @@ jobs:
                   seed=json.loads(values['data/published_street_fallback.json'])
                   aliases=json.loads(values['data/street_aliases.json'])
                   assert release.get('channel')=='beta', 'Not Beta channel'
-                  assert tuple(map(int,release['version'].split('.'))) >= (7,9,18), 'Stale Beta deployment: personal queue selection not yet published'
+                  assert release['version']==expected_version, f'Cloudflare Beta still serves {release["version"]}, expected {expected_version}. Publish staging before asking iPhone users to refresh.'
+                  assert ('name="svitlo-version" content="'+expected_version+'"') in values['index.html'], 'Live HTML was not refreshed with the current release'
+                  assert values['theme.css']==Path('theme.css').read_text(), 'Cloudflare has stale theme stylesheet'
+                  assert values['site-mode.js']==Path('site-mode.js').read_text(), 'Cloudflare has stale server appearance/theme script'
                   assert 'id="queueOverride"' in values['index.html'], 'Live Beta is missing manual queue selector'
                   assert 'SvitloAddressLookup.chooseQueue' in values['app.js'], 'Live Beta is missing saved personal queue logic'
                   assert 'function chooseQueue' in values['address-lookup.js'], 'Live Beta lacks queue selection helper'
@@ -91,7 +100,7 @@ jobs:
               except Exception as error:
                   last=str(error)
                   print(f'Attempt {attempt}: {last}',flush=True)
-                  time.sleep(12)
+                  time.sleep(8)
           else:
               raise SystemExit('Beta not proven live: '+last)
           PY
