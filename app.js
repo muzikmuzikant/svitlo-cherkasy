@@ -547,6 +547,25 @@ function renderSettings(){for(const [key,field] of [['off','notifyOff'],['on','n
 function fillQueueSelect(){const root=$('manualQueue');root.replaceChildren(new Option('Оберіть підчергу',''),...QUEUES.map(q=>new Option(q,q)))}
 function town(){return $('settlement').value==='Інше'?$('customSettlement').value.trim():$('settlement').value}
 function localIndex(){const k=normTown(town());return k===normTown('Черкаси')?index:index.localities?.[k]||{keys:{},streets:{},streetQueues:{}}}
+// A cached cross-locality lookup keeps mobile street typing responsive.
+let streetTownLookupSource=null,streetTownLookup=null;
+function otherSettlementsWithStreet(value){
+ const needle=SvitloAddressLookup.normalize(value);
+ if(needle.length<4)return [];
+ if(streetTownLookupSource!==index){
+  streetTownLookupSource=index;
+  streetTownLookup=new Map();
+  for(const locality of Object.values(index.localities||{})){
+   for(const streetName of Object.values(locality.streets||{})){
+    const key=SvitloAddressLookup.normalize(streetName);
+    let towns=streetTownLookup.get(key);
+    if(!towns){towns=[];streetTownLookup.set(key,towns)}
+    if(locality.label&&!towns.includes(locality.label))towns.push(locality.label);
+   }
+  }
+ }
+ return (streetTownLookup.get(needle)||[]).filter(name=>normTown(name)!==normTown(town())).slice(0,3);
+}
 function findQueue(){
  const idx=localIndex();
  const selectedKey=suggestion&&SvitloAddressLookup.normalize(suggestion.label)===SvitloAddressLookup.normalize($('street').value)?suggestion.key:null;
@@ -576,6 +595,10 @@ function checkLookup(){
     `Для вулиці є підчерги ${list}. Уточніть номер будинку, щоб перевірити точний збіг, або виберіть відому підчергу.`
  };
  hint.textContent=hasOverride?`За адресним довідником: ${r.queue}. Ви обрали іншу підчергу для цієї адреси.`:(messages[r.status]||'Не вдалося визначити підчергу.');
+ if(r.status==='nostreet'){
+  const otherTowns=otherSettlementsWithStreet($('street').value);
+  if(otherTowns.length)hint.textContent=`Таку вулицю знайдено в: ${otherTowns.join(', ')}. Змініть населений пункт у полі вище або оберіть підчергу самостійно.`;
+ }
  const coverage=$('houseCoverage'),choices=$('houseChoices');
  choices.replaceChildren();choices.hidden=true;coverage.hidden=true;
  if(r.streetKey&&r.status!=='exact'){
