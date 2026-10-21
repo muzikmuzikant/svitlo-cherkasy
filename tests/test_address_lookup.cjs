@@ -27,7 +27,8 @@ test('multiple queues on a street are never chosen automatically',()=>{
 });
 test('single known house queue without whole-street listing still needs house',()=>{
  assert.equal(find('Узбережна').status,'needhouse');
- assert.equal(find('Узбережна','99').status,'nohouse');
+ assert.equal(find('Узбережна','99').status,'possible');
+ assert.equal(find('Узбережна','99').reason,'house-unlisted');
  assert.equal(find('Узбережна','3').queue,'1.2');
 });
 test('street and lane names are disambiguated using type or suggestion',()=>{
