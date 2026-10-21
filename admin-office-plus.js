@@ -37,7 +37,7 @@
   registry:[['workNew','Нове доручення']],
   corrections:[['corrNew','Нове уточнення']],
   operations:[['opsNewNotice','Нове повідомлення'],['opsNoticesExport','Експорт переліку']],
-  feedback:[['refreshTickets','Оновити звернення'],['ticketCsv','Реєстр CSV']],
+  feedback:[['refreshTickets','Оновити звернення'],['ticketExport','Експорт реєстру']],
   push:[['refreshPush','Оновити підписки']],
   features:[['featuresSearch','Знайти функцію']],
   planner:[['plannerStage','Підготувати зміни']],
@@ -77,7 +77,8 @@
   identity.append(node('span','МОДУЛЬ '+index,'office-modulecode'),node('strong',names[id]||id,'office-module-label'));
   const tools=node('div',undefined,'office-module-actions');
   const reloadTarget=document.getElementById(refreshIds[id]||'');
-  if(reloadTarget){
+  const existsInHeader=(shortcuts[id]||[]).some(([control])=>control===refreshIds[id]);
+  if(reloadTarget&&!existsInHeader){
    const text=reloadTarget.textContent?.trim()||'Виконати дію';
    const title=id==='operations'?'Оновити статистику':id==='quality'?'Запустити перевірку':text;
    const reload=node('button',title,'office-module-refresh');reload.type='button';
