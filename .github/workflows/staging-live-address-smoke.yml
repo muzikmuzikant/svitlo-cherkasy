@@ -9,6 +9,8 @@ on:
       - data/street_aliases.json
       - data/published_street_fallback.json
       - app.js
+      - index.html
+      - style.css
       - address-lookup.js
       - data-merge.js
       - release.json
@@ -28,7 +30,7 @@ jobs:
           python - <<'PY'
           import json,os,time,urllib.request,urllib.error
           base=os.environ['BETA_URL']
-          paths=['release.json','data/addresses.json','data/street_catalog.json',
+          paths=['release.json','index.html','data/addresses.json','data/street_catalog.json',
                  'data/published_street_fallback.json','data/street_aliases.json','app.js','address-lookup.js','sw.js']
           headers={'User-Agent':'SvitloCherkasy-Beta-Smoke/1.0','Cache-Control':'no-cache'}
           last=''
@@ -47,7 +49,10 @@ jobs:
                   seed=json.loads(values['data/published_street_fallback.json'])
                   aliases=json.loads(values['data/street_aliases.json'])
                   assert release.get('channel')=='beta', 'Not Beta channel'
-                  assert tuple(map(int,release['version'].split('.'))) >= (7,9,17), 'Stale Beta deployment'
+                  assert tuple(map(int,release['version'].split('.'))) >= (7,9,18), 'Stale Beta deployment: personal queue selection not yet published'
+                  assert 'id="queueOverride"' in values['index.html'], 'Live Beta is missing manual queue selector'
+                  assert 'SvitloAddressLookup.chooseQueue' in values['app.js'], 'Live Beta is missing saved personal queue logic'
+                  assert 'function chooseQueue' in values['address-lookup.js'], 'Live Beta lacks queue selection helper'
                   assert 'street_catalog.json' in values['app.js'], 'App missing merged catalogue'
                   assert 'street_aliases.json' in values['app.js'], 'Beta app missing renamed-street data'
                   assert 'splitHint' in values['address-lookup.js'], 'No safe split-street lookup'
