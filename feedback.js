@@ -200,6 +200,7 @@ $('feedbackForm').addEventListener('submit',async event=>{
   if($('includeDiagnostics')?.checked){payload.includeDiagnostics=true;payload.diagnostics=coarseDiagnostics()}
   const result=await post('/api/feedback',payload);
   remember({...result,topic:payload.topic,subject:payload.subject});
+  window.dispatchEvent(new CustomEvent('svitlo:support-receipt-saved',{detail:{id:result.id,token:result.token,status:'new'}}));
   lastSent=result;
   $('ticketId').textContent=result.id;
   $('feedbackForm').hidden=true;$('success').hidden=false;
@@ -228,6 +229,7 @@ $('lookupForm').addEventListener('submit',async event=>{
  try{
   const result=await loadTicket(id,token);
   remember({id,token,topic:result.topic,subject:result.subject,status:result.status,createdAt:result.createdAt});
+  window.dispatchEvent(new CustomEvent('svitlo:support-receipt-saved',{detail:{id,token,status:result.status,ticket:result}}));
   renderSaved();showConversation(result);$('lookupForm').reset();
  }catch(e){alertAt('lookupMessage',friendlyError(e))}
 });
@@ -245,4 +247,10 @@ $('replyForm').addEventListener('submit',async event=>{
 const topicQuery=new URLSearchParams(location.search).get('topic');if(TOPICS[topicQuery])$('topic').value=topicQuery;
 restoreDraft();if(TOPICS[topicQuery]){$('topic').value=topicQuery;setTopic()}
 updateSavedCount();
-if(new URLSearchParams(location.search).get('tab')==='tickets')chooseTab('tickets');
+const ticketParams=new URLSearchParams(location.search);
+if(ticketParams.get('tab')==='tickets'||ticketParams.has('ticket'))chooseTab('tickets');
+const linkedTicket=ticketParams.get('ticket');
+if(linkedTicket&&/^SC-[A-F0-9]{10}$/.test(linkedTicket)&&saved.some(x=>x.id===linkedTicket&&VALID_TOKEN_HELPER(x.token))){
+ openTicket(linkedTicket).catch(console.warn);
+}
+function VALID_TOKEN_HELPER(value){return /^[a-zA-Z0-9_-]{32,80}$/.test(String(value||''))}
