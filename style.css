@@ -619,3 +619,9 @@ html:not([data-app-mode="standalone"]) #appBootScreen,.app-boot-screen[hidden]{d
 .maintenance-inline.is-planned .maintenance-inline-eyebrow{color:var(--planned-accent,#347af0)}
 .maintenance-inline.is-planned .maintenance-inline-action{background:var(--planned-accent,#347af0)}
 @media(max-width:420px){.app-update-banner{min-height:0;padding:22px 19px}.app-update-heading strong{font-size:20px}}
+
+/* Managed home intro presets. Critical electricity status and graph stay visible. */
+#home .hero-heading[data-home-layout="compact"]{margin-bottom:12px;padding-top:2px}
+#home .hero-heading[data-home-layout="compact"] h1{font-size:clamp(25px,6vw,37px)}
+#home .hero-heading[data-home-layout="centered"]{text-align:center;margin-inline:auto}
+#home .hero-heading[data-home-layout="centered"] .eyebrow{justify-content:center}

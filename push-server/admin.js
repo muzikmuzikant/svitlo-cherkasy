@@ -47,6 +47,21 @@ function validate(kind,obj){
   if(obj.schemaVersion!==1||!Array.isArray(obj.schedules?.days)||typeof obj.addresses!=='object'||!Array.isArray(obj.emergency?.events))throw Error('Невірна структура manual_overrides');
   if(obj.schedules.days.some(x=>!/^20\d\d-\d\d-\d\d$/.test(x.date||'')||!isOfficial(x.source)||x.verified!==true))throw Error('Кожне ручне уточнення графіка потребує дати та офіційного джерела');
   if(obj.schedules.days.some(x=>Object.keys(x.queues||{}).some(q=>!ALL.has(q))))throw Error('Невідома підчерга');
+   const places=obj.addresses?.localities||{};
+   if(typeof places!=='object'||Array.isArray(places)||Object.keys(places).length>250)throw Error('Некоректний довідник ручних адрес');
+   if(Object.keys(places).length&&!isOfficial(obj.addressesSource))throw Error('Для ручних адрес потрібне офіційне джерело');
+   for(const [town,local] of Object.entries(places)){
+    if(!/^[\p{L}\p{N}]{2,65}$/u.test(town)||!local||typeof local!=='object')throw Error('Неправильний населений пункт');
+    for(const field of ['streetQueues','keys']){
+     const values=local[field]||{};
+     if(typeof values!=='object'||Array.isArray(values)||Object.keys(values).length>3000)throw Error('Некоректні записи адрес');
+     for(const [key,queues] of Object.entries(values))
+      if(key.length>145||!Array.isArray(queues)||queues.length<1||queues.length>12||queues.some(q=>!ALL.has(q)))
+       throw Error('Некоректна адреса або підчерга');
+    }
+    for(const name of Object.values(local.streets||{}))
+     if(typeof name!=='string'||name.length>130||/[<>\x00-\x1f]/.test(name))throw Error('Некоректна назва вулиці');
+   }
   if(obj.emergency.events.some(e=>!isOfficial(e.source)||!e.title||!['active','notice','ended'].includes(e.status)||!Number.isFinite(new Date(e.publishedAt).getTime())||new Date(e.publishedAt).getTime()>Date.now()+5*60_000))throw Error('Невірне аварійне повідомлення або час публікації');
  }
  if(kind==='schedules'&&(!Array.isArray(obj.days)||obj.days.some(x=>!x.date||!isOfficial(x.source)||!x.verified)))throw Error('Графіки повинні мати дату і підтверджене офіційне джерело');
@@ -64,7 +79,7 @@ async function github(path,method='GET',payload){
  return data;
 }
 async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
-export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal,auditSchedules,errorCounts,dailyReports){
+export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal,auditSchedules,errorCounts,dailyReports,operationalControls){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(!originPolicy.isAllowed(req.headers.origin)){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const url=new URL(req.url,'http://localhost');
@@ -269,7 +284,34 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    if(url.pathname==='/api/admin/app-config/history'&&req.method==='GET'){
      send(res,200,{items:siteControls?.historyView?.()||[]});return true;
    }
-   if(url.pathname==='/api/admin/app-config'&&req.method==='GET'){
+   if(url.pathname==='/api/admin/operations'&&method==='GET'){
+      if(!operationalControls){send(res,503,{error:'Параметри автоматизації недоступні'});return true}
+      send(res,200,operationalControls.get());return true;
+    }
+    if(url.pathname==='/api/admin/operations'&&method==='PUT'){
+      if(role!=='owner'||session.managed){send(res,403,{error:'Лише власник може змінювати автоматизацію'});return true}
+      const data=await readJson(req,5000);
+      send(res,200,operationalControls.update(data.controls,data.expectedRevision));return true;
+    }
+    if(url.pathname==='/api/admin/operations/history'&&method==='GET'){
+      send(res,200,{items:operationalControls?.list()||[]});return true;
+    }
+    if(url.pathname==='/api/admin/operations/history/restore'&&method==='POST'){
+      if(role!=='owner'||session.managed){send(res,403,{error:'Лише власник може відновлювати параметри'});return true}
+      const input=await readJson(req,1000);
+      if(input.confirm!==true){send(res,400,{error:'Підтвердіть відновлення'});return true}
+      send(res,200,operationalControls.restore(input.revision,input.expectedRevision));return true;
+    }
+    if(url.pathname==='/api/admin/home'&&method==='PUT'){
+      if(role!=='owner'||session.managed){send(res,403,{error:'Редактор головної доступний власнику'});return true}
+      const input=await readJson(req,1600),current=siteControls.get();
+      if(input.expectedUpdatedAt!==current.updatedAt){send(res,409,{error:'Оформлення змінилося. Оновіть дані перед збереженням.'});return true}
+      const home=input.home;
+      if(!home||typeof home!=='object'||Array.isArray(home)){send(res,400,{error:'Некоректні поля головної'});return true}
+      current.site={...current.site,home};
+      send(res,200,siteControls.update(current));return true;
+    }
+    if(url.pathname==='/api/admin/app-config'&&req.method==='GET'){
      if(!siteControls){send(res,503,{error:'Керування застосунком недоступне'});return true}
      send(res,200,siteControls.get());return true;
    }

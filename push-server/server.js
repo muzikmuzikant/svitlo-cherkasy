@@ -15,6 +15,7 @@ import {auditSchedule} from './schedule-quality.js';
 import {createDiagnosticsStore} from './diagnostics.js';
 import {createDailyReports} from './daily-reports.js';
 import {createAppConfig} from './app-config.js';
+import {createOperationsStore} from './operations-controls.js';
 import {createMediaStore} from './media-store.js';
 import {createSchedulePublication} from './schedule-publication.js';
 import {originPolicy} from './origins.js';
@@ -49,6 +50,7 @@ const legal=createLegalStore({directory:path.dirname(DATA_FILE)});
 const errorCounts=createDiagnosticsStore({directory:path.dirname(DATA_FILE)});
 const dailyReports=createDailyReports({directory:path.dirname(DATA_FILE)});
 const siteControls=createAppConfig({directory:path.dirname(DATA_FILE),record:extras.record});
+const operationalControls=createOperationsStore({directory:path.dirname(DATA_FILE),record:extras.record});
 const mediaStore=createMediaStore(path.dirname(DATA_FILE));
 const officialSchedules=createSchedulePublication({directory:path.dirname(DATA_FILE),token:process.env.SCHEDULE_INGEST_SECRET||''});
 const appUrl=new URL('/',APP_ORIGIN).href; // Push opens PWA, never the GitHub raw JSON host.
@@ -114,7 +116,8 @@ async function transitionJob(){
   const nextDate=shiftDay(now.date,1);
   const tomorrow=schedulesSafe?source.days.find(d=>d.date===nextDate&&d.verified===true):null;
   const all=Object.values(subscribers);
-  const cycle={at:new Date().toISOString(),subscribers:all.length,
+  const reminderSettings=typeof operationalControls!=='undefined'&&operationalControls?.get?operationalControls.get().reminders:null;
+   const cycle={at:new Date().toISOString(),subscribers:all.length,
    offEnabled:all.filter(x=>x?.preferences?.off).length,
    onEnabled:all.filter(x=>x?.preferences?.on).length,
    scheduleFresh:schedulesSafe,todayVerified:!!current,tomorrowVerified:!!tomorrow,
@@ -125,13 +128,17 @@ async function transitionJob(){
    const pref=record.preferences||{},prefix=hash(endpoint),minutes=now.m;
    const values=schedulesSafe?timeline(current,q):null;
    const valuesTomorrow=schedulesSafe?timeline(tomorrow,q):null;
-   for(const [type,offset,target] of [['off',30,1],['on',15,0]]){
-    if(!pref[type])continue;
+   for(const [type,defaultLead,target] of [['off',30,1],['on',15,0]]){
+     const preset=reminderSettings?.[type],offset=preset?.leadMinutes??defaultLead;
+    if(!pref[type]||preset?.enabled===false)continue;
     // Recover reminders delayed by Railway restarts or temporarily slow schedule imports.
     // The helper never returns transitions that have already started.
     const boundary=dueTransitionAcrossDays(values,valuesTomorrow,minutes,offset,target,offset-2);
     if(boundary!==null){const eta=boundary-minutes;
      const msg=transitionCopy(type,q,boundary,eta,boundary>=1440?nextDate:now.date);
+      const clockTime=String(Math.floor((boundary%1440)/60)).padStart(2,'0')+':'+String(boundary%60).padStart(2,'0');
+      const interpolate=value=>value.replace(/\{(minutes|queue|time)\}/g,(_,field)=>({minutes:String(eta),queue:q,time:clockTime})[field]);
+      if(preset){msg.title=interpolate(preset.title);msg.body=interpolate(preset.body)}
      const key=`${prefix}:${type}:${now.date}:${boundary}`;
      if(sent[key]){cycle.transitionAlreadySent++;continue}
      cycle.transitionDue++;
@@ -353,7 +360,7 @@ const server=http.createServer(async(req,res)=>{
     const tickets=feedback.list().items;
     result.feedback={total:tickets.length,new:tickets.filter(t=>t.status==='new').length,inProgress:tickets.filter(t=>t.status==='in_progress').length};
     return result;
-  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule(officialSchedules.schedule()||lastLoadedSchedule),errorCounts,dailyReports);return}
+  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule(officialSchedules.schedule()||lastLoadedSchedule),errorCounts,dailyReports,operationalControls);return}
  if(req.url?.startsWith('/api/media/')&&req.method==='GET'){
    const id=req.url.slice('/api/media/'.length).split('?')[0],file=mediaStore.read(id);
    if(!file){response(res,404,{error:'Фото не знайдене'});return}

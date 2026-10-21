@@ -30,6 +30,21 @@
   }
   document.documentElement.dataset.siteDensity=appearance.density==='compact'?'compact':'comfortable';
   document.documentElement.dataset.siteRounded=appearance.rounded===false?'false':'true';
+   const home=site?.home||{},hero=document.querySelector('#home .hero-heading');
+   if(hero){
+    const fields=[['.eyebrow','eyebrow','ВСЕ ПРО СВІТЛО'],['h1','headline','Все під контролем.'],['p','subtitle','Оберіть адресу. Решту зробимо ми.']];
+    for(const [selector,key,fallback] of fields){
+     const node=hero.querySelector(selector),value=home[key];
+     if(node){
+      const text=typeof value==='string'&&value.trim()&&value.length<=180?value:fallback;
+      if(key==='eyebrow'){
+       for(const child of [...node.childNodes])if(child.nodeType===Node.TEXT_NODE)child.remove();
+       node.append(document.createTextNode(' '+text));
+      }else node.textContent=text;
+     }
+    }
+    hero.dataset.homeLayout=['classic','compact','centered'].includes(home.layout)?home.layout:'classic';
+   }
   const featureKeys=["inbox","inboxFilters","inboxHistory","sharing","sharePreview","copySchedule","help","feedback","addressSearch","pushPrompt","pushSettings","tomorrowPreview","quickAddresses","homePlaces","dailyStats","overviewTimeline","statusCountdown","weekNavigation","dayStats","scheduleLegend","offlineStatus","scheduleSource","manualRefresh","homeQuickActions","animations","quickQueueLookup","nextChangeCard","dayShortcuts","detailSourceLink","hourlyLabels","inboxMarkAll","inboxClearRead","appUpdateCheck","editAddressFromGraph","syncStatus","settingsFooter","tomorrowOpenShortcut","scheduleOpenShortcut"];
   for(const key of featureKeys)document.documentElement.classList.toggle('feature-off-'+key,flags[key]===false);
   document.documentElement.dataset.featureConfigLoaded='true';
