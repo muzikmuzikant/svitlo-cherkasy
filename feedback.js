@@ -62,6 +62,7 @@ function chooseTab(name){
  for(const [id,active] of [['tabNew',newer],['tabTickets',!newer]]){
   $(id).classList.toggle('selected',active);$(id).setAttribute('aria-selected',String(active));
  }
+ if(newer){$('viewTickets').classList.remove('is-reading');$('ticketConversation').hidden=true;selectedTicket=null;}
  if(!newer)renderSaved();
 }
 function setTopic(){
@@ -129,6 +130,7 @@ function bubble(from,value,at){
 }
 function showConversation(ticket){
  selectedTicket={id:ticket.id,token:saved.find(x=>x.id===ticket.id)?.token||''};
+ $('viewTickets').classList.add('is-reading');
  $('ticketConversation').hidden=false;$('conversationId').textContent=ticket.id;
  $('conversationHeading').textContent=ticket.subject||TOPICS[ticket.topic]||'Ваше звернення';
  $('conversationStatus').replaceWith(Object.assign(statusNode(ticket.status),{id:'conversationStatus'}));
@@ -157,12 +159,15 @@ $('ticketRatingOptions')?.addEventListener('click',async event=>{
 });
 async function openTicket(id){
  const item=saved.find(x=>x.id===id);if(!item)return;
+ const changingCase=selectedTicket?.id!==id;
+ $('viewTickets').classList.add('is-reading');
  $('ticketConversation').hidden=false;$('conversationId').textContent=id;
  $('conversationHeading').textContent='Завантажуємо звернення…';
  $('conversationMessages').replaceChildren();
  try{
   const result=await loadTicket(id,item.token);
   item.status=result.status;storeTickets();renderSaved();showConversation(result);
+  if(changingCase)$('viewTickets').scrollIntoView({block:'start',behavior:'auto'});
  }catch(e){alertAt('conversationMessage',friendlyError(e));$('conversationHeading').textContent='Не вдалося отримати звернення';}
 }
 $('tabNew').addEventListener('click',()=>chooseTab('new'));
@@ -233,7 +238,7 @@ $('lookupForm')?.addEventListener('submit',async event=>{
   renderSaved();showConversation(result);$('lookupForm').reset();
  }catch(e){alertAt('lookupMessage',friendlyError(e))}
 });
-$('closeConversation').addEventListener('click',()=>{$('ticketConversation').hidden=true;selectedTicket=null});
+$('closeConversation').addEventListener('click',()=>{$('ticketConversation').hidden=true;$('viewTickets').classList.remove('is-reading');selectedTicket=null;renderSaved();});
 $('replyForm').addEventListener('submit',async event=>{
  event.preventDefault();if(!selectedTicket?.token||!$('replyForm').reportValidity())return;
  const button=$('sendReply');button.disabled=true;button.textContent='Надсилаємо…';$('conversationMessage').hidden=true;
