@@ -1,0 +1,93 @@
+/* Svitlo Office: social-directory register with standard enterprise controls. */
+body.svitlo-office [data-admin-panel="social"] .social-admin-controls{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:9px;margin:13px 0 22px;min-width:0
+}
+body.svitlo-office .social-admin-switch{
+ display:flex;align-items:center;gap:10px;padding:12px 13px;
+ border:1px solid #d3e0e6;border-radius:6px;
+ background:#f5f8fa;color:#375165;
+ font-size:12px;font-weight:700;min-width:0;line-height:1.45
+}
+body.svitlo-office .social-admin-switch input{flex:0 0 17px;width:17px;height:17px;accent-color:#187357}
+body.svitlo-office .social-admin-actions{
+ display:flex;align-items:flex-end;justify-content:space-between;
+ gap:16px;flex-wrap:wrap;margin:0 0 11px;
+ border-bottom:1px solid #dce5eb;padding-bottom:12px
+}
+body.svitlo-office .social-admin-actions h3{margin:0 0 5px}
+body.svitlo-office .social-admin-actions p{font-size:11px;color:#6b7d8e;margin:0;max-width:690px}
+body.svitlo-office .social-admin-entries{display:grid;gap:9px}
+body.svitlo-office .social-admin-row{
+ padding:13px;border-radius:6px;border:1px solid #d5e1e7;
+ background:#fff;min-width:0
+}
+body.svitlo-office .social-admin-row-head{
+ display:flex;justify-content:space-between;gap:10px;
+ align-items:center;padding:0 0 11px;border-bottom:1px solid #edf1f4;flex-wrap:wrap
+}
+body.svitlo-office .social-admin-row-head strong{font-size:12px;color:#233e50}
+body.svitlo-office .social-admin-row-head small{
+ font-size:10px;font-family:ui-monospace,Consolas,monospace;
+ color:#7b8f9e;margin-right:auto;overflow-wrap:anywhere
+}
+body.svitlo-office .social-admin-published{
+ display:inline-flex;align-items:center;gap:7px;font-size:11px;
+ color:#26704f;font-weight:690
+}
+body.svitlo-office .social-admin-published input{width:16px;height:16px;accent-color:#13805d}
+body.svitlo-office .social-admin-row-grid{
+ display:grid;grid-template-columns:minmax(130px,1fr) minmax(125px,1fr) minmax(240px,2.3fr);
+ gap:11px;margin:13px 0 11px;min-width:0
+}
+body.svitlo-office .social-admin-field{display:grid;gap:5px;font-size:11px;color:#465d70;font-weight:730;min-width:0}
+body.svitlo-office .social-admin-field :is(input,select){
+ width:100%;min-width:0;border-radius:5px;border:1px solid #c4d3df;
+ background:#fdfefe;color:#253d50;min-height:39px;font-size:12px;padding:8px 10px
+}
+body.svitlo-office .social-admin-field :is(input,select):focus-visible{
+ outline:2px solid #7cbda5;outline-offset:1px
+}
+body.svitlo-office .social-admin-row-actions{
+ display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap
+}
+body.svitlo-office .social-admin-row-actions button{
+ font-size:11px!important;padding:7px 12px!important;
+ border-radius:5px!important;box-shadow:none!important
+}
+body.svitlo-office .social-admin-preview-wrap{
+ margin:19px 0 18px;padding:17px;background:#f5f8fa;
+ border:1px solid #d8e3e9;border-radius:7px
+}
+body.svitlo-office .social-admin-preview-wrap h3{font-size:13px;margin:0 0 12px}
+body.svitlo-office .social-admin-preview{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:47px}
+body.svitlo-office .social-admin-preview-title{font-size:11px;color:#698092}
+body.svitlo-office .social-admin-preview-links{display:flex;flex-wrap:wrap;gap:7px}
+body.svitlo-office .social-admin-preview-link{
+ display:inline-flex;align-items:center;gap:7px;padding:7px 11px;
+ border-radius:8px;background:#fff;border:1px solid #cfdae2;
+ color:#36586b;font-size:11px;font-weight:720
+}
+body.svitlo-office .social-admin-mini-icon{
+ display:grid;place-items:center;width:19px;height:19px;border-radius:5px;
+ font-size:9px;font-weight:840;background:#e1f0f7;color:#286d92
+}
+body.svitlo-office .social-admin-empty{font-size:12px;color:#8596a4}
+body.svitlo-office #socialStatus.social-error{color:#a54f39;font-weight:690}
+@media(max-width:980px){
+ body.svitlo-office [data-admin-panel="social"] .social-admin-controls{
+  grid-template-columns:minmax(0,1fr)
+ }
+ body.svitlo-office .social-admin-row-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.svitlo-office .social-admin-row-grid .social-admin-field:last-child{grid-column:1/-1}
+}
+@media(max-width:610px){
+ body.svitlo-office .social-admin-row-grid{grid-template-columns:minmax(0,1fr)}
+ body.svitlo-office .social-admin-row-grid .social-admin-field:last-child{grid-column:auto}
+ body.svitlo-office .social-admin-row-actions button{flex:1 1 78px}
+ body.svitlo-office .social-admin-actions button{width:100%}
+ body.svitlo-office .social-admin-preview-wrap{padding:12px}
+ body.svitlo-office .social-admin-preview-links{gap:5px}
+ body.svitlo-office .social-admin-row{padding:10px}
+ body.svitlo-office .social-admin-field :is(input,select){font-size:16px}
+}
