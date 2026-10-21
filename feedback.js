@@ -33,6 +33,62 @@ async function loadTicketCategories(){
 const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||'null')??fallback}catch{return fallback}};
 let saved=Array.isArray(read(SAVED,[]))?read(SAVED,[]):[];
 let selectedTicket=null,lastSent=null,basePromise=null;
+const CHAT_REFRESH_MS=4500;
+let chatRequestBusy=false,chatFingerprint='',chatGeneration=0;
+const ticketFingerprint=t=>JSON.stringify([
+ t.status,t.updatedAt,t.rating,t.canReply,
+ (t.messages||[]).map(m=>[m.id,m.from,m.text,m.at])
+]);
+function chatIndicator(message,mode='ok'){
+ const el=$('chatLiveStatus');if(!el)return;
+ el.textContent=message;el.dataset.state=mode;
+}
+function updateSavedStatus(ticket){
+ const item=saved.find(x=>x.id===ticket.id);
+ if(item&&item.status!==ticket.status){item.status=ticket.status;storeTickets()}
+}
+async function refreshOpenChat(){
+ if(chatRequestBusy||document.hidden||$('viewTickets').hidden||$('ticketConversation').hidden||!selectedTicket?.token)return;
+ const id=selectedTicket.id,token=selectedTicket.token,generation=chatGeneration;
+ chatRequestBusy=true;
+ try{
+  const ticket=await loadTicket(id,token);
+  if(generation!==chatGeneration||selectedTicket?.id!==id||$('ticketConversation').hidden)return;
+  const hash=ticketFingerprint(ticket);
+  chatIndicator('На зв’язку · оновлено '+new Date().toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'}));
+  if(hash===chatFingerprint)return;
+  chatFingerprint=hash;
+  updateSavedStatus(ticket);
+  const root=$('conversationMessages');
+  const entries=[...(ticket.message?[{id:'initial',from:'user',text:ticket.message,at:ticket.createdAt}]:[]),...(ticket.messages||[])];
+  const existing=[...root.querySelectorAll('.conversation-bubble')];
+  const isPrefix=existing.length<=entries.length&&existing.every((node,i)=>node.dataset.messageKey===String(entries[i].id||i));
+  if(isPrefix){
+   const nearBottom=window.innerHeight-(root.getBoundingClientRect().bottom)<135;
+   for(const [i,entry] of entries.entries()){
+    if(i<existing.length)continue;
+    const node=bubble(entry.from,entry.text,entry.at);node.dataset.messageKey=String(entry.id||i);
+    root.append(node);
+   }
+   if(nearBottom&&entries.length>existing.length)root.lastElementChild?.scrollIntoView({block:'nearest',behavior:'smooth'});
+  }else{
+   root.replaceChildren();
+   entries.forEach((entry,i)=>{const node=bubble(entry.from,entry.text,entry.at);node.dataset.messageKey=String(entry.id||i);root.append(node)});
+  }
+  $('conversationStatus').replaceWith(Object.assign(statusNode(ticket.status),{id:'conversationStatus'}));
+  $('ticketRating').hidden=ticket.canReply!==true||ticket.status!=='resolved';
+  $('ticketRatingOptions').hidden=!!ticket.rating;
+  $('replyForm').hidden=ticket.canReply!==true;
+  if(!$('viewTickets').classList.contains('is-reading'))renderSaved();
+ }catch(error){
+  if(generation===chatGeneration)chatIndicator('З’єднання нестабільне · повторюємо перевірку','error');
+ }finally{chatRequestBusy=false}
+}
+setInterval(()=>{void refreshOpenChat()},CHAT_REFRESH_MS);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refreshOpenChat()});
+window.addEventListener('online',()=>void refreshOpenChat());
+window.addEventListener('focus',()=>void refreshOpenChat());
+
 const safeTickets=()=>saved.filter(x=>x&&/^SC-[A-F0-9]{10}$/.test(x.id)&&(!x.token||/^[a-zA-Z0-9_-]{32,80}$/.test(x.token))).slice(0,60);
 saved=safeTickets();
 const storeTickets=()=>{try{localStorage.setItem(SAVED,JSON.stringify(saved))}catch{}};
@@ -62,7 +118,7 @@ function chooseTab(name){
  for(const [id,active] of [['tabNew',newer],['tabTickets',!newer]]){
   $(id).classList.toggle('selected',active);$(id).setAttribute('aria-selected',String(active));
  }
- if(newer){$('viewTickets').classList.remove('is-reading');$('ticketConversation').hidden=true;selectedTicket=null;}
+ if(newer){chatGeneration++;$('viewTickets').classList.remove('is-reading');$('ticketConversation').hidden=true;selectedTicket=null;}
  if(!newer)renderSaved();
 }
 function setTopic(){
@@ -130,6 +186,7 @@ function bubble(from,value,at){
 }
 function showConversation(ticket){
  selectedTicket={id:ticket.id,token:saved.find(x=>x.id===ticket.id)?.token||''};
+ chatFingerprint=ticketFingerprint(ticket);
  $('viewTickets').classList.add('is-reading');
  $('ticketConversation').hidden=false;$('conversationId').textContent=ticket.id;
  $('conversationHeading').textContent=ticket.subject||TOPICS[ticket.topic]||'Ваше звернення';
@@ -137,8 +194,8 @@ function showConversation(ticket){
  $('conversationMeta').replaceChildren(text('span','Створено: '+displayDate(ticket.createdAt)),...(ticket.queue?[text('span','Підчерга '+ticket.queue)]:[]));
  const root=$('conversationMessages');root.replaceChildren();
  if(ticket.message){
-  root.append(bubble('user',ticket.message,ticket.createdAt));
-  for(const entry of ticket.messages||[])root.append(bubble(entry.from,entry.text,entry.at));
+  const first=bubble('user',ticket.message,ticket.createdAt);first.dataset.messageKey='initial';root.append(first);
+  for(const [i,entry] of (ticket.messages||[]).entries()){const node=bubble(entry.from,entry.text,entry.at);node.dataset.messageKey=String(entry.id||i);root.append(node)}
  }else root.append(text('p','Для старого звернення доступний лише статус. Для листування потрібен приватний код доступу.','support-alert'));
  $('ticketRating').hidden=ticket.canReply!==true||ticket.status!=='resolved';
  $('ticketRatingOptions').hidden=!!ticket.rating;
@@ -160,6 +217,7 @@ $('ticketRatingOptions')?.addEventListener('click',async event=>{
 async function openTicket(id){
  const item=saved.find(x=>x.id===id);if(!item)return;
  const changingCase=selectedTicket?.id!==id;
+ if(changingCase){chatGeneration++;chatFingerprint=''}
  $('viewTickets').classList.add('is-reading');
  $('ticketConversation').hidden=false;$('conversationId').textContent=id;
  $('conversationHeading').textContent='Завантажуємо звернення…';
@@ -167,6 +225,7 @@ async function openTicket(id){
  try{
   const result=await loadTicket(id,item.token);
   item.status=result.status;storeTickets();renderSaved();showConversation(result);
+  chatIndicator('На зв’язку · повідомлення оновлюються автоматично');
   if(changingCase)$('viewTickets').scrollIntoView({block:'start',behavior:'auto'});
  }catch(e){alertAt('conversationMessage',friendlyError(e));$('conversationHeading').textContent='Не вдалося отримати звернення';}
 }
@@ -238,7 +297,7 @@ $('lookupForm')?.addEventListener('submit',async event=>{
   renderSaved();showConversation(result);$('lookupForm').reset();
  }catch(e){alertAt('lookupMessage',friendlyError(e))}
 });
-$('closeConversation').addEventListener('click',()=>{$('ticketConversation').hidden=true;$('viewTickets').classList.remove('is-reading');selectedTicket=null;renderSaved();});
+$('closeConversation').addEventListener('click',()=>{chatGeneration++;chatFingerprint='';$('ticketConversation').hidden=true;$('viewTickets').classList.remove('is-reading');selectedTicket=null;renderSaved();});
 $('replyForm').addEventListener('submit',async event=>{
  event.preventDefault();if(!selectedTicket?.token||!$('replyForm').reportValidity())return;
  const button=$('sendReply');button.disabled=true;button.textContent='Надсилаємо…';$('conversationMessage').hidden=true;
