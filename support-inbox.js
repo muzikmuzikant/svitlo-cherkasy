@@ -6,13 +6,19 @@
 (()=>{'use strict';
  const RECEIPTS='svitlo-support-tickets-v1';
  const SNAPSHOTS='svitlo-ticket-inbox-state-v1';
+ const CURSOR='svitlo-support-scan-offset-v1';
  const VALID_ID=/^SC-[A-F0-9]{10}$/;
  const VALID_TOKEN=/^[a-zA-Z0-9_-]{32,80}$/;
  const STATUS={new:'Нове',in_progress:'У роботі',resolved:'Вирішено'};
  const MAX_CHECK=18,POLL_MS=120000;
  let apiPromise=null,inFlight=null,cursor=0;
+ try{const offset=Number(localStorage.getItem(CURSOR));if(Number.isSafeInteger(offset)&&offset>=0)cursor=offset}catch{}
  const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||'null')??fallback}catch{return fallback}};
- const receipts=()=>{const value=read(RECEIPTS,[]);return Array.isArray(value)?value.filter(x=>x&&VALID_ID.test(x.id)&&VALID_TOKEN.test(x.token||'')).slice(0,60):[]};
+ const receipts=()=>{const value=read(RECEIPTS,[]);
+  // Some earlier receipts have no private token. Status-only checks must
+  // still discover deleted cases; only authenticated cases get reply alerts.
+  return Array.isArray(value)?value.filter(x=>x&&VALID_ID.test(x.id)&&(!x.token||VALID_TOKEN.test(x.token))).slice(0,60):[];
+ };
  const statusName=value=>STATUS[value]||'Нове';
  const replyIds=ticket=>(Array.isArray(ticket.messages)?ticket.messages:[])
   .filter(x=>x?.from==='admin'&&/^[a-f0-9]{12}$/.test(String(x.id||'')))
@@ -132,6 +138,7 @@
    const size=Math.min(MAX_CHECK,Math.max(1,Math.trunc(Number(limit)||MAX_CHECK)));
    const checks=saved.length<=size?saved:[...saved.slice(cursor),...saved.slice(0,cursor)].slice(0,size);
    cursor=(cursor+checks.length)%saved.length;
+   try{localStorage.setItem(CURSOR,String(cursor))}catch{}
    const state=snapshots(),events=[];
    let changed=false,index=0;
    const worker=async()=>{
