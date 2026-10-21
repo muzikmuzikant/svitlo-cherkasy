@@ -366,7 +366,7 @@ window.betaAdminUploadAdPhoto=async(file)=>{
 let supportTemplates=['Дякуємо! Перевіряємо цю інформацію та повідомимо про результат.'];
 function renderSupportTemplateEditor(){
  const box=$('adminReplyTemplates');if(!box)return;
- box.replaceChildren();if(adminRole==='viewer')return;
+ box.replaceChildren();if(adminRole==='viewer'||adminRole==='operator')return;
  box.append(supportNode('h4','Шаблони відповідей'));
  const list=supportNode('div',undefined,'reply-template-list');
  for(const [i,t] of supportTemplates.entries()){
