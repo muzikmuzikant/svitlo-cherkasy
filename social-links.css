@@ -62,3 +62,20 @@
  .svitlo-social-link{transition:none!important}
  .svitlo-social-link:hover{transform:none}
 }
+
+/* Existing horizontal legal footers get a separate quiet social row. */
+.install-footer,.support-footer{flex-wrap:wrap}
+.install-footer>.svitlo-social-footer,
+.support-footer>.svitlo-social-footer{
+ flex:1 1 100%;width:100%;margin:0;padding-top:12px;
+ justify-content:flex-start;min-width:0
+}
+.install-footer>.svitlo-social-footer .svitlo-social-caption,
+.support-footer>.svitlo-social-footer .svitlo-social-caption{
+ flex:0 0 auto
+}
+@media(max-width:490px){
+ .install-footer>.svitlo-social-footer,.support-footer>.svitlo-social-footer{
+  align-items:flex-start;flex-direction:column;gap:8px
+ }
+}
