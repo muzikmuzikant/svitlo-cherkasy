@@ -91,6 +91,20 @@
   if(ticket?.id!==receipt.id||!ticket.canReply||!Array.isArray(ticket.messages))return null;
   return updates(receipt,ticket,state[receipt.id]);
  }
+ async function localNotify(events){
+  // Local OS notifications are best-effort while the PWA is running. They do
+  // not request permission and never expose a private token or reply content.
+  if(!events.length||!('Notification' in window)||Notification.permission!=='granted'||!('serviceWorker' in navigator))return;
+  const registration=await navigator.serviceWorker.getRegistration().catch(()=>null);
+  if(!registration?.showNotification)return;
+  for(const item of events){
+   try{await registration.showNotification(item.title,{
+    body:item.body,tag:item.id.slice(0,70),renotify:false,lang:'uk',
+    icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',
+    data:{inboxId:item.id,inbox:true,noticeId:null}
+   })}catch(error){console.warn('Support notification:',error?.message)}
+  }
+ }
  async function scan(){
   if(inFlight)return inFlight;
   if(typeof navigator!=='undefined'&&navigator.onLine===false)return [];
@@ -120,6 +134,7 @@
    if(events.length)await store.add(events);
    if(changed)persist(state);
    if(events.length){
+    void localNotify(events).catch(()=>{});
     window.dispatchEvent(new CustomEvent('svitlo:support-inbox-updated',{detail:{count:events.length}}));
     window.SvitloInboxUI?.refresh?.().catch?.(()=>{});
    }
