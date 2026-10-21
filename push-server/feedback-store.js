@@ -103,7 +103,7 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   items.push(newItem);
   try{save()}catch{items.pop();privateMedia.erase(attachments);throw bad('Не вдалося зберегти звернення. Спробуйте пізніше.',503)}
   entry.times.push(t);entry.expire=t+interval;attempts.set(k,entry);
-  return {ok:true,id:newItem.id,token};
+  return {ok:true,id:newItem.id,token,attached:attachments.length};
  }
  function list(){if(cleanup())save();return {items:items.slice().reverse().map(({accessHash,...item})=>item),count:items.length,capabilities:{routing:true,activity:true,optimisticRevision:true}}}
  function change(id,patch,actor='admin'){
@@ -176,7 +176,7 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   const index=items.indexOf(found);items[index]=saved;
   try{save()}catch{items[index]=found;privateMedia.erase(attachments);throw bad('Помилка збереження.',503)}
   attempt.times.push(t);attempt.expire=t+interval;replyAttempts.set(k,attempt);
-  return {ok:true,id};
+  return {ok:true,id,attached:attachments.length};
  }
  function getAttachment(ticketId,attachmentId,token,authorized=false){
   const ticket=find(ticketId);
