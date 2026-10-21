@@ -241,7 +241,11 @@ function renderTicketList(){
   const card=supportNode('button',undefined,'ticket-row'+(item.id===supportSelected?' selected':''));card.type='button';card.setAttribute('aria-pressed',String(item.id===supportSelected));
   const top=supportNode('div',undefined,'ticket-row-head');
   top.append(supportNode('small',item.id),supportBadge(item.status));
-  card.append(top,supportNode('strong',item.subject||TICKET_TOPICS[item.topic]||'Звернення'),supportNode('p',item.message));
+  const recent=[...(item.messages||[])].filter(m=>m?.from==='user'||m?.from==='admin').at(-1);
+   const needsReply=item.status!=='resolved'&&(!recent||recent.from==='user');
+   const preview=recent?.text||item.message||'';
+   card.append(top,supportNode('strong',item.subject||TICKET_TOPICS[item.topic]||'Звернення'),supportNode('p',(recent?(recent.from==='admin'?'Підтримка: ':'Користувач: '):'')+preview));
+   if(needsReply){card.classList.add('is-awaiting-reply');card.append(supportNode('span','Потребує відповіді','ticket-awaiting-label'))}
   const meta=supportNode('div',undefined,'ticket-row-meta');meta.append(supportNode('span',supportDate(item.createdAt)));
   if(item.queue)meta.append(supportNode('span','Підчерга '+item.queue));
   if(item.assignedTo)meta.append(supportNode('span','Виконавець: '+item.assignedTo));
