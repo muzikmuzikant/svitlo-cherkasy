@@ -110,6 +110,12 @@
   const steps=[['Зареєстровано',true],['Взято в роботу',ticket.status!=='new'],['Завершено',ticket.status==='resolved']];
   for(const [label,complete] of steps)progress.append(node('span',label,'office-route-step'+(complete?' is-complete':'')));
   unit.append(progress);
+  if(!routingAvailable){
+   const reminder=node('p','Статуси, відповіді та внутрішні нотатки доступні через сервер. Розподіл виконавців увімкнеться після оновлення бета-сервера.','office-route-hint');
+   unit.append(reminder);
+   if(existing)existing.after(unit);else detail.append(unit);
+   return;
+  }
   const fields=node('div',undefined,'office-route-fields');
   const control=(caption,type,value,maxLength)=>{
    const label=node('label',undefined,'office-route-field');label.append(node('span',caption));
