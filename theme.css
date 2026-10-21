@@ -77,3 +77,60 @@
 :root[data-theme="dark"] .hour-ink-on{color:#dcfbe7}
 :root[data-theme="dark"] .hour-ink-off{color:#fff}
 :root[data-theme="dark"] .hour-ink-unknown{color:#d7e0eb}
+
+/* Schedule and controls */
+:root[data-theme="dark"] .detail-status{background:#202d40;color:#cee0ff}
+:root[data-theme="dark"] .detail-status.on{background:#193e2b;color:#b0f0c5}
+:root[data-theme="dark"] .detail-status.off{background:#432931;color:#ffd0d4}
+:root[data-theme="dark"] .hour-cell.unknown{background:#27313e;color:#d3deeb}
+:root[data-theme="dark"] .grid-note{color:var(--muted)}
+:root[data-theme="dark"] .info-card{background:var(--surface);border-color:var(--line)}
+:root[data-theme="dark"] .calendar-period{color:#d5e1ee}
+:root[data-theme="dark"] :is(.calendar-arrows button,.calendar-shortcuts button,.house-choice,.schedule-share,.home-quick-places .quick-place){
+ background:var(--raised);border-color:#384453;color:#d3e4f8
+}
+:root[data-theme="dark"] :is(.calendar-shortcuts button.active,.home-quick-places .quick-place.selected){background:#28446b;border-color:#527fad;color:#eaf4ff}
+:root[data-theme="dark"] :is(.calendar-arrows button:active,.house-choice:active){background:#313d50}
+:root[data-theme="dark"] .house-coverage{background:#202e42;color:#cbdef3}
+:root[data-theme="dark"] .house-coverage.no-house-list{background:#252d38;color:#bdcad9}
+:root[data-theme="dark"] .house-choices-title{color:#cbd7e5}
+:root[data-theme="dark"] :is(.house-choices-more,.possible-title){color:#b6c6d8}
+:root[data-theme="dark"] .possible-queue{background:#243853;color:#c4deff}
+:root[data-theme="dark"] .possible-queue.selected{background:#336cc0;color:#fff}
+:root[data-theme="dark"] .move-btn{background:#283c57;color:#c6dfff}
+:root[data-theme="dark"] .quick-queue-lookup{
+ background:var(--surface);color:var(--ink);border-color:var(--line);box-shadow:none
+}
+:root[data-theme="dark"] .quick-queue-lookup :is(p,span){color:#b9c6d5}
+:root[data-theme="dark"] .quick-queue-controls select{background:var(--raised);color:var(--ink);border-color:#415167}
+:root[data-theme="dark"] .queue-override-control{background:#202d3f;border-color:#405672}
+:root[data-theme="dark"] .queue-override-toggle strong{color:var(--ink)}
+:root[data-theme="dark"] .queue-override-toggle small{color:var(--muted)}
+:root[data-theme="dark"] .verified-source-badge.is-verified{background:#183b2b;border:1px solid #34664b;color:#b2ebc4}
+:root[data-theme="dark"] .verified-source-badge.is-unpublished{background:#28313e;border:1px solid #3a4757;color:#c7d4e4}
+/* Options and the interactive sheets */
+:root[data-theme="dark"] :is(.setting-line,.setting-action){box-shadow:none}
+:root[data-theme="dark"] .setting-action span{color:#acbdd1}
+:root[data-theme="dark"] .settings-foot{color:#aab7c7}
+:root[data-theme="dark"] .switch span{background:#424b58}
+:root[data-theme="dark"] .switch span::before{background:#f7f9fd}
+:root[data-theme="dark"] .switch input:checked+span{background:#2b9f70}
+:root[data-theme="dark"] .sheet{background:#131820;color:var(--ink);border:1px solid #2f3642}
+:root[data-theme="dark"] .sheet::backdrop{background:#000a}
+:root[data-theme="dark"] .sheet-handle{background:#4a5260}
+:root[data-theme="dark"] .sheet-close{background:#29303c;color:#dce6f1}
+:root[data-theme="dark"] .sheet :is(input:not([type=checkbox]),select,textarea){
+ background:#212732;color:#f1f4f8;border-color:#444e5d
+}
+:root[data-theme="dark"] .sheet :is(input,textarea)::placeholder{color:#a4b1c1}
+:root[data-theme="dark"] .sheet :is(input,select,textarea):focus{border-color:#82b3fb;box-shadow:0 0 0 3px #83b5ff28}
+:root[data-theme="dark"] .suggestions{background:#1d2430;border-color:#3b4554}
+:root[data-theme="dark"] .suggestions button{background:transparent;color:#e9f0fa;border-color:#353f4c}
+:root[data-theme="dark"] .suggestions button:active{background:#2e3a4b}
+:root[data-theme="dark"] .lookup-feedback{background:#202f43;color:#cfdef2}
+:root[data-theme="dark"] .lookup-feedback.found{background:#1b392b;color:#afeac3}
+:root[data-theme="dark"] .lookup-feedback.warn{background:#433622;color:#f7dbaa}
+:root[data-theme="dark"] .manual-lookup p{color:#b9c7d7}
+:root[data-theme="dark"] :is(.official-btn,.secondary-action){background:#243955;border:1px solid #3c5472;color:#c5deff}
+:root[data-theme="dark"] .toast{background:#eff4fa;color:#19222f;box-shadow:0 12px 38px #0006}
+:root[data-theme="dark"] .delete-action{color:#ff9ba7}
