@@ -500,3 +500,67 @@
    Do not set touch-action:none, which would break normal scroll. */
 html,body{touch-action:pan-x pan-y;overscroll-behavior-x:none;-webkit-text-size-adjust:100%}
 @media(max-width:600px){input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:max(16px,1em)}}
+
+/* STAGING: Consistent high-contrast dark appearance across ALL secondary pages.
+   Each page is scoped; editorial hero mockups retain their designed colors. */
+:root[data-theme="dark"] body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page){
+ background:#090b0f!important;color:#f0f5fb!important;min-width:0;overflow-x:clip
+}
+:root[data-theme="dark"] body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page) a{color:#a9caff}
+:root[data-theme="dark"] body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page) :is(input,textarea,select){
+ background:#121923!important;color:#eff6ff!important;border-color:#3c4b5d!important
+}
+:root[data-theme="dark"] body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page) :is(input,textarea)::placeholder{color:#9eadc1}
+:root[data-theme="dark"] body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page) :is(input,textarea,select,button,a):focus-visible{outline-color:#90bdff}
+/* FAQ / help: every card, chip and expanded answer is dark. */
+:root[data-theme="dark"] .svitlo-help-page :is(.hero,.quick,.articles details,.empty,.filters button:not([aria-pressed="true"]),.search,.search kbd){
+ background:#171d26!important;color:#edf5fd!important;border-color:#344052!important;box-shadow:none!important
+}
+:root[data-theme="dark"] .svitlo-help-page :is(.search,.quick:hover){border-color:#587ea8!important}
+:root[data-theme="dark"] .svitlo-help-page :is(.hero h1,.quick b,.wordmark,.articles summary,.section-head h2,.contact h2){color:#eff4fd!important}
+:root[data-theme="dark"] .svitlo-help-page :is(.hero p,.quick small,.section-head p,.contact p,.count,.back,footer,.answer){color:#b7c7d9!important}
+:root[data-theme="dark"] .svitlo-help-page .answer{border-color:#334052!important}
+:root[data-theme="dark"] .svitlo-help-page .contact{background:#1e3046!important;color:#f0f5fc!important;border-color:#3b5b7a!important}
+:root[data-theme="dark"] .svitlo-help-page .notice{background:#3c2d1f!important;border-color:#695137!important}
+:root[data-theme="dark"] .svitlo-help-page .notice :is(strong,p){color:#f5d6a9!important}
+:root[data-theme="dark"] .svitlo-help-page .filters button[aria-pressed="true"]{background:#3168b7;color:white}
+/* About and legal documents: remove white article sheets and unreadable text. */
+:root[data-theme="dark"] .svitlo-about-page :is(.box){background:#171d26!important;color:#edf4fb!important;border-color:#354253!important}
+:root[data-theme="dark"] .svitlo-privacy-page .body,:root[data-theme="dark"] .svitlo-terms-page article{
+ background:#171d26!important;border-color:#344253!important;box-shadow:none!important;color:#eaf3fc!important
+}
+:root[data-theme="dark"] .svitlo-terms-page .hero{background:linear-gradient(135deg,#202f44,#171f2a)!important;border-color:#3a4c62!important;color:#edf4fb!important}
+:root[data-theme="dark"] .svitlo-terms-page :is(.hero p,.meta,article p,article li){color:#c0cddd!important}
+:root[data-theme="dark"] .svitlo-privacy-page :is(.body p,.body li,.body ul,.lead,.meta,.eyebrow,.footer){color:#c1cddd!important}
+:root[data-theme="dark"] .svitlo-privacy-page :is(.note,.warning),:root[data-theme="dark"] .svitlo-terms-page .note{
+ background:#243347!important;border-color:#3c526c!important;color:#dfebfa!important
+}
+:root[data-theme="dark"] .svitlo-privacy-page .note strong{color:#d6e8ff!important}
+:root[data-theme="dark"] .svitlo-privacy-page .warning{background:#403020!important;border-color:#6e5231!important}
+:root[data-theme="dark"] .svitlo-privacy-page .body code{color:#c0dafe;overflow-wrap:anywhere}
+/* Advertising & project support: keep the dark-blue banners and phone preview,
+   but fully theme secondary sections, floating surfaces and controls. */
+:root[data-theme="dark"] .svitlo-advertising-page :is(.nav-tools .back,.benefit,.format,.plan,.empty,.faq details,.conditions,.contact-banner,.contact),
+:root[data-theme="dark"] .svitlo-support-project-page :is(.back,.method,.goal,.expenses,.faq details,.gratitude,.empty,.why-grid,.footer-note){
+ background:#171e28!important;color:#edf4fd!important;border-color:#354255!important;box-shadow:none!important
+}
+:root[data-theme="dark"] .svitlo-advertising-page :is(.section-heading h2,.benefit h3,.format h3,.plan h3,.faq summary,.conditions h3,.contact-banner h2),
+:root[data-theme="dark"] .svitlo-support-project-page :is(.section-heading h2,.method h3,.goal h3,.faq summary,.why-text h3,.expenses h3){
+ color:#f0f5fc!important
+}
+:root[data-theme="dark"] .svitlo-advertising-page :is(.section-heading p,.benefit p,.format p,.plan p,.faq p,.conditions p,.contact-banner p,.nav-tools a),
+:root[data-theme="dark"] .svitlo-support-project-page :is(.section-heading p,.method p,.goal p,.why-text p,.expenses p,.footer-note p){
+ color:#b8c9dd!important
+}
+:root[data-theme="dark"] .svitlo-support-project-page :is(.method-icon,.method-details){background:#22354f!important;color:#cee2ff!important;border-color:#415a79!important}
+:root[data-theme="dark"] .svitlo-support-project-page .method-actions :is(button,a){background:#294262;color:#dcecff}
+:root[data-theme="dark"] .svitlo-advertising-page :is(.phone,.phone-ad,.phone-status){color:#203a5e}
+/* Detail screens: no white article/sidebar during dark mode. */
+:root[data-theme="dark"] .svitlo-ad-detail-page :is(.article,.aside,.back){
+ background:#171e28!important;border-color:#354255!important;color:#eff4fb!important;box-shadow:none!important
+}
+:root[data-theme="dark"] .svitlo-ad-detail-page :is(.copy,.aside p,.foot,.error p,.mark){color:#bac9d9!important}
+:root[data-theme="dark"] .svitlo-ad-detail-page .article img{background:#242d38}
+@media(max-width:520px){
+ :root[data-theme="dark"] body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page) :is(.hero,.article,.aside,.body,.method,.benefit){min-width:0}
+}
