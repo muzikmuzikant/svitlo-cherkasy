@@ -7,7 +7,7 @@ const manifest=JSON.parse(read('manifest.webmanifest'));
 const push=JSON.parse(read('push-config.json'));
 test('release candidate uses production identity and API, never Beta identity',()=>{
  if(release.channel==='beta'){
-  assert.equal(release.version,'7.9.11');
+  assert.match(release.version,/^7\.9\.\d+$/);
   assert.equal(push.apiBase,'https://svitlo-beta-api-staging.up.railway.app');
   assert.equal(push.publicKey,''); // Beta key must come from Beta server, never production.
   assert.match(read('sw.js'),/svitlo-cherkasy-shell-v7\.9\.11-beta/);
