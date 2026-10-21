@@ -154,7 +154,7 @@ function service(){
 }
 async function post(route,payload){
  const base=await service();
- const response=await fetch(base+route,{method:'POST',headers:{'content-type':'application/json'},cache:'no-store',signal:AbortSignal.timeout(17000),body:JSON.stringify(payload)});
+ const response=await fetch(base+route,{method:'POST',headers:{'content-type':'application/json'},cache:'no-store',signal:AbortSignal.timeout(payload?.attachments?.length?90_000:17000),body:JSON.stringify(payload)});
  const value=await response.json().catch(()=>({}));
  if(!response.ok){
   const error=new Error(value.error||'Не вдалося зв’язатися з підтримкою.');
