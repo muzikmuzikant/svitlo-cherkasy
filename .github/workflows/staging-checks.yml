@@ -60,6 +60,8 @@ jobs:
         run: node --test tests/test_bottom_sheet_beta.mjs
       - name: Validate published social links and owner customization
         run: node --test tests/test_social_channels_beta.mjs
+      - name: Validate private support photos videos and access controls
+        run: node --test tests/test_private_ticket_media.mjs
       - name: Verify calendar-week retention and Beta schedule mirror
         run: |
           node --test tests/test_week_crossing_v713.mjs tests/test_schedule_mirror_beta.mjs tests/test_weekday_inbox_beta.mjs tests/test_release_fixes_7912.mjs
