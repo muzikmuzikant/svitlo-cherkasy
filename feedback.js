@@ -5,6 +5,15 @@ const TOPICS={bug:'Помилка застосунку',address:'Адреса а
 const HINTS={bug:'На якому екрані виникла помилка? Що саме не працює?',address:'Вкажіть населений пункт, назву вулиці та правильну підчергу, якщо знаєте її. Номер будинку необов’язковий.',schedule:'Вкажіть дату та підчергу. Якщо можливо, порівняйте з офіційним графіком.',push:'Уточніть, яке сповіщення не надійшло або прийшло двічі, та модель пристрою.',idea:'Розкажіть, як ця функція спростить використання застосунку.',other:'Опишіть ваше питання якомога конкретніше.'};
 const STATUSES={new:'Нове',in_progress:'У роботі',resolved:'Вирішено'};
 let customCategories=null;
+let mediaAvailable=false;
+function enableMediaForms(allowed){
+ mediaAvailable=allowed===true;
+ for(const [section,input] of [['newTicketMediaSection','newTicketFiles'],['replyTicketMediaSection','replyTicketFiles']]){
+  if($(section))$(section).hidden=!mediaAvailable;
+  if($(input))$(input).disabled=!mediaAvailable;
+ }
+}
+
 function selectedCategory(){return customCategories?.find(c=>c.id===$('topic').value)||null}
 function renderExtraFields(){
  const root=$('extraTicketFields');if(!root)return;root.replaceChildren();
@@ -22,7 +31,8 @@ function renderExtraFields(){
 async function loadTicketCategories(){
  try{
   const base=await service();const r=await fetch(base+'/api/feedback/categories',{cache:'no-store'});
-  if(!r.ok)return;const data=await r.json();if(!data.categories?.length)return;
+  if(!r.ok)return;const data=await r.json();enableMediaForms(data.capabilities?.attachments===true);
+   if(!data.categories?.length)return;
   customCategories=data.categories;const previous=$('topic').value;$('topic').replaceChildren();
   for(const c of customCategories){TOPICS[c.id]=c.title;HINTS[c.id]=c.hint||c.title;$('topic').append(new Option(c.title,c.id))}
   if(customCategories.some(c=>c.id===previous))$('topic').value=previous;
@@ -333,6 +343,12 @@ $('feedbackForm').addEventListener('submit',async event=>{
   if($('includeDiagnostics')?.checked){payload.includeDiagnostics=true;payload.diagnostics=coarseDiagnostics()}
   if(initialFiles?.count())payload.attachments=await initialFiles.collect();
   const result=await post('/api/feedback',payload);
+  if(payload.attachments?.length&&result.attached!==payload.attachments.length){
+   // A stale server must never make us claim media was received.
+   remember({...result,topic:payload.topic,subject:payload.subject});
+   alertAt('formMessage','Звернення створено, але сервер не підтвердив вкладення. Перевірте звернення перед повторним надсиланням.');
+   return;
+  }
   remember({...result,topic:payload.topic,subject:payload.subject});
   window.dispatchEvent(new CustomEvent('svitlo:support-receipt-saved',{detail:{id:result.id,token:result.token,status:'new'}}));
   lastSent=result;initialFiles?.clear();
@@ -382,7 +398,12 @@ $('replyForm').addEventListener('submit',async event=>{
  try{
   const payload={id:selectedTicket.id,token:selectedTicket.token,message:$('replyMessage').value.trim()};
   if(replyFiles?.count())payload.attachments=await replyFiles.collect();
-  await post('/api/ticket/reply',payload);
+  const result=await post('/api/ticket/reply',payload);
+  if(payload.attachments?.length&&result.attached!==payload.attachments.length){
+   const id=selectedTicket.id;await openTicket(id);
+   alertAt('conversationMessage','Повідомлення надіслано, але сервер не підтвердив вкладення. Перевірте історію перед повторним надсиланням.');
+   return;
+  }
   const id=selectedTicket.id;$('replyForm').reset();replyFiles?.clear();await openTicket(id);
   alertAt('conversationMessage','Доповнення надіслано. Підтримка побачить його у зверненні.',true);
  }catch(e){if(wasDeleted(e))forgetDeletedTicket(selectedTicket?.id||'');
