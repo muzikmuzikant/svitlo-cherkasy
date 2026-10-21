@@ -17,7 +17,7 @@
    state.gesture=null;state.closing=false;
    if(state.animation){state.animation.cancel();state.animation=null}
    clearTimeout(state.timer);state.timer=null;
-   dialog.classList.remove('svitlo-sheet-dragging','svitlo-sheet-closing');
+   dialog.classList.remove('svitlo-sheet-dragging','svitlo-sheet-closing','svitlo-sheet-snapping');
    dialog.style.removeProperty('--sheet-exit-from');
    dialog.style.removeProperty('--sheet-drag-y');
    dialog.style.removeProperty('transform');
@@ -31,11 +31,12 @@
    // Snap back naturally, not an abrupt jump.
    dialog.style.removeProperty('transform');
    if(reduce()||delta<2)return;
+   dialog.classList.add('svitlo-sheet-snapping');
    const animation=dialog.animate(
     [{transform:'translate3d(0,'+delta+'px,0)'},{transform:'translate3d(0,0,0)'}],
     {duration:360,easing:'cubic-bezier(.22,1,.36,1)'});
    state.animation=animation;
-   animation.finished.then(()=>{if(state.animation===animation)state.animation=null},()=>{});
+   animation.finished.then(()=>{if(state.animation===animation){state.animation=null;dialog.classList.remove('svitlo-sheet-snapping')}},()=>{dialog.classList.remove('svitlo-sheet-snapping')});
   };
   const finish=()=>{
    if(!dialog.open)return reset();
@@ -52,12 +53,14 @@
    if(typeof source==='function'){
     dialog.style.setProperty('--sheet-exit-from',Math.max(0,from)+'px');
     state.closing=true;
+    dialog.classList.remove('svitlo-sheet-snapping');
     // Existing reader/preview handlers own cleanup and their close event.
     source();
     return true;
    }
    if(reduce()){finish();return true}
    state.closing=true;
+   dialog.classList.remove('svitlo-sheet-snapping');
    dialog.style.setProperty('--sheet-exit-from',Math.max(0,from)+'px');
    dialog.classList.add('svitlo-sheet-closing');
    // The CSS supplies matching exit and backdrop animations. Native close
