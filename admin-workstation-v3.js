@@ -203,12 +203,38 @@
  const hub=mk('section',undefined,'desk-hub');
  hub.append(mk('div','КОМАНДНИЙ ЦЕНТР','desk-hub-overline'),mk('h3','Працюйте без GitHub-токена'),mk('p','Звернення, відповіді, Push, публікації та більшість налаштувань працюють через захищений сервер. Редагування файлів графіків і довідника відокремлено в технічні інструменти.'));
  const links=mk('div',undefined,'desk-hub-links');
- for(const [id,title,subtitle] of [['feedback','Опрацювати звернення','Листування, контроль, статуси'],['operations','Керувати повідомленнями','Створення і публікація'],['registry','Доручення','Робоча картотека'],['live','Налаштування сервісу','Функції й банери'],['push','Push-розсилки','Підписники та тестування'],['corrections','Уточнення адрес','Без редагування JSON']]){
+ for(const [id,title,subtitle] of [['feedback','Опрацювати звернення','Листування, контроль, статуси'],['operations','Керувати повідомленнями','Створення і публікація'],['registry','Доручення','Робоча картотека'],['live','Налаштування сервісу','Функції й банери'],['push','Push-розсилки','Підписники та тестування'],['corrections','Уточнення адрес','Без редагування JSON'],['features','Функції застосунку','Увімкнути або вимкнути'],['design','Вигляд застосунку','Кольори, щільність, стиль'],['help','Центр допомоги','Редагування статей'],['ads','Рекламні кампанії','Розміщення та аналітика']]){
   const b=mk('button',undefined,'desk-hub-link');b.type='button';b.append(mk('strong',title),mk('small',subtitle));b.onclick=()=>goto(id);links.append(b);
  }
  hub.append(links);
  const note=mk('p','','desk-capability');note.id='deskCapabilities';note.setAttribute('role','status');hub.append(note);
  main?.querySelector('.office-context')?.after(hub);
+ // Prefer task names over developer file names. Nothing in ordinary settings
+ // should imply a repository token is necessary.
+ for(const [id,label] of [['data','Файли GitHub'],['tools','Файлові інструменти'],['planner','Графіки вручну']]){
+  const tab=dashboard.querySelector('[data-admin-tab="'+id+'"]');
+  const caption=tab?.querySelector('span');if(caption)caption.textContent=label;
+  const section=dashboard.querySelector('[data-admin-panel="'+id+'"]');
+  const context=section?.querySelector('.office-context-title');if(context)context.textContent=label;
+ }
+ // Collapse secondary navigation groups by default, leave frequently-used
+ // work areas visible and honor explicit changes made during this session.
+ const groups=[...dashboard.querySelectorAll('.control-nav-group')];
+ groups.forEach((group,index)=>{
+  const key='svitlo-office-fold-'+index;
+  let chosen=null;try{chosen=sessionStorage.getItem(key)}catch{}
+  if(index>=2&&chosen===null){
+   group.classList.add('office-folded');
+   group.querySelector('.office-group-toggle')?.setAttribute('aria-expanded','false');
+  }
+ });
+ for(const tab of dashboard.querySelectorAll('[data-admin-tab]'))tab.addEventListener('click',()=>{
+  const group=tab.closest('.control-nav-group');
+  if(group?.classList.contains('office-folded')){
+   group.classList.remove('office-folded');
+   group.querySelector('.office-group-toggle')?.setAttribute('aria-expanded','true');
+  }
+ });
  const configToken=mk('div',undefined,'desk-github-note');
  configToken.append(mk('strong','Технічний редактор файлів'),mk('p','Лише публікація статичних JSON-файлів у GitHub потребує окремих прав репозиторію. Звичайні дії адмінпанелі не повинні вимагати токен.'));
  const filePanel=dashboard.querySelector('[data-admin-panel="data"]');filePanel?.querySelector('.office-context')?.after(configToken);
