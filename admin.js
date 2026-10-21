@@ -384,7 +384,11 @@ async function refreshTickets(){
  if(!remote)return;
  $('ticketsSummary').textContent='Оновлюємо звернення…';
  try{
-  const [result,templ]=await Promise.all([api('feedback'),api('feedback/templates')]);supportTickets=Array.isArray(result.items)?result.items:[];supportTemplates=Array.isArray(templ.templates)?templ.templates:[];window.SvitloTicketWorkflow?.sync(supportTickets,result.capabilities);renderSupportTemplateEditor();
+  const result=await api('feedback');
+  const templ=await api('feedback/templates').catch(()=>({templates:supportTemplates}));
+  supportTickets=Array.isArray(result.items)?result.items:[];
+  supportTemplates=Array.isArray(templ.templates)?templ.templates:supportTemplates;
+  window.SvitloTicketWorkflow?.sync(supportTickets,result.capabilities);renderSupportTemplateEditor();
   if(!supportTickets.some(t=>t.id===supportSelected))supportSelected=supportTickets[0]?.id||'';
   renderTicketCounts();renderTicketList();renderTicketDetail();
   document.dispatchEvent(new Event('svitlo:tickets-loaded'));
