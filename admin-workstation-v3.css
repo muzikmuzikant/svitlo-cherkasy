@@ -847,3 +847,6 @@ body.svitlo-office #adminLoginScreen .login-assurance{
  body.svitlo-office .desk-live-status{grid-column:1/-1;justify-self:start;min-height:26px}
  body.svitlo-office #adminLoginScreen .login-card{padding:19px!important}
 }
+
+body.svitlo-office .desk-live-status[data-state="error"]{color:#9a5935}
+body.svitlo-office .desk-live-status[data-state="error"]::before{background:#ce724d}
