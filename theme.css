@@ -32,8 +32,8 @@
 :root[data-theme="dark"] .brand-period{color:var(--blue)}
 :root[data-theme="dark"] :is(.icon-btn,.back-btn){color:#d1d9e6}
 :root[data-theme="dark"] .bottom-nav{
- background:#101319f7;border-top:1px solid #2b3039;
- backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+ background:#11151b;border-top:1px solid #2b3039;
+ backdrop-filter:none;-webkit-backdrop-filter:none;
  box-shadow:0 -4px 24px #0004
 }
 :root[data-theme="dark"] .nav-item{color:#adb7c4}
