@@ -116,7 +116,7 @@ async function transitionJob(){
   const nextDate=shiftDay(now.date,1);
   const tomorrow=schedulesSafe?source.days.find(d=>d.date===nextDate&&d.verified===true):null;
   const all=Object.values(subscribers);
-  const reminderSettings=operationalControls.get().reminders;
+  const reminderSettings=typeof operationalControls!=='undefined'&&operationalControls?.get?operationalControls.get().reminders:null;
    const cycle={at:new Date().toISOString(),subscribers:all.length,
    offEnabled:all.filter(x=>x?.preferences?.off).length,
    onEnabled:all.filter(x=>x?.preferences?.on).length,
@@ -128,9 +128,9 @@ async function transitionJob(){
    const pref=record.preferences||{},prefix=hash(endpoint),minutes=now.m;
    const values=schedulesSafe?timeline(current,q):null;
    const valuesTomorrow=schedulesSafe?timeline(tomorrow,q):null;
-   for(const [type,target] of [['off',1],['on',0]]){
-     const preset=reminderSettings[type],offset=preset.leadMinutes;
-    if(!pref[type]||!preset.enabled)continue;
+   for(const [type,defaultLead,target] of [['off',30,1],['on',15,0]]){
+     const preset=reminderSettings?.[type],offset=preset?.leadMinutes??defaultLead;
+    if(!pref[type]||preset?.enabled===false)continue;
     // Recover reminders delayed by Railway restarts or temporarily slow schedule imports.
     // The helper never returns transitions that have already started.
     const boundary=dueTransitionAcrossDays(values,valuesTomorrow,minutes,offset,target,offset-2);
@@ -138,7 +138,7 @@ async function transitionJob(){
      const msg=transitionCopy(type,q,boundary,eta,boundary>=1440?nextDate:now.date);
       const clockTime=String(Math.floor((boundary%1440)/60)).padStart(2,'0')+':'+String(boundary%60).padStart(2,'0');
       const interpolate=value=>value.replace(/\{(minutes|queue|time)\}/g,(_,field)=>({minutes:String(eta),queue:q,time:clockTime})[field]);
-      msg.title=interpolate(preset.title);msg.body=interpolate(preset.body);
+      if(preset){msg.title=interpolate(preset.title);msg.body=interpolate(preset.body)}
      const key=`${prefix}:${type}:${now.date}:${boundary}`;
      if(sent[key]){cycle.transitionAlreadySent++;continue}
      cycle.transitionDue++;
