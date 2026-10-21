@@ -380,20 +380,32 @@ function renderSupportTemplateEditor(){
  save.onclick=async()=>{save.disabled=true;try{const result=await api('feedback/templates',{method:'PUT',body:JSON.stringify({templates:supportTemplates.filter(Boolean)})});supportTemplates=result.templates;renderSupportTemplateEditor()}catch(e){alert(e.message);save.disabled=false}};
  box.append(add,save)
 }
+let lastTicketsFingerprint='',ticketsReloading=false;
 async function refreshTickets(){
- if(!remote)return;
- $('ticketsSummary').textContent='Оновлюємо звернення…';
+ if(!remote||ticketsReloading)return;
+ ticketsReloading=true;
+ if(!supportTickets.length)$('ticketsSummary').textContent='Завантажуємо звернення…';
  try{
   const result=await api('feedback');
   const templ=await api('feedback/templates').catch(()=>({templates:supportTemplates}));
-  supportTickets=Array.isArray(result.items)?result.items:[];
-  supportTemplates=Array.isArray(templ.templates)?templ.templates:supportTemplates;
+  const incoming=Array.isArray(result.items)?result.items:[];
+  const templates=Array.isArray(templ.templates)?templ.templates:supportTemplates;
+  const fingerprint=JSON.stringify([incoming,templates,result.capabilities||null]);
+  if(fingerprint===lastTicketsFingerprint){
+   $('ticketsSummary').classList.remove('support-error');
+   return; // Preserve editors, scroll, filters and pane on unchanged data.
+  }
+  const listScroll=$('ticketsList').scrollTop,detailScroll=$('ticketDetail').scrollTop;
+  lastTicketsFingerprint=fingerprint;
+  supportTickets=incoming;supportTemplates=templates;
   window.SvitloTicketWorkflow?.sync(supportTickets,result.capabilities);renderSupportTemplateEditor();
   $('ticketsSummary').classList.remove('support-error');
   if(!supportTickets.some(t=>t.id===supportSelected))supportSelected=supportTickets[0]?.id||'';
   renderTicketCounts();renderTicketList();renderTicketDetail();
+  $('ticketsList').scrollTop=listScroll;$('ticketDetail').scrollTop=detailScroll;
   document.dispatchEvent(new Event('svitlo:tickets-loaded'));
  }catch(e){$('ticketsSummary').textContent='Помилка завантаження: '+e.message}
+ finally{ticketsReloading=false}
 }
 $('refreshTickets').addEventListener('click',refreshTickets);
-document.addEventListener('svitlo:admin-logout',()=>{supportDrafts.clear();noteDrafts.clear();tagDrafts.clear();supportTickets=[];supportSelected='';$('ticketsList').replaceChildren();$('ticketDetail').replaceChildren();window.SvitloTicketWorkflow?.reset()});
+document.addEventListener('svitlo:admin-logout',()=>{lastTicketsFingerprint='';supportDrafts.clear();noteDrafts.clear();tagDrafts.clear();supportTickets=[];supportSelected='';$('ticketsList').replaceChildren();$('ticketDetail').replaceChildren();window.SvitloTicketWorkflow?.reset()});
