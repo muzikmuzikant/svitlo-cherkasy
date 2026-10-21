@@ -146,3 +146,18 @@ body.svitlo-office .desk-unread{margin-left:auto;display:inline-grid;place-items
 body.svitlo-office .desk-unread[hidden]{display:none!important}
 body.svitlo-office .office-nav-link .desk-unread{font-variant-numeric:tabular-nums}
 @media(max-width:760px){body.svitlo-office .desk-autosync{margin:2px 0 0;min-height:42px;justify-content:center;grid-column:1/-1}}
+
+/* Stable workstation: no re-entry flashes on ticket list refreshes. */
+body.svitlo-office :is(.desk-list-pane,.desk-ticket-row,#ticketDetail,.desk-pane,.desk-bulk,.support-toolbar,.desk-tools){min-width:0}
+body.svitlo-office .desk-ticket-row,body.svitlo-office .desk-ticket-row>.ticket-row,body.svitlo-office #ticketDetail.desk-ticket,body.svitlo-office .desk-pane{animation:none!important}
+body.svitlo-office .desk-ticket-row>.ticket-row{transition:background-color .14s ease,border-color .14s ease!important;transform:none!important}
+body.svitlo-office .desk-ticket-row>.ticket-row:hover{border-color:#89b79c!important}
+body.svitlo-office #ticketDetail.desk-ticket{min-height:440px}
+body.svitlo-office .desk-detail-head,body.svitlo-office .desk-detail-tabs{scroll-margin-top:70px}
+body.svitlo-office .desk-detail-actions button:disabled{opacity:.55;cursor:default}
+body.svitlo-office .desk-pane .support-thread{display:flex;flex-direction:column;gap:10px}
+body.svitlo-office .desk-pane .support-thread-entry{width:fit-content;max-width:90%;min-width:0;overflow-wrap:anywhere;border-radius:14px}
+body.svitlo-office .desk-pane .support-thread-entry.is-admin{margin-left:auto;background:#eaf6ee;border-color:#c8e7d5;border-bottom-right-radius:5px}
+body.svitlo-office .desk-pane .support-thread-entry:not(.is-admin){margin-left:0;margin-right:auto;background:#f3f6f9;border-color:#dde6ee;border-bottom-left-radius:5px}
+@media(max-width:760px){body.svitlo-office .desk-pane .support-thread-entry{max-width:94%}body.svitlo-office .desk-detail-tabs{-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}body.svitlo-office #ticketDetail.desk-ticket{min-height:0;overscroll-behavior:contain}}
+@media(prefers-reduced-motion:reduce){body.svitlo-office .desk-ticket-row>.ticket-row{transition:none!important}}
