@@ -70,6 +70,7 @@ test('invalid files cannot be saved as support text or executable HTML',()=>{
 test('routing requires ticket token or admin session and not an unprotected media url',()=>{
  const server=read('push-server/server.js'),admin=read('push-server/admin.js');
  assert.match(server,/\/api\/ticket\/attachment/);
+ assert.match(server,/capabilities:\{attachments:true/);
  assert.match(server,/feedback\.getAttachment\(id,data\.attachmentId,data\.token\)/);
  assert.match(admin,/feedback\.getAttachment\(tail\[0\],tail\[1\],null,true\)/);
  assert.match(admin,/api\/admin\/feedback\/attachment/);
@@ -79,6 +80,8 @@ test('customer form and support operator show videos using same secure viewer',(
  const user=read('feedback.js'),op=read('admin.js'),viewer=read('ticket-media-ui.js');
  assert.match(user,/initialFiles\.collect\(\)/);
  assert.match(user,/replyFiles\.collect\(\)/);
+ assert.match(user,/enableMediaForms\(data\.capabilities\?\.attachments===true\)/);
+ assert.match(user,/result\.attached!==payload\.attachments\.length/);
  assert.match(user,/\/api\/ticket\/attachment/);
  assert.match(op,/feedback\/attachment\//);
  assert.match(viewer,/document\.createElement\(isVideo\(payload\.mime\)\?'video':'img'\)/);
@@ -86,4 +89,5 @@ test('customer form and support operator show videos using same secure viewer',(
  assert.match(viewer,/const mimeFor=file=>/);
  assert.match(read('feedback.html'),/id="newTicketFiles"/);
  assert.match(read('feedback.html'),/id="replyTicketFiles"/);
+ assert.match(read('ticket-media.css'),/\.ticket-attach\[hidden\]\{display:none!important\}/);
 });
