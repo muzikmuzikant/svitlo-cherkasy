@@ -112,7 +112,7 @@ function renderSaved(){
   const card=document.createElement('button');card.type='button';card.className='saved-ticket';
   card.append(text('span','✉','saved-ticket-icon'));
   const copy=text('div','','saved-ticket-copy');
-  copy.append(text('strong',item.subject||TOPICS[item.topic]||'Звернення'),text('small',item.id+' · '+displayDate(item.createdAt)));
+  copy.append(text('strong',item.subject||TOPICS[item.topic]||'Звернення'),text('small',displayDate(item.createdAt)));
   card.append(copy,statusNode(item.status),'›');
   card.addEventListener('click',()=>openTicket(item.id));
   root.append(card);
@@ -143,7 +143,7 @@ function showConversation(ticket){
  $('ratingNotice').textContent=ticket.rating?'Ваша оцінка: '+ticket.rating+' із 5. Дякуємо!':'';
  $('replyForm').hidden=ticket.canReply!==true;
  $('conversationMessage').hidden=true;
- $('ticketConversation').scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+ /* Preserve scroll position when a reply or a status is refreshed. */
 }
 $('ticketRatingOptions')?.addEventListener('click',async event=>{
  const button=event.target.closest('button[data-rating]');if(!button||!selectedTicket?.token)return;
@@ -222,7 +222,7 @@ $('refreshSaved').addEventListener('click',async()=>{
   storeTickets();renderSaved();
  }finally{button.disabled=false;button.textContent='Оновити статуси ↻'}
 });
-$('lookupForm').addEventListener('submit',async event=>{
+$('lookupForm')?.addEventListener('submit',async event=>{
  event.preventDefault();const id=$('lookupId').value.trim().toUpperCase(),token=$('lookupToken').value.trim();
  if(!/^SC-[A-F0-9]{10}$/.test(id)){alertAt('lookupMessage','Перевірте номер звернення, наприклад SC-12AB34CD56.');return}
  $('lookupMessage').hidden=true;
