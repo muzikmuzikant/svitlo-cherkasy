@@ -294,3 +294,64 @@
 :root[data-theme="dark"] .shell :is(.section-title p,.card p,.feature p,.method p,.plan p){color:#b7c5d3}
 :root[data-theme="dark"] .top .back{background:#202a37;border-color:#3f4c5c;color:#d9e7f8}
 :root[data-theme="dark"] main .info{background:#1c2633;border-color:#364252;color:#edf4fc}
+
+/* Beta dark-theme contrast audit: retain a single readable palette.
+   Base style.css still has literal LIGHT text colors in some sections. */
+:root[data-theme="dark"] .bottom-nav{
+ border:1px solid #303743;
+ border-top-color:#303743;
+ outline:none;
+ background:#11151b;
+ box-shadow:0 8px 30px #0007;
+}
+:root[data-theme="dark"] .bottom-nav::before{
+ background:#293749;
+ border:0;
+ box-shadow:inset 0 0 0 1px #344b68;
+}
+:root[data-theme="dark"] .bottom-nav .nav-item{color:#bbc5d2}
+:root[data-theme="dark"] .bottom-nav .nav-item.active{color:#aecdff;background:transparent!important}
+:root[data-theme="dark"] .bottom-nav .nav-item:focus-visible{outline:2px solid #9bbfff;outline-offset:-2px}
+:root[data-theme="dark"] .nav-unread{border-color:#11151b}
+:root[data-theme="dark"] :is(.notice-strip strong,.notice-strip svg,.chevron-svg){color:#bbc8d8}
+:root[data-theme="dark"] :is(.tomorrow-copy strong,.push-invite-copy strong,.quick-queue-lookup strong,.queue-override-toggle strong){
+ color:#f0f5fc
+}
+:root[data-theme="dark"] :is(.tomorrow-copy small,.tomorrow-chevron,.schedule-meta,.push-invite-copy p,.quick-queue-lookup p,.queue-override-toggle small){
+ color:#bdc9d9
+}
+:root[data-theme="dark"] .schedule-share{color:#b6d5ff}
+:root[data-theme="dark"] .inbox-auto-summary{color:#e7eff9}
+:root[data-theme="dark"] .inbox-auto-summary span:last-child{color:#b9c8d8}
+:root[data-theme="dark"] .inbox-card-opener>p{color:#bdcadb}
+:root[data-theme="dark"] .inbox-card-opener>strong{color:#eff5fd}
+:root[data-theme="dark"] .inbox-context-actions button{color:#dce9f9}
+:root[data-theme="dark"] .inbox-context-actions button:active{background:#2c3d52;color:#fff}
+:root[data-theme="dark"] .inbox-context[open] summary{background:#2d3f56;border-color:#5a7593;color:#c8e2ff}
+@media(hover:hover){
+ :root[data-theme="dark"] .inbox-context-actions button:hover{background:#30445b;color:#fff}
+}
+:root[data-theme="dark"] .inbox-actions a,:root[data-theme="dark"] .inbox-actions button{color:#aaccff}
+:root[data-theme="dark"] .push-state-label{background:#2b3440;color:#d9e3f0}
+:root[data-theme="dark"] .push-state-label[data-status="connected"]{background:#193d2e;color:#abe8c1}
+:root[data-theme="dark"] .push-state-label[data-status="pending"]{background:#233d5e;color:#b6d5ff}
+:root[data-theme="dark"] .push-delivery-status{color:#b9c8d9}
+:root[data-theme="dark"] .days-row.fixed-weekdays .day-choice.is-today:not(.selected){
+ background:#25364b;color:#c4dcff;box-shadow:inset 0 0 0 1px #48698d
+}
+:root[data-theme="dark"] .days-row.fixed-weekdays .day-choice.selected{background:#3877d7;color:#fff}
+:root[data-theme="dark"] .home-cache-hint{color:#b8d9c5}
+:root[data-theme="dark"] .home-cache-hint>span{background:#213e30;color:#b1e8c2}
+:root[data-theme="dark"] .beta-ad-counter,:root[data-theme="dark"] .beta-ad-arrowbtn{color:#b8c6d9}
+:root[data-theme="dark"] :is(.beta-consent-eyebrow,.beta-consent-points p,.beta-consent-dialog .beta-consent-detail){
+ color:#bdcbdb
+}
+:root[data-theme="dark"] .beta-consent-dialog .beta-consent-detail a{color:#a9d0ff}
+:root[data-theme="dark"] .share-preview-eyebrow{color:#a9d0ff}
+:root[data-theme="dark"] .share-preview-x{background:#283747;color:#dae9fb}
+:root[data-theme="dark"] .share-preview-save{background:#293e58;color:#c4dcff}
+:root[data-theme="dark"] :is(.app-boot-content p,.app-boot-content small){color:#bac8d9}
+:root[data-theme="dark"] .app-boot-brand span{color:#95bfff}
+:root[data-theme="dark"] .archive-street-tag{color:#f0cb8b}
+:root[data-theme="dark"] .setting-action span{color:#bac9db}
+:root[data-theme="dark"] .inbox-empty p{color:#b8c9da}
