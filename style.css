@@ -725,3 +725,15 @@ html:not([data-app-mode="standalone"]) #appBootScreen,.app-boot-screen[hidden]{d
 @media(prefers-reduced-motion:reduce){
  .inbox-context summary,.inbox-context-actions,.inbox-context-actions button{transition:none!important;will-change:auto}
 }
+
+/* Per-address editable queue, even after an automatic match. */
+.queue-override-control{margin:12px 0 10px;border:1px solid #cfdff8;border-radius:16px;background:#edf5ff;overflow:hidden}
+.queue-override-control[hidden]{display:none!important}
+.queue-override-toggle{display:flex;gap:12px;align-items:flex-start;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.queue-override-toggle input{appearance:auto;accent-color:#286fe9;width:20px;height:20px;flex:0 0 20px;margin:1px 0 0}
+.queue-override-toggle span{display:flex;flex-direction:column;gap:5px;min-width:0}
+.queue-override-toggle strong{font-size:14px;font-weight:760;color:#214772}
+.queue-override-toggle small{font-size:12px;line-height:1.45;color:#586c85}
+.queue-override-toggle:active{background:#e2eeff}
+.queue-override-toggle:focus-within{outline:2px solid #3978e5;outline-offset:-2px}
+@media(prefers-reduced-motion:no-preference){.queue-override-toggle{transition:background .16s ease}}

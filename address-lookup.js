@@ -259,5 +259,17 @@
     return {...base,status:'nohouse',reason:house?'house-unlisted':'no-address-data'};
   }
 
-  return {normalize,houseKey,kindOf,streetMatches,suggest,renameHint,splitHint,hasPublishedQueue,knownHouses,resolve};
+  // This preference belongs to one saved place. Never update operator source data.
+  function chooseQueue(result,selectedQueue,manualOverride=false){
+    const automatic=['exact','street'].includes(result?.status);
+    if(automatic&&!manualOverride){
+      const queue=validQueues([result?.queue])[0]||null;
+      return {queue,method:queue?(result.status==='exact'?'automatic':'street-auto'):null};
+    }
+    const queue=validQueues([selectedQueue])[0]||null;
+    return {queue,method:!queue?null:automatic?'manual-override':
+      result?.status==='possible'&&result.queues?.includes(queue)?'street-choice':'manual'};
+  }
+
+  return {normalize,houseKey,kindOf,streetMatches,suggest,renameHint,splitHint,hasPublishedQueue,knownHouses,resolve,chooseQueue};
 });
