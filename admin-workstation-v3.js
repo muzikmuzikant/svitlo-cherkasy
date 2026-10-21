@@ -277,6 +277,14 @@
   navCount.hidden=!newCount;
   lastNewCount=newCount;
  };
+ document.addEventListener('svitlo:tickets-synced',()=>{
+  liveText.textContent='На зв’язку · '+new Date().toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
+  liveText.dataset.state='ok';
+ });
+ document.addEventListener('svitlo:tickets-sync-error',()=>{
+  liveText.textContent='З’єднання нестабільне · повторна перевірка';
+  liveText.dataset.state='error';
+ });
  document.addEventListener('svitlo:tickets-loaded',()=>{
   liveText.textContent='Оновлено о '+new Date().toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
   liveText.dataset.state='ok';
