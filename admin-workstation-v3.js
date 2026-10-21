@@ -146,6 +146,8 @@
    entry.querySelector('input[type="checkbox"]').checked=selected.has(id);
    entry.classList.toggle('desk-selected',selected.has(id));
   }
+  const assignment=bulkAction.querySelector('option[value="assign_self"]');
+  if(assignment)assignment.disabled=!window.SvitloTicketWorkflow?.canRoute();
   const count=selected.size;bulk.hidden=!count;
   bulkCount.textContent=count+' вибрано';
   bulkRun.disabled=!count||busy||!writable();
@@ -195,8 +197,11 @@
    bulkResult.textContent='Збережено '+ok+' із '+ids.length;
   }
   busy=false;selected.clear();bulkAction.value='';
-  bulkResult.textContent=errors.length?('Оновлено '+ok+'. Помилки: '+errors.slice(0,2).join('; ')):'Змінено '+ok+' звернень.';
-  await window.refreshTickets?.();syncSelected();
+  const resultText=errors.length?('Оновлено '+ok+'. Помилки: '+errors.slice(0,2).join('; ')):'Змінено '+ok+' звернень.';
+  await window.refreshTickets?.();
+  $('ticketsSummary').textContent=resultText;
+  $('ticketsSummary').classList.toggle('support-error',errors.length>0);
+  syncSelected();
  };
  // Dynamic workspace context (only server-backed actions, not GitHub publish).
  const main=dashboard.querySelector('[data-admin-panel="overview"]');
