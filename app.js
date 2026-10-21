@@ -24,6 +24,8 @@ const byId=id=>addresses.find(x=>x.id===id);
 const primary=()=>byId(prefs.primaryId)||addresses[0]||null;
 const saveAddresses=()=>localStorage.setItem(STORE,JSON.stringify(addresses));
 const savePrefs=()=>localStorage.setItem(PREF,JSON.stringify(prefs));
+window.addEventListener('svitlo:theme-change',()=>{if(active==='detail')renderDetail()});
+
 // Hydrate the last confirmed snapshot before rendering, including after a cold offline launch.
 try{const saved=safeJSON(OFFLINE_SCHEDULE,null);if(saved&&Array.isArray(saved.days))data=retainWeeklySchedules(saved)}catch{}
 try{const saved=safeJSON(OFFLINE_ADDRESSES,null);if(saved?.keys&&saved?.streets)index=saved}catch{}
@@ -568,7 +570,7 @@ function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Пі�
  for(let h=0;h<24;h++){
    let on=0,off=0;
    for(let m=h*60;m<h*60+60;m++){if(t?.[m]===0)on++;if(t?.[m]===1)off++}
-   const visual=window.SvitloHour.paintHour(t,h),type=visual.kind;
+   const visual=window.SvitloHour.paintHour(t,h,document.documentElement.dataset.theme==='dark'?'dark':'light'),type=visual.kind;
    const c=el('div','hour-cell '+type+(day===today()&&h===Math.floor(nowMinutes()/60)?' current':''));
    c.style.background=visual.background;
    c.dataset.hour=clock(h*60);
