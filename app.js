@@ -383,6 +383,7 @@ async function openSharePreview(blob,filename,date,queue){
    catch(e){if(e.name!=='AbortError'){console.warn('Share:',e);flash('Не вдалося поділитися. Спробуйте зберегти PNG.')}}
  };
  dialog.addEventListener('close',finish);
+ window.SvitloSheetMotion?.bind(dialog,dismiss);
  dialog.addEventListener('cancel',onCancel);
  dialog.addEventListener('click',onBackdrop);
  try{dialog.showModal()}
@@ -780,9 +781,21 @@ function populateSettlements(){
 }
 function openAddressSheet(item=null){editId=item?.id||null;suggestion=null;setText('sheetTitle',item?'Редагувати адресу':'Нова адреса');$('nickname').value=item?.nickname||'';$('street').value=item?.street||'';$('house').value=item?.house||'';const opt=Array.from($('settlement').options).find(x=>normTown(x.value)===normTown(item?.settlement));$('settlement').value=opt?opt.value:item?.settlement?'Інше':'Черкаси';$('customSettlement').hidden=$('settlement').value!=='Інше';$('customSettlement').value=opt?'':item?.settlement||'';$('manualQueue').value=item?.queue||'';$('queueOverride').checked=!!item&&['manual-override','manual','street-choice'].includes(item.method);$('deleteAddress').hidden=!item;$('streetSuggestions').hidden=true;checkLookup();showSheet($('addressSheet'))}
 let sheetScroll=0;
-function showSheet(dialog){if(!document.body.classList.contains('sheet-open'))sheetScroll=window.scrollY;dialog.showModal();document.body.classList.add('sheet-open');document.body.style.position='fixed';document.body.style.top=`-${sheetScroll}px`;document.body.style.width='100%'}
+function showSheet(dialog){
+ if(dialog.open)return;
+ if(!document.body.classList.contains('sheet-open'))sheetScroll=window.scrollY;
+ dialog.showModal();
+ document.body.classList.add('sheet-open');
+ document.body.style.position='fixed';
+ document.body.style.top=`-${sheetScroll}px`;
+ document.body.style.width='100%';
+}
 function unlockSheet(){if($('addressSheet').open||$('placesSheet').open)return;document.body.classList.remove('sheet-open');document.body.style.position='';document.body.style.top='';document.body.style.width='';window.scrollTo({top:sheetScroll,behavior:'instant'})}
-function closeSheet(dialog){if(dialog.open)dialog.close();unlockSheet()}
+function closeSheet(dialog){
+ if(!dialog.open)return;
+ // Close only after exit animation; the native close event unlocks the page.
+ if(!window.SvitloSheetMotion?.dismiss(dialog))dialog.close();
+}
 function saveAddress(event){
  event.preventDefault();
  const r=checkLookup();
@@ -1205,7 +1218,12 @@ for(const b of document.querySelectorAll('[data-go]'))b.addEventListener('click'
   };
  }
 $('syncNow').onclick=()=>refreshData(true);$('refreshTop').onclick=()=>refreshData(true);$('refreshDetail').onclick=()=>refreshData(true);$('manualRefresh').onclick=()=>refreshData(true);$('primaryPicker').onclick=()=>addresses.length?openPicker():openAddressSheet();$('addFromHome').onclick=()=>openAddressSheet();$('addFromSettings').onclick=()=>openAddressSheet();$('editActive').onclick=()=>openAddressSheet(primary());$('openDetail').onclick=()=>navigate('detail');
-$('closeSheet').onclick=()=>closeSheet($('addressSheet'));$('closePlaces').onclick=()=>closeSheet($('placesSheet'));$('sheetAddPlace').onclick=()=>{closeSheet($('placesSheet'));openAddressSheet()};
+$('closeSheet').onclick=()=>closeSheet($('addressSheet'));$('closePlaces').onclick=()=>closeSheet($('placesSheet'));$('sheetAddPlace').onclick=()=>{
+ const picker=$('placesSheet');
+ if(!picker.open){openAddressSheet();return}
+ picker.addEventListener('close',()=>openAddressSheet(),{once:true});
+ closeSheet(picker);
+};
 for(const dialog of [$('addressSheet'),$('placesSheet')])dialog.addEventListener('close',unlockSheet);
 $('settlement').onchange=()=>{$('queueOverride').checked=false;$('manualQueue').value='';$('customSettlement').hidden=$('settlement').value!=='Інше';suggestion=null;suggestions();checkLookup()};$('customSettlement').oninput=()=>{$('queueOverride').checked=false;$('manualQueue').value='';checkLookup()};// Keep the iPhone keyboard responsive: do no full address/house lookup in
 // input handlers. A short trailing debounce gives the browser time to paint.
