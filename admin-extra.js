@@ -4,22 +4,17 @@ const extraGet=id=>document.getElementById(id);
 const extraText=(tag,value,className='')=>{const el=document.createElement(tag);el.textContent=String(value??'—');if(className)el.className=className;return el};
 const extraDate=stamp=>{const n=Date.parse(stamp||'');return Number.isFinite(n)?new Date(n).toLocaleString('uk-UA',{dateStyle:'medium',timeStyle:'short'}):'немає даних'};
 let helpDraft=null,selectedHelpId='',monitorBusy=false;
-let adminTabMotion=null,adminTabSequence=0;
+let adminTabSequence=0;
 function setTab(tab){
  if(!remote)return;
- const sequence=++adminTabSequence;
- const apply=()=>{
-  if(sequence!==adminTabSequence)return;
-  document.querySelectorAll('[data-admin-tab]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.adminTab===tab)));
-  document.querySelectorAll('[data-admin-panel]').forEach(el=>{el.hidden=el.dataset.adminPanel!==tab});
- };
- const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches||
-  document.documentElement.classList.contains('feature-off-animations');
- if(document.startViewTransition&&!reduce){
-  adminTabMotion?.skipTransition?.(); // rapid taps must never queue or lock navigation
-  try{adminTabMotion=document.startViewTransition(apply)}
-  catch{apply()}
- }else{adminTabMotion?.skipTransition?.();apply()}
+ ++adminTabSequence;
+ // Switch directly without browser-wide View Transition snapshots.
+ // Live tables, charts and editors must not flash or jump between panels.
+ document.querySelectorAll('[data-admin-tab]').forEach(el=>
+  el.setAttribute('aria-pressed',String(el.dataset.adminTab===tab)));
+ document.querySelectorAll('[data-admin-panel]').forEach(el=>{
+  el.hidden=el.dataset.adminPanel!==tab;
+ });
  if(tab==='overview'||tab==='sources')refreshMonitor();
  if(tab==='sources')window.SvitloSourceReview?.load();
  if(tab==='feedback')refreshTickets();
