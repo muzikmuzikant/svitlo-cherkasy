@@ -407,7 +407,7 @@
   try{await store.mark(unread);await refresh()}
   catch(error){button.disabled=false;console.warn('Mark all:',error)}
  };
- $('inboxClear').onclick=async()=>{await store.clearRead();await refresh()};
+ // Read inbox items remain in the user's history.
  document.querySelectorAll('[data-go="updates"]').forEach(b=>b.addEventListener('click',()=>{
   window.dispatchEvent(new CustomEvent('svitlo:refresh-content'));
   sync().catch(console.warn);
