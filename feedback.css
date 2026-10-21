@@ -23,3 +23,22 @@ label{display:block;margin:19px 0 9px;font-size:12px;font-weight:780;color:#344d
 .support-diagnostics small{font-size:11px;color:#647c98;line-height:1.5;margin-top:5px}
 .support-diagnostics-preview{font-size:10px;color:#6c84a4;margin:0 2px 12px}
 .extra-ticket-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:12px 0}.extra-ticket-field{display:grid;gap:7px}.extra-ticket-field input:not([type=checkbox]),.extra-ticket-field select{width:100%;min-height:45px;padding:10px;border:1px solid #dce5f3;border-radius:11px;background:#fff;color:#203957}.extra-ticket-field input[type=checkbox]{width:22px;height:22px}.ticket-rating{border-radius:18px;border:1px solid #dfe9f8;background:#f6f9ff;padding:20px;margin-top:18px}.ticket-rating h3{margin:0 0 8px;font-size:17px}.ticket-rating p{font-size:12px;color:#6a7c96;line-height:1.6}.rating-options{display:flex;gap:9px;flex-wrap:wrap;margin:14px 0}.rating-options button{width:48px;height:48px;border:1px solid #d8e4f4;background:#fff;border-radius:13px;color:#2a68c9;font-size:18px;font-weight:820}.rating-options button:hover{border-color:#327cf7;background:#e8f1ff}.rating-options[hidden]{display:none}
+/* Support experience v2: accessible live status and fluid transitions. */
+.support-session{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:15px 3px 2px;color:#71839a;font-size:12px}
+.support-realtime{display:inline-flex;align-items:center;gap:9px;white-space:nowrap;border:1px solid #dfe8f4;border-radius:999px;padding:8px 12px;background:#fff;color:#657b96;font-size:11px;font-weight:750;transition:background .25s,color .25s,border-color .25s}
+.support-realtime::before{content:'';display:block;width:7px;height:7px;border-radius:50%;background:#d7a66b;box-shadow:0 0 0 3px #f7eedd}
+.support-realtime.is-connected{color:#176a54;border-color:#c6ecdf;background:#f1fdf8}
+.support-realtime.is-connected::before{background:#2abc8d;box-shadow:0 0 0 4px #d7f8e9;animation:support-pulse 2.3s ease-in-out infinite}
+@keyframes support-pulse{50%{box-shadow:0 0 0 7px #d7f8e900}}
+.support-hero{box-shadow:0 16px 46px #275fa20c}
+.support-view:not([hidden]){animation:support-slide-in .32s cubic-bezier(.22,1,.36,1) both}
+@keyframes support-slide-in{from{opacity:.35;transform:translateY(8px)}to{opacity:1;transform:none}}
+.saved-ticket,.support-card,.conversation{transition:box-shadow .25s ease,border-color .25s ease,transform .25s ease}
+.saved-ticket:hover{transform:translateY(-2px);box-shadow:0 10px 26px #1d4d8315;border-color:#b8d6ff}
+.saved-ticket:active{transform:scale(.992)}
+.support-tab{transition:background .22s ease,color .22s ease,border-color .22s ease,transform .22s ease}
+.support-tab:active{transform:scale(.97)}
+.conversation:not([hidden]){animation:support-slide-in .3s cubic-bezier(.22,1,.36,1) both}
+.support-tab:focus-visible,.saved-ticket:focus-visible,.support-primary:focus-visible{outline:3px solid #8dbbff;outline-offset:3px}
+@media(max-width:600px){.support-session{align-items:flex-start;flex-direction:column;gap:7px;padding:12px 0 1px}.support-session>span:last-child{font-size:11px}.support-hero{border-radius:22px}}
+@media(prefers-reduced-motion:reduce){.support-view:not([hidden]),.conversation:not([hidden]),.support-realtime::before{animation:none}.saved-ticket,.support-tab,.support-card,.conversation{transition:none}}

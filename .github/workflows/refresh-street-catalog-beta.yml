@@ -1,0 +1,52 @@
+name: Build street name catalogue (beta)
+on:
+  push:
+    branches:
+      - beta/addresses-support-realtime-20261020
+    paths:
+      - scripts/build_street_catalog.py
+      - .github/workflows/refresh-street-catalog-beta.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: address-catalog-beta
+  cancel-in-progress: false
+jobs:
+  streets:
+    if: github.ref == 'refs/heads/beta/addresses-support-realtime-20261020'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt pytest
+      - name: Validate street catalogue source parsing
+        run: python -m pytest -q tests/test_street_catalog_beta.py
+      - name: Enrich street names from municipal GIS and OpenStreetMap
+        run: python scripts/build_street_catalog.py
+      - name: Report coverage changes
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path('data/street_catalog.json').read_text('utf-8'))
+          print('Municipal GIS streets:', len(p.get('streets',{})))
+          print('District streets:', sum(len(v.get('streets',{})) for v in p.get('localities',{}).values()))
+          print('Villages covered:',sum(bool(v.get('streets')) for v in p.get('localities',{}).values()))
+          PY
+      - name: Commit independent street catalogue to beta only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "svitlo-street-catalog-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/street_catalog.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Enrich beta street names from mapped public sources"
+            git pull --rebase origin beta/addresses-support-realtime-20261020
+            git push origin HEAD:beta/addresses-support-realtime-20261020
+          fi

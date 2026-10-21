@@ -11,7 +11,9 @@ historical=json.loads((DATA/'published_street_fallback.json').read_text('utf8'))
 def test_all_sloboda_streets_are_already_in_current_import():
     village=live['localities']['слобода']
     old=historical['localities']['слобода']
-    assert set(old['streets']) <= set(village['streets'])
+    assert set(old['streets']) - set(old.get('reportedStreetNames', [])) <= set(village['streets'])
+    assert 'вулиця|філатова' in old['streets']
+    assert 'вулиця|філатова' not in old.get('streetQueues',{})
     assert len(village['streets']) >= 96
     # Until the parser refresh, legacy labels stay searchable without guessed
     # queues. After a successful refresh, fresh PDF mappings take precedence.
@@ -62,3 +64,20 @@ def test_legacy_false_towns_are_removed_from_historical_catalogue():
     preserve_street_catalogue(live,previous,{})
     assert not {'леонтовича','залізняка'} & live['localities'].keys()
     assert 'вулиця|різдвяна' in live['localities']['слобода']['streets']
+
+def test_reported_streets_are_discoverable_but_have_no_guessed_queues():
+    from scripts.update_data import preserve_street_catalogue
+    candidate={'streets':{},'keys':{},'streetQueues':{},
+               'localities':{'слобода':{'streets':{},'keys':{},'streetQueues':{}}},
+               'stats':{}}
+    preserve_street_catalogue(candidate, live, historical)
+    city=candidate
+    sloboda=candidate['localities']['слобода']
+    assert 'вулиця|іванакожедуба' in city['streets']
+    assert 'вулиця|іванакожедуба' in city['archiveOnlyStreets']
+    assert 'вулиця|іванакожедуба' in city['reportedStreetNames']
+    assert 'вулиця|іванакожедуба' not in city['streetQueues']
+    assert 'вулиця|філатова' in sloboda['streets']
+    assert 'вулиця|філатова' in sloboda['archiveOnlyStreets']
+    assert 'вулиця|філатова' in sloboda['reportedStreetNames']
+    assert 'вулиця|філатова' not in sloboda['streetQueues']

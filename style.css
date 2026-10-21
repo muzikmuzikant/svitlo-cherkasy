@@ -619,3 +619,14 @@ html:not([data-app-mode="standalone"]) #appBootScreen,.app-boot-screen[hidden]{d
 .maintenance-inline.is-planned .maintenance-inline-eyebrow{color:var(--planned-accent,#347af0)}
 .maintenance-inline.is-planned .maintenance-inline-action{background:var(--planned-accent,#347af0)}
 @media(max-width:420px){.app-update-banner{min-height:0;padding:22px 19px}.app-update-heading strong{font-size:20px}}
+
+/* Optional personal subqueue when the address catalogue reports a match. */
+.queue-override-control{margin:13px 0 10px;border:1px solid #cdddf5;border-radius:16px;background:#eef5ff;overflow:hidden}
+.queue-override-control[hidden]{display:none!important}
+.queue-override-toggle{display:flex;align-items:flex-start;gap:12px;padding:14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.queue-override-toggle input{appearance:auto;accent-color:#286fe9;width:20px;height:20px;flex:0 0 20px;margin:1px 0 0}
+.queue-override-toggle span{display:flex;flex-direction:column;gap:4px;min-width:0}
+.queue-override-toggle strong{font-size:14px;font-weight:750;color:#193b67}
+.queue-override-toggle small{font-size:12px;line-height:1.45;color:#516784}
+.queue-override-toggle:active{background:#e1edff}
+.queue-override-toggle:focus-within{outline:2px solid #3978e5;outline-offset:-2px}

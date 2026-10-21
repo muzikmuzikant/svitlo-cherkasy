@@ -44,7 +44,7 @@ export async function readFeedbackBody(req){
  for await(const part of req){size+=part.length;if(size>MAX_BODY)throw bad('Звернення завелике.',413);chunks.push(part)}
  try{return JSON.parse(Buffer.concat(chunks).toString('utf8'))}catch{throw bad('Некоректні дані звернення.')}
 }
-export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
+export function createFeedbackStore({filePath,clock=()=>Date.now(),onChange=()=>{}}={}){
  if(!filePath)throw Error('Feedback store path is required');
  let categories=[
  {id:'bug',title:'Помилка застосунку',hint:'Опишіть, що саме не працює.',enabled:true,priority:'normal',fields:[]},
@@ -64,6 +64,7 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   cleanup();fs.mkdirSync(path.dirname(filePath),{recursive:true});
   const tmp=filePath+'.tmp';fs.writeFileSync(tmp,JSON.stringify({items,templates,categories},null,2),{mode:0o600});fs.renameSync(tmp,filePath);
  }
+ function notify(kind){try{onChange(kind)}catch(error){console.warn('Feedback realtime event:',error.message)}}
  function find(id){const item=items.find(x=>x.id===id);if(!item)throw bad('Звернення не знайдено.',404);return item}
  function validateToken(item,token){
   if(!item.accessHash||typeof token!=='string'||!(/^[A-Za-z0-9_-]{32,80}$/.test(token)))throw bad('Потрібен код доступу до звернення.',403);
@@ -94,6 +95,7 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   items.push(newItem);
   try{save()}catch{items.pop();throw bad('Не вдалося зберегти звернення. Спробуйте пізніше.',503)}
   entry.times.push(t);entry.expire=t+interval;attempts.set(k,entry);
+  notify('created');
   return {ok:true,id:newItem.id,token};
  }
  function list(){if(cleanup())save();return {items:items.slice().reverse().map(({accessHash,...item})=>item),count:items.length}}
@@ -120,6 +122,7 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   update.updatedAt=new Date(clock()).toISOString();
   const index=items.indexOf(found);items[index]=update;
   try{save()}catch{items[index]=found;throw bad('Помилка збереження.',503)}
+  notify('updated');
   return {ok:true};
  }
  function getStatus(id,token){
@@ -144,6 +147,7 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   const index=items.indexOf(found);items[index]=saved;
   try{save()}catch{items[index]=found;throw bad('Помилка збереження.',503)}
   attempt.times.push(t);attempt.expire=t+interval;replyAttempts.set(k,attempt);
+  notify('replied');
   return {ok:true,id};
  }
  function rate(id,token,stars){
@@ -152,13 +156,15 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   if(found.status!=='resolved')throw bad('Оцінювання доступне після закриття звернення.',409);
   if(!Number.isInteger(value)||value<1||value>5)throw bad('Оберіть оцінку від 1 до 5.');
   if(found.rating!=null)throw bad('Оцінку цього звернення вже збережено.',409);
-  const updated={...found,rating:value,ratedAt:new Date(clock()).toISOString()},index=items.indexOf(found);items[index]=updated;
+  const updated={...found,rating:value,ratedAt:new Date(clock()).toISOString(),updatedAt:new Date(clock()).toISOString()},index=items.indexOf(found);items[index]=updated;
   try{save()}catch{items[index]=found;throw bad('Помилка збереження оцінки.',503)}
+  notify('rated');
   return {ok:true,rating:value}
  }
   function remove(id){
   const index=items.findIndex(x=>x.id===id);if(index===-1)throw bad('Звернення не знайдено.',404);
   const item=items.splice(index,1)[0];try{save()}catch{items.splice(index,0,item);throw bad('Помилка збереження.',503)}
+  notify('deleted');
   return {ok:true};
  }
  function getCategories(){return categories.map(c=>({...c,fields:c.fields.map(f=>({...f}))}))}
@@ -180,12 +186,12 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   });
   if(new Set(norm.map(c=>c.id)).size!==norm.length)throw bad('Дубль категорії');
   if(!norm.some(c=>c.enabled))throw bad('Має залишитися принаймні одна активна категорія');
-  categories=norm;save();return {categories:getCategories()}
+  categories=norm;save();notify('categories');return {categories:getCategories()}
  }
  function getTemplates(){return [...templates]}
  function setTemplates(value){
   if(!Array.isArray(value)||value.length>30||value.some(x=>typeof x!=='string'||x.trim().length<2||x.length>1600))throw bad('Некоректні шаблони відповідей');
-  templates=[...new Set(value.map(x=>x.trim()))];save();return {templates:getTemplates()}
+  templates=[...new Set(value.map(x=>x.trim()))];save();notify('templates');return {templates:getTemplates()}
  }
  if(cleanup())save();
  const timer=setInterval(()=>{try{if(cleanup())save()}catch(e){console.warn('Feedback cleanup failed:',e.message)}},24*60*60*1000);

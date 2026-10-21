@@ -48,7 +48,7 @@ async function post(route,payload){
  const base=await service();
  const response=await fetch(base+route,{method:'POST',headers:{'content-type':'application/json'},cache:'no-store',signal:AbortSignal.timeout(17000),body:JSON.stringify(payload)});
  const value=await response.json().catch(()=>({}));
- if(!response.ok)throw Error(value.error||'Не вдалося зв’язатися з підтримкою.');
+ if(!response.ok){const error=new Error(value.error||'Не вдалося зв’язатися з підтримкою.');error.status=response.status;throw error}
  return value;
 }
 function friendlyError(error){
@@ -101,6 +101,13 @@ function remember(receipt){
  saved.unshift({id:receipt.id,token:receipt.token||old?.token||'',createdAt:receipt.createdAt||old?.createdAt||new Date().toISOString(),topic:receipt.topic||old?.topic||'other',subject:receipt.subject||old?.subject||'',status:receipt.status||old?.status||'new'});
  saved=saved.slice(0,60);storeTickets();updateSavedCount();
 }
+function forgetTicket(id,announce=false){
+ const count=saved.length;saved=saved.filter(item=>item.id!==id);
+ if(count===saved.length)return;
+ storeTickets();updateSavedCount();renderSaved();
+ if(selectedTicket?.id===id){selectedTicket=null;$('ticketConversation').hidden=true}
+ if(announce)alertAt('lookupMessage','Це звернення видалене зі служби підтримки. Його прибрано з вашого списку.',true);
+}
 function updateSavedCount(){
  $('savedCount').hidden=!saved.length;
  $('savedCount').textContent=String(saved.length);
@@ -127,8 +134,8 @@ function bubble(from,value,at){
  box.append(text('strong',from==='admin'?'Підтримка «Світло Черкаси»':'Ви'),text('time',displayDate(at)),text('p',value));
  return box;
 }
-function showConversation(ticket){
- selectedTicket={id:ticket.id,token:saved.find(x=>x.id===ticket.id)?.token||''};
+function showConversation(ticket,{scroll=true}={}){
+ selectedTicket={id:ticket.id,token:saved.find(x=>x.id===ticket.id)?.token||'',revision:ticket.updatedAt};
  $('ticketConversation').hidden=false;$('conversationId').textContent=ticket.id;
  $('conversationHeading').textContent=ticket.subject||TOPICS[ticket.topic]||'Ваше звернення';
  $('conversationStatus').replaceWith(Object.assign(statusNode(ticket.status),{id:'conversationStatus'}));
@@ -143,7 +150,7 @@ function showConversation(ticket){
  $('ratingNotice').textContent=ticket.rating?'Ваша оцінка: '+ticket.rating+' із 5. Дякуємо!':'';
  $('replyForm').hidden=ticket.canReply!==true;
  $('conversationMessage').hidden=true;
- $('ticketConversation').scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+ if(scroll)$('ticketConversation').scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
 }
 $('ticketRatingOptions')?.addEventListener('click',async event=>{
  const button=event.target.closest('button[data-rating]');if(!button||!selectedTicket?.token)return;
@@ -163,7 +170,7 @@ async function openTicket(id){
  try{
   const result=await loadTicket(id,item.token);
   item.status=result.status;storeTickets();renderSaved();showConversation(result);
- }catch(e){alertAt('conversationMessage',friendlyError(e));$('conversationHeading').textContent='Не вдалося отримати звернення';}
+ }catch(e){if(e.status===404){forgetTicket(id,true);return}alertAt('conversationMessage',friendlyError(e));$('conversationHeading').textContent='Не вдалося отримати звернення';}
 }
 $('tabNew').addEventListener('click',()=>chooseTab('new'));
 $('tabTickets').addEventListener('click',()=>chooseTab('tickets'));
@@ -214,12 +221,42 @@ $('copyReceipt').addEventListener('click',async()=>{
  const value='Світло Черкаси\nЗвернення: '+lastSent.id+'\nПриватний код: '+lastSent.token+'\nНе передавайте цей код стороннім.';
  try{await navigator.clipboard.writeText(value);$('copyReceipt').textContent='Скопійовано ✓'}catch{$('copyReceipt').textContent='Не вдалося скопіювати'}
 });
+let syncRunning=null,syncQueued=false;
+async function syncTickets(){
+ if(syncRunning){syncQueued=true;return syncRunning}
+ syncRunning=(async()=>{
+  const existing=saved.slice(0,60);
+  if(!existing.length)return;
+  const response=await post('/api/ticket/sync',{receipts:existing.map(item=>({id:item.id,token:item.token||''}))});
+  const results=Array.isArray(response.items)?response.items:[];
+  const removed=results.filter(item=>item.deleted).map(item=>item.id);
+  const updated=new Map(results.filter(item=>item.ticket).map(item=>[item.id,item.ticket]));
+  for(const id of removed)forgetTicket(id,false);
+  if(removed.length)alertAt('lookupMessage',removed.length===1?
+   'Видалене звернення прибрано з вашого списку.':'Видалені звернення прибрано з вашого списку.',true);
+  let changed=removed.length>0;
+  for(const item of saved)if(updated.has(item.id)){
+   const fresh=updated.get(item.id);
+   if(item.status!==fresh.status)changed=true;
+   item.status=fresh.status;
+  }
+  if(changed){storeTickets();updateSavedCount();renderSaved()}
+  if(selectedTicket?.id&&updated.has(selectedTicket.id)&&!document.activeElement?.closest('#replyForm')){
+   const fresh=updated.get(selectedTicket.id),previous=selectedTicket.revision;
+   if(previous!==fresh.updatedAt||previous===undefined){
+    const panel=$('ticketConversation'),before=window.scrollY;
+    showConversation(fresh,{scroll:false});
+    if(!panel.hidden)window.scrollTo({top:before,behavior:'auto'})
+   }
+  }
+ })().finally(()=>{syncRunning=null;if(syncQueued){syncQueued=false;queueSync()}});
+ return syncRunning
+}
+let syncTimer=0;
+function queueSync(){if(syncTimer)return;syncTimer=setTimeout(()=>{syncTimer=0;if(saved.length)syncTickets().catch(error=>liveState(friendlyError(error)))},1100)}
 $('refreshSaved').addEventListener('click',async()=>{
  const button=$('refreshSaved');button.disabled=true;button.textContent='Перевіряємо…';
- try{
-  await Promise.all(saved.map(async item=>{try{const status=await loadTicket(item.id,item.token);item.status=status.status}catch{}}));
-  storeTickets();renderSaved();
- }finally{button.disabled=false;button.textContent='Оновити статуси ↻'}
+ try{await syncTickets()}finally{button.disabled=false;button.textContent='Оновити статуси ↻'}
 });
 $('lookupForm').addEventListener('submit',async event=>{
  event.preventDefault();const id=$('lookupId').value.trim().toUpperCase(),token=$('lookupToken').value.trim();
@@ -246,3 +283,50 @@ const topicQuery=new URLSearchParams(location.search).get('topic');if(TOPICS[top
 restoreDraft();if(TOPICS[topicQuery]){$('topic').value=topicQuery;setTopic()}
 updateSavedCount();
 if(new URLSearchParams(location.search).get('tab')==='tickets')chooseTab('tickets');
+// The WebSocket carries only a generic revision. Private tickets are always read
+// separately using the receipt and access token already stored on this device.
+let supportSocket=null,supportEvents=null,supportConnecting=false;
+function liveState(message,connected=false){
+ const label=$('supportRealtime');if(!label)return;
+ label.textContent=message;label.classList.toggle('is-connected',connected)
+}
+function disconnectSupport(){
+ if(supportSocket){const current=supportSocket;supportSocket=null;current.onclose=null;current.close()}
+ if(supportEvents){supportEvents.close();supportEvents=null}
+}
+async function connectSupport(){
+ if(document.hidden||supportConnecting||supportSocket||supportEvents)return;
+ supportConnecting=true;
+ try{
+  const base=await service();if(document.hidden)return;
+  const wsUrl=new URL('/api/socket',base);wsUrl.protocol='wss:';
+  let socket;
+  try{socket=new WebSocket(wsUrl.href)}catch{socket=null}
+  if(!socket){connectFallback(base);return}
+  supportSocket=socket;
+  socket.onopen=()=>{liveState('Оновлення наживо',true);queueSync()};
+  socket.onmessage=event=>{try{if(JSON.parse(event.data).type==='feedback')queueSync()}catch{}};
+  socket.onclose=()=>{if(supportSocket!==socket)return;supportSocket=null;if(!document.hidden)connectFallback(base)};
+  socket.onerror=()=>{liveState('Перепідключення…');socket.close()};
+ }catch{liveState('Доступне ручне оновлення')}
+ finally{supportConnecting=false}
+}
+function connectFallback(base){
+ if(document.hidden||supportEvents)return;
+ try{
+  const events=new EventSource(base+'/api/events');
+  supportEvents=events;
+  events.addEventListener('feedback',queueSync);
+  events.onopen=()=>{liveState('Оновлення наживо',true);queueSync()};
+  events.onerror=()=>liveState('Відновлюємо зв’язок…');
+ }catch{liveState('Доступне ручне оновлення')}
+}
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden)disconnectSupport();
+ else{connectSupport();queueSync()}
+});
+window.addEventListener('pageshow',()=>{connectSupport();queueSync()});
+window.addEventListener('online',()=>{connectSupport();queueSync()});
+window.addEventListener('pagehide',disconnectSupport);
+connectSupport();
+queueSync();
