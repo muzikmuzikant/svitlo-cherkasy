@@ -178,3 +178,23 @@
 :root[data-theme="dark"] .install-landing{--i-ink:#ebf3fd;--i-muted:#becde0;--i-border:#33485e;--i-surface:#1c2c3e;background:radial-gradient(ellipse at 76% 45%,#223b5790,transparent 78%),linear-gradient(150deg,#101b29,#172437);color:var(--i-ink)}
 :root[data-theme="dark"] .install-landing :is(.install-card,.install-faq,.install-step,.install-phone,.install-feature){background:#1a2a3d;border-color:#334960;color:#e9f3ff}
 :root[data-theme="dark"] .install-landing :is(.install-help-link,.install-footer a){color:#b8d9ff}
+
+/* Final contrast pass for the remaining home widgets and sheet controls */
+:root[data-theme="dark"] .legend .dot-light{background:#d7efdc!important;border-color:#83b49a!important}
+:root[data-theme="dark"] .legend .dot-mixed{background:linear-gradient(90deg,#283748 50%,#d7efdc 50%)!important;border-color:#8197a8!important}
+:root[data-theme="dark"] :is(.calendar-arrows button,.calendar-shortcuts button,.house-choice,.schedule-share,.home-quick-places .quick-place){background:#233448;border-color:#405772;color:#d2e8ff}
+:root[data-theme="dark"] :is(.calendar-shortcuts button.active,.home-quick-places .quick-place.selected){background:#2b5276;border-color:#628cb9;color:#fff}
+:root[data-theme="dark"] .house-coverage{background:#243f59;color:#d0e8ff}
+:root[data-theme="dark"] .house-coverage.no-house-list{background:#273447;color:#c7d9eb}
+:root[data-theme="dark"] .house-choices-title{color:#cbdff0}
+:root[data-theme="dark"] .quick-queue-controls select{background:#233448;color:#ebf5ff;border-color:#46617c}
+:root[data-theme="dark"] .verified-source-badge.is-verified{background:#194936;color:#b4f0cf;border-color:#3b7457}
+:root[data-theme="dark"] .verified-source-badge.is-unpublished{background:#27364a;color:#c2d5e7;border-color:#41566b}
+:root[data-theme="dark"] .inbox-auto-group{background:#192d40;border-color:#38536c}
+:root[data-theme="dark"] .inbox-context summary{background:#253a50;border-color:#496078;color:#e4f1ff}
+:root[data-theme="dark"] .favorite-btn.selected{background:#584528!important;color:#ffdb88!important}
+:root[data-theme="dark"] .push-invite-art{background:#233951;color:#bddcff}
+:root[data-theme="dark"] .svitlo-modules-banner{background:#453826;color:#ffe0b2;border-color:#765c3c}
+:root[data-theme="dark"] .svitlo-managed-banner:not(.svitlo-modules-banner){background:#233e58;color:#d1e5ff;border-color:#456987}
+:root[data-theme="dark"] .freshness-warning{background:#473927;border-color:#81613b;color:#ffe2ac}
+:root[data-theme="dark"] .beta-consent-actions #betaConsentDecline{background:#2b3b4f;color:#ecf4ff}
