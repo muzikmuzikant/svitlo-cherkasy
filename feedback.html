@@ -79,7 +79,7 @@
   <div id="savedTickets" class="saved-tickets"></div>
   <section id="ticketConversation" class="conversation" hidden aria-labelledby="conversationHeading">
    <div class="conversation-head"><div><small id="conversationId"></small><h2 id="conversationHeading">Ваше звернення</h2><span id="conversationStatus" class="support-status"></span></div><button type="button" id="closeConversation" class="support-secondary">← До звернень</button></div>
-   <div id="conversationMeta" class="conversation-meta"></div><div id="conversationMessages" class="conversation-messages"></div>
+   <div id="conversationMeta" class="conversation-meta"></div><div class="support-chat-meta"><span id="chatLiveStatus" class="support-chat-live" data-state="ok" role="status" aria-live="off">Повідомлення оновлюються автоматично</span><button type="button" id="chatRefresh" class="support-chat-refresh" title="Перевірити нові повідомлення">Оновити</button></div><div id="conversationMessages" class="conversation-messages" aria-live="polite" aria-relevant="additions"></div>
    <form id="replyForm" class="reply-form" hidden><label for="replyMessage">Повідомлення</label><textarea id="replyMessage" required minlength="3" maxlength="1200" placeholder="Повідомлення"></textarea><div class="reply-actions"><span>До 1200 символів</span><button type="submit" id="sendReply" class="support-primary">Надіслати →</button></div></form>
    <div id="ticketRating" class="ticket-rating" hidden><h3>Оцініть допомогу</h3><p>Оцінка добровільна й не впливає на можливість звернутися знову.</p>
     <div id="ticketRatingOptions" class="rating-options">
