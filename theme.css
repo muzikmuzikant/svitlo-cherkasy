@@ -121,3 +121,35 @@
 .appearance-summary{margin:0;padding:0 18px 16px;color:var(--muted);font-size:12px;line-height:1.5}
 @media(max-width:370px){.appearance-options{gap:5px}.appearance-choice>span{min-height:93px;padding:8px 2px}.appearance-choice b{font-size:11px}.appearance-choice small{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.appearance-choice>span{transition:none!important}}
+
+/* Linked pages opened from the PWA */
+:root[data-theme="dark"]{background:#0d131d;color:#eef4fc}
+:root[data-theme="dark"] :is(.support-shell,.layout,.wrapper,.shell){color:#edf5ff}
+:root[data-theme="dark"] .support-hero{background:radial-gradient(ellipse at 92% 7%,#23405a,transparent 78%),linear-gradient(140deg,#1c2b3d,#151f2d);border-color:#34465b}
+:root[data-theme="dark"] :is(.support-card,.support-tab.selected,.support-back,.support-help,.support-side-card,.ticket-status){background:#1a2737;border-color:#33465c;color:#ecf4ff}
+:root[data-theme="dark"] .support-tab:not(.selected){color:#b5c6d9}
+:root[data-theme="dark"] .support-pill,:root[data-theme="dark"] .support-step,:root[data-theme="dark"] .support-side-icon{background:#28435f;color:#bcdcff}
+:root[data-theme="dark"] :is(.support-hero p,.support-card-title p,.support-side-card p,.support-side-card>span,.support-help small,.support-privacy p,.ticket-status p){color:#b9cadb}
+:root[data-theme="dark"] .support-side-divider{background:#364c62}
+:root[data-theme="dark"] .support-shell :is(input,select,textarea){background:#202f41;color:#eaf4ff;border-color:#41556b}
+:root[data-theme="dark"] .support-shell :is(input,textarea)::placeholder{color:#aebdcf}
+:root[data-theme="dark"] .support-shell label{color:#d1e0f2}
+:root[data-theme="dark"] .support-privacy,:root[data-theme="dark"] .topic-hint{background:#253448;color:#c0d1e4}
+:root[data-theme="dark"] .support-top .support-back{color:#b8d8ff}
+:root[data-theme="dark"] .layout .hero,:root[data-theme="dark"] .layout .contact,:root[data-theme="dark"] .layout .ticket-status{background:#1a2737;border-color:#33465c;box-shadow:none}
+:root[data-theme="dark"] .layout :is(.search,.faq-item,.faq-question,.faq-answer,.contact-card){background:#233347;color:#e6f2ff;border-color:#364e67}
+:root[data-theme="dark"] .layout input{color:#f0f6ff}
+:root[data-theme="dark"] .layout :is(.hero p,.section-head p,.contact p,.ticket-status p,.faq-answer){color:#b7c9dc}
+:root[data-theme="dark"] .layout .wordmark{color:#eef5fd}
+:root[data-theme="dark"] .layout :is(.faq-item h3,.faq-question strong){color:#edf4fc}
+:root[data-theme="dark"] .layout .ticket-form input{background:#233348;border:1px solid #405873}
+:root[data-theme="dark"] .body,:root[data-theme="dark"] .wrapper article,:root[data-theme="dark"] article.box,:root[data-theme="dark"] .box{background:#1a2737;color:#edf4fd;border-color:#34475d;box-shadow:none}
+:root[data-theme="dark"] .wrapper :is(p,li,.lead,.meta,.eyebrow),:root[data-theme="dark"] .box p{color:#bfd0df}
+:root[data-theme="dark"] .wrapper a,:root[data-theme="dark"] .box a{color:#9cc6ff}
+:root[data-theme="dark"] .wrapper .hero{background:linear-gradient(140deg,#213952,#1b293b);border-color:#344e67}
+:root[data-theme="dark"] .wrapper .note{background:#23344a;border-color:#384c66}
+:root[data-theme="dark"] .shell :is(.back,.nav-tools .back){background:#223449;color:#b6d7ff;border-color:#3a526a}
+:root[data-theme="dark"] .shell :is(.card,.feature,.plan,.method,.contact,.stat,.faq-item){background:#1b2b3c;border-color:#354b62;color:#ebf4fd}
+:root[data-theme="dark"] .shell :is(.section-title p,.card p,.feature p,.method p,.plan p){color:#bacbe0}
+:root[data-theme="dark"] .top .back{background:#223448;border-color:#3e5770;color:#d9e8fa}
+:root[data-theme="dark"] main .info,:root[data-theme="dark"] main .info-card{background:#1b2b3d;border-color:#364c65;color:#edf5ff}
