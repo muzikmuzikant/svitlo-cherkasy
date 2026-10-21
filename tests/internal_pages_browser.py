@@ -54,6 +54,21 @@ def main():
             context.set_offline(False)
             for page_name in PAGES: assert_internal(page,page_name)
             print("PASS: all 8 internal pages opened on an installed PWA online")
+            # Open the actual Settings links as an end user would, rather than
+            # testing the programmatic helper alone.
+            page.locator('.bottom-nav [data-go="settings"]').click()
+            for link,target in [
+                ('#settings a[href^="./help.html"]','help.html'),
+                ('#settings a[href^="./feedback.html"]','feedback.html'),
+            ]:
+                page.locator(link).first.click()
+                page.wait_for_function("""() => !document.querySelector('#svitloInternalPage').hidden
+                    && !document.querySelector('#svitloInternalPage').classList.contains('svitlo-internal-loading')""",timeout=12000)
+                assert target in page.locator('.svitlo-internal-frame').get_attribute('src')
+                assert page.frame_locator('.svitlo-internal-frame').locator('#appBootScreen,#svitloInternalOffline').count()==0
+                page.locator('.svitlo-internal-back').click()
+                page.wait_for_function("() => document.querySelector('#svitloInternalPage').hidden",timeout=5000)
+            print("PASS: real help and support links work from Settings")
         finally:
             browser.close()
 
