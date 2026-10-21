@@ -33,11 +33,14 @@ async function loadTicketCategories(){
 const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||'null')??fallback}catch{return fallback}};
 let saved=Array.isArray(read(SAVED,[]))?read(SAVED,[]):[];
 let selectedTicket=null,lastSent=null,basePromise=null;
+let initialFiles=null,replyFiles=null;
+const filesApi=()=>window.SvitloTicketMedia;
 const CHAT_REFRESH_MS=4500;
 let chatRequestBusy=false,chatFingerprint='',chatGeneration=0;
 const ticketFingerprint=t=>JSON.stringify([
  t.status,t.updatedAt,t.rating,t.canReply,
- (t.messages||[]).map(m=>[m.id,m.from,m.text,m.at])
+ (t.messages||[]).map(m=>[m.id,m.from,m.text,m.at,(m.attachments||[]).map(a=>a.id)]),
+ (t.attachments||[]).map(a=>a.id)
 ]);
 function chatIndicator(message,mode='ok'){
  const el=$('chatLiveStatus');if(!el)return;
@@ -60,7 +63,7 @@ async function refreshOpenChat(){
   chatFingerprint=hash;
   updateSavedStatus(ticket);
   const root=$('conversationMessages');
-  const entries=[...(ticket.message?[{id:'initial',from:'user',text:ticket.message,at:ticket.createdAt}]:[]),...(ticket.messages||[])];
+  const entries=[...(ticket.message?[{id:'initial',from:'user',text:ticket.message,at:ticket.createdAt,attachments:ticket.attachments||[]}]:[]),...(ticket.messages||[])];
   const existing=[...root.querySelectorAll('.conversation-bubble')];
   const isPrefix=existing.length<=entries.length&&existing.every((node,i)=>node.dataset.messageKey===String(entries[i].id||i));
   if(isPrefix){
@@ -68,13 +71,13 @@ async function refreshOpenChat(){
     document.activeElement!==$('replyMessage');
    for(const [i,entry] of entries.entries()){
     if(i<existing.length)continue;
-    const node=bubble(entry.from,entry.text,entry.at);node.dataset.messageKey=String(entry.id||i);
+    const node=bubble(entry.from,entry.text,entry.at,entry.attachments||[],id,token);node.dataset.messageKey=String(entry.id||i);
     root.append(node);
    }
    if(nearBottom&&entries.length>existing.length)root.lastElementChild?.scrollIntoView({block:'nearest',behavior:'smooth'});
   }else{
    root.replaceChildren();
-   entries.forEach((entry,i)=>{const node=bubble(entry.from,entry.text,entry.at);node.dataset.messageKey=String(entry.id||i);root.append(node)});
+   entries.forEach((entry,i)=>{const node=bubble(entry.from,entry.text,entry.at,entry.attachments||[],id,token);node.dataset.messageKey=String(entry.id||i);root.append(node)});
   }
   $('conversationStatus').replaceWith(Object.assign(statusNode(ticket.status),{id:'conversationStatus'}));
   $('ticketRating').hidden=ticket.canReply!==true||ticket.status!=='resolved';
@@ -232,9 +235,14 @@ async function loadTicket(id,token){
  const payload={id};if(token)payload.token=token;
  return post('/api/ticket/status',payload);
 }
-function bubble(from,value,at){
+function bubble(from,value,at,attachments=[],ticketId=selectedTicket?.id,token=selectedTicket?.token){
  const box=text('div','','conversation-bubble'+(from==='admin'?' from-admin':''));
- box.append(text('strong',from==='admin'?'Підтримка «Світло Черкаси»':'Ви'),text('time',displayDate(at)),text('p',value));
+ box.append(text('strong',from==='admin'?'Підтримка «Світло Черкаси»':'Ви'),text('time',displayDate(at)));
+ if(value)box.append(text('p',value));
+ if(attachments.length){
+  const view=filesApi()?.render(attachments,attachmentId=>post('/api/ticket/attachment',{id:ticketId,token,attachmentId}));
+  if(view)box.append(view);
+ }
  return box;
 }
 function showConversation(ticket){
@@ -247,8 +255,8 @@ function showConversation(ticket){
  $('conversationMeta').replaceChildren(text('span','Створено: '+displayDate(ticket.createdAt)),...(ticket.queue?[text('span','Підчерга '+ticket.queue)]:[]));
  const root=$('conversationMessages');root.replaceChildren();
  if(ticket.message){
-  const first=bubble('user',ticket.message,ticket.createdAt);first.dataset.messageKey='initial';root.append(first);
-  for(const [i,entry] of (ticket.messages||[]).entries()){const node=bubble(entry.from,entry.text,entry.at);node.dataset.messageKey=String(entry.id||i);root.append(node)}
+  const first=bubble('user',ticket.message,ticket.createdAt,ticket.attachments||[],ticket.id,selectedTicket.token);first.dataset.messageKey='initial';root.append(first);
+  for(const [i,entry] of (ticket.messages||[]).entries()){const node=bubble(entry.from,entry.text,entry.at,entry.attachments||[],ticket.id,selectedTicket.token);node.dataset.messageKey=String(entry.id||i);root.append(node)}
  }else root.append(text('p','Для старого звернення доступний лише статус. Для листування потрібен приватний код доступу.','support-alert'));
  $('ticketRating').hidden=ticket.canReply!==true||ticket.status!=='resolved';
  $('ticketRatingOptions').hidden=!!ticket.rating;
@@ -311,6 +319,8 @@ function updateDiagnosticsPreview(){
 $('includeDiagnostics')?.addEventListener('change',updateDiagnosticsPreview);
 loadTicketCategories();
 updateDiagnosticsPreview();
+initialFiles=filesApi()?.picker($('newTicketFiles'),$('newTicketFilePreview'),$('newTicketFileStatus'));
+replyFiles=filesApi()?.picker($('replyTicketFiles'),$('replyTicketFilePreview'),$('replyTicketFileStatus'));
 $('feedbackForm').addEventListener('submit',async event=>{
  event.preventDefault();
  if(!$('feedbackForm').reportValidity())return;
@@ -321,17 +331,18 @@ $('feedbackForm').addEventListener('submit',async event=>{
   const extraFields=[...document.querySelectorAll('#extraTicketFields [data-key]')];
   if(extraFields.length){payload.extra={};for(const inp of extraFields){payload.extra[inp.dataset.key]=inp.dataset.type==='checkbox'?inp.checked:inp.value.trim()}}
   if($('includeDiagnostics')?.checked){payload.includeDiagnostics=true;payload.diagnostics=coarseDiagnostics()}
+  if(initialFiles?.count())payload.attachments=await initialFiles.collect();
   const result=await post('/api/feedback',payload);
   remember({...result,topic:payload.topic,subject:payload.subject});
   window.dispatchEvent(new CustomEvent('svitlo:support-receipt-saved',{detail:{id:result.id,token:result.token,status:'new'}}));
-  lastSent=result;
+  lastSent=result;initialFiles?.clear();
   $('ticketId').textContent=result.id;
   $('feedbackForm').hidden=true;$('success').hidden=false;
   try{sessionStorage.removeItem(DRAFT)}catch{}
  }catch(e){alertAt('formMessage',friendlyError(e))}
  finally{button.disabled=false;button.textContent='Надіслати звернення →'}
 });
-$('another').addEventListener('click',()=>{$('feedbackForm').reset();updateDiagnosticsPreview();$('feedbackForm').hidden=false;$('success').hidden=true;$('formMessage').hidden=true;restoreDraft()});
+$('another').addEventListener('click',()=>{initialFiles?.clear();$('feedbackForm').reset();updateDiagnosticsPreview();$('feedbackForm').hidden=false;$('success').hidden=true;$('formMessage').hidden=true;restoreDraft()});
 $('openSent').addEventListener('click',()=>{if(!lastSent)return;chooseTab('tickets');openTicket(lastSent.id)});
 $('copyReceipt').addEventListener('click',async()=>{
  if(!lastSent)return;
@@ -366,10 +377,13 @@ $('lookupForm')?.addEventListener('submit',async event=>{
 $('closeConversation').addEventListener('click',()=>{chatGeneration++;chatFingerprint='';$('ticketConversation').hidden=true;$('viewTickets').classList.remove('is-reading');selectedTicket=null;renderSaved();});
 $('replyForm').addEventListener('submit',async event=>{
  event.preventDefault();if(!selectedTicket?.token||!$('replyForm').reportValidity())return;
+ if($('replyMessage').value.trim().length<3&&!replyFiles?.count()){alertAt('conversationMessage','Напишіть повідомлення або прикріпіть файл.');return}
  const button=$('sendReply');button.disabled=true;button.textContent='Надсилаємо…';$('conversationMessage').hidden=true;
  try{
-  await post('/api/ticket/reply',{id:selectedTicket.id,token:selectedTicket.token,message:$('replyMessage').value.trim()});
-  const id=selectedTicket.id;$('replyForm').reset();await openTicket(id);
+  const payload={id:selectedTicket.id,token:selectedTicket.token,message:$('replyMessage').value.trim()};
+  if(replyFiles?.count())payload.attachments=await replyFiles.collect();
+  await post('/api/ticket/reply',payload);
+  const id=selectedTicket.id;$('replyForm').reset();replyFiles?.clear();await openTicket(id);
   alertAt('conversationMessage','Доповнення надіслано. Підтримка побачить його у зверненні.',true);
  }catch(e){if(wasDeleted(e))forgetDeletedTicket(selectedTicket?.id||'');
   else alertAt('conversationMessage',friendlyError(e))}
