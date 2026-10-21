@@ -88,6 +88,7 @@ setInterval(()=>{void refreshOpenChat()},CHAT_REFRESH_MS);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refreshOpenChat()});
 window.addEventListener('online',()=>void refreshOpenChat());
 window.addEventListener('focus',()=>void refreshOpenChat());
+$('chatRefresh')?.addEventListener('click',()=>void refreshOpenChat());
 
 const safeTickets=()=>saved.filter(x=>x&&/^SC-[A-F0-9]{10}$/.test(x.id)&&(!x.token||/^[a-zA-Z0-9_-]{32,80}$/.test(x.token))).slice(0,60);
 saved=safeTickets();
