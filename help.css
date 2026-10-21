@@ -12,3 +12,15 @@
 .answer li{margin:0 0 8px;line-height:1.65}
 .answer a{color:#347af0;font-weight:750;text-decoration:underline;text-underline-offset:3px}
 .answer strong{font-weight:830}
+
+/* User-facing help for privately attached support images and videos. */
+.support-media-guide{
+ display:grid;gap:8px;padding:23px 25px;margin:18px 0;
+ border:1px solid #d9e6f0;border-radius:20px;background:var(--surface,#fff);
+ box-shadow:0 7px 22px #2d527710
+}
+.support-media-guide h2{font-size:20px;margin:0}
+.support-media-guide p{font-size:13px;line-height:1.65;color:var(--muted,#657b91);margin:0}
+:root[data-theme="dark"] .support-media-guide{background:#222d3a;border-color:#3b5165;box-shadow:none}
+:root[data-theme="dark"] .support-media-guide p{color:#bed0de}
+@media(max-width:600px){.support-media-guide{padding:18px 17px}.support-media-guide h2{font-size:17px}}
