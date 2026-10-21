@@ -70,7 +70,7 @@ test('all ordinary pages and PWA have an accessible, dark-mode-safe footer mount
  const index=file('index.html'),links=file('social-links.js');
  assert.match(index,/id="svitloSocialSettings"/);
  assert.match(index,/id="svitloSocialLanding"/);
- assert.match(links,/aria-label','/); // link labels are set before insertion
+ assert.match(links,/setAttribute\('aria-label'/); // link labels are set before insertion
  assert.match(links,/rel='noopener noreferrer'/);
  assert.match(links,/svitlo:public-config/);
  assert.match(file('social-links.css'),/:root\[data-theme="dark"\]/);
