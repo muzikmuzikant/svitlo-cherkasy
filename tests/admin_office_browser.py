@@ -112,7 +112,7 @@ def main():
         page.locator(".office-create").click()
         assert page.locator("#officeModal").is_visible()
         page.get_by_role("button",name="Нова картка доручення").click()
-        assert page.locator("[data-admin-panel=registry]").is_visible()
+        page.locator("[data-admin-panel=registry]").wait_for(state="visible",timeout=6000)
         page.locator("#workNew").click()
         page.locator("#workTitle").fill("Перевірити нову адресу")
         page.locator("#workDetails").fill("Зареєстровано з браузерного тесту")
