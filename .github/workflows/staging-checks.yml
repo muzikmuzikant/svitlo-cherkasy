@@ -59,6 +59,8 @@ jobs:
           node --test tests/test_week_crossing_v713.mjs tests/test_schedule_mirror_beta.mjs tests/test_weekday_inbox_beta.mjs tests/test_release_fixes_7912.mjs
           python -m pip install -q -r requirements.txt pytest
           python -m pytest -q tests/test_weekly_schedule_retention_beta.py
+      - name: Check global layout and dark-theme regressions
+        run: python -m pytest -q tests/test_staging_layout.py tests/test_staging_support_ui.py
       - name: Verify published beta API read-only route
         run: |
           python - <<'PY'
