@@ -479,3 +479,19 @@
 :root[data-theme="dark"] .article img{background:#202938}
 :root[data-theme="dark"] .top .back{background:#233448;color:#c2dcff}
 :root[data-theme="dark"] .top .mark{color:#eff5fc}
+
+/* Inbox: purposeful action, no fake white rim in night appearance. */
+:root[data-theme="dark"] #updates .inbox-mark{
+ background:#274b78;border-color:#477bb8;color:#f3f8ff;
+ box-shadow:0 4px 18px #00000023
+}
+:root[data-theme="dark"] #updates .inbox-mark:disabled{
+ background:#222b36;border-color:#364252;color:#b3c0d0;box-shadow:none
+}
+:root[data-theme="dark"] #updates .inbox-unread-note{color:#bac7d8}
+:root[data-theme="dark"] #updates .inbox-filters>button:not(.selected){
+ background:#202831;border-color:#3c4856;color:#d2deea
+}
+:root[data-theme="dark"] #updates .inbox-filters>button.selected{
+ background:#2a568a;border-color:#4f81ba;color:#fff
+}
