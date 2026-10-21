@@ -34,6 +34,18 @@
   document.querySelectorAll('input[name="appearanceTheme"]').forEach(input=>input.addEventListener('change',()=>{if(input.checked)set(input.value)}));
   apply();
  });
+ // Installed iOS PWA: prevent page scaling while preserving normal
+ // single-finger scrolling, text inputs and rapid taps on controls.
+ // iOS Safari may ignore the viewport maximum-scale for pinch gestures.
+ const blockScale=event=>{if(event.cancelable)event.preventDefault()};
+ for(const name of ['gesturestart','gesturechange','gestureend'])
+  document.addEventListener(name,blockScale,{passive:false});
+ document.addEventListener('touchmove',event=>{
+  if(event.touches?.length>1)blockScale(event);
+ },{passive:false});
+ document.addEventListener('touchstart',event=>{
+  if(event.touches?.length>1)blockScale(event);
+ },{passive:false});
  window.SvitloTheme={get:()=>choice,set,apply};
  apply();
 })();
