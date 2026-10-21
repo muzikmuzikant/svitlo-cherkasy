@@ -7,7 +7,7 @@
  const node=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(cls)n.className=cls;return n};
  const statusText={new:'Зареєстровано',in_progress:'На виконанні',resolved:'Завершено'};
  const viewButtons=[...root.querySelectorAll('[data-ticket-view]')];
- let view='all',items=[];
+ let view='all',items=[],routingAvailable=false;
  const date=value=>{const t=Date.parse(value||'');return Number.isFinite(t)?new Date(t).toLocaleString('uk-UA',{dateStyle:'medium',timeStyle:'short'}):'Не встановлено'};
  const dueTime=t=>{const n=Date.parse(t?.dueAt||'');return Number.isFinite(n)?n:Infinity};
  const isOverdue=t=>t.status!=='resolved'&&dueTime(t)<Date.now();
@@ -36,8 +36,9 @@
   for(const btn of viewButtons){const selected=btn.dataset.ticketView===view;btn.setAttribute('aria-pressed',String(selected))}
   if(typeof renderTicketList==='function')renderTicketList();
  }
- function sync(list){
+ function sync(list,capabilities){
   items=Array.isArray(list)?list:[];
+  routingAvailable=capabilities?.routing===true;
   const select=$('ticketAssigneeFilter');
   if(select){
    const prev=select.value;
@@ -55,7 +56,7 @@
   }
  }
  function reset(){
-  items=[];view='all';
+  items=[];view='all';routingAvailable=false;
   for(const btn of viewButtons)btn.setAttribute('aria-pressed',String(btn.dataset.ticketView==='all'));
  }
  viewButtons.forEach(btn=>btn.addEventListener('click',()=>selectView(btn.dataset.ticketView)));
@@ -101,6 +102,10 @@
    }}));
   };
   controls.append(copy,work);head.append(controls);unit.append(head);
+  if(!routingAvailable){
+   const notice=node('p','Бета-сервер Railway ще не підтримує маршрут і журнал картки. Після його оновлення ці поля стануть доступними; відповіді, статуси та нотатки працюють як раніше.','office-route-notice');
+   notice.setAttribute('role','status');unit.append(notice);
+  }
   const progress=node('div',undefined,'office-route-progress');
   const steps=[['Зареєстровано',true],['Взято в роботу',ticket.status!=='new'],['Завершено',ticket.status==='resolved']];
   for(const [label,complete] of steps)progress.append(node('span',label,'office-route-step'+(complete?' is-complete':'')));
@@ -112,7 +117,7 @@
    if(type!=='textarea')input.type=type;
    input.value=value||'';
    if(maxLength)input.maxLength=maxLength;
-   input.disabled=document.body.dataset.adminRole==='viewer';
+   input.disabled=document.body.dataset.adminRole==='viewer'||!routingAvailable;
    label.append(input);fields.append(label);return input;
   };
   const assignee=control('Відповідальний виконавець','text',ticket.assignedTo||'',60);
@@ -129,8 +134,9 @@
   unit.append(fields,helper);
   const saveButton=node('button','Зберегти маршрут','support-send');saveButton.type='button';
   const feedback=node('p','','office-route-result');feedback.setAttribute('role','status');
-  saveButton.disabled=document.body.dataset.adminRole==='viewer';
+  saveButton.disabled=document.body.dataset.adminRole==='viewer'||!routingAvailable;
   saveButton.onclick=async()=>{
+   if(!routingAvailable){feedback.textContent='Оновлення бета-сервера Railway ще не розгорнуто.';return}
    if(due.value&&!Number.isFinite(new Date(due.value).getTime())){feedback.textContent='Укажіть коректну дату';return}
    const data={assignedTo:assignee.value.trim(),dueAt:due.value?new Date(due.value).toISOString():'',resolution:outcome.value};
    saveButton.disabled=true;feedback.textContent='Зберігаємо маршрут на сервері…';
