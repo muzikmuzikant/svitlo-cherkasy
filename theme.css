@@ -355,3 +355,127 @@
 :root[data-theme="dark"] .archive-street-tag{color:#f0cb8b}
 :root[data-theme="dark"] .setting-action span{color:#bac9db}
 :root[data-theme="dark"] .inbox-empty p{color:#b8c9da}
+
+/* 7.9.27: complete night surfaces on all eight internal pages.
+   The subsidiary documents have their OWN CSS and cannot rely on the
+   main application's .surface override. Keep the hero's intentional
+   photographic/dark-gradient treatment, not its old white cards. */
+:root[data-theme="dark"]{
+ --ink:#f2f5f9!important;--muted:#b2bfce!important;--line:#313b49!important;
+ --bluewash:#243349!important;--raised:#202732!important;
+ background:#090b0f!important;color:#f2f5f9!important;color-scheme:dark!important
+}
+:root[data-theme="dark"] body{background:#090b0f;color:#eef4fb}
+:root[data-theme="dark"] :is(input,textarea,select){color-scheme:dark}
+:root[data-theme="dark"] :is(input,textarea)::placeholder{color:#aab8cb}
+/* Help center */
+:root[data-theme="dark"] .layout :is(.hero,.quick,.articles details,.empty,.ticket-status){
+ background:#161c25;border-color:#354151;color:#eef4fb;box-shadow:none
+}
+:root[data-theme="dark"] .layout :is(.search,.filters button,.search kbd){
+ background:#232b37;border-color:#3b4859;color:#d4e3f6
+}
+:root[data-theme="dark"] .layout .search input{background:transparent;color:#edf4ff}
+:root[data-theme="dark"] .layout .search input::placeholder{color:#b0becd}
+:root[data-theme="dark"] .layout :is(.wordmark,.quick b,.articles summary,.ticket-status label){color:#f0f5fa}
+:root[data-theme="dark"] .layout :is(.back,.quick small,.count,.arrow,.hero p,.section-head p,.contact p,.ticket-status p,footer){
+ color:#b7c4d5
+}
+:root[data-theme="dark"] .layout :is(.hero-label,.point,.quick-icon,.search span,.articles summary::after,footer a,.answer a){color:#a6c8ff}
+:root[data-theme="dark"] .layout .filters button[aria-pressed="true"]{background:#3165aa;border-color:#4d84cc;color:#fff}
+:root[data-theme="dark"] .layout .answer{background:#161c25;color:#c9d6e5;border-color:#354151}
+:root[data-theme="dark"] .layout .answer h3{color:#eef4fa}
+:root[data-theme="dark"] .layout .contact{background:#202e42;border-color:#3d5270;color:#eff5fb}
+:root[data-theme="dark"] .layout .notice{background:#3a2e1d;border-color:#70522d}
+:root[data-theme="dark"] .layout .notice strong{color:#ffdaa0}
+:root[data-theme="dark"] .layout .notice p{color:#f3d4a4}
+:root[data-theme="dark"] .layout .ticket-form input{background:#252e3c;color:#ecf5ff}
+:root[data-theme="dark"] .layout .ticket-form button{background:#2b4570;color:#d7e6ff}
+/* Support center: both new-ticket form and "my tickets" conversation */
+:root[data-theme="dark"] .support-shell :is(.support-hero,.support-card,.support-side-card,.support-help,.saved-ticket,.saved-empty,.conversation){
+ background:#161c25;border-color:#354151;color:#ecf3fb;box-shadow:none
+}
+:root[data-theme="dark"] .support-shell :is(.support-brand small,.support-footer,.support-footer a,.tickets-heading p,.support-card-title p,.form-help,.optional,.saved-ticket-copy small,.conversation-head small,.conversation-meta,.reply-actions span,.support-success>p,.support-success .receipt-note){
+ color:#b6c4d5
+}
+:root[data-theme="dark"] .support-shell :is(.support-brand strong,.support-card-title h2,.support-side-card h3,.saved-ticket-copy strong,.saved-empty strong,.conversation-head h2){color:#f0f5fb}
+:root[data-theme="dark"] .support-shell :is(.support-kicker,.support-brand strong,.support-hero h1 span,.receipt strong,.support-help>span:last-child){color:#a4c8ff}
+:root[data-theme="dark"] .support-shell :is(.support-import,.support-diagnostics,.ticket-rating,.receipt,.topic-hint,.support-privacy){
+ background:#222b37;border-color:#3a4658;color:#e3edf9
+}
+:root[data-theme="dark"] .support-shell :is(.support-diagnostics strong,.support-privacy strong,.support-import h3,.ticket-rating h3){color:#edf4fb}
+:root[data-theme="dark"] .support-shell :is(.support-diagnostics small,.support-diagnostics-preview,.support-import p,.ticket-rating p,.support-privacy p,.receipt small){
+ color:#b9c8d8
+}
+:root[data-theme="dark"] .support-shell :is(label,.support-import label){color:#d7e2f1}
+:root[data-theme="dark"] .support-shell :is(input:not([type="checkbox"]),textarea,select,.extra-ticket-field input:not([type="checkbox"]),.extra-ticket-field select){
+ background:#222c39;color:#f0f5fc;border-color:#455264
+}
+:root[data-theme="dark"] .support-shell :is(input:not([type="checkbox"]),textarea,select):focus{background:#263446;border-color:#86b4ff}
+:root[data-theme="dark"] .support-shell :is(.support-tab.selected,.support-refresh,.support-secondary,.success-actions button,.rating-options button){
+ background:#273449;border-color:#455975;color:#b7d8ff
+}
+:root[data-theme="dark"] .support-shell .support-tab:not(.selected){color:#b8c7d7}
+:root[data-theme="dark"] .support-shell .saved-ticket:hover{background:#202b39;border-color:#57779d}
+:root[data-theme="dark"] .support-shell .conversation-bubble{background:#222c39;border-color:#3c4a5b;color:#d7e4f3}
+:root[data-theme="dark"] .support-shell .conversation-bubble.from-admin{background:#203752;border-color:#456991}
+:root[data-theme="dark"] .support-shell .conversation-bubble :is(strong,p,time){color:#d9e8fa}
+:root[data-theme="dark"] .support-shell .support-status{background:#2b3644;color:#d5e2f3}
+:root[data-theme="dark"] .support-shell .support-status.is-new{background:#253f60;color:#bbd9ff}
+:root[data-theme="dark"] .support-shell .support-status.is-in_progress{background:#43351f;color:#f6d6a5}
+:root[data-theme="dark"] .support-shell .support-status.is-resolved{background:#1e4633;color:#b5f0ce}
+:root[data-theme="dark"] .support-shell .support-alert{background:#443521;color:#ffe2af}
+:root[data-theme="dark"] .support-shell .support-alert.good{background:#1e4432;color:#bcf0d0}
+:root[data-theme="dark"] .support-shell .success-symbol{background:#1a4330;color:#b0eec5}
+:root[data-theme="dark"] .support-shell .rating-options button:hover{background:#2b4261}
+:root[data-theme="dark"] .support-shell .support-side-card>span{color:#bbcee4}
+/* Privacy, terms, about: remove light note/paragraph cards and dark-on-dark ink. */
+:root[data-theme="dark"] :is(.wrapper,.wrapper article,.wrapper .body,.wrapper .hero,.wrapper .note,article.box,.box){color:#f1f5fb}
+:root[data-theme="dark"] :is(.wrapper article,.wrapper .body,article.box,.box){
+ background:#161c25;border-color:#344151;box-shadow:none
+}
+:root[data-theme="dark"] .wrapper .hero{background:#1e2b3e;border-color:#354963}
+:root[data-theme="dark"] .wrapper :is(.hero p,.meta,.eyebrow,p,li,.lead,article p,article li){color:#c3d1e0}
+:root[data-theme="dark"] .wrapper :is(h1,h2,h3,h4,strong,.note strong){color:#eff5fd}
+:root[data-theme="dark"] .wrapper .note{background:#243246;border-color:#41536b}
+:root[data-theme="dark"] .wrapper .warning{background:#3f321e;border-color:#72562f;color:#f4dab2}
+:root[data-theme="dark"] :is(.wrapper a,.box a,body>main a){color:#a9cfff}
+/* Public "About" body has hardcoded white background, independent of theme vars. */
+:root[data-theme="dark"] body:has(main .box){background:#090b0f;color:#eef4fb}
+:root[data-theme="dark"] body:has(main .box) main{color:#eef4fb}
+/* Advertising: preserve deliberate illustrated hero but darken white phone UI and cards */
+:root[data-theme="dark"] .shell :is(.benefit,.format:not(:nth-child(2)),.plan,.faq details,.empty,.conditions){
+ background:#161c25;color:#eef4fb;border-color:#344252;box-shadow:none
+}
+:root[data-theme="dark"] .shell :is(.section-heading p,.format p,.plan-desc,.plan-price small,.plan-duration,.plan-features li,.faq p,.foot,.empty,.conditions){color:#bdcadb}
+:root[data-theme="dark"] .shell :is(.benefit h3,.format h3,.plan h3,.faq summary,.section-heading h2,.plan-price){color:#eef4fa}
+:root[data-theme="dark"] .shell :is(.nav-tools a,.back,.action-secondary){color:#c5dcff}
+:root[data-theme="dark"] .shell .format:nth-child(2){background:#1c3b63;border-color:#5379a4;color:#fff}
+:root[data-theme="dark"] .shell .format:nth-child(2) p{color:#d6e3f3}
+:root[data-theme="dark"] .shell :is(.phone,.phone-ad,.phone-schedule i){background:#202b3b}
+:root[data-theme="dark"] .shell :is(.phone-logo,.phone-ad b){color:#eaf2fb}
+:root[data-theme="dark"] .shell .phone-ad p{color:#b3c5da}
+:root[data-theme="dark"] .shell .phone-ad small{color:#a6bddc}
+:root[data-theme="dark"] .shell .phone-status{background:#1e4934;color:#baf0cc}
+:root[data-theme="dark"] .shell .phone-schedule i:nth-child(3n){background:#416b9e}
+:root[data-theme="dark"] .shell :is(.benefit-icon,.format-icon,.method-icon,.goal-icon,.amount){background:#263b55;color:#b7d5ff}
+:root[data-theme="dark"] .shell .contact-banner{background:linear-gradient(120deg,#1b334e,#172c43);border-color:#455b73}
+:root[data-theme="dark"] .shell .contact-banner :is(p,.contact){color:#e0eafa}
+:root[data-theme="dark"] .shell .contact-banner .contact{background:#ffffff12}
+/* Support-project special panels */
+:root[data-theme="dark"] .shell :is(.method,.goal,.expense,.faq details,.empty){
+ background:#161c25;border-color:#344252;color:#eef4fa;box-shadow:none
+}
+:root[data-theme="dark"] .shell :is(.method p,.method-label,.goal p,.amount-hint,.expense small,.faq p,.footer-note,.section-heading p){color:#bac9d8}
+:root[data-theme="dark"] .shell :is(.method-details,.why-text){background:#233246;color:#cbdcf0;border-color:#405671}
+:root[data-theme="dark"] .shell .method-actions button{background:#263f5c;color:#c9e0ff}
+:root[data-theme="dark"] .shell .expense strong{color:#c1dcff}
+:root[data-theme="dark"] .shell .gratitude{background:#1c314a;color:#f2f6fc}
+:root[data-theme="dark"] .shell .gratitude p{color:#d0dfef}
+:root[data-theme="dark"] .shell .goal .amount{color:#c4ddff}
+/* Ad details: the hero remains dark; content and aside no longer translucent white */
+:root[data-theme="dark"] :is(.article,.aside){background:#161c25!important;border-color:#364253;color:#eef4fb}
+:root[data-theme="dark"] :is(.article .copy,.aside p,.foot,.error p){color:#bacbdd}
+:root[data-theme="dark"] .article img{background:#202938}
+:root[data-theme="dark"] .top .back{background:#233448;color:#c2dcff}
+:root[data-theme="dark"] .top .mark{color:#eff5fc}
