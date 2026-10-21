@@ -90,34 +90,53 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   if(Object.keys(extra).length)data.extra=extra;
   cleanup();if(items.length>=MAX_ITEMS)throw bad('Наразі не можемо прийняти звернення. Спробуйте пізніше.',503);
   const token=crypto.randomBytes(24).toString('base64url');
-  const newItem={id:'SC-'+crypto.randomBytes(5).toString('hex').toUpperCase(),...data,status:'new',priority:category?.priority==='high'?'high':'normal',internalNote:'',tags:[],messages:[],accessHash:hash(token),createdAt:new Date(t).toISOString(),updatedAt:new Date(t).toISOString()};
+  const newItem={id:'SC-'+crypto.randomBytes(5).toString('hex').toUpperCase(),...data,status:'new',priority:category?.priority==='high'?'high':'normal',assignedTo:'',dueAt:'',resolution:'',revision:1,activity:[{kind:'created',at:new Date(t).toISOString(),by:'system',label:'Звернення зареєстровано'}],internalNote:'',tags:[],messages:[],accessHash:hash(token),createdAt:new Date(t).toISOString(),updatedAt:new Date(t).toISOString()};
   items.push(newItem);
   try{save()}catch{items.pop();throw bad('Не вдалося зберегти звернення. Спробуйте пізніше.',503)}
   entry.times.push(t);entry.expire=t+interval;attempts.set(k,entry);
   return {ok:true,id:newItem.id,token};
  }
  function list(){if(cleanup())save();return {items:items.slice().reverse().map(({accessHash,...item})=>item),count:items.length}}
- function change(id,patch){
+ function change(id,patch,actor='admin'){
   const found=find(id),data=typeof patch==='string'?{status:patch}:patch;
   if(!data||typeof data!=='object'||Array.isArray(data))throw bad('Некоректні зміни звернення.');
-  const allow=['status','priority','internalNote','tags','reply'];
+  const allow=['status','priority','internalNote','tags','reply','assignedTo','dueAt','resolution','expectedRevision'];
   if(Object.keys(data).some(k=>!allow.includes(k)))throw bad('Непідтримуване поле звернення.');
-  const update={...found,messages:Array.isArray(found.messages)?found.messages.slice():[]};
-  if('status' in data){if(!STATUSES.includes(data.status))throw bad('Невідомий статус.');update.status=data.status}
-  if('priority' in data){if(!PRIORITIES.includes(data.priority))throw bad('Невідомий пріоритет.');update.priority=data.priority}
-  if('internalNote' in data){const note=tidy(data.internalNote,1600);if(note.length>1600)throw bad('Внутрішня нотатка завелика.');update.internalNote=note}
+  const previousRevision=Number.isSafeInteger(found.revision)?found.revision:1;
+  if('expectedRevision' in data&&data.expectedRevision!==previousRevision)throw bad('Картку вже змінили в іншому сеансі. Оновіть дані перед збереженням.',409);
+  const update={...found,messages:Array.isArray(found.messages)?found.messages.slice():[],activity:Array.isArray(found.activity)?found.activity.slice(-79):[]};
+  const changes=[];
+  const changed=(field,label)=>{if(update[field]!==found[field])changes.push(label)};
+  if('assignedTo' in data){
+    if(typeof data.assignedTo!=='string'||data.assignedTo.length>60)throw bad('Некоректний виконавець');
+    update.assignedTo=data.assignedTo.trim();changed('assignedTo','Призначення виконавця')
+  }
+  if('dueAt' in data){
+    if(data.dueAt!==''&&data.dueAt!==null&&(typeof data.dueAt!=='string'||!/^20\d{2}-\d{2}-\d{2}T/.test(data.dueAt)||!Number.isFinite(Date.parse(data.dueAt))))throw bad('Некоректний контрольний строк');
+    update.dueAt=data.dueAt?new Date(data.dueAt).toISOString():'';changed('dueAt','Контрольний строк')
+  }
+  if('resolution' in data){
+    if(typeof data.resolution!=='string'||data.resolution.length>800)throw bad('Висновок має містити до 800 символів');
+    update.resolution=data.resolution.trim();changed('resolution','Висновок')
+  }
+  if('status' in data){if(!STATUSES.includes(data.status))throw bad('Невідомий статус.');update.status=data.status;changed('status','Зміна статусу');if(found.status!==update.status&&update.status==='resolved')update.resolvedAt=new Date(clock()).toISOString();else if(found.status==='resolved'&&update.status!=='resolved')update.resolvedAt=''}
+  if('priority' in data){if(!PRIORITIES.includes(data.priority))throw bad('Невідомий пріоритет.');update.priority=data.priority;changed('priority','Зміна пріоритету')}
+  if('internalNote' in data){const note=tidy(data.internalNote,1600);if(note.length>1600)throw bad('Внутрішня нотатка завелика.');update.internalNote=note;changed('internalNote','Внутрішня нотатка')}
   if('tags' in data){
   if(!Array.isArray(data.tags)||data.tags.length>12||data.tags.some(tag=>typeof tag!=='string'||tag.trim().length>25))throw bad('Некоректні теги');
-  update.tags=[...new Set(data.tags.map(tag=>tag.trim().toLocaleLowerCase('uk-UA')).filter(Boolean))]
+  update.tags=[...new Set(data.tags.map(tag=>tag.trim().toLocaleLowerCase('uk-UA')).filter(Boolean))];if(JSON.stringify(update.tags)!==JSON.stringify(found.tags||[]))changes.push('Теги')
  }
  if('reply' in data){
    const reply=tidy(data.reply,1600);
    if(reply.length<2||reply.length>1600)throw bad('Відповідь має містити від 2 до 1600 символів.');
    if(update.messages.length>=50)throw bad('Ліміт відповідей у зверненні вичерпано.');
-   update.messages.push({id:crypto.randomBytes(6).toString('hex'),from:'admin',text:reply,at:new Date(clock()).toISOString()});
+   update.messages.push({id:crypto.randomBytes(6).toString('hex'),from:'admin',text:reply,at:new Date(clock()).toISOString()});changes.push('Відповідь користувачу');
    if(!('status' in data)&&update.status==='new')update.status='in_progress';
   }
   update.updatedAt=new Date(clock()).toISOString();
+  update.revision=previousRevision+1;
+  if(changes.length)update.activity.push({kind:'update',at:update.updatedAt,by:typeof actor==='string'?actor.slice(0,40):'admin',label:changes.join(' · ').slice(0,180)});
+  update.activity=update.activity.slice(-80);
   const index=items.indexOf(found);items[index]=update;
   try{save()}catch{items[index]=found;throw bad('Помилка збереження.',503)}
   return {ok:true};
