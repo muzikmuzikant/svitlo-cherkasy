@@ -495,3 +495,8 @@
 :root[data-theme="dark"] #updates .inbox-filters>button.selected{
  background:#2a568a;border-color:#4f81ba;color:#fff
 }
+
+/* iOS PWA scaling guard: horizontal/vertical pan remain functional.
+   Do not set touch-action:none, which would break normal scroll. */
+html,body{touch-action:pan-x pan-y;overscroll-behavior-x:none;-webkit-text-size-adjust:100%}
+@media(max-width:600px){input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:max(16px,1em)}}
