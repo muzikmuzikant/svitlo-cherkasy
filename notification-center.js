@@ -10,7 +10,7 @@
   const id=String(item.id||'').slice(0,150);if(!id)return null;
   const at=Number.isFinite(Date.parse(item.at))?new Date(item.at).toISOString():new Date().toISOString();
   const images=Array.isArray(item.images)?item.images.slice(0,6).map(httpImage).filter(Boolean):[];
-  const kind=['schedule','emergency','announcement','push'].includes(item.kind)?item.kind:'announcement';
+  const kind=['schedule','emergency','announcement','push','support'].includes(item.kind)?item.kind:'announcement';
   return {id,title:String(item.title||'Повідомлення').slice(0,100),body:String(item.body||'').slice(0,350),
    content:String(item.content||'').slice(0,6000),images,kind,at,
    priority:['normal','important','urgent'].includes(item.priority)?item.priority:'normal',
