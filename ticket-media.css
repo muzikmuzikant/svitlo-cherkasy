@@ -68,3 +68,5 @@
 
 .ticket-media-download{display:inline-flex;align-items:center;justify-content:center;text-decoration:none!important;border:1px solid #b9d7e8;border-radius:9px;padding:10px 13px;margin:9px 0;background:#e5f2fa;color:#276489;font-size:12px;font-weight:760}
 :root[data-theme="dark"] .ticket-media-download{background:#294c62;border-color:#507d94;color:#d6f0ff}
+
+.ticket-attach[hidden]{display:none!important}
