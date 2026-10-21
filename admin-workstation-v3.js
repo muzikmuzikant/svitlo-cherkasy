@@ -33,6 +33,7 @@
  const autoLabel=mk('label',undefined,'desk-autosync');
  const autoCheck=mk('input');autoCheck.type='checkbox';autoCheck.checked=true;
  autoCheck.onchange=()=>{autoSync=autoCheck.checked};
+ window.svitloTicketAutoSyncEnabled=()=>autoSync;
  autoLabel.append(autoCheck,mk('span','Автооновлення'));
  quick.append(autoLabel);
  const title=feedback.querySelector('.headline');
@@ -277,12 +278,9 @@
  });
  // Only update the register while it is visible and idle. Do not touch active
  // replies, opened cases, bulk selections, hidden sessions or background tabs.
- const autoTimer=window.setInterval(async()=>{
-  if(!autoSync||dashboard.hidden||feedback.hidden||document.hidden||drawer||busy||selected.size||refreshing)return;
-  if(feedback.contains(document.activeElement)&&(/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||'')||detailed.contains(document.activeElement)))return;
-  refreshing=true;
-  try{await window.refreshTickets?.()}finally{refreshing=false}
- },60_000);
+ // Ticket synchronization now happens on the live interval in admin.js.
+ // Its rendered DOM is updated incrementally to preserve form focus/drafts.
+
  document.addEventListener('svitlo:admin-logout',()=>{navCount.hidden=true});
 
  document.addEventListener('keydown',e=>{
