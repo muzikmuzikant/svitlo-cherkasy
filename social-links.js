@@ -108,7 +108,7 @@
    window.addEventListener('focus',()=>{if(!document.hidden)void refresh()});
    window.addEventListener('online',()=>void refresh());
    // Open standalone pages reflect new published channels without manual reload.
-   window.setInterval(()=>{if(!document.hidden)void refresh()},120000);
+   window.setInterval(()=>{if(!document.hidden)void refresh()},300000);
    const channel=typeof BroadcastChannel==='function'?new BroadcastChannel('svitlo-content-v1'):null;
    channel?.addEventListener('message',e=>{if(e.data?.type==='REFRESH_APP_CONFIG')void refresh()});
    window.addEventListener('pagehide',()=>channel?.close(),{once:true});
