@@ -42,11 +42,14 @@ def main():
             page.goto(base,wait_until="domcontentloaded")
             ready(page)
             page.wait_for_function("() => !!navigator.serviceWorker.controller",timeout=30000)
-            for page_name in PAGES: assert_internal(page,page_name)
-            print("PASS: all 8 internal pages opened on an installed PWA online")
+            # Offline test must run BEFORE visiting any subsidiary page: otherwise
+            # it accidentally passes just because navigation cached the files.
             context.set_offline(True)
             for page_name in PAGES: assert_internal(page,page_name)
-            print("PASS: all 8 internal pages opened on an installed PWA offline")
+            print("PASS: all 8 internal pages opened from the installed PWA shell offline")
+            context.set_offline(False)
+            for page_name in PAGES: assert_internal(page,page_name)
+            print("PASS: all 8 internal pages opened on an installed PWA online")
         finally:
             browser.close()
 
