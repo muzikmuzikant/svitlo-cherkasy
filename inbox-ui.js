@@ -184,6 +184,10 @@
   const unread=rows.filter(x=>!x.read).length;
   $('inboxUnread').hidden=!unread;$('inboxUnread').textContent=unread>99?'99+':String(unread);
   $('navUnread').hidden=!unread;$('navUnread').textContent=unread>9?'9+':String(unread);
+  const mark=$('inboxMarkAll');mark.disabled=!unread;
+  mark.title=unread?'Позначити прочитаними всі '+unread+' повідомлень':'Усі повідомлення прочитано';
+  const count=$('inboxUnreadNote');
+  if(count)count.textContent=unread?'Непрочитаних: '+unread:'Усі повідомлення прочитано';
   const visible=rows.filter(x=>selected==='all'||selected==='unread'&&!x.read||selected==='schedule'&&x.kind==='schedule'||selected==='important'&&['emergency','announcement','support'].includes(x.kind));
   const root=$('inboxList');root.replaceChildren();
   if(!visible.length){const empty=el('div','Тут поки тихо ✨','inbox-empty');empty.append(el('p',selected==='unread'?'Нових повідомлень немає.':'Важливі оновлення з’являться тут.'));root.append(empty)}
@@ -395,7 +399,14 @@
   if(target)sync().then(()=>open(target)).catch(console.warn);
  }
  document.querySelectorAll('[data-inbox-filter]').forEach(b=>b.addEventListener('click',()=>{selected=b.dataset.inboxFilter;refresh().catch(console.warn)}));
- $('inboxMarkAll').onclick=async()=>{await store.mark(rows.map(x=>x.id));await refresh()};
+ $('inboxMarkAll').onclick=async()=>{
+  const button=$('inboxMarkAll');
+  const unread=rows.filter(x=>!x.read).map(x=>x.id);
+  if(!unread.length)return;
+  button.disabled=true;
+  try{await store.mark(unread);await refresh()}
+  catch(error){button.disabled=false;console.warn('Mark all:',error)}
+ };
  $('inboxClear').onclick=async()=>{await store.clearRead();await refresh()};
  document.querySelectorAll('[data-go="updates"]').forEach(b=>b.addEventListener('click',()=>{
   window.dispatchEvent(new CustomEvent('svitlo:refresh-content'));
