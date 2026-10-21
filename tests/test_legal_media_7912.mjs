@@ -14,7 +14,7 @@ test('privacy policy explicitly explains secure private media, purpose, access a
  const privacy=source('privacy.html');
  for(const phrase of ['4а. Фото та відео у зверненнях','HEIC','HEIF',
   'до 9 МБ','Railway','приватним кодом','уповноваженим операторам',
-  '90 днів','метадані','Соцмережах','22 жовтня 2026 року']){
+  '90 днів','метадані','соцмережах','22 жовтня 2026 року']){
   assert.ok(privacy.includes(phrase),'Privacy missing '+phrase);
  }
  assert.match(privacy,/контакт/);
