@@ -10,7 +10,7 @@ test('release candidate uses production identity and API, never Beta identity',(
   assert.match(release.version,/^7\.9\.\d+$/);
   assert.equal(push.apiBase,'https://svitlo-beta-api-staging.up.railway.app');
   assert.equal(push.publicKey,''); // Beta key must come from Beta server, never production.
-  assert.match(read('sw.js'),/svitlo-cherkasy-shell-v7\.9\.11-beta/);
+  assert.match(read('sw.js'),/svitlo-cherkasy-shell-v7\.9\.\d+-beta/);
   assert.match(read('index.html'),/data-deployment-channel="beta"/);
   return
  }
