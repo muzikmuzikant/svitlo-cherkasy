@@ -100,3 +100,14 @@ label{display:block;margin:19px 0 9px;font-size:12px;font-weight:780;color:#344d
  .support-chat-refresh{padding:7px 10px}
 }
 @media(prefers-reduced-motion:reduce){.conversation-bubble{animation:none!important}}
+
+/* A withdrawn server-side case must not look like an active local ticket. */
+.support-tickets-notice{
+ margin:12px 0 16px;padding:11px 14px;
+ border-radius:11px;border:1px solid #b8d6cf;
+ background:#edf9f4;color:#275f4d;
+ font-size:12px;font-weight:650;line-height:1.55
+}
+:root[data-theme="dark"] .support-tickets-notice{
+ background:#1b352c;border-color:#3a6d57;color:#c5f1d9
+}
