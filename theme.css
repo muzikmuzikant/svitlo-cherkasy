@@ -44,3 +44,45 @@
 :root[data-theme="dark"] .place-avatar{background:#263c59;color:#a5c9ff}
 :root[data-theme="dark"] .sun-icon{background:#1e4235;color:#a3f1ba}
 :root[data-theme="dark"] .moon-icon{background:#2e3b50;color:#b2c7ea}
+
+/* Forms, sheets, cards and interactive states */
+:root[data-theme="dark"] :is(.sheet,.suggestions,.suggestions button){background:#172330;color:var(--ink);border-color:var(--line)}
+:root[data-theme="dark"] :is(.sheet-close,.sheet-handle){background:#35465b;color:#d2e2f0}
+:root[data-theme="dark"] .sheet :is(input:not([type=checkbox]),select){background:#202e3e;color:var(--ink);border-color:#43566c}
+:root[data-theme="dark"] .sheet input::placeholder{color:#a2b2c5}
+:root[data-theme="dark"] .suggestions button{color:#e4effc}
+:root[data-theme="dark"] .suggestions button:active{background:#283d55}
+:root[data-theme="dark"] .lookup-feedback{background:#243b52;color:#d0e2fc}
+:root[data-theme="dark"] .lookup-feedback.found{background:#1d4735;color:#a9f0c6}
+:root[data-theme="dark"] .lookup-feedback.warn{background:#493b26;color:#ffe1a0}
+:root[data-theme="dark"] .manual-lookup p{color:var(--muted)}
+:root[data-theme="dark"] .official-btn,:root[data-theme="dark"] .secondary-action{background:#27415d;color:#c4e0ff;border-color:#425b75}
+:root[data-theme="dark"] .switch span{background:#465365}
+:root[data-theme="dark"] .switch input:checked+span{background:#239a75}
+:root[data-theme="dark"] .queue-override-control{background:#1d324b;border-color:#395776}
+:root[data-theme="dark"] .queue-override-toggle strong{color:#eaf4fc}
+:root[data-theme="dark"] .queue-override-toggle small{color:#b7c6d7}
+:root[data-theme="dark"] .offline-chip{background:#453720;color:#ffe1a2;border-color:#765a30}
+:root[data-theme="dark"] .tomorrow-card{background:#1a293b;border-color:#33465e;color:var(--ink)}
+:root[data-theme="dark"] .tomorrow-symbol{background:#273d58}
+:root[data-theme="dark"] .toast{background:#e7f1ff;color:#1b3049;box-shadow:0 12px 38px #0007}
+:root[data-theme="dark"] .nav-unread{border-color:#141e2a}
+:root[data-theme="dark"] .beta-consent-dialog{background:#1a2736;color:var(--ink)}
+:root[data-theme="dark"] .beta-consent-illustration{background:#273e57;color:#a9d0ff}
+:root[data-theme="dark"] .beta-consent-dialog p{color:#bac8d9}
+:root[data-theme="dark"] .beta-consent-points{background:#233345;color:#d8e7f6}
+:root[data-theme="dark"] .share-preview-dialog{background:#172333;color:#e9f2ff}
+:root[data-theme="dark"] .share-preview-head p{color:#a7b9cc}
+:root[data-theme="dark"] .share-preview-head button{background:#314358;color:#e4f3ff}
+:root[data-theme="dark"] .share-preview-scroll{background:#0e1723}
+:root[data-theme="dark"] .beta-ad-content:not([data-style="dark"]){background:#192c3d;border-color:#344b63;color:#eaf4ff}
+:root[data-theme="dark"] .beta-ad-label{color:#b8c6d8}
+:root[data-theme="dark"] .beta-ad-content strong{color:inherit}
+:root[data-theme="dark"] :is(.update-banner,.update-card){color:var(--ink)}
+:root[data-theme="dark"] #svitloInternalPage{background:#101924}
+:root[data-theme="dark"] .svitlo-internal-head{background:#192533;border-color:#314357}
+:root[data-theme="dark"] .svitlo-internal-title{color:#e5f0fc}
+:root[data-theme="dark"] .svitlo-internal-back{background:#293f5a;color:#bddeff}
+:root[data-theme="dark"] .svitlo-internal-frame{background:#101924}
+:root[data-theme="dark"] :is(.inbox-back,.inbox-close,.inbox-action,.inbox-filter,.inbox-search){color:var(--ink)}
+/* The embedded preview image is a generated graphic, not the app chrome: preserve its original pixels. */
