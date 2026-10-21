@@ -64,7 +64,7 @@ async function github(path,method='GET',payload){
  return data;
 }
 async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
-export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal,auditSchedules,errorCounts,dailyReports){
+export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal,auditSchedules,errorCounts,dailyReports,operationalControls){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(!originPolicy.isAllowed(req.headers.origin)){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const url=new URL(req.url,'http://localhost');
@@ -269,7 +269,25 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    if(url.pathname==='/api/admin/app-config/history'&&req.method==='GET'){
      send(res,200,{items:siteControls?.historyView?.()||[]});return true;
    }
-   if(url.pathname==='/api/admin/app-config'&&req.method==='GET'){
+   if(url.pathname==='/api/admin/operations'&&method==='GET'){
+      if(!operationalControls){send(res,503,{error:'Параметри автоматизації недоступні'});return true}
+      send(res,200,operationalControls.get());return true;
+    }
+    if(url.pathname==='/api/admin/operations'&&method==='PUT'){
+      if(role!=='owner'||session.managed){send(res,403,{error:'Лише власник може змінювати автоматизацію'});return true}
+      const data=await readJson(req,5000);
+      send(res,200,operationalControls.update(data.controls,data.expectedRevision));return true;
+    }
+    if(url.pathname==='/api/admin/operations/history'&&method==='GET'){
+      send(res,200,{items:operationalControls?.list()||[]});return true;
+    }
+    if(url.pathname==='/api/admin/operations/history/restore'&&method==='POST'){
+      if(role!=='owner'||session.managed){send(res,403,{error:'Лише власник може відновлювати параметри'});return true}
+      const input=await readJson(req,1000);
+      if(input.confirm!==true){send(res,400,{error:'Підтвердіть відновлення'});return true}
+      send(res,200,operationalControls.restore(input.revision,input.expectedRevision));return true;
+    }
+    if(url.pathname==='/api/admin/app-config'&&req.method==='GET'){
      if(!siteControls){send(res,503,{error:'Керування застосунком недоступне'});return true}
      send(res,200,siteControls.get());return true;
    }
