@@ -27,11 +27,14 @@ test('new dialogs and internal pages animate on open AND close',()=>{
  assert.match(source('beta-ads.js'),/SvitloMotion\?\.closeDialog/);
  assert.match(source('legal-consent.js'),/SvitloMotion\?\.closeDialog/);
 });
-test('animation preferences and interruptible admin tabs are respected',()=>{
+test('reduced motion works, dialogs animate, and administrative workspaces do not flash',()=>{
  assert.match(css,/prefers-reduced-motion:reduce/);
  assert.match(motion,/prefers-reduced-motion: reduce/);
- assert.match(source('admin-extra.js'),/skipTransition/);
- assert.match(source('admin-extra.js'),/startViewTransition/);
+ const adminTabs=source('admin-extra.js');
+ assert.doesNotMatch(adminTabs,/document\.startViewTransition\(apply\)/);
+ assert.match(adminTabs,/function setTab\(tab\)/);
+ assert.match(adminTabs,/el\.hidden=el\.dataset\.adminPanel!==tab/);
+ assert.match(source('admin-workstation-v3.css'),/view-transition-name:none!important/);
  assert.match(motion,/anim\.finished\.then/);
  assert.match(motion,/\.cancel\(\)/);
 });
