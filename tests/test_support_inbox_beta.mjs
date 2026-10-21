@@ -21,8 +21,9 @@ async function harness({saved=[{id:ID,token:TOKEN,status:'new',createdAt:'2026-1
    assert.match(url,/\/api\/ticket\/status$/);
    assert.equal(opt.method,'POST');
    const body=JSON.parse(opt.body);
-   assert.equal(body.id,ID);assert.equal(body.token,TOKEN);
-   return{ok:true,json:async()=>result};
+   assert.equal(body.id,ID);assert.equal(body.token,saved[0]?.token||'');
+   // Legacy receipts without a token may check existence/status but never read correspondence.
+   return{ok:true,json:async()=>body.token?result:{id:ID,status:result.status}};
   },
   URL,AbortSignal,Date,Promise,CustomEvent:class{constructor(type,arg){this.type=type;this.detail=arg?.detail}},
   setInterval:()=>1,console:{warn:()=>{}}
@@ -57,9 +58,9 @@ test('existing ticket history is not delivered as a swarm of old messages on fir
  h.setCurrent(ticket({messages:[m,{...m,id:'fedcba987654',at:new Date().toISOString()}],updatedAt:new Date().toISOString()}));
  await h.window.SvitloSupportInbox.scan();assert.equal(h.messages.size,1);
 });
-test('private ticket requires a valid receipt token; offline does not contact server',async()=>{
+test('legacy receipts check existence only; private correspondence still needs a token',async()=>{
  const empty=await harness({saved:[{id:ID,token:'',status:'new'}]});
- assert.equal(empty.visited.length,0);assert.equal(empty.messages.size,0);
+ assert.equal(empty.visited.length,2);assert.equal(empty.messages.size,0);
  const offline=await harness({offline:true});assert.equal(offline.visited.length,0);
 });
 test('support receipt seed and import baseline do not expose tokens in snapshot',async()=>{
