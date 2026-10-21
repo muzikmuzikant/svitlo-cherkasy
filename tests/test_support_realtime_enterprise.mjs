@@ -41,6 +41,10 @@ test('all enterprise module bars call existing module actions',()=>{
   assert.ok(source.includes(part+":"),'Missing module action '+part);
  }
  assert.match(source,/reloadTarget\.click\(\)/);
+ assert.doesNotMatch(source,/operations:'opsReload'/);
+ assert.doesNotMatch(source,/features:'featuresReload'/);
+ assert.doesNotMatch(source,/planner:'plannerReload'/);
+ assert.match(source,/operations:'opsMetricsRefresh'/);
  assert.match(source,/sessionStorage\.setItem\('svitlo-office-density'/);
  assert.match(source,/const workStatus=node\('div',undefined,'office-work-status'\)/);
  assert.match(source,/const strip=node\('div',undefined,'office-modulebar'\)/);
