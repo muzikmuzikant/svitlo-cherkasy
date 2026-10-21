@@ -159,7 +159,9 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   const attempt=replyAttempts.get(k)||{times:[],expire:t+interval};
   attempt.times=attempt.times.filter(time=>t-time<interval);
   if(attempt.times.length>=4)throw bad('Забагато відповідей. Спробуйте пізніше.',429);
-  const saved={...found,messages:messages.concat({id:crypto.randomBytes(6).toString('hex'),from:'user',text,at:new Date(t).toISOString()}),status:'in_progress',updatedAt:new Date(t).toISOString()};
+  const saved={...found,messages:messages.concat({id:crypto.randomBytes(6).toString('hex'),from:'user',text,at:new Date(t).toISOString()}),status:'in_progress',updatedAt:new Date(t).toISOString(),
+   revision:(Number.isSafeInteger(found.revision)?found.revision:1)+1,
+   activity:(Array.isArray(found.activity)?found.activity:[]).concat({kind:'reply',at:new Date(t).toISOString(),by:'користувач',label:'Надійшло уточнення'}).slice(-80)};
   const index=items.indexOf(found);items[index]=saved;
   try{save()}catch{items[index]=found;throw bad('Помилка збереження.',503)}
   attempt.times.push(t);attempt.expire=t+interval;replyAttempts.set(k,attempt);
