@@ -134,3 +134,61 @@
 :root[data-theme="dark"] :is(.official-btn,.secondary-action){background:#243955;border:1px solid #3c5472;color:#c5deff}
 :root[data-theme="dark"] .toast{background:#eff4fa;color:#19222f;box-shadow:0 12px 38px #0006}
 :root[data-theme="dark"] .delete-action{color:#ff9ba7}
+
+/* Inbox and the notification reader: flat, readable, and clearly grouped */
+:root[data-theme="dark"] .inbox-filters button{background:#20252e;border-color:#313a46;color:#b9c6d5}
+:root[data-theme="dark"] .inbox-filters button.selected{background:#3168b7;border-color:#4775b0;color:#fff}
+:root[data-theme="dark"] .inbox-mark{color:var(--blue)}
+:root[data-theme="dark"] :is(.inbox-item,.inbox-empty,.inbox-history summary,.inbox-detail){
+ background:var(--surface);border-color:var(--line);color:var(--ink);box-shadow:none
+}
+:root[data-theme="dark"] .inbox-item.is-unread{background:#1c2737;border-color:#4b6786}
+:root[data-theme="dark"] .inbox-interactive.is-pinned{background:#1c2939;border-color:#425a75}
+:root[data-theme="dark"] .inbox-item.is-unread::before{background:#78adff}
+:root[data-theme="dark"] :is(.inbox-item>strong,.inbox-detail-content h2,.inbox-rich-heading){color:var(--ink)}
+:root[data-theme="dark"] :is(.inbox-time,.inbox-item>p,.inbox-empty p,.inbox-detail-top,.inbox-detail-summary,.inbox-rich,.inbox-history summary){color:#b9c7d7}
+:root[data-theme="dark"] :is(.inbox-kind,.inbox-more,.inbox-detail-category){color:#99c5ff}
+:root[data-theme="dark"] .inbox-empty{color:#dce5f1}
+:root[data-theme="dark"] .inbox-rich{border-color:#343e4c}
+:root[data-theme="dark"] :is(.inbox-rich a,.inbox-detail-actions a){color:var(--blue)}
+:root[data-theme="dark"] .inbox-detail-close{background:#2b323f;color:#e1eaf5}
+:root[data-theme="dark"] .inbox-detail::backdrop{background:#000c}
+:root[data-theme="dark"] .inbox-gallery img{background:#262f3c}
+:root[data-theme="dark"] .inbox-auto-group{background:#131d29;border-color:#303f50}
+:root[data-theme="dark"] .inbox-context summary{background:#262d39;border-color:#3e4b5b;color:#e5edf8}
+:root[data-theme="dark"] :is(.inbox-context,.inbox-context-actions){color:var(--ink)}
+:root[data-theme="dark"] .inbox-context-actions{background:#202732;border-color:#424b59;box-shadow:0 12px 30px #0006}
+:root[data-theme="dark"] .inbox-context-actions button{background:transparent;color:#c4ddff}
+:root[data-theme="dark"] .inbox-context-actions button:hover{background:#304155;color:#fff}
+:root[data-theme="dark"] .inbox-clear{color:#b4c1d1}
+/* Informational UI, custom messages and announcements */
+:root[data-theme="dark"] .app-update-banner{
+ background:#1c2a3c;border:1px solid #385374;color:#f1f6fd;box-shadow:none
+}
+:root[data-theme="dark"] .app-update-banner::before{background:radial-gradient(circle,#597fbc24,transparent 70%)}
+:root[data-theme="dark"] .app-update-copy p{color:#bdccde}
+:root[data-theme="dark"] .app-update-notes li{color:#d7e6f5}
+:root[data-theme="dark"] .app-update-eyebrow{color:#9dc9ff}
+:root[data-theme="dark"] .app-update-close{background:#303e51;color:#d3e1f1}
+:root[data-theme="dark"] .update-card{box-shadow:none}
+:root[data-theme="dark"] .push-invite{
+ background:#1c2b3d;color:var(--ink);border-color:#3a5571;box-shadow:none
+}
+:root[data-theme="dark"] .push-invite p{color:#bacce0}
+:root[data-theme="dark"] .push-invite-art{background:#2a3b50;color:#c2dcff;box-shadow:none}
+:root[data-theme="dark"] .emergency-banner{background:#3e3020;border-color:#6d5130;color:#ffe3ad}
+:root[data-theme="dark"] .emergency-banner.is-note{background:#23334a;border-color:#425c80;color:#c4ddff}
+:root[data-theme="dark"] .emergency-banner .emergency-icon{background:#67502d;color:#ffeca9}
+:root[data-theme="dark"] .emergency-banner.is-note .emergency-icon{background:#334966;color:#d2e8ff}
+:root[data-theme="dark"] .freshness-warning{background:#3d301f;border-color:#765b32;color:#ffe0a3}
+:root[data-theme="dark"] .offline-chip{background:#3d301f;border-color:#765b32;color:#ffe0a3}
+:root[data-theme="dark"] .maintenance-inline.is-active,:root[data-theme="dark"] .maintenance-inline.is-planned{
+ background:#202b3a!important;border-color:#42566f;color:#e3effa;box-shadow:none
+}
+:root[data-theme="dark"] .maintenance-inline.planned-highlight{background:#433725!important;border-color:#705a34;color:#ffe6b4}
+:root[data-theme="dark"] .svitlo-managed-banner{background:#21354b;color:#d3e7ff;border-color:#3b5671}
+:root[data-theme="dark"] .svitlo-modules-banner{background:#3c301f;color:#ffe0ac;border-color:#6f542e}
+:root[data-theme="dark"] .tomorrow-card{background:#1b2430;color:var(--ink);border-color:#343f4f;box-shadow:none}
+:root[data-theme="dark"] .tomorrow-symbol{background:#29394f}
+:root[data-theme="dark"] .beta-ad-label{color:#b1bece}
+:root[data-theme="dark"] .beta-ad-content:not([data-style="dark"]){background:#1a2330;color:#ebf3ff;border-color:#333f50;box-shadow:none}
