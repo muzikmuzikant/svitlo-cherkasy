@@ -17,7 +17,7 @@ const OFFLINE_BOOT=[...OFFLINE_CORE,'./install.css','./notification-text.js',
  './help.html','./help.js','./help.css','./feedback.html','./feedback.js','./feedback.css',
  './privacy.html','./terms.html','./about.html','./advertising.html',
  './support-project.html','./ad-detail.html',
- './legal-consent.js','./legal-consent.css','./motion.js','./motion.css',
+ './legal-consent.js','./legal-consent.css','./motion.js','./motion.css','./bottom-sheet.js',
  './maintenance-ui.css','./assets/icon-192-v692.png'];
 
 function offlineCopy(response){
