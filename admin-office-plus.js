@@ -67,9 +67,9 @@
   header.append(lead,actions);
   host.prepend(header);contextByTab.set(id,header);
   const refreshIds={overview:'monitorRefresh',registry:'adminRegisterReload',corrections:'corrReload',
-   insights:'controlInsightsReload',quality:'controlRunChecks',operations:'opsReload',push:'refreshPush',
-   media:'controlMediaReload',feedback:'refreshTickets',live:'liveReload',features:'featuresReload',
-   sources:'sourceRefresh',planner:'plannerReload',security:'securityReload',audit:'auditRefresh',
+   insights:'controlInsightsReload',quality:'controlRunChecks',operations:'opsMetricsRefresh',push:'refreshPush',
+   media:'controlMediaReload',feedback:'refreshTickets',live:'liveReload',features:'',
+   sources:'sourceRefresh',planner:'',security:'securityReload',audit:'auditRefresh',
    revisions:'opsHistoryRefresh'};
   const strip=node('div',undefined,'office-modulebar');strip.dataset.module=id;
   const identity=node('div',undefined,'office-modulebar-id');
@@ -78,7 +78,9 @@
   const tools=node('div',undefined,'office-module-actions');
   const reloadTarget=document.getElementById(refreshIds[id]||'');
   if(reloadTarget){
-   const reload=node('button','Оновити дані','office-module-refresh');reload.type='button';
+   const text=reloadTarget.textContent?.trim()||'Виконати дію';
+   const title=id==='operations'?'Оновити статистику':id==='quality'?'Запустити перевірку':text;
+   const reload=node('button',title,'office-module-refresh');reload.type='button';
    reload.setAttribute('aria-label','Оновити дані розділу '+(names[id]||id));
    reload.onclick=()=>{if(!reloadTarget.disabled)reloadTarget.click()};
    tools.append(reload);
