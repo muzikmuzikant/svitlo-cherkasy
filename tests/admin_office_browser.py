@@ -127,6 +127,25 @@ def main():
         assert page.evaluate("document.body.classList.contains('office-mobile-nav')")
         page.locator('[data-admin-tab="feedback"]').click()
         assert not page.evaluate("document.body.classList.contains('office-mobile-nav')")
+        page.wait_for_function("document.querySelectorAll('#ticketsList .desk-ticket-row').length===1",timeout=6000)
+        assert page.locator("#ticketDetail .desk-detail-tabs button").count()==4
+        assert page.locator(".desk-github-note").count()==1
+        assert page.locator(".desk-hub-link").count()==6
+        page.locator("#ticketsList .ticket-row").click()
+        page.wait_for_function("document.body.classList.contains('desk-ticket-open')",timeout=5000)
+        assert page.locator("#ticketDetail").is_visible()
+        assert page.locator("#ticketDetail .desk-back").is_visible()
+        page.locator("#ticketDetail [data-desk-tab='conversation']").click()
+        assert page.locator("#ticketDetail .desk-pane[data-desk-pane='conversation']").is_visible()
+        assert not page.locator("#ticketDetail .desk-pane[data-desk-pane='overview']").is_visible()
+        page.locator("#ticketDetail .desk-back").click()
+        assert not page.evaluate("document.body.classList.contains('desk-ticket-open')")
+        # Bulk controls must not delete any correspondence or contact information.
+        page.locator("#ticketsList .desk-ticket-row > input").check()
+        assert page.locator(".desk-bulk").is_visible()
+        assert page.locator(".desk-bulk select option[value='resolved']").count()==1
+        page.locator(".desk-bulk button.secondary").click()
+        assert not page.locator(".desk-bulk").is_visible()
         assert not errors, "Browser runtime exceptions: "+"; ".join(errors)
         print("Svitlo Office browser smoke passed: auth, desk, task creation, note, mobile nav.")
         context.close();browser.close()
