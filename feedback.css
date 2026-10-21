@@ -57,3 +57,13 @@ label{display:block;margin:19px 0 9px;font-size:12px;font-weight:780;color:#344d
 :root[data-theme="dark"] .support-alert.good{background:#214433;color:#b9f4cf}
 :root[data-theme="dark"] .rating-options button{background:#263246;border-color:#405577;color:#c5ddff}
 :root[data-theme="dark"] .support-side-divider{background:#3c516b}
+
+/* Messenger-like ticket mode: one case at a time, no long list under the chat. */
+#viewTickets.is-reading .tickets-heading,#viewTickets.is-reading .saved-tickets{display:none!important}
+#viewTickets.is-reading .conversation{margin-top:0}
+.conversation-head{flex-wrap:wrap;min-width:0}
+.conversation-head>div{min-width:0;flex:1}
+.conversation-head #closeConversation{flex:0 0 auto}
+.reply-form{position:relative;min-width:0}
+.reply-form textarea{width:100%;min-width:0;max-width:100%;max-height:280px}
+@media(max-width:490px){.conversation-head #closeConversation{order:-1;margin-bottom:6px}.conversation-head{display:flex;align-items:flex-start;flex-direction:column;gap:5px}.conversation-head>div{width:100%}}
