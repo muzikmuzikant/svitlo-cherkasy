@@ -5,7 +5,8 @@ const QUEUES=new Set(['all',...Array.from({length:6},(_,i)=>[String(i+1)+'.1',St
 const defaultSite=()=>({links:{help:'./help.html',feedback:'./feedback.html',official:'https://www.cherkasyoblenergo.com/news'},
  flags:{inbox:true,inboxFilters:true,inboxHistory:true,sharing:true,sharePreview:true,copySchedule:true,help:true,feedback:true,addressSearch:true,pushPrompt:true,pushSettings:true,tomorrowPreview:true,quickAddresses:true,homePlaces:true,dailyStats:true,overviewTimeline:true,statusCountdown:true,weekNavigation:true,dayStats:true,scheduleLegend:true,offlineStatus:true,scheduleSource:true,manualRefresh:true,homeQuickActions:true,animations:true,quickQueueLookup:true,nextChangeCard:true,dayShortcuts:true,detailSourceLink:true,hourlyLabels:true,inboxMarkAll:true,inboxClearRead:true,appUpdateCheck:true,editAddressFromGraph:true,syncStatus:true,settingsFooter:true,tomorrowOpenShortcut:true,scheduleOpenShortcut:true},
  banner:{enabled:false,title:'Нові можливості',body:'Оновлення застосунку доступне.',url:'',button:'Детальніше'},
- appearance:{accent:'#377dff',background:'#f6f8fc',surface:'#ffffff',density:'comfortable',rounded:true}});
+ appearance:{accent:'#377dff',background:'#f6f8fc',surface:'#ffffff',density:'comfortable',rounded:true},
+  home:{eyebrow:'ВСЕ ПРО СВІТЛО',headline:'Все під контролем.',subtitle:'Оберіть адресу. Решту зробимо ми.',layout:'classic'}});
 const defaults=()=>({schemaVersion:1,updatedAt:null,maintenance:{enabled:false,title:'Ми покращуємо застосунок',message:'Незабаром усе знову працюватиме. Актуальні графіки можна перевірити на сайті оператора.',until:null,startsAt:null,mode:'full',theme:'blue',layout:'centered',icon:'✨',imageUrl:'',colors:{background:'#143463',foreground:'#ffffff',accent:'#78aaff'},noticeBefore:true,noticeInInbox:true,plannedBanner:{title:'Заплановані технічні роботи',body:'Під час робіт застосунок може тимчасово бути недоступним.',style:'expanded',button:'Офіційні графіки',url:'https://www.cherkasyoblenergo.com/news',showCountdown:true,showEnd:true,showButton:true,background:'#eaf3ff',foreground:'#22496f',accent:'#347af0'},disabledModules:[]},site:defaultSite(),announcements:[]});
 const str=(v,max)=>String(v??'').trim().slice(0,max+1);
 function date(v){if(v==null||v==='')return null;if(typeof v!=='string'||v.length>36||!Number.isFinite(Date.parse(v)))throw Error('Неправильна дата');return new Date(v).toISOString()}
@@ -55,7 +56,16 @@ export function validateAppConfig(input){
   density:['comfortable','compact'].includes(rawAppearance.density)?rawAppearance.density:'comfortable',
   rounded:rawAppearance.rounded!==false
  };
- const site={links,flags,banner,appearance};
+ const rawHome=rawSite.home||{},defaultHome=defaultsSite.home;
+  const home={
+   eyebrow:str(rawHome.eyebrow??defaultHome.eyebrow,38),
+   headline:str(rawHome.headline??defaultHome.headline,80),
+   subtitle:str(rawHome.subtitle??defaultHome.subtitle,180),
+   layout:['classic','compact','centered'].includes(rawHome.layout)?rawHome.layout:'classic'
+  };
+  if(!home.eyebrow||!home.headline||!home.subtitle||
+     /[<>\x00-\x1f]/.test(home.eyebrow+home.headline+home.subtitle))throw Error('Некоректні тексти головної сторінки');
+  const site={links,flags,banner,appearance,home};
  if(!Array.isArray(input.announcements)||input.announcements.length>50)throw Error('Максимум 50 повідомлень');
  const ids=new Set(),announcements=input.announcements.map(a=>{
   const id=String(a?.id||'');if(!/^[A-Za-z0-9_-]{6,64}$/.test(id)||ids.has(id))throw Error('Неправильний або повторний ID');ids.add(id);
