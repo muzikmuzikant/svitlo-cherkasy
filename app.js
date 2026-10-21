@@ -556,6 +556,8 @@ function checkLookup(){
  const r=findQueue(),hint=$('lookupFeedback'),manual=$('manualLookup'),possible=$('possibleQueues');
  const house=$('house').value.trim(),known=r.knownHouses||[];
  const isAutomatic=['exact','street'].includes(r.status);
+ const hasOverride=isAutomatic&&$('queueOverride').checked;
+ $('queueOverrideControl').hidden=!isAutomatic;
  hint.className='lookup-feedback'+(isAutomatic?' found':r.status==='incomplete'?'':' warn');
  const list=(r.queues||[]).join(', ');
  const messages={
@@ -573,7 +575,7 @@ function checkLookup(){
     r.reason==='house-unlisted'?`Будинку ${house} немає серед точних записів цієї вулиці. Можливі підчерги: ${list}. Виберіть підтверджену вами підчергу.`:
     `Для вулиці є підчерги ${list}. Уточніть номер будинку, щоб перевірити точний збіг, або виберіть відому підчергу.`
  };
- hint.textContent=messages[r.status]||'Не вдалося визначити підчергу.';
+ hint.textContent=hasOverride?`За адресним довідником: ${r.queue}. Ви обрали іншу підчергу для цієї адреси.`:(messages[r.status]||'Не вдалося визначити підчергу.');
  const coverage=$('houseCoverage'),choices=$('houseChoices');
  choices.replaceChildren();choices.hidden=true;coverage.hidden=true;
  if(r.streetKey&&r.status!=='exact'){
@@ -595,15 +597,15 @@ function checkLookup(){
      const b=el('button','house-choice',item.number);
      b.type='button';b.title='Підчерга: '+item.queues.join(', ');
      b.setAttribute('aria-label','Будинок '+item.number+', підчерга '+item.queues.join(', '));
-     b.onclick=()=>{$('house').value=item.number;checkLookup()};
+     b.onclick=()=>{$('house').value=item.number;$('queueOverride').checked=false;$('manualQueue').value='';checkLookup()};
      choices.append(b);
     }
     if(found.length>12)choices.append(el('div','house-choices-more',`Ще ${found.length-12} номерів — введіть свій номер для пошуку`));
    }
   }
  }
- manual.hidden=['incomplete','exact','street'].includes(r.status);
- $('manualExplanation').textContent=r.reason==='external-only'
+ manual.hidden=r.status==='incomplete'||(isAutomatic&&!hasOverride);
+ $('manualExplanation').textContent=hasOverride?'Ручний вибір діє лише для ваших збережених адрес. Перевірте підчергу на сайті оператора.':r.reason==='external-only'
   ?'Вулиця знайдена в географічному каталозі. Відомостей про її підчергу немає, перевірте на офіційному сайті оператора.'
   :r.reason==='reported-only'
   ?'Вулиця додана до пошуку за зверненням користувача. Її підчерга ще не підтверджена, перевірте її в оператора.'
@@ -623,10 +625,10 @@ function checkLookup(){
      b.onclick=()=>{$('manualQueue').value=q;checkLookup()};possible.append(b);
    }
  }else possible.hidden=true;
- const chosen=$('manualQueue').value;
+ const chosen=isAutomatic&&!hasOverride?r.queue:$('manualQueue').value;
  const allowed=r.status!=='incomplete'&&town().trim()&&$('street').value.trim();
- $('saveAddress').disabled=!(isAutomatic||(allowed&&QUEUES.includes(chosen)));
- $('saveAddress').textContent=isAutomatic?'Зберегти адресу · '+r.queue:QUEUES.includes(chosen)?'Зберегти адресу · '+chosen:'Оберіть підчергу для збереження';
+ $('saveAddress').disabled=!(allowed&&QUEUES.includes(chosen));
+ $('saveAddress').textContent=isAutomatic&&!hasOverride?'Зберегти адресу · '+r.queue:QUEUES.includes(chosen)?'Зберегти адресу · '+chosen:'Оберіть підчергу для збереження';
  return r;
 }
 
@@ -635,7 +637,7 @@ function suggestions(){
  const matches=SvitloAddressLookup.suggest(localIndex(),$('street').value);
  root.hidden=!matches.length||SvitloAddressLookup.streetMatches(localIndex(),$('street').value).length===1;
  for(const [key,name] of matches){const b=el('button','',name);b.type='button';b.onclick=()=>{
-   $('street').value=name;suggestion={key,label:name};root.hidden=true;checkLookup();
+   $('street').value=name;suggestion={key,label:name};$('queueOverride').checked=false;$('manualQueue').value='';root.hidden=true;checkLookup();
  };if(Array.isArray(localIndex().archiveOnlyStreets)&&localIndex().archiveOnlyStreets.includes(key))b.append(el('small','archive-street-tag',' · з попереднього переліку'));root.append(b)}
 }
 function populateSettlements(){
@@ -654,12 +656,30 @@ function populateSettlements(){
  }
  if([...select.options].some(o=>o.value===previous))select.value=previous;
 }
-function openAddressSheet(item=null){editId=item?.id||null;suggestion=null;setText('sheetTitle',item?'Редагувати адресу':'Нова адреса');$('nickname').value=item?.nickname||'';$('street').value=item?.street||'';$('house').value=item?.house||'';const opt=Array.from($('settlement').options).find(x=>normTown(x.value)===normTown(item?.settlement));$('settlement').value=opt?opt.value:item?.settlement?'Інше':'Черкаси';$('customSettlement').hidden=$('settlement').value!=='Інше';$('customSettlement').value=opt?'':item?.settlement||'';$('manualQueue').value=item?.queue||'';$('deleteAddress').hidden=!item;$('streetSuggestions').hidden=true;checkLookup();showSheet($('addressSheet'))}
+function openAddressSheet(item=null){editId=item?.id||null;suggestion=null;setText('sheetTitle',item?'Редагувати адресу':'Нова адреса');$('nickname').value=item?.nickname||'';$('street').value=item?.street||'';$('house').value=item?.house||'';const opt=Array.from($('settlement').options).find(x=>normTown(x.value)===normTown(item?.settlement));$('settlement').value=opt?opt.value:item?.settlement?'Інше':'Черкаси';$('customSettlement').hidden=$('settlement').value!=='Інше';$('customSettlement').value=opt?'':item?.settlement||'';$('manualQueue').value=item?.queue||'';$('queueOverride').checked=!!item&&['manual','manual-override','street-choice'].includes(item.method);$('deleteAddress').hidden=!item;$('streetSuggestions').hidden=true;checkLookup();showSheet($('addressSheet'))}
 let sheetScroll=0;
 function showSheet(dialog){if(!document.body.classList.contains('sheet-open'))sheetScroll=window.scrollY;dialog.showModal();document.body.classList.add('sheet-open');document.body.style.position='fixed';document.body.style.top=`-${sheetScroll}px`;document.body.style.width='100%'}
 function unlockSheet(){if($('addressSheet').open||$('placesSheet').open)return;document.body.classList.remove('sheet-open');document.body.style.position='';document.body.style.top='';document.body.style.width='';window.scrollTo({top:sheetScroll,behavior:'instant'})}
 function closeSheet(dialog){if(dialog.open)dialog.close();unlockSheet()}
-function saveAddress(event){event.preventDefault();const r=checkLookup(),queue=['exact','street'].includes(r.status)?r.queue:$('manualQueue').value;if(!QUEUES.includes(queue)){flash('Укажіть підчергу для адреси');return}const a={id:editId||id(),nickname:$('nickname').value.trim(),street:$('street').value.trim(),house:$('house').value.trim(),settlement:normTown(town())==='слобода'?'Слобода':town(),queue,method:r.status==='exact'?'automatic':r.status==='street'?'street-auto':r.status==='possible'&&r.queues?.includes(queue)?'street-choice':'manual',favorite:editId?addresses.find(x=>x.id===editId)?.favorite===true:false};if(editId){const idx=addresses.findIndex(x=>x.id===editId);if(idx>=0)addresses[idx]=a}else addresses.push(a);if(!primary()||!editId)prefs.primaryId=a.id;saveAddresses();savePrefs();closeSheet($('addressSheet'));render();flash(['exact','street'].includes(r.status)?`Підчергу ${queue} знайдено`:'Адресу збережено');if(!editId)navigate('detail');updatePushSubscription().catch(()=>{});}
+function saveAddress(event){
+ event.preventDefault();
+ const r=checkLookup(),isAutomatic=['exact','street'].includes(r.status),personalSelection=!isAutomatic||$('queueOverride').checked;
+ const queue=personalSelection?$('manualQueue').value:r.queue;
+ if(!QUEUES.includes(queue)){flash('Укажіть підчергу для адреси');return}
+ const a={
+  id:editId||id(),nickname:$('nickname').value.trim(),street:$('street').value.trim(),
+  house:$('house').value.trim(),settlement:normTown(town())==='слобода'?'Слобода':town(),queue,
+  method:personalSelection?(isAutomatic?'manual-override':r.status==='possible'&&r.queues?.includes(queue)?'street-choice':'manual'):r.status==='exact'?'automatic':'street-auto',
+  favorite:editId?addresses.find(x=>x.id===editId)?.favorite===true:false
+ };
+ if(editId){const idx=addresses.findIndex(x=>x.id===editId);if(idx>=0)addresses[idx]=a}
+ else addresses.push(a);
+ if(!primary()||!editId)prefs.primaryId=a.id;
+ saveAddresses();savePrefs();closeSheet($('addressSheet'));render();
+ flash(personalSelection?'Адресу збережено':`Підчергу ${queue} знайдено`);
+ if(!editId)navigate('detail');
+ updatePushSubscription().catch(()=>{});
+}
 function deleteAddress(){if(!editId||!confirm('Видалити цю адресу?'))return;addresses=addresses.filter(x=>x.id!==editId);if(prefs.primaryId===editId)prefs.primaryId=addresses[0]?.id||null;saveAddresses();savePrefs();closeSheet($('addressSheet'));navigate('home');flash('Адресу видалено');if(!primary())disableNotifications().catch(console.warn);else updatePushSubscription().catch(console.warn)}
 function movePlace(id,direction){const i=addresses.findIndex(x=>x.id===id);const j=i+direction;if(i<0||j<0||j>=addresses.length)return;[addresses[i],addresses[j]]=[addresses[j],addresses[i]];saveAddresses();openPickerContent();renderHome()}
 function openPickerContent(){const root=$('placesOptions');root.replaceChildren();for(const [i,a] of addresses.entries()){
@@ -1030,7 +1050,7 @@ $('dayTomorrow').onclick=()=>showDay(shiftDay(today(),1));
 $('syncNow').onclick=()=>refreshData(true);$('refreshTop').onclick=()=>refreshData(true);$('refreshDetail').onclick=()=>refreshData(true);$('manualRefresh').onclick=()=>refreshData(true);$('primaryPicker').onclick=()=>addresses.length?openPicker():openAddressSheet();$('addFromHome').onclick=()=>openAddressSheet();$('addFromSettings').onclick=()=>openAddressSheet();$('editActive').onclick=()=>openAddressSheet(primary());$('openDetail').onclick=()=>navigate('detail');
 $('closeSheet').onclick=()=>closeSheet($('addressSheet'));$('closePlaces').onclick=()=>closeSheet($('placesSheet'));$('sheetAddPlace').onclick=()=>{closeSheet($('placesSheet'));openAddressSheet()};
 for(const dialog of [$('addressSheet'),$('placesSheet')])dialog.addEventListener('close',unlockSheet);
-$('settlement').onchange=()=>{$('manualQueue').value='';$('customSettlement').hidden=$('settlement').value!=='Інше';suggestion=null;suggestions();checkLookup()};$('customSettlement').oninput=()=>{$('manualQueue').value='';checkLookup()};$('street').oninput=()=>{$('manualQueue').value='';suggestion=null;suggestions();checkLookup()};$('house').onfocus=()=>{$('streetSuggestions').hidden=true};$('house').oninput=()=>{$('streetSuggestions').hidden=true;checkLookup()};$('manualQueue').onchange=checkLookup;$('addressForm').onsubmit=saveAddress;$('deleteAddress').onclick=deleteAddress;$('goOfficial').onclick=officialOpen;
+$('settlement').onchange=()=>{$('queueOverride').checked=false;$('manualQueue').value='';$('customSettlement').hidden=$('settlement').value!=='Інше';suggestion=null;suggestions();checkLookup()};$('customSettlement').oninput=()=>{$('queueOverride').checked=false;$('manualQueue').value='';checkLookup()};$('street').oninput=()=>{$('queueOverride').checked=false;$('manualQueue').value='';suggestion=null;suggestions();checkLookup()};$('house').onfocus=()=>{$('streetSuggestions').hidden=true};$('house').oninput=()=>{$('streetSuggestions').hidden=true;$('queueOverride').checked=false;$('manualQueue').value='';checkLookup()};$('queueOverride').onchange=checkLookup;$('manualQueue').onchange=checkLookup;$('addressForm').onsubmit=saveAddress;$('deleteAddress').onclick=deleteAddress;$('goOfficial').onclick=officialOpen;
 for(const [key,field] of [['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']])$(field).onchange=e=>{prefs[key]=e.target.checked;savePrefs();updatePushSubscription().catch(console.warn)};
 $('enableNotifications').onclick=enableNotifications;$('disableNotifications').onclick=disableNotifications;
 fillQueueSelect();
