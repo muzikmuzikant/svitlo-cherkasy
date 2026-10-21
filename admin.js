@@ -426,6 +426,7 @@ async function refreshTickets(){
  if(!supportTickets.length)$('ticketsSummary').textContent='Завантажуємо звернення…';
  try{
   const result=await api('feedback');
+  document.dispatchEvent(new Event('svitlo:tickets-synced'));
   const incoming=Array.isArray(result.items)?result.items:[];
   let templates=supportTemplates;
   if(!lastTemplateFetch||Date.now()-lastTemplateFetch>60000){
@@ -458,6 +459,7 @@ async function refreshTickets(){
   document.dispatchEvent(new Event('svitlo:tickets-loaded'));
  }catch(error){
   if(!supportTickets.length)$('ticketsSummary').textContent='Зв’язок із сервером відсутній. Повторюємо перевірку.';
+  document.dispatchEvent(new Event('svitlo:tickets-sync-error'));
   console.warn('Ticket refresh:',error?.message);
  }finally{ticketsReloading=false}
 }
