@@ -64,6 +64,6 @@ test('all four admin interfaces are actually published and wired',()=>{
  assert.match(router,/\/api\/admin\/operations/);
  assert.match(router,/\/api\/admin\/home/);
  assert.match(server,/operationalControls\.get\(\)\.reminders/);
- assert.match(server,/preset\.leadMinutes/);
+ assert.match(server,/preset\?\.leadMinutes/);
  assert.match(read('site-mode.js'),/hero\.dataset\.homeLayout/);
 });
