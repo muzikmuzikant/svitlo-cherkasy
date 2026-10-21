@@ -769,3 +769,140 @@ body.svitlo-maintenance-active .bottom-nav{visibility:hidden;pointer-events:none
 #updates .inbox-unread-note{font-size:11px;color:#6b7e98;text-align:right;line-height:1.4}
 @media(max-width:420px){#updates .inbox-toolbar{display:block}#updates .inbox-filters{width:100%}#updates .inbox-actions-bar{min-height:43px}}
 @media(prefers-reduced-motion:reduce){#updates .inbox-mark{transition:none}}
+
+/* STAGING / GLOBAL UI QUALITY PASS
+ * Shared geometry for Home, Schedules, Inbox, Settings and overlays.
+ * Keep state colors and service status semantics managed by existing classes. */
+:root{--ui-radius:18px;--ui-gap:12px;--ui-target:44px}
+html,body{width:100%;max-width:100%;min-width:0}
+body{overflow-wrap:break-word}
+.viewport{width:100%;max-width:590px;min-width:0;padding-inline:clamp(12px,4vw,20px)}
+.main-content,.screen,.screen>*{min-width:0;max-width:100%}
+.screen-header{min-width:0;gap:12px}
+.screen-header :is(h1,p),.section-head h2,.overview-top>*{min-width:0;overflow-wrap:anywhere}
+.screen-header>div{min-width:0}
+.topbar{min-width:0;gap:12px}
+.topbar>.brand{min-width:0;max-width:calc(100% - 56px)}
+.brand>span:last-child{min-width:0}
+.brand small{line-height:1.35}
+.brand-icon{flex:0 0 44px}
+.topbar>.icon-btn{flex:none}
+.surface,.picker-btn,.place-card,.inbox-item,.settings-card,.tomorrow-card,.home-quick-places{min-width:0;max-width:100%}
+.surface,.picker-btn,.place-card,.setting-action,.tomorrow-card{overflow-wrap:anywhere}
+.picker-btn{display:block;max-width:100%}
+.picker-place,.picker-sub{max-width:100%}
+.status-panel{width:100%;max-width:100%;min-width:0}
+.status-title{overflow-wrap:anywhere}
+.status-count{line-height:1.5;overflow-wrap:anywhere}
+.status-footer{min-width:0;flex-wrap:wrap;gap:8px;line-height:1.45}
+.status-footer>span:first-child{min-width:0;flex:1 1 165px;overflow-wrap:anywhere}
+.status-footer .queue-chip{flex:0 0 auto}
+.overview-top{align-items:flex-start;line-height:1.45}
+.overview-top .small-source{text-align:right;overflow-wrap:anywhere}
+.bar-track,.bar-time,.stats-row,.place-list{min-width:0}
+.stat-card{min-width:0}
+.stat-val{overflow-wrap:anywhere;line-height:1.15}
+.place-card{min-width:0;gap:10px}
+.place-text{min-width:0}
+.place-text small{overflow-wrap:anywhere}
+.place-status{max-width:46%;overflow:hidden;text-overflow:ellipsis}
+.tomorrow-card{min-width:0;display:flex;align-items:center;gap:12px}
+.tomorrow-copy{min-width:0;flex:1}
+.tomorrow-copy :is(strong,small){overflow-wrap:anywhere}
+.tomorrow-chevron{flex:none}
+.home-quick-places{overscroll-behavior-x:contain;touch-action:pan-x}
+.section-head{align-items:center}
+.section-head .inline-link{flex:0 0 auto;min-height:40px}
+.section-head h2{line-height:1.25}
+/* Calendar: stable seven equal weekdays and four equal hour cells. */
+.detail-surface{min-width:0}
+.days-row.fixed-weekdays{grid-template-columns:repeat(7,minmax(0,1fr));width:100%}
+.days-row.fixed-weekdays .day-choice{min-width:0;min-height:44px;text-align:center}
+.hour-grid{grid-template-columns:repeat(4,minmax(0,1fr));min-width:0}
+.hour-cell{min-width:0;max-width:100%;font-size:clamp(10px,2.7vw,12px);gap:4px;font-variant-numeric:tabular-nums}
+.hour-cell .bolt{flex-shrink:0}
+.dayline{min-width:0;align-items:baseline}
+.dayline>*{min-width:0;overflow-wrap:anywhere}
+.detail-status{overflow-wrap:anywhere;line-height:1.45}
+.schedule-meta,.sources-row{min-width:0;flex-wrap:wrap;gap:9px}
+.sources-row>a{min-width:0;overflow-wrap:anywhere}
+/* Inbox: filter strip is independently scrollable and its action is outside
+ * the touch-scrolling surface. No phantom overlap over action menus. */
+#updates{min-width:0}
+#updates .inbox-toolbar{min-width:0}
+#updates .inbox-filters{touch-action:pan-x;overscroll-behavior-x:contain;scroll-padding-inline:6px}
+#updates .inbox-filters button{flex-shrink:0;min-height:40px}
+#updates .inbox-actions-bar{min-width:0;flex-wrap:wrap;gap:8px 14px}
+#updates .inbox-mark{flex:0 0 auto;min-height:44px}
+#updates .inbox-mark span[aria-hidden]{display:inline-flex;align-items:center;justify-content:center;width:17px}
+#updates .inbox-unread-note{flex:1 1 95px;min-width:0;overflow-wrap:anywhere}
+.inbox-list,.inbox-item,.inbox-card-opener{min-width:0}
+.inbox-item{isolation:isolate}
+.inbox-card-opener{padding-right:0}
+.inbox-card-opener :is(strong,p,span){overflow-wrap:anywhere}
+.inbox-item-head{min-width:0;flex-wrap:wrap;gap:4px 10px;padding-right:35px}
+.inbox-context{z-index:8}
+.inbox-context-actions{width:max-content;min-width:180px;max-width:min(260px,calc(100vw - 45px));box-sizing:border-box;overflow-wrap:anywhere}
+.inbox-context-actions button{white-space:normal;min-height:40px}
+.inbox-auto-group{min-width:0}
+.inbox-auto-summary{min-width:0;flex-wrap:wrap;gap:6px 10px}
+.inbox-auto-summary>span:first-child{min-width:0;overflow-wrap:anywhere}
+.inbox-auto-summary>span:last-child{flex:0 0 auto}
+.inbox-detail{box-sizing:border-box;overflow-x:clip}
+.inbox-detail-content{min-width:0;max-width:100%;overflow-wrap:anywhere}
+.inbox-detail :is(img,video){max-width:100%;height:auto}
+.inbox-detail-actions{flex-wrap:wrap;gap:8px}
+.inbox-detail-actions :is(button,a){max-width:100%;min-width:0;overflow-wrap:anywhere}
+/* Settings: toggles and descriptions never fight for the same space. */
+#settings .settings-card,#settings .setting-line,#settings .setting-action{min-width:0}
+#settings .setting-line,#settings .setting-action{gap:12px}
+#settings .setting-line>div,#settings .setting-action>span:first-child{flex:1;min-width:0;overflow-wrap:anywhere}
+#settings .setting-line :is(strong,p),#settings .setting-action :is(strong,span){overflow-wrap:anywhere}
+#settings .setting-line>.switch,#settings .setting-action>.switch{flex:0 0 auto}
+.appearance-options{width:100%;min-width:0}
+.appearance-choice{min-width:0}
+.appearance-choice>span{height:100%;min-width:0}
+.push-master-line{min-width:0}
+.push-master-copy{min-width:0;overflow-wrap:anywhere}
+/* Overlays: use safe-area and prevent clipped form actions on narrow devices. */
+.sheet{box-sizing:border-box;width:min(590px,100%);max-width:100%;max-height:min(94dvh,94svh);overflow-x:clip}
+.sheet-inner{min-width:0}
+.sheet :is(input,select,textarea){min-width:0;max-width:100%}
+.share-preview-dialog{box-sizing:border-box;max-width:calc(100vw - 16px)}
+.share-preview-actions{min-width:0;flex-wrap:wrap}
+.share-preview-actions button{flex:1 1 135px;min-width:0}
+#svitloInternalPage,.svitlo-internal-head,.svitlo-internal-frame{min-width:0;max-width:100%}
+#svitloInternalPage .svitlo-internal-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:390px){
+ .viewport{padding-inline:12px}
+ .topbar{height:70px}
+ .brand{font-size:21px;gap:8px}
+ .brand-icon{width:40px;height:40px;flex-basis:40px}
+ .status-panel{padding:20px 17px 17px;border-radius:23px}
+ .status-title{margin-top:17px}
+ .detail-surface{padding:14px 10px 18px}
+ .days-row.fixed-weekdays{gap:2px}
+ .days-row.fixed-weekdays .day-choice{padding-inline:0;font-size:11px}
+ .hour-grid{gap:5px}
+ .hour-cell{height:51px;gap:3px;font-size:10px}
+ .hour-cell .bolt{width:11px;flex-basis:11px}
+ .surface.overview-card{padding:16px 13px 18px}
+ .stat-card{padding:14px 12px}
+ .stat-val{font-size:26px}
+ .inbox-item{padding:15px 13px}
+ .inbox-context{right:9px;top:40px}
+ .appearance-options{gap:5px}
+ .appearance-choice>span{min-height:98px}
+}
+@media(max-width:345px){
+ .screen-header h1{font-size:21px}
+ .section-head h2{font-size:17px}
+ .place-avatar{width:36px;height:36px;flex-basis:36px}
+ .place-status{padding:6px;font-size:10px}
+ #updates .inbox-mark{padding-inline:11px;font-size:11px}
+ .appearance-choice b{font-size:11px}
+ .appearance-choice small{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ .status-panel,.bar-segment,.inbox-item,.appearance-choice>span{transition:none!important}
+}
