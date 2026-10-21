@@ -11,20 +11,22 @@ const png=Buffer.from('89504e470d0a1a0a0000000d49484452','hex');
 const webm=Buffer.from('1a45dfa3934282887765626d','hex');
 const mp4=Buffer.from('000000186674797069736f6d00000000','hex');
 const mov=Buffer.from('00000018667479707174202000000000','hex');
+const heic=Buffer.from('00000018667479706865696300000000','hex');
 const attachment=(mime,buffer=jpg)=>({mime,name:'світло '+(mime.includes('video')?'video':'photo'),data:buffer.toString('base64')});
 function setup(){
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'svitlo-ticket-media-'));
  return {dir,store:createFeedbackStore({filePath:path.join(dir,'feedback.json')})};
 }
 const base=()=>({topic:'bug',message:'Графік показує неправильний інтервал відключень.'});
-test('JPG PNG WebM MP4 MOV signatures and 9 MB cap validated server-side',()=>{
- for(const [type,bytes] of [['image/jpeg',jpg],['image/png',png],['video/webm',webm],
+test('JPG PNG HEIC WebM MP4 MOV signatures and 9 MB cap validated server-side',()=>{
+ for(const [type,bytes] of [['image/jpeg',jpg],['image/png',png],['image/heic',heic],['video/webm',webm],
   ['video/mp4',mp4],['video/quicktime',mov]]){
   const got=parseTicketMedia([attachment(type,bytes)]);
   assert.equal(got[0].mime,type);
   assert.equal(got[0].size,bytes.length);
  }
  assert.equal(MAX_MEDIA_BYTES,9*1024*1024);
+ assert.equal(parseTicketMedia([attachment('image/heic',heic)])[0].mime,'image/heic');
  for(const mime of ['text/html','image/svg+xml','application/javascript','application/pdf']){
   assert.throws(()=>parseTicketMedia([attachment(mime)]));
  }
@@ -81,6 +83,7 @@ test('customer form and support operator show videos using same secure viewer',(
  assert.match(op,/feedback\/attachment\//);
  assert.match(viewer,/document\.createElement\(isVideo\(payload\.mime\)\?'video':'img'\)/);
  assert.match(viewer,/URL\.revokeObjectURL/);
+ assert.match(viewer,/const mimeFor=file=>/);
  assert.match(read('feedback.html'),/id="newTicketFiles"/);
  assert.match(read('feedback.html'),/id="replyTicketFiles"/);
 });
