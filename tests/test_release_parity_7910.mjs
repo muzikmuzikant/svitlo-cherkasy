@@ -89,7 +89,7 @@ test('production PWA and API retain their identity; no Beta mirroring or commerc
  const index=repoFile('index.html'),release=JSON.parse(repoFile('release.json'));
  const push=JSON.parse(repoFile('push-config.json'));
  const server=repoFile('push-server/server.js'),source=repoFile('push-server/ads.js');
- assert.equal(release.version,'7.9.10');
+ assert.equal(release.version,'7.9.11');
  assert.equal(release.channel,'production');
  assert.match(index,/data-deployment-channel="production"/);
  assert.doesNotMatch(index,/id="stagingBadge"/);

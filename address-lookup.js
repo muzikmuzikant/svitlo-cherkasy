@@ -61,6 +61,39 @@
         return pa-pb||sa.localeCompare(sb,'uk-UA')||ka.localeCompare(kb,'uk-UA');
       }).slice(0,limit);
   }
+  // Suggestions across villages are only hints, never queue confirmations.
+  function suggestAcrossLocalities(catalog, typed, currentSettlement, limit=8) {
+    const needle=normalize(typed), kind=kindOf(typed);
+    if(needle.length<3)return [];
+    const results=[];
+    for(const locality of Object.values(catalog?.localities||{})){
+      const localityName=String(locality?.label||'').trim();
+      if(!localityName||normalize(localityName)===normalize(currentSettlement))continue;
+      for(const [key,name] of Object.entries(locality.streets||{})){
+        if(kind&&!key.startsWith(kind+'|'))continue;
+        if(normalize(name).includes(needle)||normalize(key.split('|')[1]).includes(needle))
+          results.push({locality:localityName,key,name});
+      }
+    }
+    return results.sort((a,b)=>
+      Number(!normalize(a.name).startsWith(needle))-Number(!normalize(b.name).startsWith(needle))||
+      a.locality.localeCompare(b.locality,'uk-UA')||a.name.localeCompare(b.name,'uk-UA')).slice(0,limit);
+  }
+  // Explicit user choice has priority over any suggested or exact catalog queue.
+  function selectQueue(result, chosen) {
+    const r=result||{};
+    const userQueue=validQueues([chosen])[0];
+    if(userQueue)return {
+      queue:userQueue,isManual:true,
+      method:['exact','street'].includes(r.status)?'manual-override':
+        r.status==='possible'&&r.queues?.includes(userQueue)?'street-choice':'manual'
+    };
+    if(['exact','street'].includes(r.status)){
+      const automatic=validQueues([r.queue])[0];
+      if(automatic)return {queue:automatic,isManual:false,method:r.status==='exact'?'automatic':'street-auto'};
+    }
+    return {queue:null,isManual:false,method:null};
+  }
   function resolve({idx,street,house,settlement,selectedKey}={}) {
     street=String(street||'').trim();house=String(house||'').trim();
     if(!String(settlement||'').trim()||!street)return {status:'incomplete'};
@@ -85,7 +118,10 @@
     if(exact.length>1)return {...base,status:'possible',queues:exact,reason:'house-conflict'};
     // Preserve existing single-street automatic resolution where no other
     // known house contradicts the street-wide record.
-    if(streetOnly.length===1 && houseQueues.every(q=>q===streetOnly[0]))
+    // Unlisted numbered houses must not inherit a queue from other houses.
+    if(house && houses.length && !exact.length && options.length===1)
+      return {...base,status:'possible',reason:'house-unlisted'};
+    if(streetOnly.length===1 && houseQueues.every(q=>q===streetOnly[0]) && (!house||!houses.length))
       return {...base,status:'street',queue:streetOnly[0],method:'street-auto'};
     if(options.length>1){
       return {...base,status:'possible',reason:houses.length?(house?'house-unlisted':'needs-house'):'no-house-index'};
@@ -95,5 +131,5 @@
     return {...base,status:'nohouse',reason:house?'house-unlisted':'no-address-data'};
   }
 
-  return {normalize,houseKey,kindOf,streetMatches,suggest,knownHouses,resolve};
+  return {normalize,houseKey,kindOf,streetMatches,suggest,suggestAcrossLocalities,knownHouses,selectQueue,resolve};
 });
