@@ -27,6 +27,8 @@ def assert_internal(page,target):
     assert target in url,(target,url)
     # Every subsidiary page is a standalone document, not our main app shell.
     assert frame.locator("#appBootScreen").count()==0, target+" returned the app index instead of its page"
+    assert frame.locator("#svitloInternalOffline").count()==0, target+" returned an unavailable-page fallback"
+    assert page.locator(".svitlo-internal-error").is_hidden(),target+" unexpectedly displayed an error"
     assert frame.locator("body").inner_text().strip(),target+" returned an empty page"
     page.locator(".svitlo-internal-back").click()
     page.wait_for_function("() => document.querySelector('#svitloInternalPage').hidden",timeout=5000)
@@ -35,7 +37,9 @@ def main():
     with local_site() as base,sync_playwright() as playwright:
         browser=playwright.chromium.launch(headless=True)
         context=browser.new_context(service_workers="allow",viewport={"width":390,"height":844})
-        context.add_init_script("Object.defineProperty(navigator,'standalone',{get:()=>true,configurable:true})")
+        context.add_init_script("""Object.defineProperty(navigator,'standalone',{get:()=>true,configurable:true});
+          localStorage.setItem('svitlo-beta-analytics-choice','declined');
+          localStorage.setItem('svitlo-beta-analytics-opt-in','no');""")
         context.route("https://**/*",lambda route:route.abort())
         try:
             page=context.new_page()
