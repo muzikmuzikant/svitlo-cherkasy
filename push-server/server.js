@@ -460,7 +460,7 @@ const server=http.createServer(async(req,res)=>{
  }
  if(requestPath==='/api/feedback/categories'&&req.method==='GET'){
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
-  response(res,200,{categories:feedback.getCategories().filter(c=>c.enabled)});return
+  response(res,200,{categories:feedback.getCategories().filter(c=>c.enabled),capabilities:{attachments:true,imageMaxBytes:4*1048576,videoMaxBytes:8*1048576,totalMaxBytes:9*1048576,maxFiles:3}});return
  }
   if(req.url==='/api/feedback'){
   if(req.method!=='POST'){response(res,405,{error:'Method not allowed'});return}
