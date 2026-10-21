@@ -23,7 +23,7 @@ const agentHash=req=>crypto.createHash('sha256').update(String(req.headers['user
 function expireSessions(){for(const [token,session] of SESSIONS)if(session.expires<=now()||session.idleUntil<=now())SESSIONS.delete(token)}
 const ADMIN_PASSWORD=process.env.ADMIN_PASSWORD||'';
 const GH_TOKEN=process.env.GITHUB_TOKEN||'';
-const REPO=process.env.GITHUB_REPOSITORY||'';
+const REPO=process.env.GITHUB_REPOSITORY||(process.env.RAILWAY_ENVIRONMENT_NAME==='staging'?'muzikmuzikant/svitlo-cherkasy':'');
 const BRANCH=process.env.RAILWAY_ENVIRONMENT_NAME==='staging'?'staging':(process.env.GITHUB_BRANCH||'main');
 const origin=process.env.APP_ORIGIN||'';
 function send(res,status,body){const headers={'content-type':'application/json; charset=utf-8','cache-control':'no-store','vary':'Origin','x-content-type-options':'nosniff','referrer-policy':'no-referrer'};if(res._allowedAppOrigin)headers['access-control-allow-origin']=res._allowedAppOrigin;res.writeHead(status,headers);res.end(JSON.stringify(body))}
