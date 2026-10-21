@@ -121,7 +121,7 @@
    })}catch(error){console.warn('Support notification:',error?.message)}
   }
  }
- async function scan(){
+ async function scan({limit=MAX_CHECK}={}){
   if(inFlight)return inFlight;
   if(typeof navigator!=='undefined'&&navigator.onLine===false)return [];
   const saved=receipts(),store=window.SvitloInbox;
@@ -129,7 +129,8 @@
   inFlight=(async()=>{
    const base=await service();
    // Restrict request bursts for users with many imported receipts.
-   const checks=saved.length<=MAX_CHECK?saved:[...saved.slice(cursor),...saved.slice(0,cursor)].slice(0,MAX_CHECK);
+   const size=Math.min(MAX_CHECK,Math.max(1,Math.trunc(Number(limit)||MAX_CHECK)));
+   const checks=saved.length<=size?saved:[...saved.slice(cursor),...saved.slice(0,cursor)].slice(0,size);
    cursor=(cursor+checks.length)%saved.length;
    const state=snapshots(),events=[];
    let changed=false,index=0;
