@@ -243,3 +243,49 @@
 .appearance-summary{margin:0;padding:0 18px 16px;color:var(--muted);font-size:12px;line-height:1.5}
 @media(max-width:370px){.appearance-options{gap:5px}.appearance-choice>span{min-height:98px;padding:9px 2px}.appearance-choice b{font-size:11px}.appearance-choice small{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.appearance-choice>span{transition:none}}
+
+/* Independent linked pages: one design language, not separate blue night styles */
+:root[data-theme="dark"] .support-shell{color:var(--ink)}
+:root[data-theme="dark"] .support-hero{
+ background:#171d26;border:1px solid #303946;color:var(--ink)
+}
+:root[data-theme="dark"] :is(.support-card,.support-tab.selected,.support-back,.support-help,.support-side-card,.ticket-status){
+ background:var(--surface);border-color:var(--line);color:var(--ink);box-shadow:none
+}
+:root[data-theme="dark"] .support-tab:not(.selected){color:#aab5c4}
+:root[data-theme="dark"] :is(.support-pill,.support-step,.support-side-icon){background:#27364b;color:#bbd9ff}
+:root[data-theme="dark"] :is(.support-hero p,.support-card-title p,.support-side-card p,.support-side-card>span,.support-help small,.support-privacy p,.ticket-status p){color:#b4c1d0}
+:root[data-theme="dark"] .support-side-divider{background:#353d49}
+:root[data-theme="dark"] .support-shell :is(input,select,textarea){
+ background:#202731;color:#f1f4fa;border:1px solid #404b59
+}
+:root[data-theme="dark"] .support-shell :is(input,textarea)::placeholder{color:#a4b0be}
+:root[data-theme="dark"] .support-shell :is(label,.support-card-title h2,.support-side-card h3){color:#e9f1fa}
+:root[data-theme="dark"] :is(.support-privacy,.topic-hint){background:#222c39;color:#c9d7e7}
+:root[data-theme="dark"] .support-top .support-back{color:#b9d5ff}
+:root[data-theme="dark"] .layout{color:var(--ink)}
+:root[data-theme="dark"] .layout .hero,:root[data-theme="dark"] .layout .contact,:root[data-theme="dark"] .layout .ticket-status{
+ background:var(--surface);border-color:var(--line);box-shadow:none
+}
+:root[data-theme="dark"] .layout :is(.search,.faq-item,.faq-question,.faq-answer,.contact-card){
+ background:#202730;color:var(--ink);border-color:#39434f
+}
+:root[data-theme="dark"] .layout :is(input,.wordmark,.faq-item h3,.faq-question strong){color:#eff5fc}
+:root[data-theme="dark"] .layout :is(.hero p,.section-head p,.contact p,.ticket-status p,.faq-answer){color:#b5c4d4}
+:root[data-theme="dark"] .layout .ticket-form input{background:#222b37;border:1px solid #445468}
+:root[data-theme="dark"] .layout .ticket-form button{background:#2a4363;color:#c9e0ff}
+:root[data-theme="dark"] :is(.body,.wrapper article,article.box,.box){
+ background:var(--surface);color:var(--ink);border-color:var(--line);box-shadow:none
+}
+:root[data-theme="dark"] .wrapper{color:#ecf3fc}
+:root[data-theme="dark"] .wrapper :is(p,li,.lead,.meta,.eyebrow),:root[data-theme="dark"] .box p{color:#becbd9}
+:root[data-theme="dark"] .wrapper a,:root[data-theme="dark"] .box a{color:#a5caff}
+:root[data-theme="dark"] .wrapper .hero{background:#1c2736;border-color:#354356}
+:root[data-theme="dark"] .wrapper .note{background:#27303c;border-color:#414d5d}
+:root[data-theme="dark"] .shell :is(.back,.nav-tools .back){background:#212a36;color:#c0d9ff;border-color:#3c4a5b}
+:root[data-theme="dark"] .shell :is(.card,.feature,.plan,.method,.contact,.stat,.faq-item){
+ background:var(--surface);border-color:var(--line);color:var(--ink);box-shadow:none
+}
+:root[data-theme="dark"] .shell :is(.section-title p,.card p,.feature p,.method p,.plan p){color:#b7c5d3}
+:root[data-theme="dark"] .top .back{background:#202a37;border-color:#3f4c5c;color:#d9e7f8}
+:root[data-theme="dark"] main .info{background:#1c2633;border-color:#364252;color:#edf4fc}
