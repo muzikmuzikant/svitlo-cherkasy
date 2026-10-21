@@ -782,7 +782,12 @@ body.svitlo-office .office-modal-list button{border-radius:4px!important}
 @media(max-width:390px){
  body.svitlo-office .office-modulebar-id{flex-wrap:wrap;gap:5px}
  body.svitlo-office .office-module-actions{width:100%}
- body.svitlo-office .office-create{display:none!important}
+ body.svitlo-office .office-create{
+  display:inline-flex!important;flex:0 0 40px;min-width:40px!important;
+  width:40px!important;max-width:40px!important;padding:8px!important;
+  justify-content:center
+ }
+ body.svitlo-office .office-create span{display:none!important}
  body.svitlo-office .office-density{font-size:10px!important}
  body.svitlo-office .office-crumbs{min-width:0}
  body.svitlo-office .office-current-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
