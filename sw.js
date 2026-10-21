@@ -70,21 +70,25 @@ self.addEventListener('fetch',event=>{
  }
  const scopePath=new URL(self.registration.scope).pathname;
  const relative=u.pathname.startsWith(scopePath)?'./'+u.pathname.slice(scopePath.length):null;
- // iOS must not wait for a failed network request before loading cached HTML,
- // bootstrap JavaScript and styles. Ignore query parameters in shared links.
+ // On the network, refresh HTML and essential JS/CSS so installed iPhone
+ // PWAs can pick up a deployed release rather than always showing old cache.
+ // Offline fallback preserves the last complete shell. Shared-link params are
+ // deliberately ignored for the cache key.
  if(req.mode==='navigate'||(relative&&OFFLINE_BOOT.includes(relative))){
   event.respondWith((async()=>{
-   const cache=await caches.open(VERSION);
-   const cached=await cache.match(new Request(u.origin+u.pathname));
-   if(cached)return cached;
+   const cache=await caches.open(VERSION),key=new Request(u.origin+u.pathname);
+   const cached=await cache.match(key);
+   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),2500);
    try{
-    const live=await fetch(req);
-    if(live.ok)await cache.put(new Request(u.origin+u.pathname),live.clone()).catch(()=>{});
-    return live;
+    const fresh=await fetch(new Request(req,{cache:'no-store',signal:controller.signal}));
+    if(fresh.ok){
+     await cache.put(key,fresh.clone()).catch(()=>{});
+     return fresh;
+    }
+    return cached||(req.mode==='navigate'?(await cache.match('./index.html')):null)||fresh;
    }catch{
-    if(req.mode==='navigate')return (await cache.match('./index.html'))||Response.error();
-    return Response.error();
-   }
+    return cached||(req.mode==='navigate'?(await cache.match('./index.html')):null)||Response.error();
+   }finally{clearTimeout(timeout)}
   })());return;
  }
  if(u.pathname.endsWith('/release.json')){
