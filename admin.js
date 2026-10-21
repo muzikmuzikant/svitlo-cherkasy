@@ -471,7 +471,7 @@ $('ticketDetail').addEventListener('focusout',()=>{
  },0);
 });
 setInterval(()=>{
- if(!remote||document.hidden||$('adminDashboard').hidden)return;
+ if(!remote||document.hidden||$('adminDashboard').hidden||window.svitloTicketAutoSyncEnabled?.()===false||supportBusy)return;
  const open=$('adminDashboard').querySelector('[data-admin-panel="feedback"]');
  if(open&&!open.hidden)void refreshTickets();
 },TICKET_LIVE_MS);
