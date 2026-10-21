@@ -51,6 +51,13 @@
      <label for="message">Деталі звернення <span class="required">*</span></label>
      <textarea id="message" required minlength="12" maxlength="2000" placeholder="Що саме не працює? Коли це трапляється?"></textarea>
      <div class="form-help"><span>Потрібно щонайменше 12 символів.</span><span id="count" aria-live="polite">0 / 2000</span></div>
+      <div class="ticket-attach">
+       <label for="newTicketFiles" class="ticket-attach-label"><span aria-hidden="true">＋</span> Додати фото або відео</label>
+       <input id="newTicketFiles" class="ticket-file-input" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" multiple>
+       <p class="ticket-attach-note">До 3 файлів: фото до 2 МБ, відео до 8 МБ, загалом до 9 МБ. Файли бачите лише ви та уповноважена підтримка. Не надсилайте документи чи чужі персональні дані.</p>
+       <div id="newTicketFilePreview" class="ticket-file-preview" aria-live="polite"></div>
+       <p id="newTicketFileStatus" class="ticket-file-status" role="status"></p>
+      </div>
      <label class="support-diagnostics"><input type="checkbox" id="includeDiagnostics"><span><strong>Додати технічну інформацію про пристрій</strong><small>Необов’язково. Тип пристрою, система, браузер і версія застосунку допоможуть відтворити помилку. Точна модель, IP-адреса, вулиця, будинок і повний User-Agent не додаються.</small></span></label>
      <p class="support-diagnostics-preview" id="diagnosticsPreview">Технічна інформація не надсилається без вашої згоди.</p>
      <div class="support-privacy"><span aria-hidden="true">🔒</span><p>Не надсилайте паролі, документи чи приватні дані. Відповіді можна прочитати тут, навіть якщо не вказувати email.</p></div>
@@ -81,7 +88,12 @@
   <section id="ticketConversation" class="conversation" hidden aria-labelledby="conversationHeading">
    <div class="conversation-head"><div><small id="conversationId"></small><h2 id="conversationHeading">Ваше звернення</h2><span id="conversationStatus" class="support-status"></span></div><button type="button" id="closeConversation" class="support-secondary">← До звернень</button></div>
    <div id="conversationMeta" class="conversation-meta"></div><div class="support-chat-meta"><span id="chatLiveStatus" class="support-chat-live" data-state="ok" role="status" aria-live="off">Повідомлення оновлюються автоматично</span><button type="button" id="chatRefresh" class="support-chat-refresh" title="Перевірити нові повідомлення">Оновити</button></div><div id="conversationMessages" class="conversation-messages" aria-live="polite" aria-relevant="additions"></div>
-   <form id="replyForm" class="reply-form" hidden><label for="replyMessage">Повідомлення</label><textarea id="replyMessage" required minlength="3" maxlength="1200" placeholder="Повідомлення"></textarea><div class="reply-actions"><span>До 1200 символів</span><button type="submit" id="sendReply" class="support-primary">Надіслати →</button></div></form>
+   <form id="replyForm" class="reply-form" hidden><label for="replyMessage">Повідомлення</label><textarea id="replyMessage" minlength="3" maxlength="1200" placeholder="Повідомлення"></textarea><div class="ticket-attach ticket-attach-reply">
+       <label for="replyTicketFiles" class="ticket-attach-label"><span aria-hidden="true">＋</span> Фото або відео</label>
+       <input id="replyTicketFiles" class="ticket-file-input" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" multiple>
+       <div id="replyTicketFilePreview" class="ticket-file-preview" aria-live="polite"></div>
+       <p id="replyTicketFileStatus" class="ticket-file-status" role="status"></p>
+      </div><div class="reply-actions"><span>До 1200 символів або вкладення</span><button type="submit" id="sendReply" class="support-primary">Надіслати →</button></div></form>
    <div id="ticketRating" class="ticket-rating" hidden><h3>Оцініть допомогу</h3><p>Оцінка добровільна й не впливає на можливість звернутися знову.</p>
     <div id="ticketRatingOptions" class="rating-options">
      <button type="button" data-rating="1" aria-label="1 із 5">1</button><button type="button" data-rating="2" aria-label="2 із 5">2</button>
@@ -94,4 +106,4 @@
 </main>
 <footer class="support-footer"><span>© Світло Черкаси · Незалежний інформаційний сервіс</span><nav><a href="./help.html">Допомога</a><a href="./privacy.html">Приватність</a><a href="./terms.html">Умови</a><a href="./index.html?screen=settings">Застосунок</a></nav></footer>
 </div>
-<script defer src="./notification-center.js"></script><script defer src="./support-inbox.js"></script><script defer src="./feedback.js"></script><script defer src="./social-links.js"></script></body></html>
+<script defer src="./notification-center.js"></script><script defer src="./support-inbox.js"></script><script defer src="./ticket-media-ui.js"></script><script defer src="./feedback.js"></script><script defer src="./social-links.js"></script></body></html>
