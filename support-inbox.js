@@ -28,6 +28,18 @@
   }
   try{localStorage.setItem(SNAPSHOTS,JSON.stringify(cleaned))}catch{}
  }
+ // Remove a locally retained receipt only after the API confirms deletion.
+ // A timeout, permission error, or rate limit is never proof of deletion.
+ function forgetDeleted(id){
+  if(!VALID_ID.test(id))return false;
+  const current=read(RECEIPTS,[]);
+  if(!Array.isArray(current)||!current.some(row=>row?.id===id))return false;
+  try{localStorage.setItem(RECEIPTS,JSON.stringify(current.filter(row=>row?.id!==id)))}
+  catch(error){console.warn('Support receipt cleanup:',error?.message);return false}
+  const next=snapshots();delete next[id];persist(next);
+  window.dispatchEvent(new CustomEvent('svitlo:support-ticket-deleted',{detail:{id}}));
+  return true;
+ }
  function remember(receipt,ticket=null){
   if(!VALID_ID.test(receipt?.id)||!VALID_TOKEN.test(receipt?.token||''))return false;
   const state=snapshots();
@@ -86,6 +98,10 @@
    body:JSON.stringify({id:receipt.id,token:receipt.token}),cache:'no-store',
    signal:AbortSignal.timeout(12000)
   });
+  if(response.status===404){
+   const body=await response.json().catch(()=>({}));
+   if(body?.error==='Звернення не знайдено.')return {deleted:true};
+  }
   if(!response.ok)throw Error('Ticket query '+response.status);
   const ticket=await response.json();
   if(ticket?.id!==receipt.id||!ticket.canReply||!Array.isArray(ticket.messages))return null;
@@ -109,7 +125,7 @@
   if(inFlight)return inFlight;
   if(typeof navigator!=='undefined'&&navigator.onLine===false)return [];
   const saved=receipts(),store=window.SvitloInbox;
-  if(!saved.length||typeof store?.add!=='function')return [];
+  if(!saved.length)return [];
   inFlight=(async()=>{
    const base=await service();
    // Restrict request bursts for users with many imported receipts.
@@ -123,6 +139,12 @@
      try{
       const result=await checkOne(base,receipt,state);
       if(!result)continue;
+      if(result.deleted){
+       if(forgetDeleted(receipt.id))changed=true;
+       delete state[receipt.id];
+       continue;
+      }
+      if(!receipts().some(row=>row.id===receipt.id&&row.token===receipt.token))continue;
       state[receipt.id]=result.next;
       events.push(...result.events);changed=true;
      }catch(error){console.warn('Support Inbox:',String(error.message).slice(0,80))}
@@ -131,7 +153,7 @@
    await Promise.all(Array.from({length:Math.min(3,checks.length)},worker));
    // Save the Inbox items first. If storage fails, retry later with the
    // unchanged snapshot rather than silently dropping notifications.
-   if(events.length)await store.add(events);
+   if(events.length&&typeof store?.add==='function')await store.add(events);
    if(changed)persist(state);
    if(events.length){
     void localNotify(events).catch(()=>{});
@@ -142,7 +164,7 @@
   })().finally(()=>{inFlight=null});
   return inFlight;
  }
- window.SvitloSupportInbox={scan,remember};
+ window.SvitloSupportInbox={scan,remember,forgetDeleted};
  window.addEventListener('online',()=>scan().catch(()=>{}));
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)scan().catch(()=>{})});
  window.addEventListener('focus',()=>scan().catch(()=>{}));
