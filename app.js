@@ -1224,7 +1224,7 @@ $('closeSheet').onclick=()=>closeSheet($('addressSheet'));$('closePlaces').oncli
  picker.addEventListener('close',()=>openAddressSheet(),{once:true});
  closeSheet(picker);
 };
-for(const dialog of [$('addressSheet'),$('placesSheet')])dialog.addEventListener('close',unlockSheet);
+for(const dialog of [$('addressSheet'),$('placesSheet')])dialog.addEventListener('close',()=>queueMicrotask(unlockSheet));
 $('settlement').onchange=()=>{$('queueOverride').checked=false;$('manualQueue').value='';$('customSettlement').hidden=$('settlement').value!=='Інше';suggestion=null;suggestions();checkLookup()};$('customSettlement').oninput=()=>{$('queueOverride').checked=false;$('manualQueue').value='';checkLookup()};// Keep the iPhone keyboard responsive: do no full address/house lookup in
 // input handlers. A short trailing debounce gives the browser time to paint.
 let streetLookupTimer=null;
