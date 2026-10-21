@@ -11,6 +11,8 @@ body.svitlo-office .office-context{
  padding:17px 20px;margin:0 0 21px;border:1px solid #e0e9e5;background:linear-gradient(105deg,#f3faf6,#fbfdfd);
  border-radius:10px;color:var(--office-contrast);min-width:0;
 }
+body.svitlo-office #adminDashboard>[data-admin-panel="overview"]>.office-context,
+body.svitlo-office #adminDashboard>[data-admin-panel="overview"]>.office-desk{grid-column:1/-1;min-width:0}
 body.svitlo-office .office-context-lead{display:grid;gap:5px;min-width:230px;flex:1}
 body.svitlo-office .office-context-kicker{font-size:9px;font-weight:820;letter-spacing:.12em;color:#198267}
 body.svitlo-office .office-context-title{font-size:15px;letter-spacing:-.25px}
