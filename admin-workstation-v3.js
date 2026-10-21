@@ -249,11 +249,14 @@
  const filePanel=dashboard.querySelector('[data-admin-panel="data"]');filePanel?.querySelector('.office-context')?.after(configToken);
  async function probe(){
   if(dashboard.hidden)return;
-  const checks=[['feedback','Звернення'],['app-config','Налаштування'],['work-items','Доручення'],['push/status','Push']];
+  const checks=[['feedback','Звернення'],['app-config','Налаштування'],['work-items','Доручення'],['push/status','Push'],['address-corrections','Уточнення адрес']];
   const parts=await Promise.allSettled(checks.map(async([url,label])=>{await api(url);return label}));
-  const online=parts.filter(x=>x.status==='fulfilled').map(x=>x.value);
-  note.textContent=online.length?'Доступні через Railway: '+online.join(' · ')+'.':'З’єднання із сервером потребує перевірки. Увійдіть повторно, якщо сеанс завершився.';
-  note.dataset.level=online.length===checks.length?'ok':online.length?'partial':'error';
+  const available=parts.flatMap((x,i)=>x.status==='fulfilled'?[checks[i][1]]:[]);
+  const missing=parts.flatMap((x,i)=>x.status==='rejected'?[checks[i][1]]:[]);
+  note.textContent=available.length
+   ?'Доступні через Railway: '+available.join(' · ')+'.'+(missing.length?' Недоступні: '+missing.join(' · ')+'. Перевірте актуальність бета-сервера Railway.':'')
+   :'З’єднання із сервером потребує перевірки. Увійдіть повторно, якщо сеанс завершився.';
+  note.dataset.level=missing.length===0?'ok':available.length?'partial':'error';
  }
  // No secrets, email, tickets, or private text are copied to persistent storage.
  document.addEventListener('svitlo:admin-ready',()=>{selected.clear();syncSelected();probe()});
