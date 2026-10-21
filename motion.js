@@ -32,8 +32,8 @@
  });
  // Reveal newly created cards in both marketing pages and all admin editors.
  const marketing=/\/(advertising|support-project|ad-detail)\.html$/.test(location.pathname);
- const adminPage=/\/admin\.html$/.test(location.pathname);
- if((marketing||adminPage)&&'MutationObserver'in window){
+ // Admin workspace is stateful: never reanimate its live register cards.
+ if(marketing&&'MutationObserver'in window){
   const watch=new MutationObserver(records=>{
    const fresh=[];
    for(const record of records)for(const element of record.addedNodes){
