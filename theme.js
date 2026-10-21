@@ -7,22 +7,23 @@
  const read=()=>{try{const value=localStorage.getItem(KEY);return allowed.has(value)?value:'system'}catch{return 'system'}};
  let choice=read();
  function apply(){
+  const previous=root.dataset.theme;
   const dark=choice==='dark'||(choice==='system'&&media.matches);
   root.dataset.theme=dark?'dark':'light';
   root.dataset.themePreference=choice;
   root.style.colorScheme=dark?'dark':'light';
   const meta=document.querySelector('meta[name="theme-color"]');
-  if(meta)meta.setAttribute('content',dark?'#101823':'#f6f8fc');
+  if(meta)meta.setAttribute('content',dark?'#090b0f':'#f6f8fc');
   document.querySelectorAll('input[name="appearanceTheme"]').forEach(input=>{input.checked=input.value===choice});
   const text=document.getElementById('appearanceSummary');
   if(text)text.textContent=choice==='system'?'Тема автоматично підлаштовується під ваш телефон.':choice==='dark'?'Темне оформлення ввімкнено.':'Світле оформлення ввімкнено.';
+  if(previous&&previous!==root.dataset.theme)window.dispatchEvent(new CustomEvent('svitlo:theme-change',{detail:{theme:root.dataset.theme,preference:choice}}));
  }
  function set(next){
   if(!allowed.has(next))return;
   choice=next;
   try{localStorage.setItem(KEY,choice)}catch{}
   apply();
-  window.dispatchEvent(new CustomEvent('svitlo:theme-change',{detail:{theme:root.dataset.theme,preference:choice}}));
  }
  const syncSystem=()=>{if(choice==='system')apply()};
  if(media.addEventListener)media.addEventListener('change',syncSystem);
