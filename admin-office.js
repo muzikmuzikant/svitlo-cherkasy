@@ -87,7 +87,7 @@
  search.type='button';search.append(icon('file',17),el('span','Знайти розділ, команду або реєстр'),el('kbd','⌘ K'));
  search.onclick=()=>showPalette();
  const action=el('button',null,'office-create');
- action.type='button';action.append(icon('zap',17),el('span','Створити'));
+ action.type='button';action.setAttribute('aria-label','Створити документ, повідомлення або доручення');action.append(icon('zap',17),el('span','Створити'));
  action.onclick=()=>showCreate();
  const state=el('span','Не перевірено','office-top-state');state.id='officeTopState';
  const closeNav=el('button','×','office-close-nav');closeNav.type='button';closeNav.setAttribute('aria-label','Закрити меню');
