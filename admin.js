@@ -271,7 +271,14 @@ function supportThreadEntry(item){
  const div=supportNode('div',undefined,'support-thread-entry '+(item.from==='admin'?'is-admin':''));
  const row=supportNode('div',undefined,'support-thread-title');
  row.append(supportNode('strong',item.from==='admin'?'Підтримка':'Користувач'),supportNode('time',supportDate(item.at)));
- div.append(row,supportNode('p',item.text));return div;
+ div.append(row,supportNode('p',item.text||''));
+ if(item.attachments?.length){
+  const caseId=supportSelected;
+  const view=window.SvitloTicketMedia?.render(item.attachments,
+   attachmentId=>api('feedback/attachment/'+encodeURIComponent(caseId)+'/'+attachmentId));
+  if(view)div.append(view);
+ }
+ return div;
 }
 async function saveSupport(id,data,success){
  if(supportBusy)return false;supportBusy=true;
@@ -331,7 +338,7 @@ function renderTicketDetail(){
  }
  root.append(control);
  const thread=supportNode('section',undefined,'support-thread');thread.append(supportNode('h4','Листування'));
- thread.append(supportThreadEntry({from:'user',text:ticket.message,at:ticket.createdAt}));
+ thread.append(supportThreadEntry({from:'user',text:ticket.message,at:ticket.createdAt,attachments:ticket.attachments||[]}));
  for(const m of ticket.messages||[])thread.append(supportThreadEntry(m));
  root.append(thread);
  if(adminRole!=='viewer'){
@@ -407,10 +414,10 @@ function updateLiveTicketThread(before,next){
  const immutable=(t)=>JSON.stringify([t.id,t.status,t.priority,t.assignedTo,t.dueAt,t.resolution,
   t.internalNote,t.tags,t.rating,t.email,t.subject,t.extra,t.diagnostics]);
  if(immutable(before)!==immutable(next))return false;
- const prev=[{from:'user',text:before.message,at:before.createdAt},...(before.messages||[])];
- const curr=[{from:'user',text:next.message,at:next.createdAt},...(next.messages||[])];
- if(curr.length<prev.length||prev.some((m,i)=>JSON.stringify([m.id,m.from,m.text,m.at])!==
-  JSON.stringify([curr[i].id,curr[i].from,curr[i].text,curr[i].at])))return false;
+ const prev=[{from:'user',text:before.message,at:before.createdAt,attachments:before.attachments||[]},...(before.messages||[])];
+ const curr=[{from:'user',text:next.message,at:next.createdAt,attachments:next.attachments||[]},...(next.messages||[])];
+ if(curr.length<prev.length||prev.some((m,i)=>JSON.stringify([m.id,m.from,m.text,m.at,(m.attachments||[]).map(a=>a.id)])!==
+  JSON.stringify([curr[i].id,curr[i].from,curr[i].text,curr[i].at,(curr[i].attachments||[]).map(a=>a.id)])))return false;
  const entries=thread.querySelectorAll('.support-thread-entry');
  if(entries.length!==prev.length)return false;
  // Appending messages never blurs the editor or overwrites unsent reply drafts.
