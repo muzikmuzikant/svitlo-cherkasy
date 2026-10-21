@@ -99,6 +99,7 @@ body.svitlo-office .office-route-field{display:grid;gap:6px;min-width:0;font-siz
 body.svitlo-office .office-route-field:last-child{grid-column:1/-1}
 body.svitlo-office .office-route-field :is(input,textarea){border:1px solid #d8e4dc;border-radius:7px;padding:10px 11px;background:#fff;color:#213d3b;font:inherit;font-weight:450;font-size:12px;min-width:0;width:100%;resize:vertical}
 body.svitlo-office .office-route-field :is(input,textarea):focus{outline:2px solid #8ac9a8;outline-offset:1px}
+body.svitlo-office .office-route-notice{margin:0 0 15px;padding:12px 14px;background:#fff5e7;border:1px solid #ecd9b7;border-radius:7px;color:#886324;font-size:11px;line-height:1.5}
 body.svitlo-office .office-route-hint{color:#84938c;font-size:10px;line-height:1.6;margin:11px 0 15px}
 body.svitlo-office .office-route-result{font-size:11px;color:#607b6a}
 body.svitlo-office .office-route-audit{margin-top:19px;border-top:1px solid #dbe9e1;padding-top:13px}
