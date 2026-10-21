@@ -417,6 +417,15 @@ const server=http.createServer(async(req,res)=>{
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   response(res,200,extras.getHelp());return;
  }
+ if(requestPath==='/api/ticket/attachment'&&req.method==='POST'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  try{
+   const data=await readPayload(req,1200),id=String(data.id||'').trim().toUpperCase();
+   if(!/^SC-[0-9A-F]{10}$/.test(id)){response(res,400,{error:'Некоректний номер звернення'});return}
+   response(res,200,feedback.getAttachment(id,data.attachmentId,data.token));
+  }catch(error){response(res,error.statusCode||400,{error:error.message||'Файл недоступний'})}
+  return;
+ }
  if(req.url==='/api/ticket/status'&&req.method==='POST'){
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   const ip=String(req.socket.remoteAddress||'unknown').slice(0,100),t=Date.now();
@@ -441,11 +450,11 @@ const server=http.createServer(async(req,res)=>{
   if(req.url==='/api/ticket/reply'&&req.method==='POST'){
    if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
    try{
-    const data=await readPayload(req,3500);
+    const data=await readPayload(req,13_000_000);
     const id=String(data.id||'').trim().toUpperCase();
     if(!/^SC-[0-9A-F]{10}$/.test(id)){response(res,400,{error:'Перевірте номер звернення.'});return}
     const ip=(String(req.headers['x-forwarded-for']||'').split(',')[0].trim()||req.socket.remoteAddress||'unknown').slice(0,80);
-    response(res,200,feedback.reply(id,data.token,data.message,ip));
+    response(res,200,feedback.reply(id,data.token,data,ip));
    }catch(e){response(res,e.statusCode||500,{error:e.statusCode?e.message:'Не вдалося надіслати відповідь.'})}
    return;
  }
