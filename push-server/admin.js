@@ -64,7 +64,7 @@ async function github(path,method='GET',payload){
  return data;
 }
 async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
-export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal,auditSchedules,errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules){
+export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal,auditSchedules,errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(!originPolicy.isAllowed(req.headers.origin)){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const url=new URL(req.url,'http://localhost');
@@ -122,7 +122,8 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
  // Every privileged route is checked server-side. Hiding UI controls alone is not security.
  const pathName=url.pathname,method=req.method;
  const custom=session.managed;
- const permission=pathName.startsWith('/api/admin/feedback')?'feedback':
+ const permission=pathName.startsWith('/api/admin/work-items')?'settings':
+  pathName.startsWith('/api/admin/feedback')?'feedback':
   pathName.startsWith('/api/admin/help')?'help':
   pathName.startsWith('/api/admin/ads')?'ads':
   pathName.startsWith('/api/admin/push')?'push':
@@ -133,7 +134,7 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
   :role==='owner'
   ||role==='viewer'&&method==='GET'
   ||role==='operator'&&(
-   method==='GET'&&(/\/api\/admin\/(?:monitor|audit|status|feedback|help|analytics|ads|security)$/.test(pathName)
+   method==='GET'&&(/\/api\/admin\/(?:monitor|audit|status|feedback|help|analytics|ads|security|work-items)$/.test(pathName)
     ||pathName==='/api/admin/push/status')
    ||method==='PATCH'&&pathName.startsWith('/api/admin/feedback/'))
   ||role==='editor'&&!(pathName==='/api/admin/push/send'
@@ -142,6 +143,46 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    ||(pathName.startsWith('/api/admin/feedback/')&&method==='DELETE'));
  if(!allowed){send(res,403,{error:'Недостатньо прав для цієї дії'});return true}
  try{
+   // Private task registry and safe runtime configuration, persisted on Railway.
+   if(pathName==='/api/admin/work-items'&&method==='GET'){send(res,200,workRegistry.list());return true}
+   if(pathName==='/api/admin/work-items'&&method==='POST'){
+    if(!['owner','editor'].includes(role)){send(res,403,{error:'Дію дозволено редактору або власнику'});return true}
+    send(res,201,workRegistry.create(await readJson(req,4500),session.username));return true
+   }
+   if(pathName.startsWith('/api/admin/work-items/')&&['PATCH','DELETE'].includes(method)){
+    const id=decodeURIComponent(pathName.slice('/api/admin/work-items/'.length));
+    if(!/^WR-[A-F0-9]{12}$/.test(id)){send(res,400,{error:'Некоректний номер картки'});return true}
+    if(method==='PATCH'&&!['owner','editor'].includes(role)){send(res,403,{error:'Недостатньо прав'});return true}
+    if(method==='DELETE'&&(role!=='owner'||session.managed)){send(res,403,{error:'Лише власник може видаляти картки'});return true}
+    const body=await readJson(req,4500);
+    send(res,200,method==='PATCH'?workRegistry.patch(id,body,session.username):workRegistry.remove(id,body.expectedRevision,session.username));
+    return true;
+   }
+   if(pathName==='/api/admin/site-quick-settings'&&method==='GET'){
+    send(res,200,siteControls.get());return true
+   }
+   if(pathName==='/api/admin/site-quick-settings'&&method==='PUT'){
+    if(role!=='owner'||session.managed){send(res,403,{error:'Публікація доступна власнику'});return true}
+    const body=await readJson(req,6500),current=siteControls.get();
+    if(!Object.hasOwn(body,'expectedUpdatedAt')||body.expectedUpdatedAt!==(current.updatedAt??null)){
+     send(res,409,{error:'Налаштування змінилися. Оновіть їх перед збереженням.'});return true
+    }
+    if(!body.banner||!body.links||!body.flags||
+     typeof body.banner!=='object'||typeof body.links!=='object'||typeof body.flags!=='object'){
+     send(res,400,{error:'Неповні налаштування'});return true
+    }
+    const next={...current,site:{...current.site,
+     banner:{...current.site.banner},links:{...current.site.links},flags:{...current.site.flags}}};
+    for(const key of ['enabled','title','body','button','url'])
+     if(Object.hasOwn(body.banner,key))next.site.banner[key]=body.banner[key];
+    for(const key of ['help','feedback','official'])
+     if(Object.hasOwn(body.links,key))next.site.links[key]=body.links[key];
+    for(const key of ['inbox','sharing','help','feedback','copySchedule','addressSearch','pushPrompt','manualRefresh'])
+     if(Object.hasOwn(body.flags,key))next.site.flags[key]=body.flags[key];
+    const saved=siteControls.update(next);
+    extras?.record('site.quick-settings.publish','banner='+saved.site.banner.enabled);
+    send(res,200,saved);return true;
+   }
    if(pathName==='/api/admin/reports'&&method==='GET'){
     send(res,200,dailyReports.list());return true
    }

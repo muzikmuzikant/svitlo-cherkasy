@@ -10,6 +10,7 @@ import {createAdminExtras} from './admin-extras.js';
 import {createAnalyticsStore} from './analytics.js';
 import {createAdsStore} from './ads.js';
 import {createAdminUserStore} from './admin-users.js';
+import {createWorkRegistry} from './work-registry.js';
 import {createLegalStore} from './legal-store.js';
 import {auditSchedule} from './schedule-quality.js';
 import {createDiagnosticsStore} from './diagnostics.js';
@@ -47,6 +48,7 @@ function save(){
 }
 const feedback=createFeedbackStore({filePath:process.env.FEEDBACK_FILE||path.join(path.dirname(DATA_FILE),'feedback.json')});
 const extras=createAdminExtras({directory:path.dirname(DATA_FILE)});
+const workRegistry=createWorkRegistry({directory:path.dirname(DATA_FILE),record:extras.record});
 const analytics=createAnalyticsStore({filePath:path.join(path.dirname(DATA_FILE),'analytics.json')});
 const ads=createAdsStore({directory:path.dirname(DATA_FILE)});
 const adminUsers=createAdminUserStore({directory:path.dirname(DATA_FILE)});
@@ -393,7 +395,7 @@ const server=http.createServer(async(req,res)=>{
     const tickets=feedback.list().items;
     result.feedback={total:tickets.length,new:tickets.filter(t=>t.status==='new').length,inProgress:tickets.filter(t=>t.status==='in_progress').length};
     return result;
-  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule(officialSchedules.schedule()||lastLoadedSchedule),errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules);return}
+  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule(officialSchedules.schedule()||lastLoadedSchedule),errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry);return}
  if(req.url?.startsWith('/api/media/')&&req.method==='GET'){
    const id=req.url.slice('/api/media/'.length).split('?')[0],file=mediaStore.read(id);
    if(!file){response(res,404,{error:'Фото не знайдене'});return}

@@ -1,0 +1,63 @@
+/* Formal information-system workspace: registry, toolbars, structured forms. */
+body.askod-workspace{--ink:#1f2937;--sub:#66768a;--line:#dce4eb;--blue:#1a7791;background:#eef2f6}
+body.askod-workspace main{max-width:1660px!important;padding:14px 18px 64px}
+body.askod-workspace #adminDashboard>.auth-head{border-radius:11px;background:#fff;border:1px solid #d9e1e9;padding:13px 18px;margin:13px 0 10px;box-shadow:0 2px 14px #0a27300a}
+body.askod-workspace #adminDashboard .control-kicker{letter-spacing:.11em;color:#14748d}
+body.askod-workspace #adminDashboard>.auth-head h1{font-size:23px;letter-spacing:-.6px}
+body.askod-workspace #adminDashboard>.admin-tabs{background:#fff;border:1px solid #dbe3ec;border-radius:11px;box-shadow:0 2px 12px #122b3909}
+body.askod-workspace .control-nav-group>span{letter-spacing:.09em;color:#8795a4}
+body.askod-workspace .admin-tabs button[aria-pressed="true"]{background:#e6f2f5;color:#0f6076;border-color:#c2e1e9;box-shadow:none}
+body.askod-workspace #adminDashboard>[data-admin-panel]:not([hidden]){min-width:0}
+body.askod-workspace .card{border-radius:11px;box-shadow:0 2px 12px #10273b0a;border-color:#dce4ed}
+body.askod-workspace button:focus-visible,body.askod-workspace input:focus-visible,body.askod-workspace select:focus-visible{outline:2px solid #197f9b;outline-offset:2px}
+.admin-register,.admin-live{padding:21px!important}
+.admin-register .registry-toolbar,.admin-live .registry-toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:15px 0}
+.admin-register .registry-toolbar input{min-width:190px;max-width:320px;flex:1}
+.admin-register .registry-toolbar select{min-width:160px}
+.registry-lead{display:flex;gap:12px;align-items:start;justify-content:space-between;flex-wrap:wrap}
+.registry-lead h2{font-size:21px;margin:0}.registry-lead p{margin:6px 0 0;max-width:670px}
+.registry-badges{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0;color:#416a75;font-size:11px}
+.registry-badges span{padding:6px 9px;border:1px solid #d7e5e8;border-radius:8px;background:#f2f9fa;font-weight:650}
+.registry-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.9fr);gap:16px;align-items:start}
+.registry-list{max-height:650px;overflow:auto;border:1px solid #dfe7ef;border-radius:9px;background:#fff}
+.registry-head,.registry-row{display:grid;grid-template-columns:104px minmax(140px,1.9fr) minmax(100px,1fr) minmax(110px,1fr) 91px;gap:8px;align-items:center;padding:12px;font-size:12px}
+.registry-head{background:#eff4f7;color:#657888;position:sticky;top:0;z-index:1;font-weight:750}
+.registry-row{width:100%;text-align:left;border:0;border-top:1px solid #edf1f5;background:#fff;color:#34475a;min-height:51px}
+.registry-row:hover,.registry-row.is-active{background:#eaf6f8}
+.registry-id{font-size:10px;color:#19748b;overflow-wrap:anywhere}
+.registry-title{overflow-wrap:anywhere;font-weight:650}
+.registry-type,.registry-priority{color:#65798e}
+.registry-state{display:inline-flex;justify-content:center;padding:5px 7px;border:1px solid #d5e1ea;border-radius:7px;background:#f1f6fa;font-size:11px;font-weight:700}
+.registry-state.state-done{background:#e4f5eb;color:#246f49;border-color:#bbebd0}
+.registry-state.state-review{background:#fff4dc;color:#91621d;border-color:#f8e1a5}
+.registry-state.state-in_progress{background:#e9f3ff;color:#256ca6;border-color:#c7dffa}
+.registry-state.state-cancelled{background:#f5eeee;color:#925d5d}
+.registry-empty{padding:22px;text-align:center}
+.registry-editor{background:#fbfcfd;border:1px solid #dfe7ee;border-radius:10px;padding:17px;min-width:0}
+.registry-editor h3{margin:0;font-size:17px}.registry-editor small{color:#667c8b}
+.registry-editor .field{margin-top:11px}
+.registry-editor .field label{font-size:11px}
+.registry-editor textarea{min-height:90px}
+.registry-editor input,.registry-editor textarea,.registry-editor select,.admin-live input,.admin-live textarea{max-width:100%}
+.registry-editor .registry-actions{display:flex;gap:8px;margin:16px 0 7px;flex-wrap:wrap}
+.registry-editor .registry-events{display:grid;gap:7px;margin-top:9px;max-height:155px;overflow:auto}
+.registry-event{padding:8px 10px;background:#eff4f8;border-radius:7px;display:flex;justify-content:space-between;gap:8px;font-size:11px;flex-wrap:wrap}
+.registry-event small{color:#698195}
+.admin-register [data-error="true"],.admin-live [data-error="true"]{color:#ad364a}
+.registry-status{padding:10px;margin-top:14px;border-radius:8px;background:#f1f6f9;font-size:12px}
+.live-config-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,.8fr);gap:15px;margin:16px 0}
+.live-card{padding:15px;border:1px solid #dae4ec;border-radius:9px;background:#f9fbfc}
+.live-card h3{font-size:15px;margin:0 0 12px}
+.live-card .field{margin:10px 0}
+.live-card .field label{display:block;margin-bottom:5px}
+.live-card .field input,.live-card .field textarea{width:100%}
+.live-toggle{display:flex;gap:9px;align-items:center;margin:12px 0;font-size:12px}
+.live-toggle input{height:18px;width:18px;accent-color:#187a93}
+.live-flags{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 14px}
+.live-preview{border:1px solid #acd9e5;border-radius:10px;padding:20px;background:#e7f4ff;color:#1d4663}
+.live-preview strong{font-size:17px}.live-preview p{margin-bottom:0}
+@media(min-width:1100px){body.askod-workspace #adminDashboard{grid-template-columns:245px minmax(0,1fr)!important;column-gap:16px!important}}
+@media(max-width:1200px){.registry-layout{grid-template-columns:1fr}.registry-list{max-height:330px}}
+@media(max-width:800px){.live-config-grid{grid-template-columns:1fr}.registry-head,.registry-row{grid-template-columns:80px minmax(110px,1fr) 105px 85px}.registry-type{display:none}.admin-register,.admin-live{padding:14px!important}}
+@media(max-width:470px){.registry-head,.registry-row{grid-template-columns:75px minmax(100px,1fr) 90px}.registry-priority{display:none}.registry-head span:last-child{display:none}.live-flags{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:no-preference){.registry-row,.registry-state{transition:background .16s ease,border-color .16s ease}}
