@@ -272,7 +272,7 @@
  // replies, opened cases, bulk selections, hidden sessions or background tabs.
  const autoTimer=window.setInterval(async()=>{
   if(!autoSync||dashboard.hidden||feedback.hidden||document.hidden||drawer||busy||selected.size||refreshing)return;
-  if(feedback.contains(document.activeElement)&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||''))return;
+  if(feedback.contains(document.activeElement)&&(/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||'')||detailed.contains(document.activeElement)))return;
   refreshing=true;
   try{await window.refreshTickets?.()}finally{refreshing=false}
  },60_000);
