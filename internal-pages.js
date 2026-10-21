@@ -41,7 +41,7 @@
   if(history.state?.svitloInternal){explicitDismiss=true;history.back()}
  }
  function display(url,remember=true){const u=internal(url);if(!u)return;
-  const wasOpen=isOpen,resumingClose=leaveTimer!==null;
+  const wasOpen=isOpen;const resumingClose=leaveTimer!==null;
   if(leaveTimer){clearTimeout(leaveTimer);leaveTimer=null}
   browser.classList.remove('svitlo-internal-leaving');
   if(!isOpen&&!resumingClose){previousOverflow=document.documentElement.style.overflow;previousFocus=document.activeElement}
