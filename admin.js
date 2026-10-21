@@ -211,6 +211,8 @@ const TICKET_TOPICS={bug:'Помилка застосунку',address:'Адре
 const TICKET_STATES={new:'Нове',in_progress:'У роботі',resolved:'Вирішено'};
 const TICKET_PRIORITY={low:'Низький',normal:'Звичайний',high:'Високий'};
 let supportTickets=[],supportSelected='',supportBusy=false;
+const supportDrafts=new Map();
+function supportOverdue(ticket){return ticket.status!=='resolved'&&!!ticket.dueAt&&Number.isFinite(Date.parse(ticket.dueAt))&&Date.parse(ticket.dueAt)<Date.now()}
 function supportNode(tag,value,cls=''){const element=document.createElement(tag);if(value!==undefined)element.textContent=String(value);if(cls)element.className=cls;return element}
 function supportDate(date){const d=Date.parse(date||'');return Number.isFinite(d)?new Date(d).toLocaleString('uk-UA',{dateStyle:'medium',timeStyle:'short'}):'невідомо'}
 function supportBadge(value){return supportNode('span',TICKET_STATES[value]||'Нове','ticket-state state-'+value)}
@@ -222,12 +224,17 @@ function renderTicketCounts(){
   const box=supportNode('div',undefined,'support-count '+value);
   box.append(supportNode('strong',counts[value]),supportNode('span',label));root.append(box);
  }
+ const late=supportTickets.filter(supportOverdue).length;
+ const overdueBox=supportNode('button',undefined,'support-count overdue');overdueBox.type='button';
+ overdueBox.append(supportNode('strong',late),supportNode('span','Порушений строк'));
+ overdueBox.addEventListener('click',()=>window.SvitloTicketWorkflow?.setView('overdue'));
+ root.append(overdueBox);
 }
 function renderTicketList(){
  const root=$('ticketsList');root.replaceChildren();
  const q=$('ticketSearch').value.trim().toLocaleLowerCase('uk-UA'),status=$('ticketFilter').value,topic=$('ticketTopicFilter').value,priority=$('ticketPriorityFilter').value;
- const visible=supportTickets.filter(t=>(status==='all'||t.status===status)&&(topic==='all'||t.topic===topic)&&(priority==='all'||(t.priority||'normal')===priority)&&(!q||[t.id,t.subject,t.message,t.queue,t.email,(t.tags||[]).join(' '),TICKET_TOPICS[t.topic],...(t.messages||[]).map(m=>m.text)].join(' ').toLocaleLowerCase('uk-UA').includes(q)));
- visible.sort((a,b)=>({new:0,in_progress:1,resolved:2}[a.status]??9)-({new:0,in_progress:1,resolved:2}[b.status]??9) || Number(b.priority==='high')-Number(a.priority==='high')||Date.parse(b.updatedAt||b.createdAt)-Date.parse(a.updatedAt||a.createdAt));
+ const visible=supportTickets.filter(t=>(status==='all'||t.status===status)&&(topic==='all'||t.topic===topic)&&(priority==='all'||(t.priority||'normal')===priority)&&(!window.SvitloTicketWorkflow||window.SvitloTicketWorkflow.matches(t))&&(!q||[t.id,t.subject,t.message,t.queue,t.email,t.assignedTo,(t.tags||[]).join(' '),TICKET_TOPICS[t.topic],...(t.messages||[]).map(m=>m.text)].join(' ').toLocaleLowerCase('uk-UA').includes(q)));
+ visible.sort((a,b)=>window.SvitloTicketWorkflow?window.SvitloTicketWorkflow.compare(a,b):(({new:0,in_progress:1,resolved:2}[a.status]??9)-({new:0,in_progress:1,resolved:2}[b.status]??9) || Number(b.priority==='high')-Number(a.priority==='high')||Date.parse(b.updatedAt||b.createdAt)-Date.parse(a.updatedAt||a.createdAt)));
  $('ticketsSummary').textContent='Показано '+visible.length+' із '+supportTickets.length+' звернень';
  if(!visible.length){root.append(supportNode('div',supportTickets.length?'Немає звернень за цими фільтрами.':'Поки немає звернень.','support-empty'));return}
  for(const item of visible){
@@ -237,10 +244,10 @@ function renderTicketList(){
   card.append(top,supportNode('strong',item.subject||TICKET_TOPICS[item.topic]||'Звернення'),supportNode('p',item.message));
   const meta=supportNode('div',undefined,'ticket-row-meta');meta.append(supportNode('span',supportDate(item.createdAt)));
   if(item.queue)meta.append(supportNode('span','Підчерга '+item.queue));
-  const age=Date.now()-Date.parse(item.createdAt||'');
-  const deadline=item.status==='new'?24*3600000:item.status==='in_progress'?72*3600000:Infinity;
-  if(Number.isFinite(age)&&age>deadline){const hours=Math.floor(age/3600000);
-   meta.append(supportNode('b','Прострочено · '+hours+' год','support-overdue'));card.classList.add('is-overdue')}
+  if(item.assignedTo)meta.append(supportNode('span','Виконавець: '+item.assignedTo));
+  if(item.dueAt)meta.append(supportNode('span','Контроль: '+supportDate(item.dueAt)));
+  if(supportOverdue(item)){meta.append(supportNode('b','Порушено контрольний строк','support-overdue'));card.classList.add('is-overdue')}
+  else if(item.status==='new'&&Date.now()-Date.parse(item.createdAt||'')>86400000)meta.append(supportNode('b','Потребує уваги понад добу','support-attention'));
     if(item.priority==='high')meta.append(supportNode('b','● Важливе'));
   if(item.messages?.length)meta.append(supportNode('span','↩ '+item.messages.length));
   card.append(meta);card.addEventListener('click',()=>{supportSelected=item.id;renderTicketList();renderTicketDetail()});root.append(card);
@@ -254,8 +261,19 @@ function supportThreadEntry(item){
 }
 async function saveSupport(id,data,success){
  if(supportBusy)return false;supportBusy=true;
- try{await api('feedback/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify(data)});await refreshTickets();if(success)$('ticketsSummary').textContent=success;return true}
- catch(e){alert('Не вдалося зберегти: '+e.message);return false}
+ try{
+   const original=supportTickets.find(t=>t.id===id);
+   if(original&&Number.isSafeInteger(original.revision))data={...data,expectedRevision:original.revision};
+   await api('feedback/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify(data)});
+   await refreshTickets();
+   if(success)$('ticketsSummary').textContent=success;
+   return true
+ }catch(e){
+   $('ticketsSummary').textContent='Не збережено: '+e.message;
+   $('ticketsSummary').classList.add('support-error');
+   if(/іншому сеансі|409/.test(e.message))await refreshTickets();
+   return false
+ }
  finally{supportBusy=false}
 }
 function renderTicketDetail(){
@@ -304,7 +322,7 @@ function renderTicketDetail(){
  root.append(thread);
  if(adminRole!=='viewer'){
   const compose=supportNode('section',undefined,'support-compose');compose.append(supportNode('h4','Відповідь користувачу'));
-  const reply=document.createElement('textarea');reply.rows=4;reply.maxLength=1600;reply.placeholder='Напишіть відповідь. Користувач побачить її у «Мої звернення»…';reply.setAttribute('aria-label','Відповідь користувачу');
+  const reply=document.createElement('textarea');reply.rows=4;reply.maxLength=1600;reply.placeholder='Напишіть відповідь. Користувач побачить її у «Мої звернення»…';reply.setAttribute('aria-label','Відповідь користувачу');reply.value=supportDrafts.get(ticket.id)||'';reply.addEventListener('input',()=>supportDrafts.set(ticket.id,reply.value));
   const templates=supportNode('div',undefined,'support-templates');
   for(const sample of supportTemplates){
    const button=supportNode('button',sample,'support-template');button.type='button';button.addEventListener('click',()=>{reply.value=sample;reply.focus()});templates.append(button);
@@ -313,7 +331,7 @@ function renderTicketDetail(){
   send.addEventListener('click',async()=>{
    const body=reply.value.trim();if(body.length<2){alert('Напишіть текст відповіді.');return}
    send.disabled=true;
-   if(!await saveSupport(ticket.id,{reply:body},'Відповідь збережено. Користувач може прочитати її у зверненні.'))send.disabled=false;
+   if(await saveSupport(ticket.id,{reply:body},'Відповідь збережено. Користувач може прочитати її у зверненні.')){supportDrafts.delete(ticket.id);renderTicketDetail()}else send.disabled=false;
   });
   compose.append(reply,templates,send);
   const notes=supportNode('div',undefined,'support-internal');notes.append(supportNode('h4','Внутрішня нотатка'),supportNode('p','Не відображається користувачу.'));
@@ -335,6 +353,7 @@ function renderTicketDetail(){
   });
   root.append(remove);
  }
+ window.SvitloTicketEnhance?.(ticket,root,saveSupport);
 }
 window.betaAdminAdsApi=async(method='GET',settings)=>api('ads',{method,body:method==='PUT'?JSON.stringify(settings):undefined});
 window.betaAdminUploadAdPhoto=async(file)=>{
@@ -364,10 +383,11 @@ async function refreshTickets(){
  if(!remote)return;
  $('ticketsSummary').textContent='Оновлюємо звернення…';
  try{
-  const [result,templ]=await Promise.all([api('feedback'),api('feedback/templates')]);supportTickets=Array.isArray(result.items)?result.items:[];supportTemplates=Array.isArray(templ.templates)?templ.templates:[];renderSupportTemplateEditor();
+  const [result,templ]=await Promise.all([api('feedback'),api('feedback/templates')]);supportTickets=Array.isArray(result.items)?result.items:[];supportTemplates=Array.isArray(templ.templates)?templ.templates:[];window.SvitloTicketWorkflow?.sync(supportTickets);renderSupportTemplateEditor();
   if(!supportTickets.some(t=>t.id===supportSelected))supportSelected=supportTickets[0]?.id||'';
   renderTicketCounts();renderTicketList();renderTicketDetail();
   document.dispatchEvent(new Event('svitlo:tickets-loaded'));
  }catch(e){$('ticketsSummary').textContent='Помилка завантаження: '+e.message}
 }
 $('refreshTickets').addEventListener('click',refreshTickets);
+document.addEventListener('svitlo:admin-logout',()=>{supportDrafts.clear();supportTickets=[];supportSelected='';$('ticketsList').replaceChildren();$('ticketDetail').replaceChildren();window.SvitloTicketWorkflow?.reset()});
