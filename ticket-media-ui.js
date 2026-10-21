@@ -76,6 +76,7 @@
   for(let i=0;i<bin.length;i++)buffer[i]=bin.charCodeAt(i);
   return buffer;
  }
+ let activeMediaRequest=0;
  function viewer(){
   let dialog=document.getElementById('privateTicketViewer');
   if(dialog)return dialog;
@@ -95,6 +96,7 @@
   return dialog;
  }
  async function openFile(info,fetcher){
+  const request=++activeMediaRequest;
   if(!info?.id||!['image/jpeg','image/png','image/webp','video/mp4','video/quicktime','video/webm'].includes(info.mime))return;
   const dialog=viewer(),content=dialog.querySelector('.ticket-media-content');
   if(dialog.open)dialog.close();
@@ -102,7 +104,7 @@
   content.textContent='Завантажуємо захищений файл…';dialog.showModal();
   try{
    const payload=await fetcher(info.id);
-   if(!dialog.open)return;
+   if(!dialog.open||request!==activeMediaRequest)return;
    if(payload.mime!==info.mime)throw Error('Формат файлу не збігається');
    const bytes=decode(payload.data),url=URL.createObjectURL(new Blob([bytes],{type:payload.mime}));
    dialog.dataset.objectUrl=url;content.replaceChildren();
@@ -110,7 +112,7 @@
    el.src=url;if(isVideo(payload.mime)){el.controls=true;el.playsInline=true;el.preload='metadata'}
    else el.alt=info.name||'Додане фото';
    content.append(el);
-  }catch(e){if(dialog.open)content.textContent='Не вдалося відкрити вкладення: '+e.message}
+  }catch(e){if(dialog.open&&request===activeMediaRequest)content.textContent='Не вдалося відкрити вкладення: '+e.message}
  }
  function render(list,fetcher){
   if(!Array.isArray(list)||!list.length)return null;
