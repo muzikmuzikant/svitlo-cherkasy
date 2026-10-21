@@ -3,6 +3,9 @@
  const TYPES={'image/jpeg':4*1048576,'image/png':4*1048576,'image/webp':4*1048576,'image/heic':4*1048576,'image/heif':4*1048576,
   'video/mp4':8*1048576,'video/quicktime':8*1048576,'video/webm':8*1048576};
  const LIMIT=9*1048576,MAX=3;
+ const EXT={jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',
+  heic:'image/heic',heif:'image/heif',mp4:'video/mp4',mov:'video/quicktime',webm:'video/webm'};
+ const mimeFor=file=>TYPES[file.type]?file.type:(EXT[String(file.name||'').split('.').pop().toLowerCase()]||'');
  const isVideo=mime=>mime.startsWith('video/');
  const size=bytes=>(bytes/1048576).toLocaleString('uk-UA',{maximumFractionDigits:1})+' МБ';
  function error(message){throw new Error(message)}
@@ -11,9 +14,9 @@
   if(selected.length>MAX)error('Не більше трьох фото або відео на одне повідомлення.');
   let total=0;
   for(const file of selected){
-   if(!TYPES[file.type])error('Формати: JPG, PNG, WebP, HEIC, HEIF, MP4, MOV або WebM.');
-   if(!file.size||file.size>TYPES[file.type])
-    error(isVideo(file.type)?'Відео повинне бути до 8 МБ.':'Фото повинне бути до 4 МБ.');
+   if(!mimeFor(file))error('Формати: JPG, PNG, WebP, HEIC, HEIF, MP4, MOV або WebM.');
+   if(!file.size||file.size>TYPES[mimeFor(file)])
+    error(isVideo(mimeFor(file))?'Відео повинне бути до 8 МБ.':'Фото повинне бути до 4 МБ.');
    total+=file.size;
   }
   if(total>LIMIT)error('Загальний розмір вкладень до 9 МБ.');
@@ -27,7 +30,7 @@
     const value=String(reader.result||'');
     const comma=value.indexOf(',');
     if(comma<0)return reject(Error('Помилка зчитування файлу'));
-    resolve({name:file.name.slice(0,90),mime:file.type,data:value.slice(comma+1)});
+    resolve({name:file.name.slice(0,90),mime:mimeFor(file),data:value.slice(comma+1)});
    };
    reader.readAsDataURL(file);
   });
@@ -44,7 +47,7 @@
    previews=[];output.replaceChildren();
    for(const [index,file] of selected.entries()){
     const row=document.createElement('div');row.className='ticket-upload-item';
-    if(file.type.startsWith('image/')){
+    if(mimeFor(file).startsWith('image/')){
      const uri=URL.createObjectURL(file);previews.push(uri);
      const img=document.createElement('img');img.src=uri;img.alt='Попередній вигляд: '+file.name;img.loading='lazy';row.append(img);
     }else{
