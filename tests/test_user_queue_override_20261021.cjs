@@ -5,7 +5,10 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {resolve,selectQueue,suggestAcrossLocalities}=require('../address-lookup.js');
 
-const catalog=JSON.parse(fs.readFileSync(path.join(__dirname,'../data/addresses.json'),'utf8'));
+const live=JSON.parse(fs.readFileSync(path.join(__dirname,'../data/addresses.json'),'utf8'));
+const override=JSON.parse(fs.readFileSync(path.join(__dirname,'../data/manual_overrides.json'),'utf8'));
+const {mergeIndexes}=require('../data-merge.js');
+const catalog=mergeIndexes(live,override.addresses,{manual:true});
 const city=(street,house)=>resolve({idx:catalog,settlement:'Черкаси',street,house});
 
 test('reported prospect Peremohy 30 is not assigned 4.1 simply because nearby houses are',()=>{
@@ -48,7 +51,9 @@ test('manual choices are available for all 12 official subqueues, including unch
 });
 
 test('Khomenka street and lane are discoverable in Heronymivka from other town searches',()=>{
-  assert.equal(catalog.streets['вулиця|хоменка'],undefined);
+  assert.equal(live.streets['вулиця|хоменка'],undefined, 'Import currently misses this official city street');
+  assert.equal(catalog.streets['вулиця|хоменка'],'Вулиця Хоменка');
+  assert.equal(city('Вулиця Хоменка','26').queue,'6.1');
   const result=suggestAcrossLocalities(catalog,'вулиця Хоменка','Черкаси');
   assert.ok(result.some(item=>item.locality==='Геронимівка'&&item.key==='вулиця|хоменка'));
   assert.ok(result.every(item=>item.key.startsWith('вулиця|')));
