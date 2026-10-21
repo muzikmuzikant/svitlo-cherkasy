@@ -176,7 +176,7 @@
   lastPhase=offline?'offline':active?'active':m?.enabled&&m.startsAt&&Date.parse(m.startsAt)>Date.now()?'planned':'idle';
   if(offline)finishMaintenanceClose();else setMaintenanceVisible(full);
   banner.hidden=!(active&&!full);
-  for(const part of [document.getElementById('installLanding'),viewport])if(part)part.inert=full;
+  for(const part of [document.getElementById('installLanding'),viewport,document.querySelector('.bottom-nav')])if(part)part.inert=full;
   const modeLabel=$('maintenanceModeLabel');
   if(modeLabel)modeLabel.textContent=m.mode==='incident'?'Термінове повідомлення':'Тимчасово недоступно';
   const activity=$('maintenanceActivityText');
