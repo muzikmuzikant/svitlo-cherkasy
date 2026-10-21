@@ -35,7 +35,13 @@
     const fields=[['.eyebrow','eyebrow','ВСЕ ПРО СВІТЛО'],['h1','headline','Все під контролем.'],['p','subtitle','Оберіть адресу. Решту зробимо ми.']];
     for(const [selector,key,fallback] of fields){
      const node=hero.querySelector(selector),value=home[key];
-     if(node)node.textContent=typeof value==='string'&&value.trim()&&value.length<=180?value:fallback;
+     if(node){
+      const text=typeof value==='string'&&value.trim()&&value.length<=180?value:fallback;
+      if(key==='eyebrow'){
+       for(const child of [...node.childNodes])if(child.nodeType===Node.TEXT_NODE)child.remove();
+       node.append(document.createTextNode(' '+text));
+      }else node.textContent=text;
+     }
     }
     hero.dataset.homeLayout=['classic','compact','centered'].includes(home.layout)?home.layout:'classic';
    }
