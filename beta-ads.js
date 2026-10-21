@@ -180,6 +180,8 @@
   consentDialog.addEventListener('cancel',()=>setConsentChoice(false));
   const tryPrompt=()=>{
    if(!standalone()||document.visibilityState!=='visible'||!homeOpen())return;
+   // A delayed consent prompt must not cover a help/support screen being read.
+   if(document.getElementById('svitloInternalPage')?.hidden===false)return;
    if(document.getElementById('emergencyBanner')?.hidden===false)return;
    if(document.getElementById('maintenanceScreen')?.hidden===false)return;
    if(choice()!==null)return;
