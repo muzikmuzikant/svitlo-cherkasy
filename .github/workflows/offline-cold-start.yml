@@ -30,5 +30,7 @@ jobs:
         run: python tests/theme_browser.py
       - name: Audit dark panels and text contrast on every linked page
         run: python tests/dark_secondary_pages_browser.py
+      - name: Test Inbox controls and iOS scaling prevention in Chromium
+        run: python tests/inbox_toolbar_browser.py
       - name: Test Svitlo Office admin in real Chromium with mock backend
         run: python tests/admin_office_browser.py
