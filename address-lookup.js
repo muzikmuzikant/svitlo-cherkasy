@@ -79,6 +79,21 @@
       Number(!normalize(a.name).startsWith(needle))-Number(!normalize(b.name).startsWith(needle))||
       a.locality.localeCompare(b.locality,'uk-UA')||a.name.localeCompare(b.name,'uk-UA')).slice(0,limit);
   }
+  // Explicit user choice has priority over any suggested or exact catalog queue.
+  function selectQueue(result, chosen) {
+    const r=result||{};
+    const userQueue=validQueues([chosen])[0];
+    if(userQueue)return {
+      queue:userQueue,isManual:true,
+      method:['exact','street'].includes(r.status)?'manual-override':
+        r.status==='possible'&&r.queues?.includes(userQueue)?'street-choice':'manual'
+    };
+    if(['exact','street'].includes(r.status)){
+      const automatic=validQueues([r.queue])[0];
+      if(automatic)return {queue:automatic,isManual:false,method:r.status==='exact'?'automatic':'street-auto'};
+    }
+    return {queue:null,isManual:false,method:null};
+  }
   function resolve({idx,street,house,settlement,selectedKey}={}) {
     street=String(street||'').trim();house=String(house||'').trim();
     if(!String(settlement||'').trim()||!street)return {status:'incomplete'};
@@ -116,5 +131,5 @@
     return {...base,status:'nohouse',reason:house?'house-unlisted':'no-address-data'};
   }
 
-  return {normalize,houseKey,kindOf,streetMatches,suggest,suggestAcrossLocalities,knownHouses,resolve};
+  return {normalize,houseKey,kindOf,streetMatches,suggest,suggestAcrossLocalities,knownHouses,selectQueue,resolve};
 });
