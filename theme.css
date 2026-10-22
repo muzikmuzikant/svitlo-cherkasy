@@ -712,3 +712,63 @@ body.svitlo-advertising-page :is(.benefits,.plans,.contact-banner,.contacts){min
  body.svitlo-support-project-page .method{padding:20px 16px}
  body.svitlo-help-page .search{gap:7px}
 }
+
+/* 7.9.12: landing uses .install-panel/.install-steps/.install-benefit, not
+   the legacy .install-card/.install-step selectors. Keep every visible layer
+   coherent in a system-selected or manually selected night theme. */
+:root[data-theme="dark"] .install-landing{
+ --i-ink:#f0f4fa;--i-muted:#b4c0cf;--i-blue:#93beff;
+ --i-border:#394656;--i-surface:#1b232e;
+ color:#f0f4fa!important;
+ background:radial-gradient(ellipse 480px 360px at 78% 45%,#29446b44,transparent 84%),
+  linear-gradient(160deg,#0c1016,#151e2a 70%,#111720)!important;
+}
+:root[data-theme="dark"] .install-landing :is(.install-brand strong,.install-content h1,.install-panel-heading strong,.install-mock-heading){
+ color:#f0f4fa
+}
+:root[data-theme="dark"] .install-landing :is(.install-lead,.install-brand small,.install-panel-heading small,.install-open-hint,.install-bottom-note,.install-privacy,.install-footer,.install-footer>span){
+ color:#aebed0
+}
+:root[data-theme="dark"] .install-landing .install-panel{
+ background:#1b2430;border-color:#37485e;
+ box-shadow:0 22px 60px #0005,0 3px 12px #0003
+}
+:root[data-theme="dark"] .install-landing :is(.install-benefit,.install-steps>div,.install-campaign){
+ background:#222f40;border:1px solid #3c516b;color:#d6e3f3
+}
+:root[data-theme="dark"] .install-landing .install-steps strong{color:#eff4fc}
+:root[data-theme="dark"] .install-landing .install-steps small{color:#b4c3d4}
+:root[data-theme="dark"] .install-landing :is(.install-steps span,.install-kicker-icon,.install-panel-icon){
+ background:#263d5c;color:#a6cbff
+}
+:root[data-theme="dark"] .install-landing .install-kicker{color:#a0c8ff}
+:root[data-theme="dark"] .install-landing :is(.install-benefit-icon,.install-campaign span){color:#a3caff}
+:root[data-theme="dark"] .install-landing .install-instructions{
+ background:#202d3c;border-color:#43566e;color:#d4e0ed;
+ box-shadow:inset 0 0 0 1px #273d52
+}
+:root[data-theme="dark"] .install-landing .install-instructions :is(strong,li){color:#e0edfb}
+:root[data-theme="dark"] .install-landing .install-instructions .install-note{color:#b6c6d7}
+:root[data-theme="dark"] .install-landing .install-free{
+ background:#173e31;border-color:#285a46;color:#a9eac8
+}
+:root[data-theme="dark"] .install-landing .install-copy{color:#9dc8ff}
+:root[data-theme="dark"] .install-landing .install-phone{
+ background:#171e29;border-color:#0b121c;box-shadow:17px 29px 63px #0008,0 0 0 2px #43546a
+}
+:root[data-theme="dark"] .install-landing .install-phone-island{background:#090d13}
+:root[data-theme="dark"] .install-landing :is(.install-screen-top,.install-phone-apphead strong,.install-mock-heading){color:#dfe8f5}
+:root[data-theme="dark"] .install-landing :is(.install-phone-apphead small,.install-mock-label,.install-mock-days,.install-mock-label span){color:#a1b2c5}
+:root[data-theme="dark"] .install-landing .install-mock-main{
+ background:#17372b;border-color:#295c43;color:#aff1ca
+}
+:root[data-theme="dark"] .install-landing .install-mock-info{color:#9ac7ad}
+:root[data-theme="dark"] .install-landing .install-mock-bars i{background:#3b7758}
+:root[data-theme="dark"] .install-landing .install-orbit{border-color:#7ba7ee24}
+:root[data-theme="dark"] .install-landing .install-footer{border-color:#354455}
+:root[data-theme="dark"] .install-landing .install-privacy span{color:#7bd8a8}
+@media(max-width:750px){
+ :root[data-theme="dark"] .install-landing{
+  background:linear-gradient(160deg,#0c1016,#182131 70%,#121923)!important
+ }
+}
