@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {timeline,dueTransition,latestOfficialEvent,freshEvent,freshSchedule,dueTransitionAcrossDays} from '../push-server/schedule-engine.js';
+import {timeline,dueTransition,latestOfficialEvent,freshEvent,freshSchedule,dueTransitionAcrossDays,usableSchedule,verifiedScheduleDay,preferFreshSchedule} from '../push-server/schedule-engine.js';
 const source='https://www.cherkasyoblenergo.com/media/a';
 const mk=(knownFrom,off)=>({date:'2026-10-10',verified:true,queues:{'2.1':{knownFrom,off}}});
 test('known schedule is ON outside outage intervals; before publication is UNKNOWN',()=>{
@@ -62,4 +62,28 @@ test('late Railway dispatch recovers a published OFF reminder without sending af
  assert.equal(dueTransitionAcrossDays(day,null,9*60+40,30,1,12),10*60);
  assert.equal(dueTransitionAcrossDays(day,null,9*60+43,30,1,12),null);
  assert.equal(dueTransitionAcrossDays(day,null,10*60,30,1,12),null);
+});
+
+test('a warning for a different date cannot mute verified day notifications',()=>{
+ const now=Date.parse('2026-10-14T09:00:00Z');
+ const base={lastChecked:new Date(now).toISOString(),reviewPending:true,
+  unresolvedDates:['2026-10-15'],days:[mk('00:00',[['10:00','12:00']]),
+    {date:'2026-10-15',verified:true,queues:{'2.1':{off:[['12:00','13:00']]}}}]};
+ assert.equal(freshSchedule(base,now),false,'legacy global freshness contract stays conservative');
+ assert.equal(usableSchedule(base,now),true);
+ assert.equal(verifiedScheduleDay(base,'2026-10-10',now)?.verified,true);
+ assert.equal(verifiedScheduleDay(base,'2026-10-15',now),null);
+ assert.equal(verifiedScheduleDay({...base,unresolvedDates:[]},'2026-10-10',now),null);
+ assert.equal(verifiedScheduleDay({...base,lastChecked:new Date(now-60*60000).toISOString()},'2026-10-10',now),null);
+});
+test('fresh verified fallback beats stale publisher without accepting unsafe days',()=>{
+ const now=Date.parse('2026-10-14T09:00:00Z');
+ const stale={lastChecked:new Date(now-70*60000).toISOString(),days:[],reviewPending:false};
+ const fallback={lastChecked:new Date(now-5*60000).toISOString(),days:[],reviewPending:false};
+ assert.equal(preferFreshSchedule(stale,fallback,now),fallback);
+ assert.equal(preferFreshSchedule(fallback,stale,now),fallback);
+ const newer={...fallback,lastChecked:new Date(now-1000).toISOString()};
+ assert.equal(preferFreshSchedule(newer,fallback,now),newer);
+ assert.equal(usableSchedule(stale,now),false);
+ assert.equal(usableSchedule({...fallback,reviewPending:true},now),false);
 });
