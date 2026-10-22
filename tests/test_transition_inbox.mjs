@@ -16,7 +16,7 @@ function run({minute=570,off=600,push=true,permission='denied',stale=false,revie
  const Notif={permission},notified=new Set();
  const sandbox={
   Date,window:{Notification:Notif,SvitloInbox:{add:async x=>{saved.push(x)}},SvitloInboxUI:{refresh(){refreshes.push(1)}}},
-  Notification:Notif,prefs:{off:true,on:false,tomorrow:false,emergency:false},pushActive:push,
+  Notification:Notif,navigator:{onLine:true},prefs:{off:true,on:false,tomorrow:false,emergency:false},pushActive:push,
   data:{lastChecked:new Date(Date.now()-(stale?3600000:0)).toISOString(),reviewPending:review,
    unresolvedDates:review?[reviewDate||today]:[]},
   primary:()=>({id:'test-address',queue:'1.1'}),today:()=>today,nowMinutes:()=>minute,
