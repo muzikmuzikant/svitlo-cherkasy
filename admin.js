@@ -479,10 +479,16 @@ $('ticketDetail').addEventListener('focusout',()=>{
   root.dataset.pendingRefresh='';renderTicketDetail();
  },0);
 });
+let lastBackgroundTicketCheck=0;
 setInterval(()=>{
  if(!remote||document.hidden||$('adminDashboard').hidden||window.svitloTicketAutoSyncEnabled?.()===false||supportBusy)return;
  const open=$('adminDashboard').querySelector('[data-admin-panel="feedback"]');
- if(open&&!open.hidden)void refreshTickets();
+ if(open&&!open.hidden){void refreshTickets();return}
+ // Low-frequency background check while other admin modules are open.
+ // Ticket contents stay in the authenticated session; no local-storage caching.
+ if(Date.now()-lastBackgroundTicketCheck>=30_000){
+  lastBackgroundTicketCheck=Date.now();void refreshTickets();
+ }
 },TICKET_LIVE_MS);
 document.addEventListener('visibilitychange',()=>{
  if(!document.hidden&&remote&&!$('adminDashboard').querySelector('[data-admin-panel="feedback"]')?.hidden)
