@@ -467,12 +467,15 @@ function renderBar(a){const bar=$('overviewBar');bar.replaceChildren();if(!a){co
 // Latest tap wins. Previous WAAPI animations are interrupted at their actual
 // visual position rather than rewinding, and clicks are never rate-limited.
 let tabMotion=null;
-const TAB_MOTION_MS=460;
-function navigate(name){
+const TAB_MOTION_MS=window.matchMedia?.('(pointer:coarse)')?.matches?265:300;
+function navigate(name,{fromHistory=false}={}){
  const names=['home','detail','updates','settings'];
  if(!names.includes(name))return;
- if(name==='detail'&&!primary()&&!previewQueue){openAddressSheet();return}
+ if(name==='detail'&&!primary()&&!previewQueue){if(fromHistory)return navigate('home',{fromHistory:true});openAddressSheet();return}
  if(name===active)return;
+ if(!fromHistory){
+  try{history.pushState({svitloTab:name},'',location.href)}catch(error){console.warn('Tab history:',error?.message)}
+ }
  const previous=active;
  if(name!=='detail')previewQueue=null;
  try{sessionStorage.setItem(SCREEN_RETURN,name)}catch{}
@@ -1268,7 +1271,16 @@ fillQueueSelect();
  if(preferred)active=preferred;
  for(const name of ['home','detail','updates','settings'])$(name).hidden=name!==active;
  document.querySelectorAll('[data-go]').forEach(x=>{if(x.classList.contains('nav-item'))x.classList.toggle('active',x.dataset.go===active)});
- if(requestedScreen==='settings')try{const u=new URL(location.href);u.searchParams.delete('screen');history.replaceState(null,'',u.pathname+u.search+u.hash)}catch{}
+ if(requestedScreen==='settings')try{const u=new URL(location.href);u.searchParams.delete('screen');history.replaceState({svitloTab:active},'',u.pathname+u.search+u.hash)}catch{}
+ // On Android the system Back gesture restores a previous tab rather than
+ // exiting the installed PWA. Internal pages keep their own history entries.
+ try{if(!history.state?.svitloInternal)history.replaceState({svitloTab:active},'',location.href)}catch{}
+ window.addEventListener('popstate',event=>{
+  if(event.state?.svitloInternal)return;
+  const screen=event.state?.svitloTab;
+  const valid=['home','detail','updates','settings'].includes(screen)?screen:'home';
+  navigate(valid,{fromHistory:true});
+ });
  // Keep first-render placeholders completely behind the launch screen.
  render();
  async function finishInitialLoad(){
