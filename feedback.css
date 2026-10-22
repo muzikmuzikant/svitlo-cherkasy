@@ -136,3 +136,12 @@ label{display:block;margin:19px 0 9px;font-size:12px;font-weight:780;color:#344d
 }
 :root[data-theme="dark"] .support-shell .support-recover-fields input::placeholder{color:#a4b4c7}
 :root[data-theme="dark"] .support-shell .support-import .support-import-privacy{color:#aebed0}
+
+/* Nested recovery fields are a single full-width grid row, never three tiny
+   columns under the previous form layout. Hide the form in chat-reader mode. */
+.support-import #lookupForm{
+ display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+ gap:8px;align-items:stretch
+}
+.support-import #lookupForm>*{grid-column:1!important;min-width:0}
+#viewTickets.is-reading .support-import{display:none!important}
