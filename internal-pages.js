@@ -18,13 +18,15 @@
  browser.append(chrome,frame,failure);document.body.append(browser);
  const labels={'help.html':'Центр допомоги','feedback.html':'Зв’язок із нами','privacy.html':'Конфіденційність','terms.html':'Умови користування','about.html':'Джерела даних','advertising.html':'Реклама у нас','support-project.html':'Підтримати проєкт','ad-detail.html':'Рекламне оголошення'};
  let previousOverflow='',isOpen=false,previousFocus=null,leaveTimer=null;
- let loadingTimer=null,expectedPath='',explicitDismiss=false;
+ let loadingTimer=null,expectedPath='',expectedUrl='',explicitDismiss=false;
  const cancelLoading=()=>{if(loadingTimer){clearTimeout(loadingTimer);loadingTimer=null}};
  const showFailure=()=>{if(!isOpen)return;cancelLoading();failure.hidden=false;frame.hidden=true;browser.classList.remove('svitlo-internal-loading')};
  function internal(input){try{const u=new URL(input,location.href),file=u.pathname.split('/').pop();return u.origin===location.origin&&allowed.has(file)?u:null}catch{return null}}
  function finishClose(){
   cancelLoading();browser.hidden=true;failure.hidden=true;frame.hidden=false;browser.classList.remove('svitlo-internal-leaving','svitlo-internal-loading');
-  document.documentElement.style.overflow=previousOverflow;frame.src='about:blank';
+  document.documentElement.style.overflow=previousOverflow;
+   try{frame.contentWindow.location.replace('about:blank')}catch{frame.src='about:blank'}
+   expectedUrl='';
   leaveTimer=null;try{previousFocus?.focus({preventScroll:true})}catch{}
  }
  function close(){
@@ -46,11 +48,13 @@
   browser.classList.remove('svitlo-internal-leaving');
   if(!isOpen&&!resumingClose){previousOverflow=document.documentElement.style.overflow;previousFocus=document.activeElement}
   isOpen=true;browser.hidden=false;failure.hidden=true;frame.hidden=false;
-  expectedPath=u.pathname;cancelLoading();document.documentElement.style.overflow='hidden';
+  expectedPath=u.pathname;expectedUrl=u.href;cancelLoading();document.documentElement.style.overflow='hidden';
   browser.classList.add('svitlo-internal-loading');
   loadingTimer=setTimeout(showFailure,12000);
   name.textContent=labels[u.pathname.split('/').pop()]||'Світло Черкаси';
-  frame.src=u.href;
+  // Replace the iframe's own history entry, so Android system Back closes
+   // the PWA overlay instead of going to a stale/blank iframe page first.
+   try{frame.contentWindow.location.replace(u.href)}catch{frame.src=u.href}
   if(remember){
    const state={svitloInternal:true,path:u.pathname+u.search};
    const link=location.pathname+location.search+'#internal='+encodeURIComponent(u.pathname+u.search);
@@ -60,12 +64,12 @@
   }
   back.focus({preventScroll:true});
  }
- retry.addEventListener('click',()=>{if(expectedPath)display(expectedPath+new URL(frame.src).search,false)});
+ retry.addEventListener('click',()=>{if(expectedUrl)display(expectedUrl,false)});
  back.addEventListener('click',dismiss);
  addEventListener('popstate',event=>{
   if(explicitDismiss){explicitDismiss=false;close();return}
   if(event.state?.svitloInternal){
-   if(!isOpen||frame.src!==new URL(event.state.path,location.origin).href)display(event.state.path,false)
+   if(!isOpen||expectedUrl!==new URL(event.state.path,location.origin).href)display(event.state.path,false)
   }else close();
  });
  addEventListener('keydown',event=>{if(isOpen&&event.key==='Escape'){event.preventDefault();dismiss()}});
