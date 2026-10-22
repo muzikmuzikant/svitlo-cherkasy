@@ -140,21 +140,40 @@
    }
   });
   if (!action || !instructions || !platformLabel) return;
-  const isAndroid = /Android/i.test(navigator.userAgent);
-  let deferredPrompt = null;
+  const isAndroid=/Android/i.test(navigator.userAgent);
+  const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const samsung=/SamsungBrowser\//i.test(navigator.userAgent);
+  const firefox=/Firefox\//i.test(navigator.userAgent);
+  const edge=/EdgA\//i.test(navigator.userAgent);
+  let deferredPrompt=null;
 
-  function stepsHTML() {
-    if(isAndroid)return `<strong>Встановлення на Android:</strong><ol>
-      <li>Відкрийте сайт у <strong>Google Chrome</strong>.</li>
-      <li>Натисніть меню <strong>⋮</strong>.</li>
-      <li>Оберіть <strong>Встановити застосунок</strong> або <strong>Додати на головний екран</strong>.</li>
-      <li>Відкрийте «Світло Черкаси» через нову іконку.</li>
+  function stepsHTML(){
+    if(isAndroid){
+      if(samsung)return `<strong>Встановлення на Android (Samsung Internet):</strong><ol>
+       <li>Відкрийте меню браузера Samsung Internet.</li>
+       <li>Оберіть додавання сторінки на <strong>головний екран</strong>.</li>
+       <li>Відкрийте «Світло Черкаси» з нової іконки.</li>
+      </ol><p class="install-note">Якщо потрібного пункту немає, відкрийте посилання у Chrome та натисніть «Встановити».</p>`;
+      if(firefox||edge)return `<strong>Встановлення на Android:</strong><ol>
+       <li>Відкрийте меню браузера.</li>
+       <li>Знайдіть пункт <strong>Встановити</strong> або <strong>Додати на головний екран</strong>.</li>
+       <li>Відкрийте застосунок через створену іконку.</li>
+      </ol><p class="install-note">Якщо такого пункту немає, відкрийте сайт у Google Chrome.</p>`;
+      return `<strong>Встановлення на Android (Google Chrome):</strong><ol>
+       <li>Відкрийте сайт у <strong>Google Chrome</strong>.</li>
+       <li>Натисніть меню <strong>⋮</strong> та оберіть <strong>Встановити застосунок</strong> або <strong>Додати на головний екран</strong>.</li>
+       <li>Відкрийте «Світло Черкаси» через нову іконку.</li>
+      </ol><p class="install-note">Якщо відкрили посилання в Telegram або іншому вбудованому браузері, спочатку оберіть «Відкрити в браузері».</p>`;
+    }
+    if(isIOS)return `<strong>Встановлення на iPhone та iPad:</strong><ol>
+     <li>Відкрийте сайт у <strong>Safari</strong>.</li>
+     <li>Натисніть <strong>Поділитися</strong> та оберіть <strong>На початковий екран</strong>.</li>
+     <li>Натисніть «Додати» та відкрийте застосунок через його іконку.</li>
     </ol>`;
     return `<strong>Встановлення вебзастосунку:</strong><ol>
-      <li>Відкрийте цей сайт у браузері з підтримкою вебзастосунків.</li>
-      <li>Знайдіть пункт <strong>Встановити</strong> або <strong>Додати на головний екран</strong> у меню браузера.</li>
-      <li>Якщо такого пункту немає, відкрийте меню <strong>Поділитися</strong> та оберіть додавання на початковий екран.</li>
-      <li>Запускайте застосунок через його іконку.</li>
+      <li>Відкрийте сайт у браузері з підтримкою вебзастосунків.</li>
+      <li>Оберіть <strong>Встановити</strong> або <strong>Додати на головний екран</strong> у меню браузера.</li>
+      <li>Запустіть «Світло Черкаси» через створену іконку.</li>
     </ol>`;
   }
   function showInstructions(scroll = false) {
@@ -162,7 +181,7 @@
     instructions.hidden = false;
     if (scroll) instructions.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   }
-  platformLabel.textContent=isAndroid?'Android · Chrome':'Встановлення PWA';
+  platformLabel.textContent=isAndroid?(samsung?'Android · Samsung Internet':firefox?'Android · Firefox':edge?'Android · Edge':'Android · Chrome'):(isIOS?'iPhone / iPad · Safari':'Встановлення PWA');
   action.innerHTML='Як встановити застосунок <span aria-hidden="true">→</span>';
 
   window.addEventListener('beforeinstallprompt', event => {
