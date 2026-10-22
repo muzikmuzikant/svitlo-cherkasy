@@ -32,7 +32,10 @@ def test_customer_ticket_view_has_simple_composer():
     markup = source("feedback.html")
     assert 'placeholder="Повідомлення"' in markup
     assert 'id="closeConversation"' in markup
-    assert 'id="lookupToken"' not in markup
+    # Recovering a case is optional and collapsed: it must not crowd the chat.
+    assert '<details class="support-import" id="recoverTicket">' in markup
+    assert 'id="lookupToken"' in markup
+    assert '<details class="support-import" id="recoverTicket" open' not in markup
     assert "код із квитанції" not in markup.lower()
     assert 'id="conversationMessages"' in markup
     assert "is-reading" in source("feedback.js")
