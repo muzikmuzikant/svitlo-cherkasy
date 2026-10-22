@@ -75,27 +75,33 @@
  touch-action:manipulation;cursor:pointer
 }
 .sheet.svitlo-draggable{contain:layout style;will-change:transform;overscroll-behavior-y:contain}
+.sheet.svitlo-draggable.svitlo-sheet-gesture,
 .sheet.svitlo-draggable.svitlo-sheet-dragging,
+.share-preview-dialog.svitlo-sheet-gesture,
 .share-preview-dialog.svitlo-sheet-dragging,
+.inbox-detail.svitlo-sheet-gesture,
 .inbox-detail.svitlo-sheet-dragging{
  animation:none!important;transition:none!important;will-change:transform;
 }
+.sheet.svitlo-draggable.svitlo-sheet-settled:not(.svitlo-sheet-closing),
+.share-preview-dialog.svitlo-sheet-settled:not(.is-closing),
+.inbox-detail.svitlo-sheet-settled:not(.is-leaving){animation:none!important;will-change:transform}
 .sheet.svitlo-draggable.svitlo-sheet-snapping,
 .share-preview-dialog.svitlo-sheet-snapping,
 .inbox-detail.svitlo-sheet-snapping{animation:none!important;will-change:transform}
 .sheet.svitlo-draggable.svitlo-sheet-closing{pointer-events:none}
 @media(prefers-reduced-motion:no-preference){
- html:not(.feature-off-animations) dialog.sheet[open]:not(.svitlo-sheet-dragging):not(.svitlo-sheet-snapping):not(.svitlo-sheet-closing){
+ html:not(.feature-off-animations) dialog.sheet[open]:not(.svitlo-sheet-settled):not(.svitlo-sheet-gesture):not(.svitlo-sheet-closing){
   animation:svitloBottomSheetEnter .48s cubic-bezier(.22,1,.36,1) both!important
  }
  html:not(.feature-off-animations) dialog.sheet[open].svitlo-sheet-closing{
-  animation:svitloBottomSheetLeave .33s cubic-bezier(.42,0,.85,.38) both!important
+  animation:svitloBottomSheetLeave .215s cubic-bezier(.42,0,.85,.38) both!important
  }
  html:not(.feature-off-animations) dialog.sheet[open]:not(.svitlo-sheet-closing)::backdrop{
   animation:svitloBottomBackdropIn .36s ease-out both!important
  }
  html:not(.feature-off-animations) dialog.sheet[open].svitlo-sheet-closing::backdrop{
-  animation:svitloBottomBackdropOut .33s ease-in both!important
+  animation:svitloBottomBackdropOut .215s ease-in both!important
  }
  @keyframes svitloBottomSheetEnter{
   from{transform:translate3d(0,103%,0);opacity:.9}
@@ -138,20 +144,20 @@
  .share-preview-grabber,.inbox-drag-handle{display:none}
 }
 @media(prefers-reduced-motion:no-preference) and (max-width:600px){
- html:not(.feature-off-animations) .share-preview-dialog[open]:not(.is-closing):not(.svitlo-sheet-dragging):not(.svitlo-sheet-snapping){
+ html:not(.feature-off-animations) .share-preview-dialog[open]:not(.is-closing):not(.svitlo-sheet-settled):not(.svitlo-sheet-gesture){
   animation:svitloBottomSheetEnter .48s cubic-bezier(.22,1,.36,1) both!important
  }
  html:not(.feature-off-animations) .share-preview-dialog[open].is-closing{
-  animation:svitloBottomSheetLeave .28s cubic-bezier(.42,0,.85,.38) both!important
+  animation:svitloBottomSheetLeave .215s cubic-bezier(.42,0,.85,.38) both!important
  }
  html:not(.feature-off-animations) .share-preview-dialog[open]:not(.is-closing)::backdrop{
   animation:svitloBottomBackdropIn .36s ease-out both!important
  }
  html:not(.feature-off-animations) .share-preview-dialog[open].is-closing::backdrop{
-  animation:svitloBottomBackdropOut .28s ease-in both!important
+  animation:svitloBottomBackdropOut .215s ease-in both!important
  }
  html:not(.feature-off-animations) .inbox-detail[open].is-leaving{
-  animation:svitloBottomSheetLeave .3s cubic-bezier(.42,0,.85,.38) both!important
+  animation:svitloBottomSheetLeave .215s cubic-bezier(.42,0,.85,.38) both!important
  }
 }
 @media(prefers-reduced-motion:reduce){
@@ -159,3 +165,12 @@
  .share-preview-dialog,.share-preview-dialog::backdrop,
  .inbox-detail,.inbox-detail::backdrop{animation:none!important;transition:none!important}
 }
+
+/* Native touch drag must not be animated by the generic sheetIn keyframes.
+   Native handles are 42px high including the grab area for iPhone thumbs. */
+dialog.sheet.svitlo-draggable .sheet-handle{height:24px;min-height:24px;width:100%;margin:0;display:flex;align-items:center;justify-content:center;background:transparent;touch-action:none}
+dialog.sheet.svitlo-draggable .sheet-handle::before{content:"";width:42px;height:5px;display:block;border-radius:99px;background:#b4c1d0}
+dialog.sheet.svitlo-draggable .sheet-top{touch-action:none}
+dialog.sheet.svitlo-draggable .sheet-top button{touch-action:manipulation}
+dialog.sheet[open].svitlo-sheet-settled:not(.svitlo-sheet-closing),
+dialog.sheet[open].svitlo-sheet-gesture{animation:none!important}
