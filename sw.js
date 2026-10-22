@@ -166,7 +166,16 @@ self.addEventListener('notificationclick',event=>{
   const noticeId=String(event.notification.data?.noticeId||'').slice(0,150);
   const inboxAllowed=event.notification.data?.inbox!==false;
   const tabs=await self.clients.matchAll({type:'window',includeUncontrolled:true});
-  for(const tab of tabs){if(tab.url.startsWith(self.registration.scope)){
+  const scope=new URL(self.registration.scope);
+  for(const tab of tabs){
+   // A same-scope support/admin tab cannot receive inbox navigation commands.
+   // Open/focus the actual PWA shell, particularly on Android notification taps.
+   let isApp=false;
+   try{
+    const u=new URL(tab.url);
+    isApp=u.origin===scope.origin&&(u.pathname===scope.pathname||u.pathname===scope.pathname+'index.html');
+   }catch{}
+   if(isApp){
    await tab.focus();
    if(/^notice:[A-Za-z0-9_-]{6,64}$/.test(noticeId))tab.postMessage({type:'SVITLO_NOTICE_PUSH_CLICK',id:noticeId});
    if(inboxAllowed)tab.postMessage({type:'SVITLO_OPEN_INBOX',id});
