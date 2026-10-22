@@ -100,6 +100,10 @@ async function send(rec,message,key,options={}){
  try{
   await webpush.sendNotification(rec.subscription,payload,{TTL:options.ttl||1200,urgency:options.urgency||'normal'});
   sent[key]=new Date().toISOString();
+  // Persist each accepted event BEFORE continuing the fan-out. A Railway restart
+  // must not replay already accepted reminders just because the cycle is unfinished.
+  // Failure to write is not a Web Push failure: retrying would create duplicates.
+  try{save()}catch(e){console.error('[auto-push] accepted, but dedupe save failed:',e.message)}
   deliveryStats.totalAcceptedSinceBoot++;
   deliveryStats.lastAccepted={at:sent[key],category};
   if(category==='transition')console.info('[auto-push] transition accepted by Web Push provider');
@@ -107,7 +111,10 @@ async function send(rec,message,key,options={}){
  }catch(e){
   deliveryStats.totalFailedSinceBoot++;
   deliveryStats.lastFailure={at:new Date().toISOString(),category,status:e?.statusCode||'network'};
-  if([404,410].includes(e?.statusCode))delete subscribers[hash(rec.subscription.endpoint)];
+  if([404,410].includes(e?.statusCode)){
+   delete subscribers[hash(rec.subscription.endpoint)];
+   try{save()}catch(error){console.error('[auto-push] invalid subscription save failed:',error.message)}
+  }
   else console.warn('Auto Push failed:',e?.statusCode||e?.message);
   return 'failed';
  }finally{pendingPushKeys.delete(key)}
@@ -385,6 +392,13 @@ const server=http.createServer(async(req,res)=>{
    const state=officialSchedules.update(body.schedules,body.review);
    console.log('[railway-schedules] Verified publication',state.lastChecked,'days='+state.verifiedDays.length);
    response(res,200,{ok:true,...state});
+   // Do not wait for the next one-minute poll after an official publication.
+   // Newly published tomorrow plans and revised schedules may be time-critical.
+   // The independent transition ticker also catches a newly confirmed outage.
+   queueMicrotask(()=>{
+    void job().catch(error=>console.error('[auto-push] publication cycle:',error.message));
+    void transitionJob().catch(error=>console.error('[auto-push] publication reminder:',error.message));
+   });
   }catch(e){console.error('[railway-schedules] Publish rejected:',e.message);
    response(res,400,{error:e.message});}
   return;
