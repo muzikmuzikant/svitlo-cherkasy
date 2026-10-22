@@ -97,7 +97,7 @@
    const g=st.gesture;if(!g||g.identifier!==identifier||g.kind!==kind)return;
    st.gesture=null;
    if(!g.active)return;
-   const threshold=Math.min(135,Math.max(85,dialog.clientHeight*.19));
+   const threshold=Math.min(115,Math.max(78,dialog.clientHeight*.15));
    if(!cancelled&&(g.distance>=threshold||(g.distance>38&&g.velocity>.62))){
     dismiss(g.distance);
    }else spring(g.distance);
