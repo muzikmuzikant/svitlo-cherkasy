@@ -18,7 +18,10 @@ async function dispatch({minute=570,periods=[['10:00','12:00']],tomorrowPeriods=
  const ctx={
   transitionRunning:false,officialSchedules:{schedule:()=>({days:[today,tomorrow],lastChecked:new Date().toISOString()})},
   lastLoadedSchedule:null,dayInKyiv:()=>({date:'2026-10-14',m:minute}),
-  freshSchedule:()=>fresh,shiftDay:()=> '2026-10-15',
+  freshSchedule:()=>fresh,usableSchedule:()=>fresh,
+  preferFreshSchedule:(published,fallback)=>published||fallback,
+  verifiedScheduleDay:(doc,date)=>fresh?doc?.days.find(day=>day.date===date&&day.verified===true)||null:null,
+  shiftDay:()=> '2026-10-15',
   subscribers:{user:record},timeline,dueTransitionAcrossDays,QUEUES,Date,
   hash:()=> 'hashed-device',deliveryStats:{lastCycle:null,lastFailure:null},
   transitionCopy:(type,queue,boundary,eta,date)=>({title:type+' '+eta,body:queue+' '+date,content:String(boundary)}),
