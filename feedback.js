@@ -8,10 +8,19 @@ let customCategories=null;
 let mediaAvailable=false;
 function enableMediaForms(allowed){
  mediaAvailable=allowed===true;
- for(const [section,input] of [['newTicketMediaSection','newTicketFiles'],['replyTicketMediaSection','replyTicketFiles']]){
-  if($(section))$(section).hidden=!mediaAvailable;
+ for(const [section,input,status] of [['newTicketMediaSection','newTicketFiles','newTicketFileStatus'],['replyTicketMediaSection','replyTicketFiles','replyTicketFileStatus']]){
+  if($(section)){
+   $(section).hidden=false;
+   $(section).classList.toggle('ticket-media-unavailable',!mediaAvailable);
+  }
   if($(input))$(input).disabled=!mediaAvailable;
+  if($(status)&&!mediaAvailable){
+   $(status).textContent='Фото та відео тимчасово недоступні. Чекаємо оновлення сервера підтримки.';
+  }else if($(status)&&mediaAvailable&&$(status).textContent.includes('тимчасово недоступні')){
+   $(status).textContent='';
+  }
  }
+ for(const id of ['newTicketMediaRetry','replyTicketMediaRetry'])if($(id))$(id).hidden=mediaAvailable;
 }
 
 function selectedCategory(){return customCategories?.find(c=>c.id===$('topic').value)||null}
@@ -37,7 +46,7 @@ async function loadTicketCategories(){
   for(const c of customCategories){TOPICS[c.id]=c.title;HINTS[c.id]=c.hint||c.title;$('topic').append(new Option(c.title,c.id))}
   if(customCategories.some(c=>c.id===previous))$('topic').value=previous;
   setTopic();
- }catch(e){console.warn('Feedback categories:',e.message)}
+ }catch(e){enableMediaForms(false);console.warn('Feedback categories:',e.message)}
 }
 
 const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||'null')??fallback}catch{return fallback}};
@@ -329,6 +338,10 @@ function updateDiagnosticsPreview(){
 $('includeDiagnostics')?.addEventListener('change',updateDiagnosticsPreview);
 loadTicketCategories();
 updateDiagnosticsPreview();
+enableMediaForms(false);
+for(const id of ['newTicketMediaRetry','replyTicketMediaRetry'])$(id)?.addEventListener('click',()=>void loadTicketCategories());
+window.addEventListener('online',()=>void loadTicketCategories());
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!mediaAvailable)void loadTicketCategories()});
 initialFiles=filesApi()?.picker($('newTicketFiles'),$('newTicketFilePreview'),$('newTicketFileStatus'));
 replyFiles=filesApi()?.picker($('replyTicketFiles'),$('replyTicketFilePreview'),$('replyTicketFileStatus'));
 $('feedbackForm').addEventListener('submit',async event=>{
