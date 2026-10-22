@@ -69,7 +69,7 @@ test('test Push is fully removed from settings, app logic, and public API',()=>{
 test('independent 20-second OFF and ON dispatcher tracks results and has priority',()=>{
  assert.match(server,/async function transitionJob\(\)/);
  assert.match(server,/setInterval\(\(\)=>transitionJob\(\)\.catch\(console\.error\),20_000\)/);
- assert.match(server,/dueTransitionAcrossDays\(values,valuesTomorrow,minutes,offset,target,offset-2\)/);
+ assert.match(server,/dueTransitionAcrossDays\(values,valuesTomorrow,minutes,offset,target,offset-1\)/);
  assert.match(server,/ttl:Math\.max\(60,Math\.floor\(eta\*60\)\),urgency:'high'/);
  assert.match(server,/record\.automatic\.lastAccepted/);
  assert.match(server,/deliveryStats\.lastCycle=cycle/);
