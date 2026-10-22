@@ -395,13 +395,18 @@ $('refreshSaved').addEventListener('click',async()=>{
 $('lookupForm')?.addEventListener('submit',async event=>{
  event.preventDefault();const id=$('lookupId').value.trim().toUpperCase(),token=$('lookupToken').value.trim();
  if(!/^SC-[A-F0-9]{10}$/.test(id)){alertAt('lookupMessage','Перевірте номер звернення, наприклад SC-12AB34CD56.');return}
- $('lookupMessage').hidden=true;
+ const button=$('lookupForm').querySelector('[type="submit"]');
+ button.disabled=true;button.textContent='Перевіряємо доступ…';$('lookupMessage').hidden=true;
  try{
   const result=await loadTicket(id,token);
   remember({id,token,topic:result.topic,subject:result.subject,status:result.status,createdAt:result.createdAt});
   window.dispatchEvent(new CustomEvent('svitlo:support-receipt-saved',{detail:{id,token,status:result.status,ticket:result}}));
-  renderSaved();showConversation(result);$('lookupForm').reset();
+  chooseTab('tickets');renderSaved();showConversation(result);
+  $('viewTickets').classList.add('is-reading');$('recoverTicket').open=false;
+  $('lookupForm').reset();
+  $('ticketConversation').scrollIntoView({block:'start',behavior:'auto'});
  }catch(e){alertAt('lookupMessage',friendlyError(e))}
+ finally{button.disabled=false;button.textContent='Відновити звернення'}
 });
 $('closeConversation').addEventListener('click',()=>{chatGeneration++;chatFingerprint='';$('ticketConversation').hidden=true;$('viewTickets').classList.remove('is-reading');selectedTicket=null;renderSaved();});
 $('replyForm').addEventListener('submit',async event=>{
