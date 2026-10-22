@@ -8,8 +8,9 @@ const source=file('bottom-sheet.js');
 function createHarness({reduced=false,selector='dialog.sheet',onDismiss=null,desktop=false}={}){
  const callbacks=new Map(),timers=[];
  class MockElement{
-  constructor(name){this.name=name;}
+  constructor(name){this.name=name;this.scrollTop=name==='scrolled'?100:0;this.clientHeight=100;this.scrollHeight=name==='scrolled'?400:100;this.parentElement=null;}
   closest(query){
+   if((this.name==='content'||this.name==='scrolled')&&query.includes('sheet-inner'))return this;
    if(this.name==='handle'&&query.includes('sheet-handle'))return this;
    if(this.name==='button'&&query.includes('button'))return this;
    return null;
@@ -141,6 +142,22 @@ test('short iOS drag snaps back without restarting its entry animation',()=>{
  assert.equal(h.sheet.classes.has('svitlo-sheet-settled'),true);
  assert.equal(h.sheet.classes.has('svitlo-sheet-snapping'),true);
  assert.equal(h.sheet.open,true);
+});
+test('downward swipe works from ordinary sheet content at scroll top',()=>{
+ const h=createHarness();
+ h.pointer('pointerdown',75,14,0,'content');
+ h.pointer('pointermove',189,14,110,'content');
+ assert.match(h.sheet.style.transform,/114px/);
+ h.pointer('pointerup',189,14,135,'content');
+ assert.equal(h.sheet.classes.has('svitlo-sheet-closing'),true);
+});
+test('scrollable content does not drag when the reader is scrolled down',()=>{
+ const h=createHarness();
+ h.pointer('pointerdown',75,14,0,'scrolled');
+ h.pointer('pointermove',240,14,160,'scrolled');
+ h.pointer('pointerup',240,14,180,'scrolled');
+ assert.equal(h.sheet.open,true);
+ assert.equal(h.timers.length,0);
 });
 test('installed beta includes gesture assets and reader header',()=>{
  assert.match(file('index.html'),/src="\.\/bottom-sheet\.js"/);
