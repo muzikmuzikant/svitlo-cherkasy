@@ -64,6 +64,8 @@ jobs:
         run: node --test tests/test_private_ticket_media.mjs
       - name: Validate 7.9.12 legal pages and confidential media documentation
         run: node --test tests/test_legal_media_7912.mjs
+      - name: Validate admin ticket alerts, native touch gestures and media visibility
+        run: node --test tests/test_admin_ticket_alerts_7912.mjs
       - name: Verify calendar-week retention and Beta schedule mirror
         run: |
           node --test tests/test_week_crossing_v713.mjs tests/test_schedule_mirror_beta.mjs tests/test_weekday_inbox_beta.mjs tests/test_release_fixes_7912.mjs
