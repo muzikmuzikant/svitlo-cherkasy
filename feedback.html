@@ -84,6 +84,19 @@
  <section id="viewTickets" class="support-view" role="tabpanel" aria-labelledby="tabTickets" hidden>
   <div class="tickets-heading"><div><h2>Ваші звернення</h2><p>Історія звернень, збережених на цьому пристрої.</p></div><button type="button" class="support-refresh" id="refreshSaved">Оновити статуси ↻</button></div>
   <p id="supportTicketsNotice" class="support-tickets-notice" role="status" aria-live="polite" hidden></p>
+  <details class="support-import" id="recoverTicket">
+   <summary>Відновити звернення з іншого пристрою</summary>
+   <p>Якщо ви змінили телефон або перевстановили застосунок, введіть номер звернення та приватний код доступу, отримані після надсилання.</p>
+   <form id="lookupForm" autocomplete="off">
+    <div class="support-recover-fields">
+     <div><label for="lookupId">Номер звернення</label><input id="lookupId" name="ticket-id" type="text" required maxlength="13" autocapitalize="characters" spellcheck="false" placeholder="SC-12AB34CD56"></div>
+     <div><label for="lookupToken">Приватний код доступу</label><input id="lookupToken" name="ticket-token" type="password" required autocomplete="off" spellcheck="false" placeholder="Код із підтвердження"></div>
+    </div>
+    <p class="support-import-privacy">Код надає доступ до листування. Не передавайте його стороннім.</p>
+    <button type="submit" class="support-secondary">Відновити звернення</button>
+    <p id="lookupMessage" class="support-alert" role="status" aria-live="polite" hidden></p>
+   </form>
+  </details>
   <div id="savedTickets" class="saved-tickets"></div>
   <section id="ticketConversation" class="conversation" hidden aria-labelledby="conversationHeading">
    <div class="conversation-head"><div><small id="conversationId"></small><h2 id="conversationHeading">Ваше звернення</h2><span id="conversationStatus" class="support-status"></span></div><button type="button" id="closeConversation" class="support-secondary">← До звернень</button></div>
