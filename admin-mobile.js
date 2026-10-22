@@ -8,7 +8,14 @@ for(const [id,symbol,label] of tabs){
  btn.setAttribute('aria-label',label);
  const icon=document.createElement('span');icon.textContent=symbol;icon.className='office-mobile-tab-icon';
  const caption=document.createElement('span');caption.textContent=label;
- btn.append(icon,caption);bar.append(btn);
+ btn.append(icon,caption);
+ if(id==='feedback'){
+  const unread=document.createElement('span');
+  unread.className='office-mobile-ticket-unread';unread.hidden=true;
+  unread.setAttribute('aria-label','Нові звернення');
+  btn.append(unread);
+ }
+ bar.append(btn);
  btn.onclick=()=>{
   if(id==='menu'){root.querySelector('.office-menu-button')?.click();return}
   root.querySelector('[data-admin-tab="'+id+'"]')?.click();
@@ -28,6 +35,20 @@ for(const tab of root.querySelectorAll('[data-admin-tab]'))new MutationObserver(
 new MutationObserver(render).observe(root,{attributes:true,attributeFilter:['hidden']});
 document.addEventListener('svitlo:admin-ready',render);
 document.addEventListener('svitlo:admin-logout',render);
+ function updateTicketBadge(){
+  const badge=bar.querySelector('.office-mobile-ticket-unread');
+  if(!badge)return;
+  const tickets=window.SvitloTicketWorkflow?.list?.();
+  const count=Array.isArray(tickets)?tickets.filter(t=>t.status==='new').length:0;
+  badge.hidden=!count||root.hidden;
+  badge.textContent=count>99?'99+':String(count);
+ }
+ document.addEventListener('svitlo:tickets-loaded',updateTicketBadge);
+ document.addEventListener('svitlo:admin-logout',()=>{
+  const badge=bar.querySelector('.office-mobile-ticket-unread');
+  if(badge){badge.hidden=true;badge.textContent=''}
+ });
+
 window.SvitloMobileAdmin={openTicket(){if(window.innerWidth<=760)document.getElementById('ticketDetail')?.scrollIntoView({behavior:'smooth',block:'start'})},decorateTicket(){}};
 render();
 })();
