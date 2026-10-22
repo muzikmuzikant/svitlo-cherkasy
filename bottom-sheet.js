@@ -48,8 +48,16 @@
    if(!dialog.open||st.closing||!(target instanceof Element))return false;
    if(dialog.matches('.share-preview-dialog,.inbox-detail')&&!isMobile())return false;
    const handle=target.closest(handles);
-   if(!handle||!dialog.contains(handle)||target.closest(interactive))return false;
-   if(dialog.matches('.inbox-detail')&&!target.closest('.inbox-drag-handle'))return false;
+   const content=target.closest('.sheet-inner,.share-preview-scroll,.inbox-detail-content');
+   if(!handle&&!content)return false;
+   if(!dialog.contains(handle||content)||target.closest(interactive))return false;
+   // Within content, let the inner scroller move normally until it reaches top.
+   // A downward pull at the top becomes the native-sheet dismissal gesture.
+   if(!handle){
+    for(let node=target;node&&node!==dialog;node=node.parentElement){
+     if(node.scrollHeight>node.clientHeight+2&&node.scrollTop>1)return false;
+    }
+   }
    return true;
   }
   function start(target,x,y,time,identifier,kind){
