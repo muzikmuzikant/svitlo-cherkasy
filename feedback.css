@@ -111,3 +111,28 @@ label{display:block;margin:19px 0 9px;font-size:12px;font-weight:780;color:#344d
 :root[data-theme="dark"] .support-tickets-notice{
  background:#1b352c;border-color:#3a6d57;color:#c5f1d9
 }
+
+/* Android-first: support ticket recovery, comfortable thumb-sized controls and
+   320px screens. Retain the dark appearance used by the rest of support. */
+.support-import>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:9px;font-weight:770;color:var(--ink,#27405e);touch-action:manipulation}
+.support-import[open]>summary{margin-bottom:8px}
+.support-import .support-recover-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.support-recover-fields>div{min-width:0}
+.support-import .support-recover-fields input{
+ display:block;max-width:100%;width:100%;min-width:0;min-height:46px;
+ background:#fff;color:#263e59;border:1px solid #bfd0e3;border-radius:12px;
+ padding:11px 13px;font-size:16px
+}
+.support-import .support-recover-fields label{margin:10px 0 7px}
+.support-import .support-import-privacy{font-size:11px;line-height:1.55;margin:11px 0}
+.support-import .support-secondary{min-height:44px}
+.support-import .support-alert{margin-top:12px;overflow-wrap:anywhere}
+@media(max-width:620px){
+ .support-import .support-recover-fields{grid-template-columns:minmax(0,1fr)}
+}
+:root[data-theme="dark"] .support-shell .support-import>summary{color:#e9f1fb}
+:root[data-theme="dark"] .support-shell .support-recover-fields input{
+ background:#171f2a;color:#eef4fa;border-color:#425167
+}
+:root[data-theme="dark"] .support-shell .support-recover-fields input::placeholder{color:#a4b4c7}
+:root[data-theme="dark"] .support-shell .support-import .support-import-privacy{color:#aebed0}
