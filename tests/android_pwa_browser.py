@@ -23,7 +23,7 @@ def main():
                 device_scale_factor=2.75, is_mobile=True, has_touch=True,
                 color_scheme="dark", service_workers="allow",
             )
-            context.add_init_script("""() => {
+            context.add_init_script("""
               Object.defineProperty(navigator,'standalone',{get:()=>true,configurable:true});
               localStorage.setItem('svitlo-addresses-v6', JSON.stringify([{
                 id:'android-test',settlement:'Черкаси',street:'Тестова',
@@ -32,7 +32,7 @@ def main():
               localStorage.setItem('svitlo-prefs-v6',JSON.stringify({primaryId:'android-test'}));
               localStorage.setItem('svitlo-appearance-v1','dark');
               localStorage.setItem('svitlo-beta-analytics-choice','declined');
-            }""")
+            """)
             context.route("https://**/*", lambda route: route.abort())
             page = context.new_page()
             errors = []
