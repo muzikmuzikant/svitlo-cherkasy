@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import {createFeedbackStore,readFeedbackBody} from './feedback-store.js';
+import {createSupportTicketNotifier} from './support-ticket-notifier.js';
 import {createAdminExtras} from './admin-extras.js';
 import {createAnalyticsStore} from './analytics.js';
 import {createAdsStore} from './ads.js';
@@ -48,6 +49,7 @@ function save(){
  catch(e){console.error('Persistent subscriber save failed:',e.message);throw e}
 }
 const feedback=createFeedbackStore({filePath:process.env.FEEDBACK_FILE||path.join(path.dirname(DATA_FILE),'feedback.json')});
+const supportTicketNotifier=createSupportTicketNotifier();
 const extras=createAdminExtras({directory:path.dirname(DATA_FILE)});
 const workRegistry=createWorkRegistry({directory:path.dirname(DATA_FILE),record:extras.record});
 const addressCorrections=createAddressCorrectionStore({directory:path.dirname(DATA_FILE),record:extras.record});
@@ -476,6 +478,8 @@ const server=http.createServer(async(req,res)=>{
    const ip=(String(req.headers['x-forwarded-for']||'').split(',')[0].trim()||req.socket.remoteAddress||'unknown').slice(0,80);
    const saved=feedback.submit(data,ip);
    response(res,201,saved);
+   // Best effort: network delivery may fail without affecting the submitted case.
+   void supportTicketNotifier.notify({id:saved.id,topic:data.topic}).catch(()=>{});
   }catch(e){response(res,e.statusCode||500,{error:e.statusCode?e.message:'Не вдалося зберегти звернення.'})}
   return;
  }
