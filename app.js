@@ -1030,12 +1030,17 @@ function checkNotifications(){
  const a=primary();
  if(!a?.queue)return;
  const date=today(),m=nowMinutes(),verifiedAt=Date.parse(data.lastChecked||'');
- const hasVerifiedDay=Boolean(currentDay(date));
- const fresh=hasVerifiedDay&&Number.isFinite(verifiedAt)&&verifiedAt<=Date.now()+5*60_000&&
-   (isOfflineMode()||Date.now()-verifiedAt<=55*60_000)&&
-   (isOfflineMode()||data.reviewPending!==true);
+ const unresolved=Array.isArray(data.unresolvedDates)?data.unresolvedDates:null;
+ // A review for tomorrow must not mute today's independently confirmed plan.
+ // Fail closed if a global review flag has no date-scoped explanation.
+ const safelyVerified=day=>Boolean(currentDay(day)?.verified===true)&&
+   !unresolved?.includes(day)&&
+   (data.reviewPending!==true||Boolean(unresolved?.length));
+ const fresh=safelyVerified(date)&&Number.isFinite(verifiedAt)&&verifiedAt<=Date.now()+5*60_000&&
+   (isOfflineMode()||Date.now()-verifiedAt<=55*60_000);
  if(fresh){
-  const current=timeline(date,a.queue),nextDate=shiftDay(date,1),tomorrow=timeline(nextDate,a.queue);
+  const current=timeline(date,a.queue),nextDate=shiftDay(date,1);
+  const tomorrow=safelyVerified(nextDate)?timeline(nextDate,a.queue):null;
   for(const [type,offset,desired] of [['off',30,1],['on',15,0]]){
    if(!prefs[type])continue;
    // Opened PWAs can recover a delayed reminder before the actual event.
@@ -1071,7 +1076,7 @@ function checkNotifications(){
  }
  if(nativeAllowed&&prefs.tomorrow){
   const nextDate=shiftDay(date,1),published=currentDay(nextDate);
-  if(published?.queues?.[a.queue]&&m>=19*60)
+  if(safelyVerified(nextDate)&&published?.queues?.[a.queue]&&m>=19*60)
    notify('🗓️ Графік на завтра',`Підчерга ${a.queue} · На ${formatDate(nextDate)}. Перегляньте години відключень.`,`tomorrow:${nextDate}`);
  }
 }

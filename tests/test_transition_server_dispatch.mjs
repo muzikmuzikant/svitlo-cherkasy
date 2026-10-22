@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
-import {timeline,dueTransitionAcrossDays,freshSchedule,QUEUES} from '../push-server/schedule-engine.js';
+import {timeline,dueTransitionAcrossDays,freshSchedule,usableSchedule,verifiedScheduleDay,preferFreshSchedule,QUEUES} from '../push-server/schedule-engine.js';
 import {transitionCopy} from '../push-server/notification-copy.js';
 
 const server=readFileSync(new URL('../push-server/server.js',import.meta.url),'utf8');
@@ -12,11 +12,11 @@ assert.ok(start>0&&end>start,'standalone transition dispatcher found');
 const dispatch=server.slice(start,end);
 const date='2026-10-14';
 function fixture({minute=570,off=true,on=true,stale=false,noDate=false,failOnce=false,
- midnight=false,withoutToday=false,nowDate=date}={}){
+ midnight=false,withoutToday=false,nowDate=date,reviewPending=false,unresolvedDates=[]}={}){
  const outageDay={date,verified:true,queues:{'1.1':{knownFrom:'00:00',off:[['10:00','12:00']]}}};
  const nextDay={date:'2026-10-15',verified:true,queues:{'1.1':{knownFrom:'00:00',off:midnight?[['00:00','02:00']]:[]}}};
  const source={lastChecked:new Date(Date.now()-(stale?3600000:0)).toISOString(),
-  reviewPending:false,days:[...(withoutToday?[]:[outageDay]),nextDay]};
+  reviewPending,unresolvedDates,days:[...(withoutToday?[]:[outageDay]),nextDay]};
  if(noDate)source.days=[];
  const record={queue:'1.1',preferences:{off,on},subscription:{endpoint:'https://web.push.apple.com/fixture'}};
  const sent={},deliveryStats={lastFailure:null,lastCycle:null},subscribers={fixture:record};
@@ -24,7 +24,7 @@ function fixture({minute=570,off=true,on=true,stale=false,noDate=false,failOnce=
  const state={officialSchedules:{schedule:()=>source},lastLoadedSchedule:null,transitionRunning:false,
   dayInKyiv:()=>({date:nowDate,m:state.currentMinute}),currentMinute:minute,
   shiftDay:(d,n)=>new Date(new Date(d+'T12:00:00Z').getTime()+n*86400_000).toISOString().slice(0,10),
-  freshSchedule,timeline,dueTransitionAcrossDays,transitionCopy,QUEUES,subscribers,deliveryStats,sent,
+  freshSchedule,usableSchedule,verifiedScheduleDay,preferFreshSchedule,timeline,dueTransitionAcrossDays,transitionCopy,QUEUES,subscribers,deliveryStats,sent,
   hash:()=> 'subscriber-hash',
   async forEachLimited(items,limit,callback){for(const rec of items)await callback(rec)},
   async send(rec,message,key,options){
@@ -85,6 +85,28 @@ test('official midnight outage is detected on the prior evening',async()=>{
  assert.equal(s.deliveries.length,1);
  assert.equal(s.deliveries[0].message.title,'🔴 Відключення через 30 хв');
  assert.equal(s.record.automatic.lastEvent.time,'2026-10-15T00:00');
+});
+test('a late but still relevant outage reminder is recovered up until the outage',async()=>{
+ const s=fixture({minute:599});await s.tick();
+ assert.equal(s.deliveries.length,1);
+ assert.equal(s.deliveries[0].message.title,'🔴 Відключення через 1 хв');
+ s.state.currentMinute=600;await s.tick();
+ assert.equal(s.deliveries.length,1,'never deliver after the scheduled boundary');
+});
+test('a review of tomorrow does not suppress todays verified outage reminder',async()=>{
+ const s=fixture({reviewPending:true,unresolvedDates:['2026-10-15']});
+ await s.tick();
+ assert.equal(s.deliveries.length,1);
+ assert.equal(s.state.deliveryStats.lastCycle.todayVerified,true);
+ assert.equal(s.state.deliveryStats.lastCycle.tomorrowVerified,false);
+});
+test('an unresolved date does not send reminders for that date',async()=>{
+ const blocked=fixture({reviewPending:true,unresolvedDates:[date]});
+ await blocked.tick();
+ assert.equal(blocked.deliveries.length,0);
+ const unknownReview=fixture({reviewPending:true});
+ await unknownReview.tick();
+ assert.equal(unknownReview.deliveries.length,0,'ambiguous global review must fail closed');
 });
 test('slow external fetches are not in the transition dispatcher',()=>{
  assert.doesNotMatch(dispatch,/loadJson\(|await fetch\(|Bulletin refresh/);

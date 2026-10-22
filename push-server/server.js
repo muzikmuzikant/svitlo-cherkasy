@@ -30,7 +30,7 @@ import webpush from 'web-push';
 import {adminRouter} from './admin.js';
 import {createManualPush} from './manual-push.js';
 import {transitionCopy,tomorrowCopy,changeCopy,emergencyCopy,firstPublishedAt,dayId,changeId,isLatestRevision,emergencyId} from './notification-copy.js';
-import {QUEUES,timeline,dueTransition,latestOfficialEvent,freshEvent,freshSchedule,dueTransitionAcrossDays} from './schedule-engine.js';
+import {QUEUES,timeline,dueTransition,latestOfficialEvent,freshEvent,freshSchedule,dueTransitionAcrossDays,usableSchedule,verifiedScheduleDay,preferFreshSchedule} from './schedule-engine.js';
 
 const {VAPID_PUBLIC_KEY,PUSH_PRIVATE_KEY,PUSH_CONTACT,APP_ORIGIN,SCHEDULE_URL,DATA_FILE='./subscribers.json',PORT='8080'}=process.env;
 if(!VAPID_PUBLIC_KEY||!PUSH_PRIVATE_KEY||!PUSH_CONTACT||!APP_ORIGIN||!SCHEDULE_URL){
@@ -125,11 +125,12 @@ async function transitionJob(){
  if(transitionRunning)return;
  transitionRunning=true;
  try{
-  const source=officialSchedules.schedule()||lastLoadedSchedule;
-  const now=dayInKyiv(),timestamp=Date.now(),schedulesSafe=freshSchedule(source,timestamp);
-  const current=schedulesSafe?source.days.find(d=>d.date===now.date&&d.verified===true):null;
+  const now=dayInKyiv(),timestamp=Date.now();
+  const source=preferFreshSchedule(officialSchedules.schedule(),lastLoadedSchedule,timestamp);
+  const schedulesSafe=usableSchedule(source,timestamp);
+  const current=verifiedScheduleDay(source,now.date,timestamp);
   const nextDate=shiftDay(now.date,1);
-  const tomorrow=schedulesSafe?source.days.find(d=>d.date===nextDate&&d.verified===true):null;
+  const tomorrow=verifiedScheduleDay(source,nextDate,timestamp);
   const all=Object.values(subscribers);
   const cycle={at:new Date().toISOString(),subscribers:all.length,
    offEnabled:all.filter(x=>x?.preferences?.off).length,
@@ -146,7 +147,7 @@ async function transitionJob(){
     if(!pref[type])continue;
     // Recover reminders delayed by Railway restarts or temporarily slow schedule imports.
     // The helper never returns transitions that have already started.
-    const boundary=dueTransitionAcrossDays(values,valuesTomorrow,minutes,offset,target,offset-2);
+    const boundary=dueTransitionAcrossDays(values,valuesTomorrow,minutes,offset,target,offset-1);
     if(boundary!==null){const eta=boundary-minutes;
      const msg=transitionCopy(type,q,boundary,eta,boundary>=1440?nextDate:now.date);
      const key=`${prefix}:${type}:${now.date}:${boundary}`;
@@ -190,16 +191,25 @@ async function job(){
  if(running)return;
  running=true;
  try{
-  let source,scheduleIssue=null;
-  try{source=officialSchedules.schedule()||await loadJson(SCHEDULE_URL);if(!Array.isArray(source.days))throw Error('Invalid schedule structure')}
-  catch(e){scheduleIssue='Schedule fetch: '+e.message;console.warn(scheduleIssue);source={days:[],changes:[]}}
-  lastLoadedSchedule=source;
+  let scheduleIssue=null;
+  const published=officialSchedules.schedule();
+  let fallback=lastLoadedSchedule;
+  // Railway may miss an import. Try the public, independently verified feed
+  // instead of allowing a stale local publication to mute every reminder.
+  if(!usableSchedule(published)){
+   try{
+    const fetched=await loadJson(SCHEDULE_URL);
+    if(!Array.isArray(fetched.days))throw Error('Invalid schedule structure');
+    fallback=fetched;lastLoadedSchedule=fetched;
+   }catch(e){scheduleIssue='Schedule fetch: '+e.message;console.warn(scheduleIssue)}
+  }
   const now=dayInKyiv(),timestamp=Date.now();
-  const schedulesSafe=freshSchedule(source,timestamp);
+  const source=preferFreshSchedule(published,fallback,timestamp)||{days:[],changes:[]};
+  const schedulesSafe=usableSchedule(source,timestamp);
   if(!schedulesSafe)scheduleIssue=scheduleIssue||'Schedule data stale, unconfirmed or awaiting review';
-  const current=source.days.find(d=>d.date===now.date&&d.verified===true);
+  const current=verifiedScheduleDay(source,now.date,timestamp);
   const nextDate=shiftDay(now.date,1);
-  const tomorrow=source.days.find(d=>d.date===nextDate&&d.verified===true);
+  const tomorrow=verifiedScheduleDay(source,nextDate,timestamp);
   let bulletin=[];
   for(const [filename,path] of [['emergency.json','events'],['manual_overrides.json','override']]){
    try{const u=new URL(SCHEDULE_URL);u.pathname=u.pathname.replace(/schedules\.json$/,filename);
@@ -240,7 +250,9 @@ async function job(){
      notificationId:emergencyId(event),at:event.publishedAt,source:event.source,kind:'emergency',ttl:3600,urgency:'high'});
    }
    if(schedulesSafe&&pref.changes)for(const change of freshChanges){
-    const msg=changeCopy(q,change.date,source.days.find(d=>d.date===change.date&&d.verified===true));
+    const changedDay=verifiedScheduleDay(source,change.date,timestamp);
+    if(!changedDay)continue;
+    const msg=changeCopy(q,change.date,changedDay);
     await send(record,msg,`${prefix}:change:${change.date}:${change.revisionId||change.publishedAt}`,{
      notificationId:changeId(q,change),at:change.detectedAt||change.publishedAt,source:change.source});
    }
@@ -493,11 +505,12 @@ const server=http.createServer(async(req,res)=>{
    const data=await readPayload(req,4096),endpoint=data?.subscription?.endpoint;
    if(!validEndpoint(endpoint))throw Error('Invalid endpoint');
    const rec=subscribers[hash(endpoint)];
-   const source=officialSchedules.schedule()||lastLoadedSchedule;
-   const time=dayInKyiv(),fresh=freshSchedule(source);
-   const day=fresh?source.days.find(x=>x.date===time.date&&x.verified===true):null;
+   const time=dayInKyiv(),timestamp=Date.now();
+   const source=preferFreshSchedule(officialSchedules.schedule(),lastLoadedSchedule,timestamp);
+   const fresh=usableSchedule(source,timestamp);
+   const day=verifiedScheduleDay(source,time.date,timestamp);
    const tomorrowDate=shiftDay(time.date,1);
-   const tomorrow=fresh?source.days.find(x=>x.date===tomorrowDate&&x.verified===true):null;
+   const tomorrow=verifiedScheduleDay(source,tomorrowDate,timestamp);
    const current=rec&&fresh?timeline(day,rec.queue):null,following=rec&&fresh?timeline(tomorrow,rec.queue):null;
    const next=target=>{
     for(let ahead=1;ahead<=1440;ahead++){

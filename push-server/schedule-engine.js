@@ -48,6 +48,30 @@ export function freshSchedule(doc,now=Date.now(),maxAge=55*60_000){
  const stamp=Date.parse(doc.lastChecked||'');
  return Number.isFinite(stamp)&&stamp<=now+5*60_000 && now-stamp<=maxAge;
 }
+/**
+ * A source-review warning can affect one calendar date while other verified
+ * dates remain safe. The importer records those blocked dates explicitly.
+ * Do not treat the global reviewPending audit flag as a global Push mute.
+ */
+export function usableSchedule(doc,now=Date.now(),maxAge=55*60_000){
+ if(!doc)return false;
+ if(doc.reviewPending===true&&(!Array.isArray(doc.unresolvedDates)||!doc.unresolvedDates.length))return false;
+ return freshSchedule({...doc,reviewPending:false},now,maxAge);
+}
+/** Only use independently verified dates that have no unresolved publication. */
+export function verifiedScheduleDay(doc,date,now=Date.now()){
+ if(!usableSchedule(doc,now)||typeof date!=='string'||doc.unresolvedDates?.includes(date))return null;
+ return doc.days.find(day=>day?.date===date&&day.verified===true)||null;
+}
+/**
+ * Prefer the newest usable snapshot (publisher or cached fallback).
+ * A stale Railway import should not shadow a newer verified fallback.
+ */
+export function preferFreshSchedule(primary,fallback,now=Date.now()){
+ const candidates=[primary,fallback].filter(doc=>usableSchedule(doc,now));
+ if(!candidates.length)return primary||fallback||null;
+ return candidates.sort((a,b)=>Date.parse(b.lastChecked)-Date.parse(a.lastChecked))[0];
+}
 /** Reminders for 00:00–00:30 tomorrow must be visible before midnight. */
 export function dueTransitionAcrossDays(today,tomorrow,now,offset,target,grace=4){
  for(let eta=offset;eta>=Math.max(0,offset-grace);eta--){
