@@ -37,6 +37,7 @@ function createHarness({reduced=false,selector='dialog.sheet',onDismiss=null,des
    for(const cb of this.listeners[event.type]||[])cb(event);
    return true;
   }
+  contains(){return true}
   matches(pattern){
    if(pattern.includes('.share-preview-dialog'))return selector==='dialog.share-preview-dialog';
    if(pattern.includes('.inbox-detail'))return selector==='dialog.inbox-detail';
@@ -56,7 +57,7 @@ function createHarness({reduced=false,selector='dialog.sheet',onDismiss=null,des
  if(selector!=='dialog.sheet')window.SvitloSheetMotion.bind(sheet,onDismiss);
  return {sheet,window,timers,MockElement,pointer:(type,y,x=0,time=0,name='handle')=>{
   const event={type,target:new MockElement(name),isPrimary:true,button:0,pointerId:1,
-   clientY:y,clientX:x,timeStamp:time,cancelable:true,preventDefault(){}};
+   clientY:y,clientX:x,timeStamp:time,cancelable:true,pointerType:'mouse',preventDefault(){}};
   sheet.dispatchEvent(event);
  }};
 }
@@ -65,7 +66,7 @@ test('close action and backdrop wait for matched exit animation',()=>{
  assert.equal(h.window.SvitloSheetMotion.dismiss(h.sheet),true);
  assert.equal(h.sheet.open,true);
  assert.equal(h.sheet.classes.has('svitlo-sheet-closing'),true);
- assert.equal(h.timers[0].ms,330);
+ assert.equal(h.timers[0].ms,215);
  h.timers[0].fn();
  assert.equal(h.sheet.open,false);
 });
@@ -108,6 +109,38 @@ test('reduced motion closes immediately',()=>{
  h.window.SvitloSheetMotion.dismiss(h.sheet);
  assert.equal(h.sheet.open,false);
  assert.equal(h.timers.length,0);
+});
+test('iPhone touch gesture follows finger and closes quickly',()=>{
+ const h=createHarness(),target=new h.MockElement('handle');
+ const evt=(type,y,time)=>({
+  type,target,timeStamp:time,touches:type==='touchstart'?[{identifier:2,clientX:20,clientY:y}]:[],
+  changedTouches:[{identifier:2,clientX:20,clientY:y}],
+  cancelable:true,preventDefault(){this.prevented=true}
+ });
+ h.sheet.dispatchEvent(evt('touchstart',100,0));
+ const move=evt('touchmove',190,90);
+ h.sheet.dispatchEvent(move);
+ assert.equal(move.prevented,true);
+ assert.match(h.sheet.style.transform,/90px/);
+ assert.equal(h.sheet.classes.has('svitlo-sheet-dragging'),true);
+ h.sheet.dispatchEvent(evt('touchend',240,110));
+ assert.equal(h.sheet.classes.has('svitlo-sheet-closing'),true);
+ assert.equal(h.timers.length,1);
+ h.timers[0].fn();assert.equal(h.sheet.open,false);
+});
+test('short iOS drag snaps back without restarting its entry animation',()=>{
+ const h=createHarness(),target=new h.MockElement('handle');
+ const ev=(type,y,time)=>({
+  type,target,timeStamp:time,touches:type==='touchstart'?[{identifier:1,clientX:20,clientY:y}]:[],
+  changedTouches:[{identifier:1,clientX:20,clientY:y}],
+  cancelable:true,preventDefault(){}
+ });
+ h.sheet.dispatchEvent(ev('touchstart',100,0));
+ h.sheet.dispatchEvent(ev('touchmove',131,180));
+ h.sheet.dispatchEvent(ev('touchend',131,220));
+ assert.equal(h.sheet.classes.has('svitlo-sheet-settled'),true);
+ assert.equal(h.sheet.classes.has('svitlo-sheet-snapping'),true);
+ assert.equal(h.sheet.open,true);
 });
 test('installed beta includes gesture assets and reader header',()=>{
  assert.match(file('index.html'),/src="\.\/bottom-sheet\.js"/);
