@@ -8,7 +8,7 @@ const start=app.indexOf('function checkNotifications(){');
 const end=app.indexOf('\nasync function getPushConfig()',start);
 assert.ok(start>=0&&end>start,'find local reminder handler');
 const logic=app.slice(start,end);
-function run({minute=570,off=600,push=true,permission='denied',stale=false,review=false,midnight=false}={}){
+function run({minute=570,off=600,push=true,permission='denied',stale=false,review=false,reviewDate=null,midnight=false}={}){
  const today='2026-10-13',dateTomorrow='2026-10-14',saved=[],native=[],refreshes=[],stored={};
  const current=new Int8Array(1440),tomorrow=new Int8Array(1440);
  if(off<1440)current.fill(1,off,Math.min(off+60,1440));
@@ -17,12 +17,14 @@ function run({minute=570,off=600,push=true,permission='denied',stale=false,revie
  const sandbox={
   Date,window:{Notification:Notif,SvitloInbox:{add:async x=>{saved.push(x)}},SvitloInboxUI:{refresh(){refreshes.push(1)}}},
   Notification:Notif,prefs:{off:true,on:false,tomorrow:false,emergency:false},pushActive:push,
-  data:{lastChecked:new Date(Date.now()-(stale?3600000:0)).toISOString(),reviewPending:review},
+  data:{lastChecked:new Date(Date.now()-(stale?3600000:0)).toISOString(),reviewPending:review,
+   unresolvedDates:review?[reviewDate||today]:[]},
   primary:()=>({id:'test-address',queue:'1.1'}),today:()=>today,nowMinutes:()=>minute,
   shiftDay:()=>dateTomorrow,timeline:date=>date===today?current:tomorrow,
   notified,SEEN:'reminder-test',localStorage:{setItem(k,v){stored[k]=v}},
   clock:m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'),
-  formatDate:d=>d,currentDay:()=>null,notify:(...x)=>native.push(x),
+  formatDate:d=>d,currentDay:date=>({date,verified:true,queues:{'1.1':{off:[]}}}),
+  isOfflineMode:()=>false,notify:(...x)=>native.push(x),
   notifyEmergencyEvent(){},console
  };
  vm.runInNewContext(logic+';checkNotifications();checkNotifications();',sandbox);
@@ -55,4 +57,14 @@ test('reminder supports an official outage starting at midnight of following day
  const result=run({minute:1410,off:1440,midnight:true});
  assert.equal(result.saved[0]?.id,'transition:1.1:2026-10-13:1440:off');
  assert.match(result.saved[0].title,/30 хв/);
+});
+
+test('a review for tomorrow does not mute todays local reminder',()=>{
+ const result=run({review:true,reviewDate:'2026-10-14'});
+ assert.equal(result.saved.length,1);
+ assert.equal(result.saved[0].id,'transition:1.1:2026-10-13:600:off');
+});
+test('a review for tomorrow blocks a midnight transition into that unresolved date',()=>{
+ const result=run({minute:1410,off:1440,midnight:true,review:true,reviewDate:'2026-10-14'});
+ assert.equal(result.saved.length,0);
 });
