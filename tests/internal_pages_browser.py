@@ -23,7 +23,7 @@ def assert_internal(page,target):
        && !document.querySelector('#svitloInternalPage').classList.contains('svitlo-internal-loading')""",timeout=12000)
     frame=page.frame_locator(".svitlo-internal-frame")
     assert frame.locator("body").is_visible(),target+" did not load visible content"
-    url=page.locator(".svitlo-internal-frame").get_attribute("src") or ""
+    url=page.locator(".svitlo-internal-frame").evaluate("(frame) => frame.contentWindow.location.href") or ""
     assert target in url,(target,url)
     # Every subsidiary page is a standalone document, not our main app shell.
     assert frame.locator("#appBootScreen").count()==0, target+" returned the app index instead of its page"
@@ -64,7 +64,7 @@ def main():
                 page.locator(link).first.click()
                 page.wait_for_function("""() => !document.querySelector('#svitloInternalPage').hidden
                     && !document.querySelector('#svitloInternalPage').classList.contains('svitlo-internal-loading')""",timeout=12000)
-                assert target in page.locator('.svitlo-internal-frame').get_attribute('src')
+                assert target in page.locator(".svitlo-internal-frame").evaluate("(frame) => frame.contentWindow.location.href")
                 assert page.frame_locator('.svitlo-internal-frame').locator('#appBootScreen,#svitloInternalOffline').count()==0
                 page.locator('.svitlo-internal-back').click()
                 page.wait_for_function("() => document.querySelector('#svitloInternalPage').hidden",timeout=5000)
