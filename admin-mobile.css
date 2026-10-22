@@ -54,3 +54,15 @@ body.svitlo-office .support-filters{grid-template-columns:1fr!important}
 body.svitlo-office .support-filters .field:first-child{grid-column:auto!important}
 body.svitlo-office .office-mobile-dock button{font-size:9px}
 }
+
+/* Unread support count lives on the phone's bottom dock, not only the sidebar. */
+@media(max-width:760px){
+ .office-mobile-dock button[data-mobile-tab="feedback"]{position:relative}
+ .office-mobile-dock .office-mobile-ticket-unread{
+  position:absolute;top:3px;right:calc(50% - 31px);
+  min-width:17px;height:17px;padding:1px 4px;display:grid;place-items:center;
+  border-radius:10px;background:#bf4333;color:#fff;
+  font-size:9px;line-height:1;font-weight:800;pointer-events:none;
+ }
+ .office-mobile-dock .office-mobile-ticket-unread[hidden]{display:none!important}
+}
