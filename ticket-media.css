@@ -70,3 +70,21 @@
 :root[data-theme="dark"] .ticket-media-download{background:#294c62;border-color:#507d94;color:#d6f0ff}
 
 .ticket-attach[hidden]{display:none!important}
+
+/* Always expose where attachments belong. The old Railway server can be
+   identified and refreshed without pretending a disabled upload succeeded. */
+.ticket-attach.ticket-media-unavailable .ticket-attach-label{
+ opacity:.58;filter:grayscale(.25);cursor:not-allowed
+}
+.ticket-attach.ticket-media-unavailable .ticket-file-status{
+ color:#9b5b22;line-height:1.5;font-weight:650
+}
+.ticket-media-retry{
+ display:inline-flex;align-items:center;justify-content:center;
+ justify-self:start;min-height:34px;padding:6px 9px;border:0;
+ background:transparent;color:#367dbd;font-size:11px;font-weight:740;
+ text-decoration:underline;text-underline-offset:3px;cursor:pointer
+}
+.ticket-media-retry[hidden]{display:none!important}
+:root[data-theme="dark"] .ticket-media-retry{color:#a9ccff}
+:root[data-theme="dark"] .ticket-attach.ticket-media-unavailable .ticket-file-status{color:#edbd89}
