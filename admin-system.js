@@ -237,7 +237,7 @@
    entries=entries.filter(x=>x.id!==result.id).concat(result);fill(result);
    await loadRegister();message('adminRegisterMessage','Картку збережено у захищеному реєстрі.');document.dispatchEvent(new Event('svitlo:work-updated'));
   }catch(error){message('adminRegisterMessage',error.message,true)}
-  finally{busy=false;$('workSave').disabled=!canEdit}
+  finally{busy=false;$('workSave').disabled=!canEdit;paintQuickActions(current())}
  });
  $('workNew').addEventListener('click',()=>{
   if(!canEdit)return;
