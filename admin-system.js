@@ -6,7 +6,7 @@
  const api=(route,opts)=>window.svitloAdminApi(route,opts);
  const node=(tag,text,cls)=>{const x=document.createElement(tag);if(text!==undefined)x.textContent=text;if(cls)x.className=cls;return x};
  const esc=key=>$(key)?.value?.trim()||'';
- let entries=[],selectedId='',editingRevision=null,canEdit=false,config=null,busy=false;
+ let entries=[],selectedId='',editingRevision=null,canEdit=false,config=null,busy=false,registerRequestId=0,lastRegisterRefresh=0;
  function message(id,value,error=false){const x=$(id);if(!x)return;x.textContent=value;x.dataset.error=String(error)}
  const current=()=>entries.find(x=>x.id===selectedId)||null;
  // Contextual search, control dates and export for the desk registry.
@@ -167,6 +167,7 @@
   }finally{busy=false;paintQuickActions(current())}
  }
  function render(){
+  $('workNew').disabled=!canEdit;
   const list=filtered();
   const root=$('adminRegisterList');root.replaceChildren();
   for(const item of list){
@@ -200,9 +201,13 @@
   $('adminRegisterPending').classList.toggle('requires-attention',Boolean(overdue||urgent));
  }
  async function loadRegister(){
+  if($('adminDashboard').hidden)return;
+  const requestId=++registerRequestId;
   message('adminRegisterMessage','Оновлюємо картотеку…');
   try{
    const result=await api('work-items');
+   if(requestId!==registerRequestId||$('adminDashboard').hidden)return;
+   lastRegisterRefresh=Date.now();
    const preserveDraft=isDirty();
    entries=Array.isArray(result.items)?result.items:[];
    if(!preserveDraft)fill(entries.find(x=>x.id===selectedId)||null);
@@ -211,7 +216,11 @@
    message('adminRegisterMessage',preserveDraft
     ?'Список оновлено. Незбережений текст залишився у формі. Перевірте дані перед збереженням.'
     :'Реєстр синхронізовано з Railway.');
-  }catch(e){message('adminRegisterMessage','Не вдалося завантажити реєстр: '+e.message,true)}
+  }catch(e){
+   if(requestId!==registerRequestId||$('adminDashboard').hidden)return;
+   message('adminRegisterMessage','Не вдалося завантажити реєстр: '+e.message,true);
+   if(!entries.length)document.dispatchEvent(new CustomEvent('svitlo:work-list',{detail:{items:[],unavailable:true}}));
+  }
  }
  function payload(){return {
   title:esc('workTitle'),details:esc('workDetails'),kind:esc('workKind'),priority:esc('workPriority'),
@@ -245,6 +254,14 @@
  $('adminRegisterSearch').addEventListener('input',render);
  $('adminRegisterFilter').addEventListener('change',render);
  document.querySelector('[data-admin-tab="registry"]')?.addEventListener('click',loadRegister);
+ // Keep attention counts current across admin sessions without touching private data
+ // when the tab is hidden or the operator is offline. No persistent client cache.
+ setInterval(()=>{
+  if(document.hidden||$('adminDashboard').hidden||busy||isDirty())return;
+  const open=document.querySelector('[data-admin-tab][aria-pressed="true"]')?.dataset.adminTab;
+  if(!['overview','registry'].includes(open)||Date.now()-lastRegisterRefresh<90_000)return;
+  void loadRegister();
+ },45_000);
  window.SvitloWorkRegister={refresh:loadRegister};
  const form=$('liveConfigForm');
  const set=(id,value)=>{const el=$(id);if(el.type==='checkbox')el.checked=value===true;else el.value=value??''};
@@ -299,7 +316,7 @@
  document.addEventListener('svitlo:admin-ready',ready);
  document.addEventListener('svitlo:admin-logout',()=>{
   document.body.classList.remove('askod-workspace');
-  selectedId='';entries=[];config=null;canEdit=false;fill(null);render();
+  registerRequestId++;lastRegisterRefresh=0;selectedId='';entries=[];config=null;canEdit=false;fill(null);render();
   document.dispatchEvent(new CustomEvent('svitlo:work-list',{detail:{items:[],signedOut:true}}));
   message('adminRegisterMessage','Для роботи потрібен вхід.');
  });
