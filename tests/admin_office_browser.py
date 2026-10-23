@@ -38,8 +38,8 @@ def main():
         # Route ALL external calls so test cannot send real admin credentials.
         example={
             "id":"WR-112233445566","title":"Приклад тестового доручення",
-            "kind":"addresses","status":"new","priority":"high","assignee":"owner",
-            "reference":"SC-0011223344","dueDate":None,"details":"Лише тестові дані",
+            "kind":"addresses","status":"new","priority":"urgent","assignee":"owner",
+            "reference":"SC-0123456789","dueDate":"2026-10-21","details":"Лише тестові дані",
             "revision":1,"events":[{"at":"2026-10-21T11:00:00.000Z","action":"created","actor":"owner"}],
             "createdAt":"2026-10-21T11:00:00.000Z","updatedAt":"2026-10-21T11:00:00.000Z"
         }
@@ -83,6 +83,18 @@ def main():
                             "actor":"owner","action":"note","message":payload["message"]})
                         data=item
                     else:status=404
+                elif name.startswith("work-items/") and request.method=="PATCH":
+                    item=next((x for x in work if x["id"]==name.split("/")[1]),None)
+                    if item and request.post_data_json.get("expectedRevision")==item["revision"]:
+                        original=item["status"]
+                        item.update({k:v for k,v in request.post_data_json.items() if k!="expectedRevision"})
+                        item["revision"]+=1
+                        item["events"].insert(0,{"at":"2026-10-21T11:07:00.000Z",
+                            "actor":"owner","action":original+" -> "+item["status"]})
+                        data=item
+                    else:
+                        status=409
+                        data={"error":"Картку вже змінено"}
                 elif name=="feedback":
                     data={"items":[{"id":"SC-0123456789","topic":"address","status":"new",
                         "subject":"Не знаходить номер будинку","message":"Приклад тестового звернення про адресу."}]}
@@ -109,6 +121,11 @@ def main():
         page.wait_for_function("document.querySelectorAll('#officeStats .office-stat').length===5",timeout=15000)
         assert page.locator(".office-work-entry").count()==1
         assert page.locator(".office-ticket-entry").count()==1
+        # At-risk task must not be buried in an ordinary, silent registry row.
+        page.locator("#officeWorkAttention .office-attention-filter.overdue strong").wait_for()
+        assert page.locator("#officeWorkAttention .office-attention-filter.overdue strong").inner_text()=="1"
+        assert page.locator(".office-task-badge").inner_text()=="1"
+        assert page.locator(".office-attention-item").count()==1
         page.locator(".office-create").click()
         assert page.locator("#officeModal").is_visible()
         page.get_by_role("button",name="Нова картка доручення").click()
@@ -118,10 +135,24 @@ def main():
         page.locator("#workDetails").fill("Зареєстровано з браузерного тесту")
         page.locator("#workSave").click()
         page.wait_for_function("document.querySelector('#workEditTitle')?.textContent.includes('WR-ABCDEF112233')",timeout=8000)
+        assert page.locator(".work-quick-button").filter(has_text="Взяти в роботу").count()==1
+        page.locator(".work-quick-button").filter(has_text="Взяти в роботу").click()
+        page.wait_for_function("document.querySelector('#workStatus')?.value==='in_progress'",timeout=6000)
+        # An auto-refresh must not destroy an unsaved operator draft.
+        page.locator("#workDetails").fill("Чернетка з перевірки, не втрачати")
+        page.locator("#adminRegisterReload").click()
+        page.wait_for_function("document.querySelector('#adminRegisterMessage')?.textContent.includes('Незбережений')",timeout=6000)
+        assert page.locator("#workDetails").input_value()=="Чернетка з перевірки, не втрачати"
+        page.locator("#workDetails").fill("Зареєстровано з браузерного тесту")
         page.locator("#workNote").fill("Перевірити офіційний перелік, відповідь ще очікується")
         page.locator("#workNoteSend").click()
         page.wait_for_function("document.querySelector('#workEvents')?.textContent.includes('Резолюція')",timeout=8000)
         assert page.locator("#workEvents").get_by_text("Перевірити офіційний перелік",exact=False).count()==1
+        # Connected records should open the actual support conversation.
+        page.locator("#adminRegisterList .registry-row").filter(has_text="WR-112233445566").click()
+        page.locator(".work-linked-ticket").click()
+        page.wait_for_function("document.querySelector('[data-admin-panel=feedback]')?.hidden===false",timeout=6000)
+        assert page.locator("#ticketDetail").get_by_text("Не знаходить номер будинку").count()>=1
         page.set_viewport_size({"width":390,"height":844})
         page.locator(".office-menu-button").click()
         assert page.evaluate("document.body.classList.contains('office-mobile-nav')")
