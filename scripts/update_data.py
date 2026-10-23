@@ -968,9 +968,12 @@ def update_addresses(session,now=None):
 # evidence that a particular house lost power, only that the operator published
 # an emergency restriction notice. Inactive/ambiguous bulletins never trigger
 # "active emergency" push messages.
-EMERGENCY_TITLE = re.compile(r'(?:екстрен[іихо]+|аварійн[іихо]+)\s+(?:відключенн|вимкненн)|(?:відключенн|вимкненн)\s+за\s+аварійними',re.I)
+# Match both "відключення" and genitive plural "відключень", as used in GAV bulletins.
+# Never confuse industrial GOP or an ordinary hourly GPV with household emergency GAV.
+EMERGENCY_TITLE = re.compile(r'\bГАВ\b|(?:екстрен\w*|аварійн\w*)\s+(?:відключен\w*|вимкнен\w*)|(?:відключен\w*|вимкнен\w*)\s+за\s+аварійн\w*',re.I)
 CANCEL_TITLE = re.compile(r'скасован|припинен|завершен|відмін[еє]|відновлен|знято\s+обмеження',re.I)
-ACTIVE_TITLE = re.compile(r'запроваджен|введен|діють|діятимуть|застосовують|почал[ио]|розпочат',re.I)
+ACTIVE_TITLE = re.compile(r'запроваджен|введен|діють|діятимуть|застосовують|застосован|застосувал|почал[ио]|розпочат',re.I)
+TELEGRAM_EMERGENCY_URL = 'https://t.me/s/pat_cherkasyoblenergo'
 
 def emergency_link_candidates(html):
     soup=BeautifulSoup(html,'html.parser');links=[]
@@ -996,18 +999,71 @@ def parse_emergency_article(html,url,now=None):
     return {'id':url,'title':title[:170],'publishedAt':published.isoformat(timespec='minutes'),
             'source':url,'status':state,'scope':'region','queues':[]}
 
+def parse_official_telegram_emergency(html, now=None):
+    """Only signed posts from the operator's own public Telegram channel.
+    Ignore forwards and posts without a real machine-readable timestamp.
+    A GAV announcement has no per-home forecast; it only describes the alert.
+    """
+    now = now or datetime.now(TZ)
+    soup = BeautifulSoup(html, 'html.parser')
+    events = []
+    for post in soup.select('div.tgme_widget_message[data-post]'):
+        post_id = post.get('data-post', '')
+        if not re.fullmatch(r'pat_cherkasyoblenergo/[0-9]{1,12}', post_id):
+            continue
+        if post.select_one('.tgme_widget_message_forwarded_from'):
+            continue
+        message = post.select_one('.tgme_widget_message_text')
+        tag = post.select_one('time[datetime]')
+        if not message or not tag:
+            continue
+        body = message.get_text(' ', strip=True)
+        if not EMERGENCY_TITLE.search(body):
+            continue
+        try:
+            published = datetime.fromisoformat(tag['datetime'].replace('Z', '+00:00'))
+            if published.tzinfo is None:
+                continue
+            published = published.astimezone(TZ)
+        except (ValueError, KeyError):
+            continue
+        if published > now + timedelta(minutes=10) or published < now - timedelta(days=2):
+            continue
+        # A general explainer about GAV or a timetable for GOP/GPV is NOT
+        # a notification that emergency restrictions have started.
+        status = 'ended' if CANCEL_TITLE.search(body) else 'active' if ACTIVE_TITLE.search(body) else 'notice'
+        if status == 'notice':
+            continue
+        url = 'https://t.me/' + post_id
+        events.append({'id': url, 'title': body[:170], 'publishedAt': published.isoformat(timespec='minutes'),
+            'source': url, 'status': status, 'scope': 'region', 'queues': []})
+    return events
+
+
 def update_emergency(session,now=None):
     now=now or datetime.now(TZ)
     out=DATA/'emergency.json'
     try:old=json.loads(out.read_text('utf8'))
     except (ValueError,FileNotFoundError):old={'events':[]}
-    listing=fetch(session,BASE+'/news?lang=uk')
     entries=[]
-    for url in emergency_link_candidates(listing)[:12]:
+    try:
+        listing=fetch(session,BASE+'/news?lang=uk')
+        candidates=emergency_link_candidates(listing)[:12]
+    except (requests.RequestException,ValueError) as error:
+        LOG.warning('Official news listing unavailable: %s', error)
+        candidates=[]
+    for url in candidates:
         try:
             event=parse_emergency_article(fetch(session,url),url,now)
             if event:entries.append(event)
         except (requests.RequestException,ValueError) as e:LOG.warning('Emergency article failed %s: %s',url,e)
+    # Official Telegram often posts the first operational GAV command before
+    # a matching article appears on the operator website. Fetch failures must
+    # preserve previous alerts rather than resetting them to inactive.
+    try:
+        entries.extend(parse_official_telegram_emergency(fetch(session, TELEGRAM_EMERGENCY_URL), now))
+    except (requests.RequestException,ValueError) as error:
+        LOG.warning('Official Telegram emergency feed unavailable: %s', error)
     # Keep recent bulletins only, never treat source unavailability as 'all clear'.
     events={item['id']:item for item in old.get('events',[]) if item.get('id') and
             item.get('publishedAt','') >= (now-timedelta(hours=48)).isoformat(timespec='minutes')}

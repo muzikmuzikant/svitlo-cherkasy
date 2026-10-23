@@ -57,7 +57,7 @@ test('owner editor uses latest server config; viewer does not publish',()=>{
   'socialShowInFooter','socialEntries','socialPreview','socialStatus'])
   assert.ok(html.includes('id="'+id+'"'),'Missing '+id);
  const panels=[...new Set([...html.matchAll(/data-admin-panel="([^"]+)"/g)].map(m=>m[1]))];
- assert.equal(panels.length,24);
+ assert.equal(panels.length,25);
  assert.match(file('admin-office-plus.js'),/social:\['КОМУНІКАЦІЇ'/);
 });
 test('all ordinary pages and PWA have an accessible, dark-mode-safe footer mount',()=>{
