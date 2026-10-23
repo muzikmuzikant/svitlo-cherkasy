@@ -6,7 +6,7 @@
  const api=(route,opts)=>window.svitloAdminApi(route,opts);
  const node=(tag,text,cls)=>{const x=document.createElement(tag);if(text!==undefined)x.textContent=text;if(cls)x.className=cls;return x};
  const esc=key=>$(key)?.value?.trim()||'';
- let entries=[],selectedId='',canEdit=false,config=null,busy=false;
+ let entries=[],selectedId='',editingRevision=null,canEdit=false,config=null,busy=false,registerRequestId=0,lastRegisterRefresh=0;
  function message(id,value,error=false){const x=$(id);if(!x)return;x.textContent=value;x.dataset.error=String(error)}
  const current=()=>entries.find(x=>x.id===selectedId)||null;
  // Contextual search, control dates and export for the desk registry.
@@ -14,15 +14,27 @@
  const dueSelect=node('select');dueSelect.id='workDueFilter';dueSelect.setAttribute('aria-label','Контрольний термін');
  for(const [v,label] of [['','Усі терміни'],['overdue','Прострочені'],['today','Сьогодні'],['soon','Наступні 7 днів'],['none','Без терміну']])
   dueSelect.add(new Option(label,v));
+ const prioritySelect=node('select');prioritySelect.id='workPriorityFilter';
+ prioritySelect.setAttribute('aria-label','Фільтр пріоритету');
+ for(const [value,label] of [['','Усі пріоритети'],['urgent','Термінові'],['high','Високі'],['normal','Звичайні']])
+  prioritySelect.add(new Option(label,value));
  const onlyMine=node('label',null,'office-my-only'),mine=node('input');
  mine.id='workMineOnly';mine.type='checkbox';onlyMine.append(mine,node('span','Мої доручення'));
  const exportCSV=node('button','Експорт CSV','secondary');exportCSV.id='workExport';exportCSV.type='button';
- bar?.append(dueSelect,onlyMine,exportCSV);
+ bar?.append(dueSelect,prioritySelect,onlyMine,exportCSV);
  const notes=node('section',null,'office-note');
  const noteInput=node('textarea');noteInput.id='workNote';noteInput.maxLength=900;noteInput.rows=3;
  noteInput.placeholder='Висновок, резолюція або проміжний результат';
  const noteSend=node('button','Додати резолюцію','secondary');noteSend.id='workNoteSend';noteSend.type='button';
  const noteHint=node('small','Внутрішня службова історія');
+ // Status changes are real server writes, not decorative local-only labels.
+ const quickActions=node('div',undefined,'work-quick-actions');
+ const quickLabel=node('strong','Наступна дія','work-quick-label');
+ const quickButtons=node('div',undefined,'work-quick-buttons');
+ const linkedTicket=node('button','Відкрити пов’язане звернення','work-linked-ticket');
+ linkedTicket.type='button';
+ quickActions.append(quickLabel,quickButtons,linkedTicket);
+ $('workForm').before(quickActions);
  notes.append(node('h4','Резолюції та примітки'),noteInput,noteSend,noteHint);
  $('workEvents').before(notes);
  const todayKyiv=()=>new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Kyiv'});
@@ -30,14 +42,25 @@
  function filtered(){
   const query=esc('adminRegisterSearch').toLocaleLowerCase('uk-UA'),status=esc('adminRegisterFilter');
   const today=todayKyiv(),next=new Date(today+'T12:00:00Z');next.setUTCDate(next.getUTCDate()+7);
+  const priority=prioritySelect.value;
   const until=next.toISOString().slice(0,10),due=dueSelect.value;
-  return entries.filter(item=>(!status||item.status===status)&&
+  return entries.filter(item=>(!status||item.status===status)&&(!priority||item.priority===priority)&&
    (!query||(item.id+' '+item.title+' '+item.details+' '+item.reference+' '+item.assignee).toLocaleLowerCase('uk-UA').includes(query))&&
    (!mine.checked||String(item.assignee||'').toLocaleLowerCase('uk-UA')===myUsername())&&
    (!due||(due==='none'?!item.dueDate:due==='overdue'?Boolean(item.dueDate&&item.dueDate<today&&!['done','cancelled'].includes(item.status)):
-     due==='today'?item.dueDate===today:Boolean(item.dueDate&&item.dueDate>=today&&item.dueDate<=until))));
+     due==='today'?item.dueDate===today:Boolean(item.dueDate&&item.dueDate>=today&&item.dueDate<=until))))
+   .sort((a,b)=>{
+    const rank=item=>{
+     if(['done','cancelled'].includes(item.status))return -10;
+     return (item.dueDate&&item.dueDate<today?100:0)+
+      (item.priority==='urgent'?50:item.priority==='high'?12:0)+
+      (item.dueDate===today?25:0)+(item.status==='review'?10:0);
+    };
+    return rank(b)-rank(a)||String(a.dueDate||'9999').localeCompare(String(b.dueDate||'9999'))||
+     String(b.updatedAt||'').localeCompare(String(a.updatedAt||''));
+   });
  }
- dueSelect.onchange=()=>render();mine.onchange=()=>render();
+ dueSelect.onchange=()=>render();prioritySelect.onchange=()=>render();mine.onchange=()=>render();
  exportCSV.onclick=()=>{
   const safe=value=>{
    let text=String(value??'').replace(/[\r\n]+/g,' ').replace(/"/g,'""');
@@ -54,12 +77,14 @@
  noteSend.onclick=async()=>{
   const item=current(),memo=noteInput.value.trim();
   if(!canEdit||!item)return;
+  if(isDirty()){noteHint.textContent='Спочатку збережіть зміни у картці, щоб не втратити їх.';return}
   if(memo.length<3){noteHint.textContent='Додайте хоча б 3 символи.';return}
   noteSend.disabled=true;noteHint.textContent='Зберігаємо…';
   try{
    const updated=await api('work-items/'+encodeURIComponent(item.id)+'/notes',
     {method:'POST',body:JSON.stringify({expectedRevision:item.revision,message:memo})});
    entries=entries.map(x=>x.id===updated.id?updated:x);fill(updated);render();noteInput.value='';
+   document.dispatchEvent(new CustomEvent('svitlo:work-list',{detail:{items:[...entries]}}));
    noteHint.textContent='Резолюцію збережено.';document.dispatchEvent(new Event('svitlo:work-updated'));
   }catch(error){noteHint.textContent='Помилка: '+error.message}
   finally{noteSend.disabled=!canEdit}
@@ -70,6 +95,7 @@
  const when=value=>{try{return value?new Date(value).toLocaleDateString('uk-UA'):'—'}catch{return '—'}};
  function fill(item){
   selectedId=item?.id||'';
+  editingRevision=item?.revision??null;
   if(noteInput)noteInput.value='';
   for(const key of ['title','details','assignee','reference','dueDate'])$('work'+key[0].toUpperCase()+key.slice(1)).value=item?.[key]||'';
   $('workKind').value=item?.kind||'other';
@@ -90,8 +116,58 @@
   for(const el of $('workForm').querySelectorAll('input,select,textarea,button'))el.disabled=!canEdit;
   $('workRemove').disabled=!canEdit;
   noteInput.disabled=!canEdit||!item;noteSend.disabled=!canEdit||!item;notes.hidden=!item;
+  paintQuickActions(item);
+ }
+ function isDirty(){
+  const item=current(),values=payload();
+  if(!item)return Boolean(values.title||values.details||values.assignee||values.reference||values.dueDate);
+  return Object.entries(values).some(([key,value])=>(value??null)!==(item[key]??null));
+ }
+ function paintQuickActions(item){
+  quickActions.hidden=!item;
+  if(!item)return;
+  quickButtons.replaceChildren();
+  const options=item.status==='new'?[['in_progress','Взяти в роботу']]:
+   item.status==='in_progress'?[['review','Передати на перевірку'],['done','Завершити']]:
+   item.status==='review'?[['done','Підтвердити виконання'],['in_progress','Повернути на доопрацювання']]:
+   item.status==='done'?[['in_progress','Відкрити повторно']]:
+   [['new','Повернути до нових']];
+  for(const [status,label] of options){
+   const button=node('button',label,'work-quick-button'+(status==='done'?' is-complete':''));
+   button.type='button';button.disabled=!canEdit||busy;
+   button.addEventListener('click',()=>quickTransition(status,label));
+   quickButtons.append(button);
+  }
+  const reference=String(item.reference||'').trim();
+  const caseId=/^SC-[A-Za-z0-9_-]{5,48}$/.test(reference)?reference:'';
+  linkedTicket.hidden=!caseId;
+  linkedTicket.disabled=!caseId;
+  linkedTicket.onclick=()=>window.dispatchEvent(new CustomEvent('svitlo:open-linked-ticket',{detail:{id:caseId}}));
+ }
+ async function quickTransition(status,label){
+  const item=current();
+  if(!item||!canEdit||busy)return;
+  if(isDirty()){
+   message('adminRegisterMessage','Спочатку збережіть зміни в полях картки. Статус не змінено.',true);
+   return;
+  }
+  if(status==='done'&&!confirm('Підтвердити виконання доручення '+item.id+'?'))return;
+  busy=true;for(const button of quickButtons.querySelectorAll('button'))button.disabled=true;
+  try{
+   const updated=await api('work-items/'+encodeURIComponent(item.id),{
+    method:'PATCH',body:JSON.stringify({expectedRevision:editingRevision,status})
+   });
+   entries=entries.map(x=>x.id===updated.id?updated:x);
+   fill(updated);render();
+   message('adminRegisterMessage','Доручення: '+label+'. Зміни збережені на сервері.');
+   document.dispatchEvent(new CustomEvent('svitlo:work-list',{detail:{items:[...entries]}}));
+   document.dispatchEvent(new Event('svitlo:work-updated'));
+  }catch(error){
+   message('adminRegisterMessage','Не вдалося змінити статус: '+error.message,true);
+  }finally{busy=false;paintQuickActions(current())}
  }
  function render(){
+  $('workNew').disabled=!canEdit;
   const list=filtered();
   const root=$('adminRegisterList');root.replaceChildren();
   for(const item of list){
@@ -101,21 +177,50 @@
     node('span',names[item.kind]||item.kind,'registry-type'),
     node('span',stateNames[item.status]||item.status,'registry-state state-'+item.status),
     node('span',priorityNames[item.priority]||item.priority,'registry-priority'));
-   row.addEventListener('click',()=>{fill(item);render()});root.append(row);
+   const now=todayKyiv(),open=!['done','cancelled'].includes(item.status);
+   row.classList.toggle('is-overdue',Boolean(open&&item.dueDate&&item.dueDate<now));
+   row.classList.toggle('is-urgent',Boolean(open&&item.priority==='urgent'));
+   row.setAttribute('aria-label',[item.id,item.title,stateNames[item.status],
+     item.priority==='urgent'?'Термінове':'',open&&item.dueDate&&item.dueDate<now?'Прострочено':''].filter(Boolean).join('. '));
+   row.addEventListener('click',()=>{
+    if(isDirty()&&!confirm('У картці є незбережені зміни. Відкрити інше доручення без збереження?'))return;
+    fill(item);render();
+    if(window.matchMedia('(max-width:900px)').matches)$('workForm').scrollIntoView({block:'start',behavior:'smooth'});
+   });root.append(row);
   }
   if(!list.length)root.append(node('p','Записів за цими умовами немає.','registry-empty'));
   const active=entries.filter(x=>x.status==='new'||x.status==='in_progress'||x.status==='review');
   $('adminRegisterCounter').textContent=active.length+' активних із '+entries.length;
-  $('adminRegisterPending').textContent=entries.filter(x=>x.status==='review').length+' на перевірці';
+  const open=entries.filter(x=>!['done','cancelled'].includes(x.status));
+  const today=todayKyiv();
+  const overdue=open.filter(x=>x.dueDate&&x.dueDate<today).length;
+  const urgent=open.filter(x=>x.priority==='urgent').length;
+  $('adminRegisterPending').textContent=(overdue?'Прострочено: '+overdue+' · ':'')+
+   (urgent?'Термінові: '+urgent+' · ':'')+
+   entries.filter(x=>x.status==='review').length+' на перевірці';
+  $('adminRegisterPending').classList.toggle('requires-attention',Boolean(overdue||urgent));
  }
  async function loadRegister(){
+  if($('adminDashboard').hidden)return;
+  const requestId=++registerRequestId;
   message('adminRegisterMessage','Оновлюємо картотеку…');
   try{
    const result=await api('work-items');
+   if(requestId!==registerRequestId||$('adminDashboard').hidden)return;
+   lastRegisterRefresh=Date.now();
+   const preserveDraft=isDirty();
    entries=Array.isArray(result.items)?result.items:[];
-   fill(entries.find(x=>x.id===selectedId)||null);render();
-   message('adminRegisterMessage','Реєстр синхронізовано з Railway.');
-  }catch(e){message('adminRegisterMessage','Не вдалося завантажити реєстр: '+e.message,true)}
+   if(!preserveDraft)fill(entries.find(x=>x.id===selectedId)||null);
+   render();
+   document.dispatchEvent(new CustomEvent('svitlo:work-list',{detail:{items:[...entries]}}));
+   message('adminRegisterMessage',preserveDraft
+    ?'Список оновлено. Незбережений текст залишився у формі. Перевірте дані перед збереженням.'
+    :'Реєстр синхронізовано з Railway.');
+  }catch(e){
+   if(requestId!==registerRequestId||$('adminDashboard').hidden)return;
+   message('adminRegisterMessage','Не вдалося завантажити реєстр: '+e.message,true);
+   document.dispatchEvent(new CustomEvent('svitlo:work-list',{detail:{items:[],unavailable:true}}));
+  }
  }
  function payload(){return {
   title:esc('workTitle'),details:esc('workDetails'),kind:esc('workKind'),priority:esc('workPriority'),
@@ -124,16 +229,21 @@
  }}
  $('workForm').addEventListener('submit',async e=>{
   e.preventDefault();if(busy||!canEdit)return;
-  const item=current(),body={...payload(),...(item?{expectedRevision:item.revision}:{})};
+  const item=current(),body={...payload(),...(item?{expectedRevision:editingRevision}:{})};
   busy=true;$('workSave').disabled=true;
   try{
    const result=await api(item?'work-items/'+encodeURIComponent(item.id):'work-items',
     {method:item?'PATCH':'POST',body:JSON.stringify(body)});
-   selectedId=result.id;await loadRegister();message('adminRegisterMessage','Картку збережено у захищеному реєстрі.');document.dispatchEvent(new Event('svitlo:work-updated'));
+   entries=entries.filter(x=>x.id!==result.id).concat(result);fill(result);
+   await loadRegister();message('adminRegisterMessage','Картку збережено у захищеному реєстрі.');document.dispatchEvent(new Event('svitlo:work-updated'));
   }catch(error){message('adminRegisterMessage',error.message,true)}
-  finally{busy=false;$('workSave').disabled=!canEdit}
+  finally{busy=false;$('workSave').disabled=!canEdit;paintQuickActions(current())}
  });
- $('workNew').addEventListener('click',()=>{fill(null);render();$('workTitle').focus()});
+ $('workNew').addEventListener('click',()=>{
+  if(!canEdit)return;
+  if(isDirty()&&!confirm('Поточна картка містить незбережені зміни. Створити нову?'))return;
+  fill(null);render();$('workForm').scrollIntoView({block:'nearest',behavior:'smooth'});$('workTitle').focus();
+ });
  $('workRemove').addEventListener('click',async()=>{
   const item=current();if(!item||document.body.dataset.adminRole!=='owner'||!confirm('Видалити картку '+item.id+' без можливості повернення?'))return;
   try{await api('work-items/'+encodeURIComponent(item.id),{method:'DELETE',body:JSON.stringify({expectedRevision:item.revision})});
@@ -144,6 +254,15 @@
  $('adminRegisterSearch').addEventListener('input',render);
  $('adminRegisterFilter').addEventListener('change',render);
  document.querySelector('[data-admin-tab="registry"]')?.addEventListener('click',loadRegister);
+ // Keep attention counts current across admin sessions without touching private data
+ // when the tab is hidden or the operator is offline. No persistent client cache.
+ setInterval(()=>{
+  if(document.hidden||$('adminDashboard').hidden||busy||isDirty())return;
+  const open=document.querySelector('[data-admin-tab][aria-pressed="true"]')?.dataset.adminTab;
+  if(!['overview','registry'].includes(open)||Date.now()-lastRegisterRefresh<90_000)return;
+  void loadRegister();
+ },45_000);
+ window.SvitloWorkRegister={refresh:loadRegister};
  const form=$('liveConfigForm');
  const set=(id,value)=>{const el=$(id);if(el.type==='checkbox')el.checked=value===true;else el.value=value??''};
  const fkeys=['inbox','sharing','help','feedback','copySchedule','addressSearch','pushPrompt','manualRefresh'];
@@ -197,7 +316,8 @@
  document.addEventListener('svitlo:admin-ready',ready);
  document.addEventListener('svitlo:admin-logout',()=>{
   document.body.classList.remove('askod-workspace');
-  selectedId='';entries=[];config=null;canEdit=false;fill(null);render();
+  registerRequestId++;lastRegisterRefresh=0;selectedId='';entries=[];config=null;canEdit=false;fill(null);render();
+  document.dispatchEvent(new CustomEvent('svitlo:work-list',{detail:{items:[],signedOut:true}}));
   message('adminRegisterMessage','Для роботи потрібен вхід.');
  });
  // Quick open by number of the case; respects normal role and API checks.
@@ -205,7 +325,11 @@
   const wanted=String(e.detail?.id||'');if(!wanted)return;
   if(!entries.some(item=>item.id===wanted))await loadRegister();
   const item=entries.find(x=>x.id===wanted);
-  if(item){fill(item);render()}else message('adminRegisterMessage','Картку не знайдено або немає доступу.',true);
+  if(item){
+   if(isDirty()&&!confirm('Є незбережені зміни у картці. Перейти до іншого доручення?'))return;
+   fill(item);render();
+   if(window.matchMedia('(max-width:900px)').matches)$('workForm').scrollIntoView({block:'start',behavior:'smooth'});
+  }else message('adminRegisterMessage','Картку не знайдено або немає доступу.',true);
  });
  window.addEventListener('svitlo:open-work',async e=>{
   document.querySelector('[data-admin-tab="registry"]')?.click();
@@ -213,6 +337,6 @@
   if(canEdit){fill(null);$('workTitle').value=String(e.detail?.title||'').slice(0,120);
    $('workDetails').value=String(e.detail?.details||'').slice(0,1800);
    $('workReference').value=String(e.detail?.reference||'').slice(0,100);
-   $('workTitle').focus();}
+   $('workForm').scrollIntoView({block:'nearest',behavior:'smooth'});$('workTitle').focus();}
  });
 })();

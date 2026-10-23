@@ -496,4 +496,21 @@ document.addEventListener('visibilitychange',()=>{
 });
 window.addEventListener('online',()=>{if(remote)void refreshTickets()});
 $('refreshTickets').addEventListener('click',()=>void refreshTickets());
+window.addEventListener('svitlo:open-linked-ticket',async event=>{
+ const id=String(event.detail?.id||'').trim();
+ if(!/^SC-[A-Za-z0-9_-]{5,48}$/.test(id)||!remote||$('adminDashboard').hidden)return;
+ document.querySelector('[data-admin-tab="feedback"]')?.click();
+ await refreshTickets();
+ const ticket=supportTickets.find(item=>item.id===id);
+ if(!ticket){
+  $('ticketsSummary').textContent='Пов’язане звернення '+id+' не знайдено в доступних записах.';
+  return;
+ }
+ supportSelected=id;
+ renderTicketList();renderTicketDetail();
+ window.SvitloMobileAdmin?.openTicket();
+ const row=[...$('ticketsList').querySelectorAll('button.ticket-row')].find(
+  button=>button.textContent.includes(id));
+ row?.scrollIntoView({block:'nearest',behavior:'smooth'});
+});
 document.addEventListener('svitlo:admin-logout',()=>{lastTicketsFingerprint='';lastTemplateFetch=0;templateFingerprint='';supportDrafts.clear();noteDrafts.clear();tagDrafts.clear();supportTickets=[];supportSelected='';$('ticketsList').replaceChildren();$('ticketDetail').replaceChildren();window.SvitloTicketWorkflow?.reset()});

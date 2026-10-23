@@ -1,0 +1,56 @@
+name: Beta Office real browser workflow check
+on:
+  pull_request:
+    branches: [staging]
+    paths:
+      - 'admin*.js'
+      - 'admin*.css'
+      - 'admin.html'
+      - 'push-server/work-registry.js'
+      - 'tests/admin_office_browser.py'
+      - 'tests/test_admin_work_focus_beta.mjs'
+      - 'scripts/build_pages.py'
+      - '.github/workflows/admin-browser-workflow.yml'
+  push:
+    branches: [staging]
+    paths:
+      - 'admin*.js'
+      - 'admin*.css'
+      - 'admin.html'
+      - 'push-server/work-registry.js'
+      - 'tests/admin_office_browser.py'
+      - 'tests/test_admin_work_focus_beta.mjs'
+      - 'scripts/build_pages.py'
+      - '.github/workflows/admin-browser-workflow.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  office-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check browser and private API module syntax
+        run: |
+          node --check admin.js
+          node --check admin-system.js
+          node --check admin-office.js
+          node --check push-server/work-registry.js
+      - name: Test work registry and attention controls
+        run: |
+          node --test tests/test_admin_work_registry.mjs tests/test_admin_work_focus_beta.mjs
+      - name: Prepare local Beta assets
+        run: python scripts/build_pages.py
+      - name: Install Chromium on supported runner
+        run: |
+          python -m pip install -q playwright==1.56.0
+          python -m playwright install --with-deps chromium
+      - name: Test logged-in admin workflows with mocked private backend
+        run: python tests/admin_office_browser.py
