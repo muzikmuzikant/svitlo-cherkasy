@@ -906,27 +906,3 @@ body{overflow-wrap:break-word}
 @media(prefers-reduced-motion:reduce){
  .status-panel,.bar-segment,.inbox-item,.appearance-choice>span{transition:none!important}
 }
-
-
-/* Sharing the PWA link is separate from exporting an address-specific schedule. */
-.share-app-action{gap:13px;align-items:center;min-height:76px;touch-action:manipulation}
-.share-app-action .share-app-icon{
- display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;
- border-radius:14px;background:var(--bluewash,#e8f1ff);color:var(--blue,#357dff);
- font-size:inherit
-}
-.share-app-action .share-app-copy{
- flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;
- color:var(--ink,#243954);font-size:13px;font-weight:500
-}
-.share-app-action .share-app-copy strong{font-size:13px;line-height:1.35;font-weight:750}
-.share-app-action .share-app-copy small{
- font-size:11px;font-weight:450;line-height:1.45;color:var(--muted,#7d8ca1);
- white-space:normal;overflow-wrap:break-word
-}
-.share-app-action .share-app-chevron{color:var(--muted,#8b9bb0);flex:0 0 18px}
-.share-app-action:focus-visible{outline:2px solid var(--blue,#357dff);outline-offset:-3px}
-@media(prefers-reduced-motion:no-preference){
- .share-app-action .share-app-icon svg{transition:transform .24s cubic-bezier(.2,.75,.25,1)}
- .share-app-action:active .share-app-icon svg{transform:translateY(-2px)}
-}
