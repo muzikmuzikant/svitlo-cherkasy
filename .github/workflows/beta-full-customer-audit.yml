@@ -1,0 +1,40 @@
+name: Beta full customer journey audit
+on:
+  pull_request:
+    branches: [staging]
+    paths:
+      - 'tests/full_beta_customer_audit.py'
+      - '.github/workflows/beta-full-customer-audit.yml'
+      - '*.html'
+      - '*.js'
+      - '*.css'
+      - 'scripts/build_pages.py'
+  push:
+    branches: [staging]
+    paths:
+      - 'tests/full_beta_customer_audit.py'
+      - '.github/workflows/beta-full-customer-audit.yml'
+      - '*.html'
+      - '*.js'
+      - '*.css'
+      - 'scripts/build_pages.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  beta-user-journeys:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build complete public beta
+        run: python scripts/build_pages.py
+      - name: Install compatible headless Chromium
+        run: |
+          python -m pip install -q playwright==1.56.0
+          python -m playwright install --with-deps chromium
+      - name: Audit all public pages at five widths in both themes, all PWA tabs and installer
+        run: python tests/full_beta_customer_audit.py
