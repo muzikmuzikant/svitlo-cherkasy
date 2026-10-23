@@ -6,7 +6,12 @@ const KINDS=new Set(['feedback','addresses','schedules','content','system','desi
 const STATUSES=new Set(['new','in_progress','review','done','cancelled']);
 const PRIORITIES=new Set(['normal','high','urgent']);
 const text=(v,max)=>String(v??'').trim().slice(0,max+1);
-const date=value=>value===null||value===''?null:/^20\d{2}-\d{2}-\d{2}$/.test(value)&&!Number.isNaN(Date.parse(value+'T00:00:00Z'))?value:null;
+const date=value=>{
+ if(value===null||value==='')return null;
+ if(typeof value!=='string'||!/^20\d{2}-\d{2}-\d{2}$/.test(value))return null;
+ const d=new Date(value+'T12:00:00Z');
+ return Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===value?value:null;
+};
 function fields(input,base={}){
  if(!input||typeof input!=='object'||Array.isArray(input))throw Error('Некоректна картка');
  const title=text(input.title??base.title,120),details=text(input.details??base.details,1800);
