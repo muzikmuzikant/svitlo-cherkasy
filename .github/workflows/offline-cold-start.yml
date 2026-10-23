@@ -4,6 +4,16 @@ on:
     branches:
       - staging
       - release/7.9.12-rc1
+  pull_request:
+    branches: [staging]
+    paths:
+      - '.github/workflows/offline-cold-start.yml'
+      - 'sw.js'
+      - 'app.js'
+      - 'index.html'
+      - 'install.js'
+      - 'scripts/build_pages.py'
+      - 'tests/*_browser.py'
   workflow_dispatch:
 permissions:
   contents: read
