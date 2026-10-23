@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "lastChecked": "2026-10-23T09:35:24+03:00",
+  "lastChecked": "2026-10-23T15:00:25+03:00",
   "reviewPending": false,
   "unresolvedDates": [],
   "confirmedNoScheduleDates": [
@@ -438,20 +438,16 @@
     },
     {
       "date": "2026-10-23",
-      "publishedAt": "2026-10-22T21:55+03:00",
-      "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-23-zhovtnya?lang=uk",
+      "publishedAt": "2026-10-23T14:20+03:00",
+      "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-23-zhovtnya-1?lang=uk",
       "verified": true,
       "queues": {
         "1.1": {
           "knownFrom": "00:00",
           "off": [
             [
-              "10:00",
-              "12:00"
-            ],
-            [
               "16:00",
-              "18:00"
+              "19:00"
             ],
             [
               "22:00",
@@ -463,11 +459,7 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "10:00",
-              "12:00"
-            ],
-            [
-              "16:00",
+              "15:00",
               "18:00"
             ],
             [
@@ -480,15 +472,7 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "06:00",
-              "08:00"
-            ],
-            [
-              "10:00",
-              "12:00"
-            ],
-            [
-              "16:00",
+              "15:00",
               "18:00"
             ]
           ]
@@ -497,16 +481,8 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "06:00",
-              "08:00"
-            ],
-            [
-              "10:00",
-              "12:00"
-            ],
-            [
               "16:00",
-              "18:00"
+              "19:00"
             ]
           ]
         },
@@ -514,12 +490,8 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "08:00",
-              "10:00"
-            ],
-            [
               "14:00",
-              "16:00"
+              "17:00"
             ],
             [
               "20:00",
@@ -531,12 +503,8 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "08:00",
-              "10:00"
-            ],
-            [
               "14:00",
-              "16:00"
+              "17:00"
             ],
             [
               "20:00",
@@ -548,15 +516,11 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "08:00",
-              "10:00"
-            ],
-            [
               "14:00",
               "16:00"
             ],
             [
-              "20:00",
+              "19:00",
               "22:00"
             ]
           ]
@@ -565,15 +529,11 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "08:00",
-              "10:00"
-            ],
-            [
               "14:00",
               "16:00"
             ],
             [
-              "20:00",
+              "19:00",
               "22:00"
             ]
           ]
@@ -583,7 +543,7 @@
           "off": [
             [
               "12:00",
-              "14:00"
+              "15:00"
             ],
             [
               "18:00",
@@ -596,7 +556,7 @@
           "off": [
             [
               "12:00",
-              "14:00"
+              "15:00"
             ],
             [
               "18:00",
@@ -608,11 +568,7 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "12:00",
-              "14:00"
-            ],
-            [
-              "18:00",
+              "17:00",
               "20:00"
             ]
           ]
@@ -621,23 +577,55 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "12:00",
-              "14:00"
-            ],
-            [
-              "18:00",
+              "17:00",
               "20:00"
             ]
           ]
         }
       },
-      "revisions": 1,
-      "planFingerprint": "2df61c1f31e629c8146d",
+      "revisions": 3,
+      "planFingerprint": "53b192e4ef169c94d168",
       "noScheduledOutages": [],
       "publications": [
         {
           "publishedAt": "2026-10-22T21:55+03:00",
           "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-23-zhovtnya?lang=uk",
+          "queues": [
+            "1.1",
+            "1.2",
+            "2.1",
+            "2.2",
+            "3.1",
+            "3.2",
+            "4.1",
+            "4.2",
+            "5.1",
+            "5.2",
+            "6.1",
+            "6.2"
+          ]
+        },
+        {
+          "publishedAt": "2026-10-23T13:05+03:00",
+          "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-23-zhovtnya?lang=uk",
+          "queues": [
+            "1.1",
+            "1.2",
+            "2.1",
+            "2.2",
+            "3.1",
+            "3.2",
+            "4.1",
+            "4.2",
+            "5.1",
+            "5.2",
+            "6.1",
+            "6.2"
+          ]
+        },
+        {
+          "publishedAt": "2026-10-23T14:20+03:00",
+          "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-23-zhovtnya-1?lang=uk",
           "queues": [
             "1.1",
             "1.2",
@@ -840,6 +828,27 @@
         "4.1",
         "4.2",
         "5.1"
+      ]
+    },
+    {
+      "date": "2026-10-23",
+      "publishedAt": "2026-10-23T14:20+03:00",
+      "detectedAt": "2026-10-23T15:00:25+03:00",
+      "revisionId": "53b192e4ef169c94d168",
+      "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-23-zhovtnya-1?lang=uk",
+      "queues": [
+        "1.1",
+        "1.2",
+        "2.1",
+        "2.2",
+        "3.1",
+        "3.2",
+        "4.1",
+        "4.2",
+        "5.1",
+        "5.2",
+        "6.1",
+        "6.2"
       ]
     }
   ]
