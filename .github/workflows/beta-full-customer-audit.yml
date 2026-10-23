@@ -4,6 +4,7 @@ on:
     branches: [staging]
     paths:
       - 'tests/full_beta_customer_audit.py'
+      - 'tests/deep_beta_customer_journeys.py'
       - '.github/workflows/beta-full-customer-audit.yml'
       - '*.html'
       - '*.js'
@@ -38,3 +39,5 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Audit all public pages at five widths in both themes, all PWA tabs and installer
         run: python tests/full_beta_customer_audit.py
+      - name: Click through schedules, sharing, inbox, Help and support forms in both themes
+        run: python tests/deep_beta_customer_journeys.py
