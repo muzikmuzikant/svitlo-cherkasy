@@ -4,12 +4,22 @@ on:
     branches:
       - staging
       - release/7.9.12-rc1
+  pull_request:
+    branches: [staging]
+    paths:
+      - '.github/workflows/offline-cold-start.yml'
+      - 'sw.js'
+      - 'app.js'
+      - 'index.html'
+      - 'install.js'
+      - 'scripts/build_pages.py'
+      - 'tests/*_browser.py'
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   offline-browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 16
     steps:
       - uses: actions/checkout@v4
