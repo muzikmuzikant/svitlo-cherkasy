@@ -8,11 +8,12 @@ import {createSchedulePublication} from '../push-server/schedule-publication.js'
 const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const source=JSON.parse(read('data/schedules.json')),review=JSON.parse(read('data/source_review.json'));
 
-test('CRITICAL PRODUCT RULE: missing graph always means 24 hours of light in visual schedule',()=>{
+test('CRITICAL PRODUCT RULE: fresh confirmed absence is light all day; unverified absence is unknown',()=>{
  const app=read('app.js');
- assert.match(app,/if\(!day\)\{[\s\S]*?return new Int8Array\(1440\)/);
+ assert.match(app,/if\(!day\)\{[\s\S]*?verifiedNoSchedule\(date\)\?new Int8Array\(1440\):null/);
  assert.match(app,/ГРАФІКА НЕМАЄ · СВІТЛО ВЕСЬ ДЕНЬ/);
  assert.match(app,/Світло весь день/);
+ assert.match(app,/Час перевірки невідомий або дані застаріли/);
  assert.match(read('style.css'),/feature-off-quickAddresses #homeQuickPlaces/);
 });
 
