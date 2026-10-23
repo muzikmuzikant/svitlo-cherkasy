@@ -203,7 +203,8 @@
   try{
    const result=await api(item?'work-items/'+encodeURIComponent(item.id):'work-items',
     {method:item?'PATCH':'POST',body:JSON.stringify(body)});
-   selectedId=result.id;await loadRegister();message('adminRegisterMessage','Картку збережено у захищеному реєстрі.');document.dispatchEvent(new Event('svitlo:work-updated'));
+   entries=entries.filter(x=>x.id!==result.id).concat(result);fill(result);
+   await loadRegister();message('adminRegisterMessage','Картку збережено у захищеному реєстрі.');document.dispatchEvent(new Event('svitlo:work-updated'));
   }catch(error){message('adminRegisterMessage',error.message,true)}
   finally{busy=false;$('workSave').disabled=!canEdit}
  });
