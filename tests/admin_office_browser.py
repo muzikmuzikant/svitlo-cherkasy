@@ -177,8 +177,33 @@ def main():
         assert page.locator(".desk-bulk select option[value='resolved']").count()==1
         page.locator(".desk-bulk button.secondary").click()
         assert not page.locator(".desk-bulk").is_visible()
+        # Sweep every administrative section with fake data at desktop and phone sizes.
+        # A hidden or clipped primary workspace must not pass as a polished UI.
+        sections=["overview","registry","corrections","insights","quality","operations","push",
+                  "media","ads","social","feedback","help","live","features","design",
+                  "maintenance","sources","planner","tools","data","security","backup",
+                  "revisions","audit"]
+        audit=[]
+        for width,height in [(1280,900),(390,844)]:
+            page.set_viewport_size({"width":width,"height":height})
+            for name in sections:
+                page.locator('[data-admin-tab="'+name+'"]').evaluate("(el) => el.click()")
+                page.wait_for_timeout(35)
+                result=page.evaluate("""(section)=>{
+                    const panel=[...document.querySelectorAll('#adminDashboard > [data-admin-panel]')]
+                      .find(p=>p.dataset.adminPanel===section && !p.hidden);
+                    const rect=panel?.getBoundingClientRect();
+                    return {viewport:innerWidth,scroll:document.documentElement.scrollWidth,
+                      right:rect?.right,visible:Boolean(panel)};
+                }""",name)
+                assert result["visible"], f"{width}px: missing selected admin panel {name}"
+                assert result["scroll"]<=width+4, f"{width}px: horizontal overflow in {name}: {result}"
+                assert result["right"] is not None and result["right"]<=width+8, (
+                    f"{width}px: workspace clipped in {name}: {result}")
+                audit.append((width,name))
+        assert len(audit)==48
         assert not errors, "Browser runtime exceptions: "+"; ".join(errors)
-        print("Svitlo Office browser smoke passed: auth, desk, task creation, note, mobile nav.")
+        print("Svitlo Office browser passed: workflow, linked tickets, mobile and 24-tab visual sweep.")
         context.close();browser.close()
 
 if __name__=="__main__":
