@@ -272,7 +272,7 @@
   }
   if(list.childElementCount)attention.append(list);
  }
- document.addEventListener('svitlo:work-list',e=>summarizeWork(e.detail?.items||[],e.detail?.signedOut!==true));
+ document.addEventListener('svitlo:work-list',e=>summarizeWork(e.detail?.items||[],e.detail?.signedOut!==true&&e.detail?.unavailable!==true));
 
  desk.addEventListener('click',e=>{const btn=e.target.closest('[data-office-go]');if(btn)activate(btn.dataset.officeGo)});
  const renderText=(root,message)=>{root.replaceChildren(el('p',message,'office-empty'))};
