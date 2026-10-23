@@ -54,3 +54,50 @@ $('emergencyDeskCheck').onclick=async()=>{
   }
  }catch(e){output.textContent='Автоматичне джерело недоступне: '+e.message+'. Перевірте офіційну публікацію вручну.'}
 };
+
+$('emergencyDeskSend').onclick=async()=>{
+ const button=$('emergencyDeskSend');
+ if(document.body.dataset.adminRole!=='owner')return status('Термінова розсилка доступна лише власнику.',true);
+ const source=$('emergencyDeskUrl').value.trim();
+ if(!sourceValid(source))return status('Додайте посилання на конкретну новину або допис обленерго.',true);
+ const time=Date.parse($('emergencyDeskTime').value),now=Date.now();
+ if(!Number.isFinite(time)||time>now+300000||time<now-12*3600000)
+  return status('Уточніть час офіційної публікації (не старше 12 годин).',true);
+ if(!$('emergencyDeskConfirm').checked)return status('Спочатку підтвердьте звірку з офіційним джерелом.',true);
+ const type=$('emergencyDeskStatus').value,msg=messages[type];
+ if(!msg)return status('Невідомий статус.',true);
+ const key=idFor(type+'|'+source+'|'+minute(time));
+ const question='Опублікувати '+msg.title+' у «Вхідних» та розіслати Push усім підписаним пристроям? Перевірте час і джерело.';
+ if(!confirm(question))return;
+ button.disabled=true;status('Публікуємо повідомлення…');
+ try{
+  const config=await api('app-config');
+  if(config.announcements.some(x=>x.id===key))return status('Таке повідомлення вже створено. Повторну розсилку заблоковано.');
+  if(config.announcements.length>=50)throw Error('Архів із 50 повідомлень заповнений. Спочатку звільніть місце.');
+  const entry={id:key,title:msg.title,body:msg.body,
+   content:msg.content+'\n\nОфіційне джерело: '+source,
+   kind:'emergency',priority:'urgent',queue:'all',delivery:'both',settlement:'',
+   icon:type==='ended'?'✅':'⚠️',active:true,pinned:type==='active',images:[],
+   publishedAt:new Date().toISOString(),updatedAt:null,scheduledAt:null,
+   expiresAt:new Date(now+24*3600000).toISOString(),pushSentAt:null};
+  const next={...config,announcements:[entry,...config.announcements]};
+  await api('app-config',{method:'PUT',body:JSON.stringify(next)});
+  status('Повідомлення у «Вхідних». Надсилаємо Push…');
+  try{
+   const result=await api('notices/send',{method:'POST',body:JSON.stringify({id:key,confirmSend:true})});
+   status('Опубліковано. Push прийнято: '+result.accepted+' із '+result.attempted+'. Це не гарантує отримання на кожному телефоні.');
+  }catch(e){
+   const again=await api('app-config');
+   if(again.announcements.some(x=>x.id===key&&x.pushSentAt))
+    status('Опубліковано. Сервер уже відзначив відправлення Push, повтор не запускаємо.');
+   else status('Опубліковано у «Вхідних», але Push не підтверджено: '+e.message,true);
+  }
+  $('emergencyDeskConfirm').checked=false;
+ }catch(e){status('Нічого не надіслано: '+e.message,true)}
+ finally{button.disabled=false}
+};
+document.addEventListener('svitlo:admin-logout',()=>{
+ $('emergencyDeskConfirm').checked=false;status('Для відправлення потрібна авторизація.');
+});
+repaint();
+})();
