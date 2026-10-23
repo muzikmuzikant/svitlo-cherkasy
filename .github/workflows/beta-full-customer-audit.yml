@@ -32,7 +32,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Verify source freshness and existing outage contracts
-        run: node --test tests/test_verified_no_schedule_freshness.mjs tests/test_verified_absence_and_publication.mjs tests/test_release_fixes_7912.mjs
+        run: node --test tests/test_verified_no_schedule_freshness.mjs tests/test_verified_absence_and_publication.mjs tests/test_release_fixes_7912.mjs tests/test_offline_readiness_beta.mjs
       - name: Build complete public beta
         run: python scripts/build_pages.py
       - name: Install compatible headless Chromium

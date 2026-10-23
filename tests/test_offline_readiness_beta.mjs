@@ -36,14 +36,15 @@ test('offline load uses verified device snapshot without network or the operator
  assert.equal(calls,0);
 });
 
-test('offline unknown days never become falsely green, but online absence retains original convention',()=>{
+test('offline unknown days stay unknown; online absence needs operator verification',()=>{
  const context={
   QUEUES:['1.1'],currentDay:()=>null,isOfflineMode:()=>true,
-  Int8Array,minute:()=>0,sourceFresh:()=>false
+  Int8Array,minute:()=>0,sourceFresh:()=>false,verifiedNoSchedule:()=>false
  };
  const timeline=vm.runInNewContext(extract('function timeline(date,queue){','function stateAt(a,m){')+';timeline',context);
  assert.equal(timeline('2026-10-18','1.1'),null);
  context.isOfflineMode=()=>false;
+ context.verifiedNoSchedule=()=>true;
  const online=timeline('2026-10-18','1.1');
  assert.equal(online.length,1440);
  assert.equal(online.every(v=>v===0),true);
@@ -83,7 +84,7 @@ test('offline warning never sends user to a website that is inaccessible',()=>{
  const code=extract('function renderFreshness(){','function renderHome(){');
  assert.doesNotMatch(code,/OFFICIAL|cherkasyoblenergo\.com|Перевірити в оператора|createElement\('a'/);
  assert.match(code,/offline\|\|/);
- assert.match(app,/Немає збереженого графіка/);
+ assert.match(app,/Немає підтверджених даних/);
  assert.match(app,/offlineLocal&&navigator\.onLine===false&&!document\.hidden/);
  assert.match(app,/localStorage\.getItem\(PUSH_CONSENT\)!=='no'/);
 });
