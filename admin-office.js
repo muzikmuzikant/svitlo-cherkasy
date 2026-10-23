@@ -12,6 +12,16 @@
  sources:'database',planner:'calendar',tools:'zap',data:'code',
  security:'shield',backup:'archive',revisions:'history',audit:'clock'
  };
+ const workNav=sections.find(b=>b.dataset.adminTab==='registry');
+ const workNavBadge=elBadge();
+ function elBadge(){
+  const badge=document.createElement('span');
+  badge.className='office-task-badge';
+  badge.hidden=true;
+  badge.setAttribute('aria-label','Доручення, що потребують уваги');
+  workNav?.append(badge);
+  return badge;
+ }
  const paths={
  home:'M3 10.5 12 3l9 7.5V21H3V10.5z M9 21v-8h6v8',
  file:'M5 3h10l4 4v14H5z M15 3v5h4 M8 12h8 M8 16h8',
@@ -195,6 +205,75 @@
  <div class="office-desk-footer" id="officeDeskStatus" role="status">Після входу завантажаться поточні дані.</div>`;
  const panel=dashboard.querySelector('[data-admin-panel="overview"]');
  panel?.prepend(desk);
+ const attention=el('section',null,'office-attention');attention.id='officeWorkAttention';
+ attention.setAttribute('aria-label','Доручення, що потребують уваги');
+ attention.setAttribute('aria-live','polite');
+ desk.querySelector('.office-desk-title').after(attention);
+ function summarizeWork(items,available=true){
+  attention.replaceChildren();
+  if(dashboard.hidden){workNavBadge.hidden=true;return}
+  if(!available){
+   workNavBadge.hidden=true;
+   attention.classList.add('is-unavailable');
+   attention.append(el('strong','Доручення тимчасово недоступні'),
+    el('p','Не вдалося завантажити реєстр із сервера. Завдання не вважаються виконаними або відсутніми.'));
+   return;
+  }
+  attention.classList.remove('is-unavailable');
+  const today=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Kyiv'});
+  const active=items.filter(x=>!['done','cancelled'].includes(x.status));
+  const overdue=active.filter(x=>x.dueDate&&x.dueDate<today);
+  const urgent=active.filter(x=>x.priority==='urgent');
+  const review=active.filter(x=>x.status==='review');
+  const critical=active.filter(x=>(x.dueDate&&x.dueDate<=today)||x.priority==='urgent'||x.status==='review');
+  workNavBadge.textContent=critical.length>99?'99+':String(critical.length);
+  workNavBadge.hidden=critical.length===0;
+  workNav?.classList.toggle('has-task-attention',critical.length>0);
+  const heading=el('div',null,'office-attention-head');
+  heading.append(el('strong',critical.length?'Потрібна ваша увага':'Доручення під контролем'),
+   el('span',critical.length?critical.length+' активних пунктів контролю':'Немає термінових або прострочених'));
+  attention.append(heading);
+  if(!active.length){
+   attention.append(el('p','Активних доручень немає. Нові завдання з’являться тут після створення у картотеці.','office-attention-empty'));
+   return;
+  }
+  const summary=el('div',null,'office-attention-stats');
+  const controls=[
+   ['Прострочено',overdue.length,'overdue'],
+   ['Термінові',urgent.length,'urgent'],
+   ['На перевірці',review.length,'review']
+  ];
+  for(const [label,count,kind] of controls){
+   const button=el('button',null,'office-attention-filter '+kind);
+   button.type='button';button.append(el('strong',String(count)),el('span',label));
+   button.disabled=count===0;
+   button.onclick=()=>{
+    activate('registry');
+    const status=$('adminRegisterFilter'),due=$('workDueFilter'),priority=$('workPriorityFilter');
+    if(status)status.value=kind==='review'?'review':'';
+    if(due)due.value=kind==='overdue'?'overdue':'';
+    if(priority)priority.value=kind==='urgent'?'urgent':'';
+    if(due)due.dispatchEvent(new Event('change'));
+   };
+   summary.append(button);
+  }
+  attention.append(summary);
+  const list=el('div',null,'office-attention-items');
+  const rank=x=>(x.dueDate&&x.dueDate<today?100:0)+(x.priority==='urgent'?25:0)+
+   (x.dueDate===today?20:0)+(x.status==='review'?10:0);
+  for(const task of [...critical].sort((a,b)=>rank(b)-rank(a)||String(a.dueDate||'9999').localeCompare(String(b.dueDate||'9999'))).slice(0,4)){
+   const button=el('button',null,'office-attention-item');
+   button.type='button';
+   const type=task.dueDate&&task.dueDate<today?'Прострочено':task.priority==='urgent'?'Термінове':
+    task.dueDate===today?'Термін сьогодні':'На перевірці';
+   button.append(el('strong',task.title),el('span',type+(task.assignee?' · '+task.assignee:'')));
+   button.onclick=()=>{activate('registry');window.dispatchEvent(new CustomEvent('svitlo:select-work',{detail:{id:task.id}}))};
+   list.append(button);
+  }
+  if(list.childElementCount)attention.append(list);
+ }
+ document.addEventListener('svitlo:work-list',e=>summarizeWork(e.detail?.items||[],e.detail?.signedOut!==true));
+
  desk.addEventListener('click',e=>{const btn=e.target.closest('[data-office-go]');if(btn)activate(btn.dataset.officeGo)});
  const renderText=(root,message)=>{root.replaceChildren(el('p',message,'office-empty'))};
  const stats=(items)=>{
@@ -218,6 +297,7 @@
   ]);
   const values=[work,tickets,monitor,corrections].map(x=>x.status==='fulfilled'?x.value:null);
   const [tasks,feedback,health,addresses]=values,items=tasks?.items||[],msgs=feedback?.items||[];
+  summarizeWork(items,!!tasks);
   const active=items.filter(x=>!['done','cancelled'].includes(x.status));
   const today=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Kyiv'});
   const overdue=active.filter(x=>x.dueDate&&x.dueDate<today);
@@ -236,8 +316,13 @@
   }).slice(0,7);
   for(const entry of prioritized){
    const b=el('button',null,'office-work-entry');b.type='button';
-   b.append(el('small',entry.id),el('strong',entry.title),el('span',entry.dueDate&&entry.dueDate<today?'Прострочено · '+entry.dueDate:
-    entry.status==='review'?'На перевірці':entry.assignee?'Виконавець: '+entry.assignee:'На виконанні'));
+   b.classList.toggle('is-overdue',Boolean(entry.dueDate&&entry.dueDate<today));
+   b.classList.toggle('is-urgent',entry.priority==='urgent');
+   const dueLabel=entry.dueDate&&entry.dueDate<today?'Прострочено · '+entry.dueDate:
+    entry.dueDate?'Термін: '+entry.dueDate:entry.status==='review'?'На перевірці':'Без контрольного терміну';
+   b.append(el('small',entry.id),el('strong',entry.title),
+    el('span',(entry.priority==='urgent'?'Термінове · ':'')+dueLabel+
+      (entry.assignee?' · '+entry.assignee:'')));
    b.onclick=()=>{activate('registry');window.dispatchEvent(new CustomEvent('svitlo:select-work',{detail:{id:entry.id}}))};workRoot.append(b);
   }
   if(!prioritized.length)renderText(workRoot,tasks?'Активних доручень немає.':'Реєстр доручень недоступний.');
@@ -273,6 +358,7 @@
   hideModal();setNav(false);document.body.classList.remove('office-ready');
   state.textContent='Сеанс завершено';$('officeDeskStatus').textContent='Для перегляду потрібен вхід.';
   $('officeStats').replaceChildren();$('officeWorkItems').replaceChildren();$('officeFeedback').replaceChildren();
+  attention.replaceChildren();workNavBadge.hidden=true;workNav?.classList.remove('has-task-attention');
  });
  document.addEventListener('svitlo:work-updated',()=>{if(currently()==='overview')refreshDesk()});
 })();
