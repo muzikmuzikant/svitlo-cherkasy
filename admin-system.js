@@ -219,7 +219,7 @@
   }catch(e){
    if(requestId!==registerRequestId||$('adminDashboard').hidden)return;
    message('adminRegisterMessage','Не вдалося завантажити реєстр: '+e.message,true);
-   if(!entries.length)document.dispatchEvent(new CustomEvent('svitlo:work-list',{detail:{items:[],unavailable:true}}));
+   document.dispatchEvent(new CustomEvent('svitlo:work-list',{detail:{items:[],unavailable:true}}));
   }
  }
  function payload(){return {
