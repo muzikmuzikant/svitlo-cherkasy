@@ -20,14 +20,14 @@ export function cleanMessage(input) {
 
 const normArea=s=>String(s||'').normalize('NFKC').toLocaleLowerCase('uk-UA')
  .replace(/^[мс]\.\s*/,'').replace(/[’ʼ`]/g,"'").replace(/\s+/g,' ').trim();
-export function selectRecipients(subscribers, { queue = 'all', target = 'all', endpoint = '',settlement='' } = {}) {
+export function selectRecipients(subscribers, { queue = 'all', target = 'all', endpoint = '',settlement='',emergencyOnly=false } = {}) {
   const list = Object.values(subscribers);
   if (target === 'mine') {
     if (typeof endpoint !== 'string' || !endpoint.startsWith('https://') || endpoint.length > 2048) throw Error('Не знайдено Push-підписку цього пристрою');
     return list.filter(r => r.subscription?.endpoint === endpoint);
   }
   if (target !== 'all') throw Error('Невідомий одержувач');
-  return list.filter(r => (queue === 'all' || r.queue === queue)&&(!settlement||normArea(r.settlement)===normArea(settlement)));
+  return list.filter(r => (queue === 'all' || r.queue === queue)&&(!settlement||normArea(r.settlement)===normArea(settlement))&&(!emergencyOnly||r.preferences?.emergency===true));
 }
 
 export function createManualPush({ subscribers, webpush, appUrl, hash, save, onBroadcast=()=>{} }) {
@@ -103,7 +103,7 @@ export function createManualPush({ subscribers, webpush, appUrl, hash, save, onB
     async broadcast(payload) {
       const msg = cleanMessage(payload);
       if (payload.confirmSend !== true) throw Error('Потрібне підтвердження розсилки');
-      const recipients = selectRecipients(subscribers, { queue: msg.queue,settlement:msg.settlement });
+      const recipients = selectRecipients(subscribers, { queue: msg.queue,settlement:msg.settlement,emergencyOnly:payload.emergencyOnly===true });
       if (!recipients.length) return { ok: false, attempted: 0, accepted: 0, failed: 0, expired: 0, error: 'Немає підписаних пристроїв для вибраної підчерги.' };
       requireCooldown('broadcast', 6, 60 * 60_000);
       const result=await deliver(recipients,msg);
