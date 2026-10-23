@@ -41,7 +41,7 @@ test('Options provides a dedicated action to share the whole application',()=>{
  assert.match(html,/id="shareAppHint"/);
  assert.match(app,/\$\('shareApp'\)\?\.addEventListener\('click',shareApplication\)/);
  assert.match(style,/\.share-app-action:focus-visible/);
- assert.match(style,/:root\[data-theme="dark"\]/);
+ assert.match(read('theme.css'),/:root\[data-theme="dark"\]/);
 });
 test('native iOS share sheet receives public production URL, not a schedule or beta link',async()=>{
  const h=fixture({native:true});await h.run();
