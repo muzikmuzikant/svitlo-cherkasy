@@ -568,6 +568,18 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  <div id="opsHistoryList" class="ops-history-list"><p class="hint">Завантаження історії…</p></div>
  </section>
 </section>
+<section class="card emergency-desk" data-admin-panel="emergency" hidden>
+<h2>Аварійні повідомлення</h2><p>Оперативна розсилка після перевірки офіційного джерела. Погодинні графіки не змінюємо.</p>
+<div id="emergencyDeskSource" role="status" class="push-state">Джерело ще не перевірено.</div>
+<button type="button" class="secondary" id="emergencyDeskCheck">Перевірити офіційні події</button>
+<div class="two">
+<div class="field"><label for="emergencyDeskStatus">Статус ГАВ</label><select id="emergencyDeskStatus"><option value="active">Застосовано</option><option value="ended">Скасовано</option></select></div>
+<div class="field"><label for="emergencyDeskTime">Час публікації</label><input type="datetime-local" id="emergencyDeskTime"></div></div>
+<div class="field"><label for="emergencyDeskUrl">Посилання на конкретну офіційну новину</label><input type="url" id="emergencyDeskUrl" placeholder="https://t.me/pat_cherkasyoblenergo/..." maxlength="400"></div>
+<div class="push-preview" style="margin:15px 0"><span class="push-preview-icon">⚠</span><div><b id="emergencyDeskTitle">Аварійні відключення</b><p id="emergencyDeskBody">Погодинні графіки залишаються доступними.</p></div></div>
+<label><input type="checkbox" id="emergencyDeskConfirm"> Я звірив повідомлення, його статус і час з офіційним джерелом.</label>
+<div class="flex" style="margin-top:15px"><button id="emergencyDeskSend" type="button">Опублікувати та надіслати Push</button><button id="emergencyDeskEditor" class="secondary" type="button">Повний редактор</button></div>
+<p id="emergencyDeskResult" role="status" class="push-state">Нічого не надіслано.</p></section>
 <section class="card" data-admin-panel="push" hidden aria-labelledby="pushToolsTitle">
   <div class="headline"><h2 id="pushToolsTitle">Push-повідомлення</h2><span class="pill" id="pushAvailability">Увійдіть для надсилання</span></div>
   <p>Перевірте доставку на iPhone або самостійно напишіть оголошення. Повідомлення надсилаються одразу на зареєстровані пристрої через Railway — без коміту в GitHub.</p>
