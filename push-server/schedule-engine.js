@@ -33,7 +33,7 @@ export function dueTransition(values, now, offset, target, grace=3) {
 export function latestOfficialEvent(events, now=Date.now(), maxAge=24*3600_000){
   if(!Array.isArray(events))return null;
   return events.filter(e=>e && ['active','ended','notice'].includes(e.status) &&
-     typeof e.source==='string' && /^https:\/\/(?:www\.)?cherkasyoblenergo\.com\//i.test(e.source) &&
+     typeof e.source==='string' && (/^https:\/\/(?:www\.)?cherkasyoblenergo\.com\//i.test(e.source) || /^https:\/\/t\.me\/pat_cherkasyoblenergo\/[0-9]{1,12}$/.test(e.source)) &&
      Number.isFinite(Date.parse(e.publishedAt)) && Date.parse(e.publishedAt)<=now+60000 &&
      now-Date.parse(e.publishedAt)<maxAge)
     .sort((a,b)=>Date.parse(b.publishedAt)-Date.parse(a.publishedAt))[0]||null;
