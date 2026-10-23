@@ -57,11 +57,11 @@ def main():
                         device_scale_factor=2 if width<=390 else 1,
                         color_scheme=theme,service_workers="block"
                     )
-                    context.add_init_script("""(theme)=>{
-                       localStorage.setItem('svitlo-appearance-v1',theme);
+                    context.add_init_script("""(()=>{
+                       localStorage.setItem('svitlo-appearance-v1','__THEME__');
                        localStorage.setItem('svitlo-beta-analytics-choice','declined');
                        localStorage.setItem('svitlo-beta-analytics-opt-in','no');
-                    }""",theme)
+                    })();""".replace('__THEME__',theme))
                     context.route("https://**/*", lambda r: r.abort())
                     for pathname in PAGES:
                         page=context.new_page()
@@ -87,9 +87,9 @@ def main():
                         service_workers="block",
                         has_touch=width<=390,
                     )
-                    context.add_init_script("""(mode)=>{
+                    context.add_init_script("""(()=>{
                       Object.defineProperty(navigator,'standalone',{get:()=>true,configurable:true});
-                      localStorage.setItem('svitlo-appearance-v1',mode);
+                      localStorage.setItem('svitlo-appearance-v1','__THEME__');
                       localStorage.setItem('svitlo-beta-analytics-choice','declined');
                       localStorage.setItem('svitlo-beta-analytics-opt-in','no');
                       localStorage.setItem('svitlo-addresses-v6',JSON.stringify([{
@@ -97,7 +97,7 @@ def main():
                         house:'1',queue:'1.1',favorite:false
                       }]));
                       localStorage.setItem('svitlo-prefs-v6',JSON.stringify({primaryId:'fake-audit-address'}));
-                    }""",theme)
+                    })();""".replace('__THEME__',theme))
                     context.route("https://**/*",lambda r:r.abort())
                     page=context.new_page()
                     errors=[]
@@ -106,7 +106,7 @@ def main():
                     ready(page)
                     for tab in MAIN_TABS:
                         page.locator('.bottom-nav [data-go="'+tab+'"]').first.click()
-                        page.wait_for_function("(tab) => document.querySelector('#'+tab)?.hidden===false",tab,timeout=6000)
+                        page.wait_for_function("(tab) => document.querySelector('#'+tab)?.hidden===false",arg=tab,timeout=6000)
                         page.wait_for_timeout(115)
                         report=check_document(page,theme+"/app/"+tab,width)
                         reports.append({"page":"app/"+tab,"theme":theme,"width":width,**report})
