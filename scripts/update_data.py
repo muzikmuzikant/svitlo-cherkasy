@@ -1045,9 +1045,14 @@ def update_emergency(session,now=None):
     out=DATA/'emergency.json'
     try:old=json.loads(out.read_text('utf8'))
     except (ValueError,FileNotFoundError):old={'events':[]}
-    listing=fetch(session,BASE+'/news?lang=uk')
     entries=[]
-    for url in emergency_link_candidates(listing)[:12]:
+    try:
+        listing=fetch(session,BASE+'/news?lang=uk')
+        candidates=emergency_link_candidates(listing)[:12]
+    except (requests.RequestException,ValueError) as error:
+        LOG.warning('Official news listing unavailable: %s', error)
+        candidates=[]
+    for url in candidates:
         try:
             event=parse_emergency_article(fetch(session,url),url,now)
             if event:entries.append(event)
