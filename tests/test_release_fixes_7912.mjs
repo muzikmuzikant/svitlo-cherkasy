@@ -68,10 +68,10 @@ test('Sunday keeps seven weekday pills while purging prior Mon-Sat outage data',
  vmctx.showDay('2026-10-12');assert.equal(view,'2026-10-18','obsolete Monday cannot be opened');
  current='2026-10-19';vmctx.showDay('2026-10-18');assert.equal(view,'2026-10-19');
 });
-test('operator silence is still light-all-day, explicitly unchanged',()=>{
+test('operator silence is all-day light only when the operator check certifies no schedule',()=>{
  const app=read('app.js');
- assert.match(app,/if\(!day\)\{[\s\S]*?return isOfflineMode\(\)\?null:new Int8Array\(1440\);/);
- assert.match(app,/unknownOffline\?'Немає збереженого графіка':'Світло весь день'/);
+ assert.match(app,/if\(!day\)\{[\s\S]*?return verifiedNoSchedule\(date\)\?new Int8Array\(1440\):null;/);
+ assert.match(app,/unknownOffline\?'Немає підтверджених даних':'Світло весь день'/);
 });
 
 test('Railway outage uses latest public read-only snapshot before dated Beta static backup',async()=>{

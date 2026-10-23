@@ -111,6 +111,16 @@ function sourceFresh(date=today()){
  return !lastSyncFailed && !reviewAffects(date) && Number.isFinite(checked) &&
    checked<=Date.now()+5*60_000 && Date.now()-checked<=55*60_000;
 }
+// A missing published timetable is NOT proof of an all-day supply if the
+// operator's latest check failed, became stale or left this date under review.
+function verifiedNoSchedule(date){
+ if(isOfflineMode()||!sourceFresh(date))return false;
+ if(Array.isArray(data.confirmedNoScheduleDates))
+  return data.confirmedNoScheduleDates.includes(date);
+ // Compatibility for schema versions before explicit absent-day certificates.
+ // Never extend this guess beyond today or tomorrow.
+ return date===today()||date===shiftDay(today(),1);
+}
 function withinPublishedHorizon(date){
  const current=today();
  const inHorizon=date===current||date===shiftDay(current,1);
@@ -123,8 +133,9 @@ function timeline(date,queue){
  if(!QUEUES.includes(queue))return null;
  const day=currentDay(date),q=day?.queues?.[queue];
  if(!day){
-   // Offline, a missing date is UNKNOWN, not a verified day without outages.
-   return isOfflineMode()?null:new Int8Array(1440);
+   // Only a fresh operator check can certify a day with no published plan.
+   // An offline/stale/under-review or not-yet-checked day is UNKNOWN.
+   return verifiedNoSchedule(date)?new Int8Array(1440):null;
  }
  if(!q){return new Int8Array(1440)} // Omitted subqueue in verified publication.
  const start=minute(q.knownFrom||'00:00');if(start<0)return null;
@@ -259,13 +270,13 @@ function renderHome(){
  }
  const panel=$('heroStatus');panel.className='status-panel status-'+st;
  $('stateIcon').innerHTML=ICON;
- const unknownOffline=Boolean(a&&!schedule&&isOfflineMode());
- setText('stateCaption',!a?'ВАШ ГРАФІК':schedule?'ЗА ОПУБЛІКОВАНИМ ГРАФІКОМ':unknownOffline?'АКТУАЛЬНИЙ ГРАФІК НЕВІДОМИЙ':'ГРАФІКА НЕМАЄ · СВІТЛО ВЕСЬ ДЕНЬ');
- setText('heroTitle',a&&!schedule?(unknownOffline?'Немає збереженого графіка':'Світло весь день'):copy.title);setText('heroCountdown',a&&!schedule?(unknownOffline?'Немає збережених даних.':'Відключень за опублікованим графіком немає.'):copy.detail);
- setText('sourceStamp',schedule?`Опубліковано ${fmtStamp(schedule.publishedAt)}`:unknownOffline?'Немає підтверджених даних':'Офіційний графік на сьогодні не опубліковано');
+ const unknownOffline=Boolean(a&&!schedule&&!verifiedNoSchedule(date));
+ setText('stateCaption',!a?'ВАШ ГРАФІК':schedule?'ЗА ОПУБЛІКОВАНИМ ГРАФІКОМ':unknownOffline?'АКТУАЛЬНИЙ ГРАФІК НЕ ПІДТВЕРДЖЕНО':'ГРАФІКА НЕМАЄ · СВІТЛО ВЕСЬ ДЕНЬ');
+ setText('heroTitle',a&&!schedule?(unknownOffline?'Немає підтверджених даних':'Світло весь день'):copy.title);setText('heroCountdown',a&&!schedule?(unknownOffline?'Не вдалося підтвердити актуальний графік. Перевірте інформацію оператора.':'Відключень за опублікованим графіком немає.'):copy.detail);
+ setText('sourceStamp',schedule?`Опубліковано ${fmtStamp(schedule.publishedAt)}`:unknownOffline?'Час перевірки невідомий або дані застаріли':'Офіційний графік на сьогодні не опубліковано');
  setText('queueChip',a?.queue?`Черга ${a.queue}`:'—');
  setText('overviewDate',formatDate(date,{weekday:'long',day:'numeric',month:'long'}));
- setText('overviewLabel',schedule?'24 години':unknownOffline?'Немає збережених даних':'Світло весь день');renderBar(timelineToday);
+ setText('overviewLabel',schedule?'24 години':unknownOffline?'Графік не підтверджено':'Світло весь день');renderBar(timelineToday);
  const t=stats(timelineToday);
  setText('hoursOn',t&&t.unknown===0?minutesLabel(t.on):t&&t.on?`${minutesLabel(t.on)}+`:'—');
  setText('hoursOff',t&&t.unknown===0?minutesLabel(t.off):t&&t.off?`${minutesLabel(t.off)}+`:'—');
@@ -300,7 +311,12 @@ function renderTomorrowPreview(){
  const tomorrowLink=$('tomorrowOpen');if(tomorrowLink){tomorrowLink.disabled=!queue;tomorrowLink.title='Переглянути графік на завтра'}
  root.classList.toggle('tomorrow-unknown',!t||st.unknown>0);
  if(!queue){summary.textContent='Спочатку додайте адресу';details.textContent='Після цього покажемо графік на завтра';return}
- if(!day||!t){summary.textContent=isOfflineMode()?'Немає збереженого графіка':'Світло весь день';details.textContent=(isOfflineMode()?'Неможливо перевірити графік без зв’язку':'Немає опублікованого графіка')+' · Підчерга '+queue;return}
+ if(!day||!t){
+  const confirmed=verifiedNoSchedule(date);
+  summary.textContent=confirmed?'Світло весь день':'Немає підтверджених даних';
+  details.textContent=(confirmed?'Немає опублікованого графіка':'Не вдалося підтвердити графік на завтра')+' · Підчерга '+queue;
+  return
+ }
  if(!st||st.unknown>0){summary.textContent='Частина годин ще уточнюється';details.textContent='Підчерга '+queue+' · Перевірте офіційний графік';return}
  summary.textContent=st.off===0?'Без планових відключень':'Планується без світла: '+formatDuration(st.off);
  details.textContent='Підчерга '+queue+' · '+formatDate(date,{day:'numeric',month:'long'});
@@ -607,7 +623,7 @@ function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Пі�
  const pub=currentDay(day),t=timeline(day,a.queue);
  const dayStats=stats(t);
  setText('detailDayStat',dayStats?(pub?(dayStats.unknown?'Частина годин уточнюється':'Без світла '+formatDuration(dayStats.off)+' · Зі світлом '+formatDuration(dayStats.on)):''):'Немає даних');
- setText('detailDayLabel',weekdayFull(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:isOfflineMode()?'Немає збереженого графіка':'Світло весь день');const grid=$('hourGrid');grid.replaceChildren();
+ setText('detailDayLabel',weekdayFull(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:verifiedNoSchedule(day)?'Світло весь день':'Немає підтверджених даних');const grid=$('hourGrid');grid.replaceChildren();
  for(let h=0;h<24;h++){
    let on=0,off=0;
    for(let m=h*60;m<h*60+60;m++){if(t?.[m]===0)on++;if(t?.[m]===1)off++}
