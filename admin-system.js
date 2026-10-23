@@ -14,10 +14,14 @@
  const dueSelect=node('select');dueSelect.id='workDueFilter';dueSelect.setAttribute('aria-label','Контрольний термін');
  for(const [v,label] of [['','Усі терміни'],['overdue','Прострочені'],['today','Сьогодні'],['soon','Наступні 7 днів'],['none','Без терміну']])
   dueSelect.add(new Option(label,v));
+ const prioritySelect=node('select');prioritySelect.id='workPriorityFilter';
+ prioritySelect.setAttribute('aria-label','Фільтр пріоритету');
+ for(const [value,label] of [['','Усі пріоритети'],['urgent','Термінові'],['high','Високі'],['normal','Звичайні']])
+  prioritySelect.add(new Option(label,value));
  const onlyMine=node('label',null,'office-my-only'),mine=node('input');
  mine.id='workMineOnly';mine.type='checkbox';onlyMine.append(mine,node('span','Мої доручення'));
  const exportCSV=node('button','Експорт CSV','secondary');exportCSV.id='workExport';exportCSV.type='button';
- bar?.append(dueSelect,onlyMine,exportCSV);
+ bar?.append(dueSelect,prioritySelect,onlyMine,exportCSV);
  const notes=node('section',null,'office-note');
  const noteInput=node('textarea');noteInput.id='workNote';noteInput.maxLength=900;noteInput.rows=3;
  noteInput.placeholder='Висновок, резолюція або проміжний результат';
@@ -38,14 +42,25 @@
  function filtered(){
   const query=esc('adminRegisterSearch').toLocaleLowerCase('uk-UA'),status=esc('adminRegisterFilter');
   const today=todayKyiv(),next=new Date(today+'T12:00:00Z');next.setUTCDate(next.getUTCDate()+7);
+  const priority=prioritySelect.value;
   const until=next.toISOString().slice(0,10),due=dueSelect.value;
-  return entries.filter(item=>(!status||item.status===status)&&
+  return entries.filter(item=>(!status||item.status===status)&&(!priority||item.priority===priority)&&
    (!query||(item.id+' '+item.title+' '+item.details+' '+item.reference+' '+item.assignee).toLocaleLowerCase('uk-UA').includes(query))&&
    (!mine.checked||String(item.assignee||'').toLocaleLowerCase('uk-UA')===myUsername())&&
    (!due||(due==='none'?!item.dueDate:due==='overdue'?Boolean(item.dueDate&&item.dueDate<today&&!['done','cancelled'].includes(item.status)):
-     due==='today'?item.dueDate===today:Boolean(item.dueDate&&item.dueDate>=today&&item.dueDate<=until))));
+     due==='today'?item.dueDate===today:Boolean(item.dueDate&&item.dueDate>=today&&item.dueDate<=until))))
+   .sort((a,b)=>{
+    const rank=item=>{
+     if(['done','cancelled'].includes(item.status))return -10;
+     return (item.dueDate&&item.dueDate<today?100:0)+
+      (item.priority==='urgent'?50:item.priority==='high'?12:0)+
+      (item.dueDate===today?25:0)+(item.status==='review'?10:0);
+    };
+    return rank(b)-rank(a)||String(a.dueDate||'9999').localeCompare(String(b.dueDate||'9999'))||
+     String(b.updatedAt||'').localeCompare(String(a.updatedAt||''));
+   });
  }
- dueSelect.onchange=()=>render();mine.onchange=()=>render();
+ dueSelect.onchange=()=>render();prioritySelect.onchange=()=>render();mine.onchange=()=>render();
  exportCSV.onclick=()=>{
   const safe=value=>{
    let text=String(value??'').replace(/[\r\n]+/g,' ').replace(/"/g,'""');
@@ -175,7 +190,14 @@
   if(!list.length)root.append(node('p','Записів за цими умовами немає.','registry-empty'));
   const active=entries.filter(x=>x.status==='new'||x.status==='in_progress'||x.status==='review');
   $('adminRegisterCounter').textContent=active.length+' активних із '+entries.length;
-  $('adminRegisterPending').textContent=entries.filter(x=>x.status==='review').length+' на перевірці';
+  const open=entries.filter(x=>!['done','cancelled'].includes(x.status));
+  const today=todayKyiv();
+  const overdue=open.filter(x=>x.dueDate&&x.dueDate<today).length;
+  const urgent=open.filter(x=>x.priority==='urgent').length;
+  $('adminRegisterPending').textContent=(overdue?'Прострочено: '+overdue+' · ':'')+
+   (urgent?'Термінові: '+urgent+' · ':'')+
+   entries.filter(x=>x.status==='review').length+' на перевірці';
+  $('adminRegisterPending').classList.toggle('requires-attention',Boolean(overdue||urgent));
  }
  async function loadRegister(){
   message('adminRegisterMessage','Оновлюємо картотеку…');
