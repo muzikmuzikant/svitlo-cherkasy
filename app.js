@@ -332,6 +332,43 @@ function outages(t){
  }
  return parts;
 }
+// Share the application itself, not a private address or a schedule image.
+// Keep the canonical public URL independent of the Beta/installed PWA origin.
+const APP_SHARE_URL='https://svitlo-cherkasy.pp.ua/';
+async function shareApplication(){
+ const message={
+  title:'Світло Черкаси',
+  text:'Перевіряйте графіки відключень і отримуйте сповіщення про зміни у Черкасах та районі.',
+  url:APP_SHARE_URL
+ };
+ if(typeof navigator.share==='function'){
+  try{await navigator.share(message);return}
+  catch(error){
+   if(error?.name==='AbortError')return; // User closed the native share sheet.
+   console.warn('App sharing unavailable:',error);
+  }
+ }
+ try{
+  if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(APP_SHARE_URL);
+  else{
+   // Legacy browser fallback: copying must still work without Web Share API.
+   const field=document.createElement('textarea');
+   field.value=APP_SHARE_URL;
+   field.setAttribute('readonly','');
+   field.style.cssText='position:fixed;left:-9999px;opacity:0';
+   document.body.append(field);
+   let copied=false;
+   try{field.focus();field.select();copied=document.execCommand?.('copy')===true}
+   finally{field.remove()}
+   if(!copied)throw Error('Clipboard API unavailable');
+  }
+  flash('Посилання на застосунок скопійовано');
+ }catch(error){
+  console.warn('App link copy failed:',error);
+  window.prompt('Скопіюйте посилання на «Світло Черкаси»:',APP_SHARE_URL);
+ }
+}
+
 function shareDescription(date){
  const queue=previewQueue||primary()?.queue,t=queue?timeline(date,queue):null,day=currentDay(date);
  if(!queue||!t)return null;
@@ -1216,6 +1253,7 @@ for(const b of document.querySelectorAll('[data-go]'))b.addEventListener('click'
  $('shareToday')?.addEventListener('click',()=>shareSchedule(today()));
  $('copyToday')?.addEventListener('click',()=>shareSchedule(today(),{copy:true}));
  $('shareDetail')?.addEventListener('click',()=>shareSchedule(daySelected||today()));
+ $('shareApp')?.addEventListener('click',shareApplication);
  const quickSelect=$('quickQueueSelect');
  if(quickSelect){
   for(const queue of QUEUES){const option=document.createElement('option');option.value=queue;option.textContent='Підчерга '+queue;quickSelect.append(option)}
