@@ -268,7 +268,7 @@ async function job(){
   for(const notice of siteControls.duePush().slice(0,6)){
    try{
     const result=await manualPush.broadcast({title:notice.title,body:notice.body,queue:notice.queue,
-      notificationId:'notice:'+notice.id,inbox:notice.delivery!=='push',settlement:notice.settlement||'',confirmSend:true});
+      notificationId:'notice:'+notice.id,inbox:notice.delivery!=='push',settlement:notice.settlement||'',emergencyOnly:notice.kind==='emergency',confirmSend:true});
     if(result.accepted>0)siteControls.markPushed(notice.id);
    }catch(e){console.warn('Scheduled notice Push:',e.message)}
   }
