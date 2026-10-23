@@ -36,11 +36,14 @@ function fixture({native,clipboard=true,legacy=false,prompt=true}={}){
 }
 
 test('Options provides a dedicated action to share the whole application',()=>{
- assert.match(html,/id="shareApp" type="button"/);
+ assert.match(html,/<button type="button" class="setting-action" id="shareApp">/);
  assert.match(html,/Поділитися застосунком/);
- assert.match(html,/id="shareAppHint"/);
+ assert.doesNotMatch(html,/share-app-action|share-app-icon|share-app-copy/);
+ assert.ok(html.indexOf('id="shareApp"')>html.indexOf('Знайти чергу на сайті оператора'));
+ assert.ok(html.indexOf('id="shareApp"')<html.indexOf('id="svitloSocialSettings"'));
  assert.match(app,/\$\('shareApp'\)\?\.addEventListener\('click',shareApplication\)/);
- assert.match(style,/\.share-app-action:focus-visible/);
+ assert.match(style,/\.setting-line,\.setting-action/);
+ assert.doesNotMatch(style,/\.share-app-action/);
  assert.match(read('theme.css'),/:root\[data-theme="dark"\]/);
 });
 test('native iOS share sheet receives public production URL, not a schedule or beta link',async()=>{
