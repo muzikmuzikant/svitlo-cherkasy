@@ -346,7 +346,7 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
      if(entry.pushSentAt)throw Error('Push для цього повідомлення вже надсилався');
      if(input.confirmSend!==true)throw Error('Підтвердіть масове надсилання');
      const outcome=await manualPush.broadcast({title:entry.title,body:entry.body,queue:entry.queue,
-       notificationId:'notice:'+entry.id,inbox:entry.delivery!=='push',settlement:entry.settlement||'',confirmSend:true});
+       notificationId:'notice:'+entry.id,inbox:entry.delivery!=='push',settlement:entry.settlement||'',emergencyOnly:entry.kind==='emergency',confirmSend:true});
      if(outcome.accepted>0)siteControls.markPushed(entry.id);
      extras?.record('push.notice',entry.id);send(res,200,outcome);return true;
    }
