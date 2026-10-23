@@ -1,0 +1,30 @@
+name: Beta visual capture for audit
+on:
+  pull_request:
+    branches: [staging]
+    paths:
+      - 'tests/beta_visual_capture.py'
+      - '.github/workflows/beta-visual-capture.yml'
+      - '*.html'
+      - '*.css'
+      - '*.js'
+      - 'scripts/build_pages.py'
+permissions:
+  contents: read
+jobs:
+  captures:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build Beta snapshot
+        run: python scripts/build_pages.py
+      - name: Install browser and image montage library
+        run: |
+          python -m pip install -q playwright==1.56.0 pillow
+          python -m playwright install --with-deps chromium
+      - name: Capture sanitized customer screenshots for visual inspection
+        run: python tests/beta_visual_capture.py
