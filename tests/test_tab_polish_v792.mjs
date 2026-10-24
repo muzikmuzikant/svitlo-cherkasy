@@ -4,18 +4,22 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 const read=path=>fs.readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const app=read('app.js'),css=read('style.css');
-const nav=app.slice(app.indexOf('function navigate(name){'),app.indexOf('function renderDetail(){'));
+const nav=app.slice(app.indexOf('function navigate(name,'),app.indexOf('function renderDetail(){'));
 function setup({reduced=false,off=false,hasAddress=true}={}){
  const events=[],ids=['home','detail','updates','settings'];
  const classes=()=>({set:new Set(),add(k){this.set.add(k)},remove(k){this.set.delete(k)},contains(k){return this.set.has(k)},toggle(k,v){if(v)this.set.add(k);else this.set.delete(k)}});
- const pages=Object.fromEntries(ids.map(id=>[id,{hidden:id!=='home',classList:classes(),style:{cssText:''}}]));
+ const pages=Object.fromEntries(ids.map(id=>[id,{hidden:id!=='home',classList:classes(),style:{cssText:''},
+  animate(frames,settings){events.push('animate:'+id+':'+settings.duration);return {finished:new Promise(()=>{}),cancel(){}}}
+ }]));
  const buttons=ids.map(name=>({dataset:{go:name},classList:{contains:k=>k==='nav-item',toggle(k,v){events.push('nav:'+name+':'+v)}},setAttribute(){}}));
  const element={style:{scrollBehavior:'smooth'},dataset:{},classList:{contains:k=>off&&k==='feature-off-animations'}};
- const context={active:'home',tabMotion:null,TAB_MOTION_MS:260,previewQueue:null,primary:()=>hasAddress?{queue:'2.1'}:null,openAddressSheet:()=>events.push('picker'),
+ const context={active:'home',tabMotion:null,TAB_MOTION_MS:460,previewQueue:null,
+  history:{pushState(){}},location:{href:'https://svitlo-cherkasy.pp.ua/'},
+  primary:()=>hasAddress?{queue:'2.1'}:null,openAddressSheet:()=>events.push('picker'),
   sessionStorage:{setItem(){}},SCREEN_RETURN:'selected',today:()=> '2026-10-15',
   renderHome:()=>events.push('render-home'),renderDetail:()=>events.push('render-detail'),
   renderUpdates:()=>events.push('render-updates'),renderSettings:()=>events.push('render-settings'),
-  window:{scrollTo:()=>events.push('scroll'),matchMedia:()=>({matches:reduced})},
+  window:{scrollTo:()=>events.push('scroll'),matchMedia:()=>({matches:reduced}),getComputedStyle:()=>({transform:'none',opacity:1})},
   document:{documentElement:element,querySelector:()=>null,querySelectorAll:()=>buttons},
   $:id=>pages[id]
  };
@@ -28,7 +32,7 @@ test('every tab tap commits immediately without queued cooldown',()=>{
   context.navigate(name);
   assert.equal(context.active,name);
   assert.equal(pages[name].hidden,false);
-  assert.equal(pages[name].classList.contains('tab-enter'),true);
+  assert.ok(events.includes('animate:'+name+':460'),'Each new tab animates at the agreed duration');
  }
  assert.equal(events.filter(x=>x==='scroll').length,5);
  assert.equal(context.navigate.queuedName,undefined);
@@ -39,7 +43,7 @@ test('double-tap does not restart entrance animation or force scrolling',()=>{
  context.navigate('updates');const before=events.slice();
  context.navigate('updates');context.navigate('updates');
  assert.deepEqual(events,before);
- assert.equal(pages.updates.classList.contains('tab-enter'),true);
+ assert.ok(events.includes('animate:updates:460'));
 });
 test('reduce motion and admin animation-off remove entrance without delaying tab',()=>{
  for(const x of [{reduced:true},{off:true}]){
