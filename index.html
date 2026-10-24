@@ -102,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <div id="offlineChip" class="offline-chip" role="status" aria-live="polite" hidden>Немає інтернету. Показуємо збережені дані, вони могли змінитися.</div>
 <main id="main" class="main-content">
 <section id="home" class="screen"><div class="hero-heading" id="homeIntro"><div class="eyebrow"><i class="live-dot"></i> ВСЕ ПРО СВІТЛО</div><h1>Все під контролем.</h1><p>Оберіть адресу. Решту зробимо ми.</p></div>
+<div id="homeDashboardIntro" class="home-dashboard-intro" hidden><div><span class="home-dashboard-eyebrow">ПЛАНОВІ ВІДКЛЮЧЕННЯ</span><h1>Моє світло</h1><p id="homeDashboardDate">Сьогодні</p></div><span class="home-dashboard-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-3 8h6l-5 12 2-9H7l6-11Z"/></svg></span></div>
 <div class="primary-picker"><div class="selected-label">МОЯ АДРЕСА</div><button class="picker-btn" id="primaryPicker"><span class="picker-place" id="primaryName">Додайте свою адресу</span><span class="picker-sub" id="primarySub">Черкаси або села району</span><svg class="chevron-svg" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg></button></div>
 <div class="home-quick-places" id="homeQuickPlaces" aria-label="Швидке перемикання адрес" hidden></div>
 <aside id="pushInvite" class="push-invite" hidden aria-labelledby="pushInviteTitle">
