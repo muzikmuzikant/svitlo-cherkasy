@@ -95,7 +95,8 @@
   for(const id of ['opsDashboard','monitorMetrics','monitorMessage','monitorRefresh']){
    const el=$(id);if(el)conceal(el,!hasOverviewData);
   }
-  const navCount=$('controlNavigationCount');if(navCount)navCount.textContent=count.length+' доступних розділів';
+  const navCount=$('controlNavigationCount');const label=count.length+' доступних розділів';
+  if(navCount&&navCount.textContent!==label)navCount.textContent=label;
   const active=dashboard.querySelector('[data-admin-tab][aria-pressed="true"]');
   if(!active||active.hidden){
    dashboard.querySelector('[data-admin-tab="overview"]')?.click();
