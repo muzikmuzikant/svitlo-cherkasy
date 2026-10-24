@@ -85,16 +85,17 @@ test('the iPhone full-screen message dismisses with actual exit animations, not 
  assert.match(css,/prefers-reduced-motion/);
 });
 
-test('production PWA and API retain their identity; no Beta mirroring or commercial ads',async()=>{
+test('production PWA keeps its identity and disables Beta schedule mirror by default',async()=>{
  const index=repoFile('index.html'),release=JSON.parse(repoFile('release.json'));
  const push=JSON.parse(repoFile('push-config.json'));
  const server=repoFile('push-server/server.js'),source=repoFile('push-server/ads.js');
- assert.equal(release.version,'7.9.11');
+ assert.equal(release.version,'7.9.12');
  assert.equal(release.channel,'production');
  assert.match(index,/data-deployment-channel="production"/);
  assert.doesNotMatch(index,/id="stagingBadge"/);
  assert.equal(push.apiBase,'https://svitlo-cherkasy-production.up.railway.app');
- assert.doesNotMatch(server,/betaScheduleMirror|SCHEDULE_MIRROR_API_BASE/);
+ assert.match(server,/createScheduleMirror/,'The same codebase supports an isolated Beta mirror');
+ assert.match(repoFile('push-server/schedule-mirror.js'),/if\(!sourceOrigin\)return \{enabled:false/,'Without a Beta-only source the mirror cannot write');
  assert.match(source,/if\(!commercialAllowed\)return/);
  assert.match(index,/id="appUpdateNotes"/);
  assert.match(repoFile('app.js'),/svitlo:live-schedules/);
