@@ -79,8 +79,8 @@ test('switch keeps the intended position during connection and disconnection',()
  assert.equal(disabling.pushMaster.disabled,true);
 });
 
-test('Options title matches the tab; Push UI has exactly one master control',()=>{
- assert.match(html,/<section id="settings"[\s\S]*?<h1>Опції<\/h1>/);
+test('Settings uses the refreshed heading, compact Options tab and one Push master control',()=>{
+ assert.match(html,/<section id="settings"[\s\S]*?<h1>Налаштування<\/h1>/);
  assert.match(html,/data-go="settings"[\s\S]*?<span>Опції<\/span>/);
  assert.equal(html.split('id="pushMaster"').length-1,1);
  assert.equal(html.split('id="pushCategorySettings"').length-1,1);
