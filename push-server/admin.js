@@ -274,7 +274,9 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
      let removed=0;for(const key of SESSIONS.keys())if(key!==tokenHash){SESSIONS.delete(key);removed++}
      extras?.record('auth.revokeOthers','count='+removed);send(res,200,{ok:true,removed});return true;
    }
-   if(url.pathname==='/api/admin/push/status'&&req.method==='GET'){send(res,200,manualPush.stats());return true}
+   if(url.pathname==='/api/admin/push/status'&&req.method==='GET'){
+      send(res,200,{...manualPush.stats(),automatic:manualPush.automaticStatus?.()||null});return true;
+    }
    if(url.pathname==='/api/admin/push/test'&&req.method==='POST'){const output=await manualPush.test(await readJson(req));extras?.record('push.test','test notification');send(res,200,output);return true}
    if(url.pathname==='/api/admin/notices/metrics'&&req.method==='GET'){
      const ids=siteControls.get().announcements.map(x=>x.id);
