@@ -287,6 +287,7 @@ function renderFreshness(){
 }
 function renderHome(){
  const intro=$('homeIntro');if(intro)intro.hidden=Boolean(primary());
+ const dashboard=$('homeDashboardIntro');if(dashboard)dashboard.hidden=!primary();
  try{window.SvitloTelemetry?.sampleSelected(primary())}catch{}
  renderEmergency();renderFreshness();const a=primary(),date=today(),m=nowMinutes();
  setText('primaryName',label(a));setText('primarySub',a?`${a.settlement||'Черкаси'} · ${a.queue?'підчерга '+a.queue:'підчергу не визначено'}`:'Черкаси або села району');
