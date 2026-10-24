@@ -1,5 +1,5 @@
 'use strict';
-/* Visual planner feeds the existing authenticated GitHub publishing mechanism. */
+/* Visual planner publishes verified overrides through authenticated Railway API. */
 (()=>{
  const by=id=>document.getElementById(id),model=window.SvitloSchedulePlanner;
  const queues=Array.from({length:6},(_,i)=>[`${i+1}.1`,`${i+1}.2`]).flat();
@@ -53,7 +53,7 @@
   else doc.schedules.days.push({date:d,source:url,publishedAt:new Date().toISOString(),verified:true,queues:{[q]:{knownFrom:'00:00',off}}});
   doc.updatedAt=new Date().toISOString();
   by('editor').value=JSON.stringify(doc,null,2);
-  dirty=false;announce('Уточнення підготовлено в редакторі. Для збереження на сайті натисніть «Опублікувати» або експортуйте JSON.');
+  dirty=false;announce('Уточнення підготовлено в редакторі. Натисніть «Опублікувати» для збереження на Railway.');
   return true;
  }
  for(const q of queues){queue.add(new Option('Підчерга '+q,q));by('plannerCopyFrom').add(new Option('Копіювати з '+q,q));}
@@ -72,7 +72,7 @@
  by('plannerStage').onclick=()=>{try{stage()}catch(e){announce(e.message,true)}};
  by('plannerPublish').onclick=()=>{
   try{
-   if(!remote||!canPublish)throw Error('Потрібен вхід до адмінпанелі та налаштований GitHub-токен на Railway. Або підготуйте зміни та експортуйте JSON.');
+   if(!remote||!canPublish)throw Error('Потрібен вхід власника до адмінпанелі, щоб зберегти графік на Railway.');
    if(stage())by('publish').click();
   }catch(e){announce(e.message,true)}
  };

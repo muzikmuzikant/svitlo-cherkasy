@@ -940,12 +940,13 @@ function notifyEmergencyEvent(){
 }
 let railwayAddressCorrections={keys:{},localities:{}},addressSourceIndex=null;
 const RAILWAY_ADDRESS_CACHE='svitlo-railway-address-corrections-v1';
+const RAILWAY_OVERRIDES_CACHE='svitlo-railway-manual-overrides-v1';
 function applyOverrides(){
  const days=overrides.schedules?.days;
  if(Array.isArray(days)&&days.length){
    const map=new Map(data.days.map(d=>[d.date,d]));
    for(const correction of days){
-     if(!/^20\d{2}-\d{2}-\d{2}$/.test(correction.date)||!correction.source?.startsWith('https://www.cherkasyoblenergo.com/')||correction.verified!==true)continue;
+     if(!/^20\d{2}-\d{2}-\d{2}$/.test(correction.date)||!/^https:\/\/(?:www\.)?cherkasyoblenergo\.com\//.test(correction.source||'')||correction.verified!==true)continue;
      const base=map.get(correction.date)||{date:correction.date,queues:{},verified:true,publishedAt:correction.publishedAt,source:correction.source};
      const queueSources={...(base.queueSources||{})};
      for(const q of Object.keys(correction.queues||{}))queueSources[q]=correction.source;
@@ -1070,6 +1071,23 @@ async function refreshData(manual=false){
      ]);
      if(alertRes.status==='fulfilled'&&alertRes.value.ok){const parsed=await alertRes.value.json();if(Array.isArray(parsed.events))emergency=parsed}
      if(overrideRes.status==='fulfilled'&&overrideRes.value.ok){const parsed=await overrideRes.value.json();if(parsed.schemaVersion===1)overrides=parsed}
+     // Railway manual overrides take precedence over the static GitHub fallback.
+     try{
+      const base=pushConfig?.apiBase;
+      if(!base||!/^https:\/\//.test(base))throw Error('Missing API base');
+      const live=await fetch(base.replace(/\/$/,'')+'/api/data/manual_overrides.json?t='+Date.now(),
+       {cache:'no-store',signal:AbortSignal.timeout(3500)});
+      if(live.ok){
+       const updated=await live.json();
+       if(updated.schemaVersion===1&&Array.isArray(updated.schedules?.days)){
+        overrides=updated;try{localStorage.setItem(RAILWAY_OVERRIDES_CACHE,JSON.stringify(updated))}catch{}
+       }
+      }else if(live.status!==404)throw Error('Overrides HTTP '+live.status);
+     }catch(e){
+      console.warn('Live overrides fallback:',e.message);
+      const previous=safeJSON(RAILWAY_OVERRIDES_CACHE,null);
+      if(previous?.schemaVersion===1)overrides=previous;
+     }
      try{
       const apiBase=pushConfig?.apiBase;
       if(apiBase&&/^https:\/\//.test(apiBase)){
@@ -1089,6 +1107,7 @@ async function refreshData(manual=false){
      applyOverrides();
    }catch(error){console.warn('Bulletin or admin overrides:',error)}
    }
+   if(!refreshAuxiliary)applyOverrides();
    hasCheckedOnce=true;render();checkNotifications();
    if(manual&&!schedulesOk)flash('Сервер недоступний. Показуємо збережені дані.');
    if(schedulesOk){
