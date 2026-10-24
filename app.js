@@ -551,7 +551,7 @@ function renderBar(a){const bar=$('overviewBar');bar.replaceChildren();if(!a){co
 // Latest tap wins. Previous WAAPI animations are interrupted at their actual
 // visual position rather than rewinding, and clicks are never rate-limited.
 let tabMotion=null;
-const TAB_MOTION_MS=window.matchMedia?.('(pointer:coarse)')?.matches?265:300;
+const TAB_MOTION_MS=460; // Same agreed duration across all four tabs and device sizes.
 function navigate(name,{fromHistory=false}={}){
  const names=['home','detail','updates','settings'];
  if(!names.includes(name))return;
