@@ -48,6 +48,8 @@ jobs:
         run: python tests/all_queues_browser.py
       - name: Audit micro motions and stable geometry across PWA screens
         run: python tests/visual_motion_audit_browser.py
+      - name: Verify redesigned Settings, address management, all queues and Home at mobile widths
+        run: python tests/four_screen_redesign_browser.py
       - name: Test Inbox controls and iOS scaling prevention in Chromium
         run: python tests/inbox_toolbar_browser.py
       - name: Test Svitlo Office admin in real Chromium with mock backend
