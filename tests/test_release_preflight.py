@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from release_preflight import check, PreflightFailure, BETA_API, PROD_API, PROD_DOMAIN
+from release_preflight import check, PreflightFailure, BETA_API, PROD_API, PROD_DOMAIN, EXPECTED_PUBLIC_KEYS
 
 class ReleasePreflightTests(unittest.TestCase):
     def setUp(self):
@@ -22,7 +22,7 @@ class ReleasePreflightTests(unittest.TestCase):
     def fixture(self, channel):
         self.write("release.json", {"channel": channel, "version": "7.9.12"})
         self.write("push-config.json", {"apiBase": BETA_API if channel == "beta" else PROD_API,
-                                        "publicKey": "A" * 87})
+                                        "publicKey": EXPECTED_PUBLIC_KEYS[channel]})
         self.write("manifest.webmanifest", {"id": "./?app=beta" if channel == "beta" else "./",
                                             "display": "standalone"})
         self.write("robots.txt", "User-agent: *\nDisallow: /\n" if channel == "beta" else
@@ -40,7 +40,13 @@ class ReleasePreflightTests(unittest.TestCase):
 
     def test_beta_api_rejected_in_production(self):
         self.fixture("production")
-        self.write("push-config.json", {"apiBase": BETA_API, "publicKey": "A" * 87})
+        self.write("push-config.json", {"apiBase": BETA_API, "publicKey": EXPECTED_PUBLIC_KEYS["production"]})
+        with self.assertRaises(PreflightFailure):
+            check(self.root, "production", require_build=False)
+
+    def test_beta_public_vapid_rejected_in_production(self):
+        self.fixture("production")
+        self.write("push-config.json", {"apiBase": PROD_API, "publicKey": EXPECTED_PUBLIC_KEYS["beta"]})
         with self.assertRaises(PreflightFailure):
             check(self.root, "production", require_build=False)
 
