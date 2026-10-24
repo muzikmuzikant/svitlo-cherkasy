@@ -7,6 +7,12 @@ from pathlib import Path
 BETA_API = "https://svitlo-beta-api-staging.up.railway.app"
 PROD_API = "https://svitlo-cherkasy-production.up.railway.app"
 PROD_DOMAIN = "svitlo-cherkasy.pp.ua"
+# Public keys captured from the verified channel configs on 2026-10-24.
+# Any future key rotation requires a separately approved subscription migration.
+EXPECTED_PUBLIC_KEYS = {
+    "beta": "BLj3lNyLkpHXUA8fYUYTRKzIn0LroTD4BMbZHHTUj6jjTQAuAf1DWr5borKdpR4V5CjTYJLr1_fEGW1aoLa_PaQ",
+    "production": "BKOZF_fXUtopmrdOdRWZXnw9Od1fQ8uDVVfkNXtMKRTdGNx-s9rpbm8zGdknUWg5C97gCaBDlfrAqUkITiwuFLM",
+}
 
 class PreflightFailure(Exception):
     pass
@@ -35,8 +41,8 @@ def check(root, expected_channel, require_build=True):
     required_api = BETA_API if channel == "beta" else PROD_API
     require(config.get("apiBase") == required_api, f"Wrong Push API for {channel}")
     public_key = config.get("publicKey", "")
-    require(isinstance(public_key, str) and len(public_key) >= 65
-            and re.fullmatch(r"[A-Za-z0-9_-]+", public_key), "Missing or malformed public VAPID key")
+    require(public_key == EXPECTED_PUBLIC_KEYS[channel],
+            "Public VAPID key changed: require separately approved subscription migration")
     require(manifest.get("display") == "standalone", "PWA standalone mode missing")
     pwa_id = manifest.get("id", "")
     require(isinstance(pwa_id, str), "PWA ID missing")
