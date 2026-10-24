@@ -4,9 +4,10 @@ import {readFileSync} from 'node:fs';
 const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 const html=read('index.html'),app=read('app.js'),server=read('push-server/server.js');
 test('7.9.8 rollback: no new user settings or paid app controls',()=>{
- for(const id of ['offMinutes','onMinutes','quietEnabled','quietFrom','quietTo','favoriteQueues','favoriteSelect','favoriteAdd','offlineDetails','addressNotificationRules','checkAppRelease','appBuildDetails','appPwaDetails','appPushDetails','betaAnalyticsConsent']){
+ for(const id of ['offMinutes','onMinutes','quietEnabled','quietFrom','quietTo','favoriteQueues','favoriteSelect','favoriteAdd','offlineDetails','addressNotificationRules','checkAppRelease','appBuildDetails','appPwaDetails','appPushDetails']){
   assert.ok(!html.includes('id="'+id+'"'),'retired user setting '+id);
  }
+ assert.ok(html.includes('id="betaAnalyticsConsent"'),'The new optional analytics consent toggle is part of 7.9.12');
  assert.ok(html.includes('id="notifyOff"'));
  assert.ok(html.includes('id="notifyOn"'));
  assert.ok(html.includes('id="quickQueueSelect"'),'existing quick queue remains');
