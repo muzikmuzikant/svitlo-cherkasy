@@ -53,8 +53,8 @@ test('Admin editor, subscription flow and Inbox all enforce locality targeting',
  assert.match(server,/settlement:notice\.settlement\|\|''/);
  assert.match(server,/subscribers\[key\]=\{subscription:data\.subscription,queue:data\.queue,preferences,settlement,\s*automatic:subscribers\[key\]\?\.automatic\|\|\{\}\}/);
  assert.match(inbox,/const targeted=a=>!a\.settlement/);
- assert.match(inbox,/&&targeted\(a\)/);
- assert.match(inbox,/!targeted\(a\)/);
+ assert.match(inbox,/\(targeted\(a\)\|\|linkedNoticeIds\.has/,'Only explicitly opened deep-linked notices bypass locality UI filter');
+ assert.match(inbox,/!targeted\(a\)&&!linked/,'Unlinked notices still respect locality targeting');
  assert.match(privacy,/лише назва вибраного населеного пункту/);
 });
 test('v7.8.1 cache refreshes, and scripts parse',()=>{
