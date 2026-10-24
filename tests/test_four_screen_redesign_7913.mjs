@@ -50,7 +50,7 @@ test('Redesigned files are packaged and cached for offline PWA, never production
   assert.ok(sw.includes('"./'+asset+'"'),'uncached '+asset);
   assert.ok(build.includes("'"+asset+"'"),'missing _site '+asset);
  }
- assert.match(sw,/svitlo-cherkasy-shell-v7\.9\.13-beta-four-screen-v1/);
+ assert.match(sw,/svitlo-cherkasy-shell-v7\.9\.13-beta-rights-v1/);
  assert.match(html,/data-deployment-channel="beta"/);
  const css=read('redesign-7913.css');
  assert.match(css,/:root\[data-theme="dark"\]/);
