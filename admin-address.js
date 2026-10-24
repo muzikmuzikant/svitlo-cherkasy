@@ -63,10 +63,12 @@
   const town=item?.settlementKey||base?.town||$('corrBrowseTown')?.value||'черкаси';
   const street=item?.streetKey||base?.street||'',house=item?.house||base?.house||'';
   const current=base?.queues||[];
+  const hasDetailedHouses= !house && addresses.some(a=>a.town===town&&a.street===street&&a.house);
   $('corrHeading').textContent=item?'Уточнення '+item.id:base?'Адреса з довідника':'Нове адресне уточнення';
   $('corrRevision').textContent=item?'Редакція '+item.revision:
    base?'Довідник · '+(current.length?'Поточна підчерга: '+current.join(', '):'Підчерга не підтверджена')+' · Зміни спочатку зберігаються як чернетка':
    'Нове уточнення · Чернетка';
+  if(!house && hasDetailedHouses)$('corrRevision').textContent+=' · Є окремі підчерги будинків: загальне уточнення їх не змінить';
   $('corrTown').value=town;streets(street);
   $('corrHouse').value=house;
   $('corrQueue').value=item?.queue||(current.length===1?current[0]:'');
