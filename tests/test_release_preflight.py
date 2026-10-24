@@ -27,6 +27,8 @@ class ReleasePreflightTests(unittest.TestCase):
                                             "display": "standalone"})
         self.write("robots.txt", "User-agent: *\nDisallow: /\n" if channel == "beta" else
                                  "User-agent: *\nDisallow: /admin.html\n")
+        self.write("index.html", '<meta name="robots" content="' +
+                   ("noindex,follow" if channel == "beta" else "index,follow") + '">')
         if channel == "production":
             self.write("CNAME", PROD_DOMAIN)
 
@@ -67,6 +69,18 @@ class ReleasePreflightTests(unittest.TestCase):
         self.write("robots.txt", "User-agent: *\nDisallow: /\n")
         with self.assertRaises(PreflightFailure):
             check(self.root, "production", require_build=False)
+
+    def test_production_rejects_beta_noindex_html(self):
+        self.fixture("production")
+        self.write("index.html", '<meta name="robots" content="noindex,follow">')
+        with self.assertRaises(PreflightFailure):
+            check(self.root, "production", require_build=False)
+
+    def test_beta_rejects_production_index_html(self):
+        self.fixture("beta")
+        self.write("index.html", '<meta name="robots" content="index,follow">')
+        with self.assertRaises(PreflightFailure):
+            check(self.root, "beta", require_build=False)
 
     def test_service_worker_cache_must_match_channel(self):
         self.fixture("beta")
