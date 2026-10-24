@@ -161,7 +161,22 @@ function updatePushDraft(){
 $('pushTitle').addEventListener('input',updatePushDraft);
 $('pushBody').addEventListener('input',updatePushDraft);
 async function refreshPushStatus(){
- try{const r=await api('push/status');$('pushCount').textContent=r.subscribers;return r}
+ try{
+  const r=await api('push/status');$('pushCount').textContent=r.subscribers;
+  const host=$('pushAutoStatus');
+  if(host){
+   const d=r.automatic?.browserDisplay,cycle=r.automatic?.delivery;
+   if(d){
+    const total=d.accepted+d.displayRequested;
+    host.textContent='Автоматичні PUSH за останні 48 год: прийнято провайдерами '+total+
+     ', підтверджено запит показу '+d.displayRequested+', без підтвердження '+d.accepted+
+     '. Помилок відправлення після запуску сервера: '+d.failedSinceBoot+
+     '. Підтвердження не означає прочитання повідомлення.'+
+     (cycle?.lastAccepted?.at?' Останнє прийняття: '+new Date(cycle.lastAccepted.at).toLocaleString('uk-UA')+'.':'');
+   }else host.textContent='Сервер ще не надав статистику автоматичних PUSH.';
+  }
+  return r;
+ }
  catch(e){$('pushCount').textContent='—';pushResult('Не вдалося перевірити підписки: '+e.message,false);return null}
 }
 $('refreshPush').onclick=async()=>{if(!remote)return;const r=await refreshPushStatus();if(r)pushResult('Зареєстровано '+r.subscribers+' пристроїв.',true)};
