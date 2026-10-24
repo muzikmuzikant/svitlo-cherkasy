@@ -291,6 +291,7 @@ function renderHome(){
  try{window.SvitloTelemetry?.sampleSelected(primary())}catch{}
  renderEmergency();renderFreshness();const a=primary(),date=today(),m=nowMinutes();
  setText('primaryName',label(a));setText('primarySub',a?`${a.settlement||'Черкаси'} · ${a.queue?'підчерга '+a.queue:'підчергу не визначено'}`:'Черкаси або села району');
+ setText('homeDashboardDate',formatDate(date,{weekday:'long',day:'numeric',month:'long'}));
  const schedule=a?.queue?currentDay(date):null;
  const timelineToday=a?.queue?timeline(date,a.queue):null,st=stateAt(timelineToday,m);
  const nxt=a?.queue?nextChange(date,a.queue,m):null,copy=statusCopy(st,nxt,a?.queue,date);
