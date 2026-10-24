@@ -49,3 +49,13 @@
 }
 html.feature-off-animations .micro-enter,html.feature-off-animations .micro-changed{animation:none!important}
 html.feature-off-animations :is(button,.button,.primary-action,.secondary-action,.quick-place,.nav-item){transition:none!important}
+
+/* Carousel height never changes when rotating between different ad copy lengths. */
+#home .beta-ad-content{box-sizing:border-box;height:128px;min-height:128px;max-height:128px;overflow:hidden}
+#home .beta-ad-content>div{min-height:0;overflow:hidden}
+#home .beta-ad-content strong,#home .beta-ad-content small{display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+#home .beta-ad-content strong{-webkit-line-clamp:2;line-clamp:2}
+#home .beta-ad-content small{-webkit-line-clamp:2;line-clamp:2}
+#home .beta-ad .beta-ad-controls{min-height:28px}
+#home .bar-now{transition:left 30s linear}
+@media(prefers-reduced-motion:reduce){#home .bar-now{transition:none!important}}
