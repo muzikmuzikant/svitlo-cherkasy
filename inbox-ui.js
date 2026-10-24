@@ -131,7 +131,8 @@
  function rich(target,raw){
   if(window.SvitloMessageFormat?.render)return window.SvitloMessageFormat.render(target,raw);
   const text=String(raw||'');target.replaceChildren();
-  for(const line of text.split('\n').slice(0,100)){
+  const lines=text.split('\n');
+  for(const line of lines.slice(0,300)){
    const txt=line.trim();
    if(!txt){target.append(el('div','','inbox-line-space'));continue}
    const heading=/^#{1,3}\s+/.test(txt),bullet=/^[-*]\s+/.test(txt);
@@ -313,7 +314,7 @@
    const stamp=el('time',Number.isFinite(Date.parse(item.at))?shortTime.format(new Date(item.at)):'','inbox-time');
    stamp.dateTime=item.at||'';head.append(stamp);
    if(!item.read)head.append(el('span','','inbox-new-dot'));
-   opener.append(head,el('strong',item.title),el('p',item.body||''));
+   opener.append(head,el('strong',item.title),el('p',item.body));
    if(item.pinned)opener.append(el('span','Закріплено','inbox-pin-note'));
    const more=el('button','','inbox-row-more');more.type='button';
    more.setAttribute('aria-label','Дії з повідомленням: '+item.title);

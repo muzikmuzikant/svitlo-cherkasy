@@ -9,18 +9,18 @@ import {cleanMessage} from '../push-server/manual-push.js';
 
 const read=file=>fs.readFileSync(new URL('../'+file,import.meta.url),'utf8');
 
-test('Inbox dropdown elevates active card and its auto-group above sibling notifications',()=>{
+test('Inbox action controls open a dedicated dialog instead of a stacking dropdown',()=>{
  const inbox=read('inbox-ui.js'),css=read('style.css');
- assert.match(inbox,/menu\.addEventListener\('toggle'/);
- assert.match(inbox,/card\.classList\.toggle\('has-open-context',open\)/);
- assert.match(inbox,/group\.classList\.toggle\('has-open-context'/);
- assert.match(inbox,/root\.querySelectorAll\('\.inbox-context\[open\]'\)/);
- assert.match(inbox,/menu\.classList\.toggle\('opens-up'/);
- assert.match(css,/#updates \.inbox-item\.has-open-context\{[^}]*z-index:110/);
- assert.match(css,/#updates \.inbox-auto-group\.has-open-context\{z-index:100/);
- assert.match(css,/\.inbox-context\.opens-up \.inbox-context-actions/);
+ assert.match(inbox,/function showActions\(item\)/);
+ assert.match(inbox,/more\.onclick=\(\)=>showActions\(item\)/);
+ assert.match(inbox,/actionsSheet\.showModal\(\)/);
+ assert.match(inbox,/sheetCancel\.onclick=closeActions/);
+ assert.match(inbox,/actionsSheet\.addEventListener\('cancel'/);
+ assert.match(inbox,/actionsSheet\.addEventListener\('click'/);
+ assert.match(inbox,/card\.append\(leading,opener,more\)/);
+ assert.doesNotMatch(inbox,/menu\.addEventListener\('toggle'/);
+ assert.match(css,/inbox-actions-sheet/);
 });
-
 test('long Inbox detail scroll cannot start swipe-to-dismiss, but dedicated handle can',()=>{
  const listeners=new Map();
  class Element{}
