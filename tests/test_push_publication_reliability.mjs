@@ -16,6 +16,7 @@ function harness({status=null,saveFails=false}={}){
  const context={
   sent,subscribers,deliveryStats,appUrl:'https://svitlo-cherkasy.pp.ua/',
   pendingPushKeys:new Set(),hash:()=> 'fixture',
+  pushReceipts:{begin:()=> 'AbCdEf0123456789ABcDef012',accepted:()=>{},rejected:()=>{}},
   webpush:{async sendNotification(subscription,payload,opts){
    calls.push({subscription,payload:JSON.parse(payload),opts});
    if(status)throw Object.assign(new Error('Provider rejected'),{statusCode:status});
