@@ -6,7 +6,7 @@
  const dashboard=$('adminDashboard'),feedback=dashboard?.querySelector('[data-admin-panel="feedback"]');
  if(!dashboard||!feedback)return;
  const mk=(tag,content,cls)=>{const el=document.createElement(tag);if(content!==undefined)el.textContent=String(content);if(cls)el.className=cls;return el};
- const goto=id=>dashboard.querySelector('[data-admin-tab="'+id+'"]')?.click();
+ const goto=id=>{if(window.SvitloAdminAccess?.canTab(id)===false)return;dashboard.querySelector('[data-admin-tab="'+id+'"]')?.click()};
  const api=(route,opts)=>window.svitloAdminApi(route,opts);
  const list=()=>window.SvitloTicketWorkflow?.list()||[];
  let activeSheet='overview',drawer=false,selected=new Set(),busy=false,refreshing=false,focusReturn=null,autoSync=true,lastNewCount=null;
@@ -219,7 +219,7 @@
  hub.append(mk('div','РОБОЧЕ МІСЦЕ / ОПЕРАТИВНІ ЗАВДАННЯ','desk-hub-overline'),mk('h3','Черга робіт і службові реєстри'),mk('p','Оберіть реєстр для опрацювання звернень, погодження інформації, керування публікаціями або контролю виконання. Усі зміни зберігаються в захищених модулях відповідно до ваших прав доступу.'));
  const links=mk('div',undefined,'desk-hub-links');
  for(const [id,title,subtitle] of [['feedback','Опрацювати звернення','Листування, контроль, статуси'],['operations','Керувати повідомленнями','Створення і публікація'],['registry','Доручення','Робоча картотека'],['live','Налаштування сервісу','Функції й банери'],['push','Push-розсилки','Підписники та тестування'],['corrections','Уточнення адрес','Без редагування JSON'],['features','Функції застосунку','Увімкнути або вимкнути'],['design','Вигляд застосунку','Кольори, щільність, стиль'],['help','Центр допомоги','Редагування статей'],['ads','Рекламні кампанії','Розміщення та аналітика'],['social','Соцмережі','Канали, посилання та публікація']]){
-  const b=mk('button',undefined,'desk-hub-link');b.type='button';b.append(mk('strong',title),mk('small',subtitle));b.onclick=()=>goto(id);links.append(b);
+  const b=mk('button',undefined,'desk-hub-link');b.type='button';b.dataset.adminTarget=id;b.append(mk('strong',title),mk('small',subtitle));b.onclick=()=>goto(id);links.append(b);
  }
  hub.append(links);
  const note=mk('p','','desk-capability');note.id='deskCapabilities';note.setAttribute('role','status');hub.append(note);
