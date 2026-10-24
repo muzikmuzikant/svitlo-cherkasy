@@ -40,6 +40,6 @@ test('all catalog addresses can be selected without overwriting source data',()=
 test('new required support fields have a visible red mandatory marker',()=>{
  assert.match(read('feedback.js'),/extra-ticket-required/);
  assert.match(read('feedback.css'),/\.extra-ticket-required\{color:#dc354f/);
- assert.match(read('inbox-ui.js'),/inboxSort/);
+ assert.match(read('inbox-ui.js'),/inboxSearchToggle/);
  assert.match(read('index.html'),/id="inboxSearch"/);
 });
