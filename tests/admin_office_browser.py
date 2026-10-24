@@ -202,6 +202,11 @@ def main():
                     f"{width}px: workspace clipped in {name}: {result}")
                 audit.append((width,name))
         assert len(audit)==48
+        page.locator('[data-admin-tab="overview"]').evaluate('(element)=>element.click()')
+        page.wait_for_timeout(380)
+        panel_motion=page.evaluate("getComputedStyle(document.querySelector('#adminDashboard > [data-admin-panel=overview]')).animationName")
+        assert panel_motion=='none', 'Admin panel has overlapping CSS animation: '+panel_motion
+        assert page.evaluate('!!window.SvitloMicroMotion')
         assert not errors, "Browser runtime exceptions: "+"; ".join(errors)
         print("Svitlo Office browser passed: workflow, linked tickets, mobile and 24-tab visual sweep.")
         context.close();browser.close()
