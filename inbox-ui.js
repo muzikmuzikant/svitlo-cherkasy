@@ -32,7 +32,7 @@
   linkedNoticeIds.add(id);
   try{localStorage.setItem(LINKED_NOTICE_IDS,JSON.stringify([...linkedNoticeIds].slice(-30)))}catch{}
  }
- let selected='all',searchTerm='',sortMode='smart',rows=[],notices=window.SvitloPublicConfig?.announcements||[],busy=false,lastSync=0,activeDetail=null,noticeFeedConfirmed=window.SvitloPublicConfig?.serverVerified===true,needsResync=false;
+ let selected='all',searchTerm='',rows=[],notices=window.SvitloPublicConfig?.announcements||[],busy=false,lastSync=0,activeDetail=null,noticeFeedConfirmed=window.SvitloPublicConfig?.serverVerified===true,needsResync=false;
  // Only voluntary opt-in PWA installations count toward custom notice engagement.
  // "Read" is an approximation: detail stayed in the foreground for two seconds.
  let metricApi='',readTimer=null,seenObserver=null;
@@ -158,7 +158,8 @@
   activeDetail=id;content.replaceChildren();
   trackNotice(id,'opened');
   const top=el('div','','inbox-detail-top');
-  top.append(el('span',({schedule:'Графіки',emergency:'Важливо',announcement:'Повідомлення',push:'Push',support:'Підтримка'})[item.kind]||'Повідомлення','inbox-detail-category'),el('time',time(item.at)));
+  const detailIcon=el('span','','inbox-detail-symbol');detailIcon.setAttribute('aria-hidden','true');detailIcon.append(symbol(item.kind));
+  top.append(detailIcon,el('span',labels[item.kind]||'Повідомлення','inbox-detail-category'),el('time',time(item.at)));
   content.append(top,el('h2',item.title),el('p',item.body,'inbox-detail-summary'));
   if(item.images?.length){
    const gallery=el('div','','inbox-gallery');
@@ -184,128 +185,148 @@
   if(!item.read)store.mark([id]).then(refresh).catch(console.warn);
   return true;
  }
+
+ // Deliberately small category icons, matching the existing application's vector language.
+ const svgNS='http://www.w3.org/2000/svg';
+ const iconPaths={
+  schedule:['M8 2v4','M16 2v4','M3 10h18','M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z'],
+  emergency:['M10.3 3.9 2.3 18a2 2 0 0 0 1.7 3h16a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z','M12 9v5','M12 18h.01'],
+  announcement:['M3 11v2a2 2 0 0 0 2 2h3l2 5h3l-2-5h2l8 4V5l-8 4H5a2 2 0 0 0-2 2z'],
+  support:['M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9.2 9.2 0 0 1-3.5-.7L3 21l1.7-5.6A8.5 8.5 0 1 1 21 11.5z'],
+  push:['M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9','M10 21h4']
+ };
+ function symbol(kind){
+  const svg=document.createElementNS(svgNS,'svg');
+  svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');
+  for(const d of (iconPaths[kind]||iconPaths.push)){const p=document.createElementNS(svgNS,'path');p.setAttribute('d',d);svg.append(p)}
+  return svg;
+ }
+ const labels={schedule:'Графіки',emergency:'Важливе',announcement:'Оголошення',push:'Сповіщення',support:'Підтримка'};
+ const kyivDay=new Intl.DateTimeFormat('sv-SE',{year:'numeric',month:'2-digit',day:'2-digit',timeZone:'Europe/Kyiv'});
+ const shortTime=new Intl.DateTimeFormat('uk-UA',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Kyiv'});
+ const friendlyDate=new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'long',timeZone:'Europe/Kyiv'});
+ function dayKey(item){const n=Date.parse(item?.at||'');return Number.isFinite(n)?kyivDay.format(new Date(n)):'unknown'}
+ function messageSection(key,today,yesterday){
+  if(key==='pinned')return 'Закріплені';
+  if(key===today)return 'Сьогодні';
+  if(key===yesterday)return 'Вчора';
+  if(key==='unknown')return 'Раніше';
+  return friendlyDate.format(new Date(key+'T12:00:00Z'));
+ }
+ const actionsSheet=document.createElement('dialog');
+ actionsSheet.className='inbox-actions-sheet';
+ actionsSheet.setAttribute('aria-label','Дії з повідомленням');
+ const sheetHandle=el('div','','inbox-actions-handle');
+ sheetHandle.setAttribute('aria-hidden','true');
+ const sheetTitle=el('h2','','inbox-actions-heading');
+ const sheetButtons=el('div','','inbox-actions-buttons');
+ const sheetCancel=el('button','Скасувати','inbox-actions-cancel');sheetCancel.type='button';
+ actionsSheet.append(sheetHandle,sheetTitle,sheetButtons,sheetCancel);
+ document.body.append(actionsSheet);
+ let actionsTimer=null,actionsClosing=false;
+ const closeActions=()=>{
+  if(!actionsSheet.open||actionsClosing)return;
+  if(reducedDetailMotion()){actionsSheet.close();return}
+  actionsClosing=true;actionsSheet.classList.add('is-leaving');
+  actionsTimer=setTimeout(()=>{actionsTimer=null;if(actionsSheet.open)actionsSheet.close()},200);
+ };
+ actionsSheet.addEventListener('close',()=>{clearTimeout(actionsTimer);actionsTimer=null;actionsClosing=false;actionsSheet.classList.remove('is-leaving')});
+ actionsSheet.addEventListener('cancel',e=>{e.preventDefault();closeActions()});
+ actionsSheet.addEventListener('click',e=>{if(e.target===actionsSheet)closeActions()});
+ sheetCancel.onclick=closeActions;
+ window.SvitloSheetMotion?.bind(actionsSheet,closeActions);
+ function showActions(item){
+  if(actionsSheet.open)return;
+  sheetTitle.textContent=item.title;
+  sheetButtons.replaceChildren();
+  const add=(name,fn)=>{
+   const button=el('button',name);button.type='button';
+   button.onclick=()=>{
+    // Clipboard and Web Share must run immediately in the original touch event.
+    try{Promise.resolve(fn()).catch(error=>console.warn('Inbox action:',error))}
+    catch(error){console.warn('Inbox action:',error)}
+    closeActions();
+   };
+   sheetButtons.append(button);
+  };
+  add(item.read?'Позначити непрочитаним':'Позначити прочитаним',async()=>{
+   if(item.read)await store.unmark([item.id]);else await store.mark([item.id]);
+   await refresh();
+  });
+  if(item.kind==='support'&&ticketId(item))add('Відкрити звернення',()=>openTicket(ticketId(item)));
+  if(item.kind!=='support'){
+   add('Копіювати текст',()=>navigator.clipboard?.writeText(item.title+'\\n'+item.body)||
+    window.prompt?.('Скопіюйте повідомлення:',item.title+'\\n'+item.body));
+   const link=()=>{const url=new URL('./',location.href);url.searchParams.set('message',item.id);return url.href};
+   const copyLink=()=>navigator.clipboard?.writeText(link())||
+    window.prompt?.('Скопіюйте посилання:',link());
+   add('Копіювати посилання',copyLink);
+   add('Поділитися',async()=>{
+    if(navigator.share){try{await navigator.share({title:item.title,url:link()})}
+     catch(error){if(error?.name!=='AbortError')await copyLink()}}
+    else await copyLink();
+   });
+  }
+  try{actionsSheet.showModal()}catch(error){console.warn('Inbox actions:',error)}
+ }
+
  async function refresh(){
   rows=await store.all();
-  const unread=rows.filter(x=>!x.read).length;
-  $('inboxUnread').hidden=!unread;$('inboxUnread').textContent=unread>99?'99+':String(unread);
-  $('navUnread').hidden=!unread;$('navUnread').textContent=unread>9?'9+':String(unread);
+  const unread=rows.filter(item=>!item.read).length;
+  $('inboxUnread').hidden=!unread;
+  $('inboxUnread').textContent=unread>99?'99+':String(unread);
+  $('navUnread').hidden=!unread;
+  $('navUnread').textContent=unread>9?'9+':String(unread);
   const mark=$('inboxMarkAll');mark.disabled=!unread;
   mark.title=unread?'Позначити прочитаними всі '+unread+' повідомлень':'Усі повідомлення прочитано';
-  const count=$('inboxUnreadNote');
-  if(count)count.textContent=unread?'Непрочитаних: '+unread:'Усі повідомлення прочитано';
-  const visible=rows.filter(x=>selected==='all'||selected==='unread'&&!x.read||
-   selected==='schedule'&&x.kind==='schedule'||selected==='support'&&x.kind==='support'||
-   selected==='important'&&(x.kind==='emergency'||x.priority==='important'||x.priority==='urgent'||x.pinned))
-   .filter(x=>!searchTerm||(x.title+' '+x.body+' '+x.content.slice(0,700)).toLocaleLowerCase('uk-UA').includes(searchTerm))
-   .sort((a,b)=>Number(!!b.pinned)-Number(!!a.pinned)||
-     (sortMode==='unread'?Number(!b.read)-Number(!a.read):0)||
-     (sortMode==='smart'?Number(b.priority==='urgent')-Number(a.priority==='urgent')||
-       Number(!b.read)-Number(!a.read):0)||
-     String(b.at).localeCompare(String(a.at)));
-  const overview=$('inboxOverview');
-   if(overview){
-    const urgent=rows.filter(x=>!x.read&&(x.priority==='urgent'||x.kind==='emergency')).length;
-    const pinned=rows.filter(x=>x.pinned).length;
-    overview.replaceChildren();
-    const stat=(value,label)=>{const pill=el('span','','inbox-stat');pill.append(el('strong',String(value)),document.createTextNode(' '+label));overview.append(pill)};
-    stat(rows.length,'усього');stat(unread,'нових');if(urgent)stat(urgent,'термінових');if(pinned)stat(pinned,'закріплених');
-   }
-   const root=$('inboxList');root.replaceChildren();
-  if(!visible.length){const empty=el('div',searchTerm?'Нічого не знайдено':'Повідомлень поки немає','inbox-empty');empty.append(el('p',searchTerm?'Спробуйте інші слова або скиньте фільтр.':selected==='unread'?'Усі повідомлення прочитано.':'Коли з’являться новини, вони будуть тут.'));root.append(empty)}
-  const grouped=new Map();
-  const groupKey=item=>{
-   if(item.kind!=='schedule'||item.pinned)return '';
-   const m=/^(?:day|change|transition):([1-6]\.[12]):(20\d{2}-\d{2}-\d{2})(?::|$)/.exec(item.id);
-   return m?m[2]+':'+m[1]:'';
-  };
-  for(const item of visible){const key=groupKey(item);if(key){if(!grouped.has(key))grouped.set(key,[]);grouped.get(key).push(item)}}
-  const processed=new Set();
-  const makeCard=item=>{
-   const card=el('article','','inbox-item inbox-interactive'+(!item.read?' is-unread':'')+(item.pinned?' is-pinned':''));
+  const note=$('inboxUnreadNote');
+  if(note)note.textContent=unread?(unread===1?'1 непрочитане повідомлення':unread+' непрочитаних'):'Усе прочитано';
+  const visible=rows.filter(item=>selected==='all'||selected==='unread'&&!item.read||
+   selected==='schedule'&&item.kind==='schedule'||selected==='support'&&item.kind==='support'||
+   selected==='important'&&(item.kind==='emergency'||item.priority==='important'||item.priority==='urgent'||item.pinned))
+   .filter(item=>!searchTerm||(item.title+' '+item.body+' '+String(item.content||'').slice(0,700)).toLocaleLowerCase('uk-UA').includes(searchTerm))
+   .sort((a,b)=>Number(!!b.pinned)-Number(!!a.pinned)||String(b.at).localeCompare(String(a.at)));
+  const root=$('inboxList');root.replaceChildren();
+  if(!visible.length){
+   const empty=el('div',searchTerm?'Нічого не знайдено':
+    selected==='unread'?'Усе прочитано':selected==='all'?'Поки немає повідомлень':'У цій категорії поки порожньо','inbox-empty');
+   empty.append(el('p',searchTerm?'Спробуйте інший запит.':
+    selected==='unread'?'Нові повідомлення з’являться тут.':'Коли будуть оновлення, ви побачите їх тут.'));
+   root.append(empty);
+  }
+  const now=new Date(),today=kyivDay.format(now),yesterday=kyivDay.format(new Date(now.getTime()-86400000));
+  let previous='';
+  for(const item of visible){
+   const section=item.pinned?'pinned':dayKey(item);
+   if(section!==previous){previous=section;root.append(el('h2',messageSection(section,today,yesterday),'inbox-day-label'))}
+   const card=el('article','','inbox-item'+(!item.read?' is-unread':'')+(item.pinned?' is-pinned':''));
    if(item.id.startsWith('notice:'))card.dataset.noticeId=item.id;
+   const leading=el('span','','inbox-leading kind-'+(iconPaths[item.kind]?item.kind:'push'));
+   leading.setAttribute('aria-hidden','true');leading.append(symbol(item.kind));
    const opener=el('button','','inbox-card-opener');opener.type='button';
    opener.setAttribute('aria-label','Відкрити повідомлення: '+item.title);
    opener.onclick=()=>open(item.id);
-   const head=el('div','','inbox-item-head');head.append(el('span',item.pinned?'📌 Закріплено':({schedule:'Графіки',emergency:'Важливе',announcement:'Оголошення',push:'Push',support:'Підтримка'})[item.kind],'inbox-kind'),el('time',time(item.at),'inbox-time'));
-   opener.append(head,el('strong',item.title),el('p',item.body));
-   opener.append(el('span','Переглянути детальніше  →','inbox-more'));
-   if(item.images?.length){const img=document.createElement('img');img.src=item.images[0];img.alt='';img.loading='lazy';img.className='inbox-cover';opener.append(img)}
-   card.append(opener);
-   const menu=el('details','','inbox-context');
-   const trigger=el('summary','⋯');trigger.setAttribute('aria-label','Дії з повідомленням');menu.append(trigger);
-   const motionAllowed=()=>!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
-     &&!document.documentElement?.classList.contains('feature-off-animations');
-   let closeTimer=null;
-   const closeMenu=(afterClose)=>{
-     clearTimeout(closeTimer);closeTimer=null;
-     if(!menu.open||!motionAllowed()){
-       menu.open=false;menu.classList.remove('is-closing');afterClose?.();return;
-     }
-     menu.classList.add('is-closing');
-     closeTimer=setTimeout(()=>{
-       menu.open=false;menu.classList.remove('is-closing');closeTimer=null;afterClose?.();
-     },190);
-   };
-   trigger.addEventListener('click',event=>{
-     if(menu.open){event.preventDefault();closeMenu()}
-   });
-   const actions=el('div','','inbox-context-actions');
-   const action=(label,handler,{afterClose=false}={})=>{
-     const button=el('button',label);button.type='button';
-     button.onclick=event=>{
-       event.stopPropagation();
-       // Keep Web Share in the original user gesture (required on Android/iOS).
-       const run=()=>{
-         try{Promise.resolve(handler()).catch(error=>console.warn('Inbox action:',error))}
-         catch(error){console.warn('Inbox action:',error)}
-       };
-       if(afterClose)closeMenu(run);
-       else{closeMenu();run()}
-     };
-     actions.append(button);
-   };
-   action(item.read?'Позначити непрочитаним':'Позначити прочитаним',async()=>{
-     if(item.read)await store.unmark([item.id]);else await store.mark([item.id]);await refresh();
-   },{afterClose:true});
-   if(item.kind==='support')action('Відкрити звернення',()=>openTicket(ticketId(item)));
-   if(item.kind!=='support')action('Копіювати текст',async()=>{await navigator.clipboard.writeText(item.title+'\n'+item.body)});
-   // A share is a deep link to the message, never a pasted copy of its text.
-   const messageLink=()=>{
-     const url=new URL('./',location.href);
-     url.searchParams.set('message',item.id);
-     return url.href;
-   };
-   const copyLink=async()=>{
-     const link=messageLink();
-     if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(link);
-     else window.prompt?.('Скопіюйте посилання на повідомлення:',link);
-   };
-   if(item.kind!=='support')action('Копіювати посилання',copyLink);
-   if(item.kind!=='support')action('Поділитися',async()=>{
-     const link=messageLink();
-     if(navigator.share){
-       try{await navigator.share({title:item.title,url:link})}
-       catch(error){if(error?.name!=='AbortError')await copyLink()}
-     }else await copyLink();
-   });
-   menu.append(actions);card.append(menu);
-   return card;
-  };
-  for(const item of visible){
-   const key=groupKey(item),items=key?grouped.get(key):null;
-   if(items?.length>1){
-     if(processed.has(key))continue;processed.add(key);
-     const box=el('details','','inbox-auto-group');box.open=items.some(x=>!x.read);
-     const title=el('summary','','inbox-auto-summary');
-     const matched=/^(.+):([1-6]\.[12])$/.exec(key),queueDate=matched[1],queue=matched[2];
-     title.append(el('span','Графік · '+date(queueDate)+' · підчерга '+queue),el('span',String(items.length)+' повідомл.'));
-     box.append(title);for(const member of items)box.append(makeCard(member));root.append(box);
-   }else root.append(makeCard(item));
+   const head=el('div','','inbox-item-head');
+   head.append(el('span',labels[item.kind]||'Повідомлення','inbox-kind'));
+   const stamp=el('time',Number.isFinite(Date.parse(item.at))?shortTime.format(new Date(item.at)):'','inbox-time');
+   stamp.dateTime=item.at||'';head.append(stamp);
+   if(!item.read)head.append(el('span','','inbox-new-dot'));
+   opener.append(head,el('strong',item.title),el('p',item.body||''));
+   if(item.pinned)opener.append(el('span','Закріплено','inbox-pin-note'));
+   const more=el('button','','inbox-row-more');more.type='button';
+   more.setAttribute('aria-label','Дії з повідомленням: '+item.title);
+   const dots=document.createElementNS(svgNS,'svg');dots.setAttribute('viewBox','0 0 24 24');dots.setAttribute('aria-hidden','true');
+   for(const x of [5,12,19]){const dot=document.createElementNS(svgNS,'circle');dot.setAttribute('cx',String(x));dot.setAttribute('cy','12');dot.setAttribute('r','1.7');dots.append(dot)}
+   more.append(dots);more.onclick=()=>showActions(item);
+   card.append(leading,opener,more);root.append(card);
   }
-  document.querySelectorAll('[data-inbox-filter]').forEach(b=>{const state=b.dataset.inboxFilter===selected;b.classList.toggle('selected',state);b.setAttribute('aria-pressed',String(state))});
-  if(activeDetail&&dialog.open&&!rows.some(x=>x.id===activeDetail))dialog.close();
+  document.querySelectorAll('[data-inbox-filter]').forEach(button=>{
+   const active=button.dataset.inboxFilter===selected;
+   button.classList.toggle('selected',active);button.setAttribute('aria-pressed',String(active))
+  });
+  if(activeDetail&&dialog.open&&!rows.some(item=>item.id===activeDetail))dialog.close();
   observeNoticeCards();
-  if(pendingLinkId&&rows.some(x=>x.id===pendingLinkId)){
+  if(pendingLinkId&&rows.some(item=>item.id===pendingLinkId)){
    const id=pendingLinkId;pendingLinkId=null;open(id);
   }
  }
@@ -422,7 +443,20 @@
  document.querySelectorAll('[data-inbox-filter]').forEach(b=>b.addEventListener('click',()=>{selected=b.dataset.inboxFilter;refresh().catch(console.warn)}));
  let searchTimer=null;
  $('inboxSearch')?.addEventListener('input',event=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>{searchTerm=event.target.value.trim().toLocaleLowerCase('uk-UA');refresh().catch(console.warn)},130)});
- $('inboxSort')?.addEventListener('change',event=>{sortMode=event.target.value;refresh().catch(console.warn)});
+ const searchToggle=$('inboxSearchToggle'),searchPanel=$('inboxSearchPanel'),searchInput=$('inboxSearch');
+ const closeSearch=()=>{
+  if(!searchPanel||!searchToggle)return;
+  searchPanel.hidden=true;searchToggle.setAttribute('aria-expanded','false');
+  if(searchInput?.value){searchInput.value='';searchTerm='';refresh().catch(console.warn)}
+ };
+ searchToggle?.addEventListener('click',()=>{
+  if(!searchPanel)return;
+  const show=searchPanel.hidden;
+  if(!show){closeSearch();return}
+  searchPanel.hidden=false;searchToggle.setAttribute('aria-expanded','true');
+  searchInput?.focus({preventScroll:true});
+ });
+ $('inboxSearchClose')?.addEventListener('click',()=>{closeSearch();searchToggle?.focus({preventScroll:true})});
  $('inboxMarkAll').onclick=async()=>{
   const button=$('inboxMarkAll');
   const unread=rows.filter(x=>!x.read).map(x=>x.id);
