@@ -60,6 +60,7 @@
   refreshAt=Date.now();build();
  }
  function build(){
+  document.querySelectorAll('a[href^="./advertising.html"]').forEach(link=>{link.hidden=config?.pageVisible===false});
   items=[];index=0;stop();
   if(!config?.enabled){host.hidden=true;return}
   const ads=config.campaigns||[],promo={id:'promo',title:config.promoTitle,description:config.promoText,seconds:config.rotationSeconds,link:'./advertising.html',button:config.contactLabel};
@@ -67,9 +68,9 @@
   for(let i=0;i<ads.length;i++){
    const ad=ads[i];const repeat=Math.max(1,Math.min(5,Number(ad.weight)||1));
    for(let j=0;j<repeat;j++)items.push(ad);
-   if(config.showPromo&&(i+1)%every===0)items.push(promo);
+   if(config.pageVisible!==false&&config.showPromo&&(i+1)%every===0)items.push(promo);
   }
-  if(config.showPromo&&(!ads.length||ads.length%every!==0))items.push(promo);
+  if(config.pageVisible!==false&&config.showPromo&&(!ads.length||ads.length%every!==0))items.push(promo);
   if(items.length){render();schedule()}else host.hidden=true;
  }
  function schedule(){
