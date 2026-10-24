@@ -1,0 +1,22 @@
+name: Beta Legal Consent Regression
+on:
+  pull_request:
+    branches: [staging]
+    paths:
+      - 'push-server/legal-store.js'
+      - 'tests/test_legal_revision_beta.mjs'
+      - '.github/workflows/beta-legal-consent.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  legal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check push-server/legal-store.js
+      - name: Do not prompt before explicit publication; persist real revision
+        run: node --test tests/test_legal_revision_beta.mjs tests/test_one_time_analytics_consent.mjs
