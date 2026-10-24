@@ -8,6 +8,7 @@ on:
       - 'admin.html'
       - 'push-server/work-registry.js'
       - 'tests/admin_office_browser.py'
+      - 'tests/admin_account_access_browser.py'
       - 'tests/test_admin_work_focus_beta.mjs'
       - 'scripts/build_pages.py'
       - '.github/workflows/admin-browser-workflow.yml'
@@ -54,3 +55,5 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Test logged-in admin workflows with mocked private backend
         run: python tests/admin_office_browser.py
+      - name: Audit limited-account permissions, session reload and server revocation
+        run: python tests/admin_account_access_browser.py
