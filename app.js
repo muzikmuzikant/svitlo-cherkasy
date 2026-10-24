@@ -287,11 +287,11 @@ function renderFreshness(){
 }
 function renderHome(){
  const intro=$('homeIntro');if(intro)intro.hidden=Boolean(primary());
- const dashboard=$('homeDashboardIntro');if(dashboard)dashboard.hidden=!primary();
+
  try{window.SvitloTelemetry?.sampleSelected(primary())}catch{}
  renderEmergency();renderFreshness();const a=primary(),date=today(),m=nowMinutes();
  setText('primaryName',label(a));setText('primarySub',a?`${a.settlement||'Черкаси'} · ${a.queue?'підчерга '+a.queue:'підчергу не визначено'}`:'Черкаси або села району');
- setText('homeDashboardDate',formatDate(date,{weekday:'long',day:'numeric',month:'long'}));
+
  const schedule=a?.queue?currentDay(date):null;
  const timelineToday=a?.queue?timeline(date,a.queue):null,st=stateAt(timelineToday,m);
  const nxt=a?.queue?nextChange(date,a.queue,m):null,copy=statusCopy(st,nxt,a?.queue,date);
@@ -316,32 +316,19 @@ function renderHome(){
  // A genuine tomorrow preview, not a guessed network status.
  renderTomorrowPreview();
  renderQuickPlaces();
- setText('settingsPlacesCount',addresses.length?addresses.length+' '+(addresses.length===1?'адреса':addresses.length<5?'адреси':'адрес')+' · Натисніть, щоб змінити або впорядкувати':'Адрес ще немає. Додайте перше місце.');
+
  updatePushInvite();
- const list=$('placeList');
- const placeKey=JSON.stringify([date,prefs.primaryId,addresses.map(a=>[a.id,a.queue,a.nickname,a.settlement,a.street,a.house,stateAt(timeline(date,a.queue),m)])]);
- if(list.dataset.renderKey!==placeKey){list.dataset.renderKey=placeKey;list.replaceChildren();
+ const list=$('placeList');list.replaceChildren();
  for(const item of addresses){
-  const row=el('div','place-row'+(primary()?.id===item.id?' is-current':''));
   const b=el('button','place-card');b.type='button';
   const avatar=el('span','place-avatar');avatar.innerHTML=PIN;b.append(avatar);
-  const copy=el('span','place-text');
-  const title=el('span','place-card-title');
-  title.append(el('strong','',label(item)));
-  if(primary()?.id===item.id)title.append(el('span','place-primary-tag','Активна'));
-  copy.append(title,el('small','',`${item.settlement||'Черкаси'} · ${item.queue?'підчерга '+item.queue:'підчерга невідома'}`));
-  b.append(copy);
+  const copy=el('span','place-text');copy.append(el('strong','',label(item)),el('small','',`${item.settlement||'Черкаси'} · ${item.queue?'черга '+item.queue:'черга невідома'}`));b.append(copy);
   const state=stateAt(timeline(date,item.queue),m);
   b.append(el('span','place-status '+state,state==='on'?'Є світло':state==='off'?'Без світла':'—'));
-  b.setAttribute('aria-label','Відкрити графік: '+label(item));
-  b.onclick=()=>{prefs.primaryId=item.id;savePrefs();navigate('detail')};
-  const edit=el('button','place-edit-action','✎');edit.type='button';edit.title='Редагувати '+label(item);edit.setAttribute('aria-label',edit.title);
-  edit.onclick=()=>openAddressSheet(item);
-  row.append(b,edit);list.append(row);
+  b.onclick=()=>{prefs.primaryId=item.id;savePrefs();navigate('detail')};list.append(b);
  }
  if(!addresses.length){const e=el('div','empty-places');e.append(el('strong','','Ще немає збережених місць'),el('span','','Додайте адресу, щоб отримати персональний графік.'));list.append(e)}
  const add=el('button','add-place-card','+  Додати адресу');add.onclick=()=>openAddressSheet();list.append(add);
- }
 }
 function formatDuration(minutes){
  if(!Number.isFinite(minutes)||minutes<0)return '—';
@@ -1354,7 +1341,7 @@ for(const b of document.querySelectorAll('[data-go]'))b.addEventListener('click'
    if(active==='detail')renderDetail();else navigate('detail');
   };
  }
-$('syncNow').onclick=()=>refreshData(true);$('refreshTop').onclick=()=>refreshData(true);$('refreshDetail').onclick=()=>refreshData(true);$('manualRefresh').onclick=()=>refreshData(true);$('primaryPicker').onclick=()=>addresses.length?openPicker():openAddressSheet();$('manageFromHome').onclick=()=>addresses.length?openPicker():openAddressSheet();$('settingsManagePlaces').onclick=()=>addresses.length?openPicker():openAddressSheet();$('addFromHome').onclick=()=>openAddressSheet();$('addFromSettings').onclick=()=>openAddressSheet();$('editActive').onclick=()=>openAddressSheet(primary());$('openDetail').onclick=()=>navigate('detail');
+$('syncNow').onclick=()=>refreshData(true);$('refreshTop').onclick=()=>refreshData(true);$('refreshDetail').onclick=()=>refreshData(true);$('manualRefresh').onclick=()=>refreshData(true);$('primaryPicker').onclick=()=>addresses.length?openPicker():openAddressSheet();$('addFromHome').onclick=()=>openAddressSheet();$('addFromSettings').onclick=()=>openAddressSheet();$('editActive').onclick=()=>openAddressSheet(primary());$('openDetail').onclick=()=>navigate('detail');
 $('closeSheet').onclick=()=>closeSheet($('addressSheet'));$('closePlaces').onclick=()=>closeSheet($('placesSheet'));$('sheetAddPlace').onclick=()=>{
  const picker=$('placesSheet');
  if(!picker.open){openAddressSheet();return}
