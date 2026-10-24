@@ -8,8 +8,8 @@ test('manual notice cards never show a misleading updated badge, including saved
  const inbox=read('inbox-ui.js');
  assert.doesNotMatch(inbox,/Оновлено\s*✨/);
  assert.doesNotMatch(inbox,/item\.updatedAt\s*&&\s*Date\.parse\(item\.updatedAt\)/);
- assert.match(inbox,/opener\.append\(head,el\('strong',item\.title\),el\('p',item\.body\)\)/);
- assert.match(inbox,/Переглянути детальніше/);
+ assert.match(inbox,/opener\.append\(head,el\('strong',item\.title\),el\('p',item\.body\|\|''\)\)/);
+ assert.match(inbox,/opener\.onclick=\(\)=>open\(item\.id\)/);
 });
 
 test('removing the badge does not delete notice edits or schedule-change messages',()=>{
