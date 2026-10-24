@@ -21,7 +21,7 @@ test('schedule and transition Push routes to graph, normal notices to Inbox',()=
  assert.match(inbox,/function routePush\(id,pushClick=false\)/);
  assert.match(inbox,/store\.mark\(\[target\]\)/);
  assert.match(inbox,/svitlo:open-schedule/);
- assert.match(inbox,/inbox-auto-group/);
+ assert.match(inbox,/inbox-day-label/);
  assert.match(inbox,/Позначити непрочитаним/);
  assert.match(inbox,/Копіювати текст/);
  assert.match(inbox,/Поділитися/);
@@ -47,7 +47,7 @@ test('read and unread state persists in fallback after reload',async()=>{
 });
 
 
-test('grouped notifications have visible names and message sharing creates a direct URL',async()=>{
+test('dated Inbox sections have visible names and sharing creates a direct URL',async()=>{
  class Node{
   constructor(tag='div'){
    this.tag=tag;this.children=[];this.textContent='';this.hidden=false;this.className='';
@@ -94,28 +94,36 @@ test('grouped notifications have visible names and message sharing creates a dir
   CustomEvent:class{constructor(type,details){this.type=type;this.detail=details?.detail}}};
  vm.runInNewContext(read('inbox-ui.js'),context);
  await new Promise(resolve=>setImmediate(resolve));await new Promise(resolve=>setImmediate(resolve));
- const group=elements.inboxList.children.find(x=>x.className==='inbox-auto-group');
- assert.ok(group,'automatic messages must be grouped');
- const caption=group.children[0].children;
- assert.match(caption[0].textContent,/Графік · 18 жовтня · підчерга 6\.1/);
- assert.match(caption[1].textContent,/2 повідомл/);
- const noticeCard=elements.inboxList.children.find(x=>x.tag==='article');
- const menu=noticeCard.children.find(x=>x.tag==='details');
- const buttons=menu.children.find(x=>x.className==='inbox-context-actions').children;
- menu.open=true;
- buttons.find(x=>x.textContent==='Поділитися').onclick({stopPropagation(){}});
+ const sections=elements.inboxList.children.filter(x=>x.className==='inbox-day-label').map(x=>x.textContent);
+ assert.equal(sections[0],'Закріплені');
+ assert.ok(sections.includes('18 жовтня'));
+ const cards=elements.inboxList.children.filter(x=>x.tag==='article');
+ assert.equal(cards.length,3,'all schedule messages remain individually accessible');
+ const noticeCard=cards[0];
+ const more=noticeCard.children.find(x=>x.className==='inbox-row-more');
+ assert.ok(more,'every row has an accessible actions button');
+ more.onclick();
+ const sheet=body.children.find(x=>x.className==='inbox-actions-sheet');
+ assert.ok(sheet?.open,'actions use a sheet instead of a floating card menu');
+ const buttons=sheet.children.find(x=>x.className==='inbox-actions-buttons').children;
+ buttons.find(x=>x.textContent==='Поділитися').onclick();
  assert.equal(shared.length,1);
  assert.equal(shared[0].title,items[0].title);
  assert.equal(shared[0].url,'https://svitlo-cherkasy.pages.dev/?message=notice%3Awelcome_2026');
  assert.equal(shared[0].text,undefined,'sharing must not paste message content');
- buttons.find(x=>x.textContent==='Копіювати посилання').onclick({stopPropagation(){}});
+ await new Promise(resolve=>setTimeout(resolve,230));
+ assert.equal(sheet.open,false,'sheet closes after its exit animation');
+ more.onclick();
+ sheet.children.find(x=>x.className==='inbox-actions-buttons').children
+  .find(x=>x.textContent==='Копіювати посилання').onclick();
  await new Promise(resolve=>setImmediate(resolve));
  assert.equal(copied[0],shared[0].url);
- const style=read('style.css');
- assert.match(style,/\.inbox-context\[open\]\.is-closing \.inbox-context-actions/);
+ const style=read('inbox-refresh.css');
+ assert.match(style,/\.inbox-actions-sheet\[open\]\.is-leaving/);
  assert.match(style,/prefers-reduced-motion:reduce/);
- await new Promise(resolve=>setTimeout(resolve,220));
- assert.equal(menu.open,false,'menu closes after exit animation');
+ await new Promise(resolve=>setTimeout(resolve,230));
+ assert.equal(sheet.open,false,'closing animation completes');
+
 });
 
 test('a shared schedule link opens that message, not a different screen',async()=>{
@@ -123,7 +131,7 @@ test('a shared schedule link opens that message, not a different screen',async()
  assert.match(inbox,/function routeMessage\(id\)/);
  assert.match(inbox,/pendingLinkId=target/);
  assert.match(inbox,/if\(shared\)routeMessage\(shared\)/);
- assert.match(inbox,/if\(pendingLinkId&&rows\.some\(x=>x\.id===pendingLinkId\)\)/);
+ assert.match(inbox,/if\(pendingLinkId&&rows\.some\(item=>item\.id===pendingLinkId\)\)/);
  assert.match(inbox,/url\.searchParams\.set\('message',item\.id\)/);
  assert.doesNotMatch(inbox,/title\.append\(el\('span','', 'Графік/);
 });
