@@ -9,7 +9,7 @@
  const obj=v=>v && typeof v==='object' && !Array.isArray(v)?v:{};
  const valid=v=>Array.isArray(v)?[...new Set(v.filter(q=>/^[1-6]\.[12]$/.test(q)))].sort((a,b)=>Number(a)-Number(b)):[];
  const hasContent=idx=>!!(Object.keys(obj(idx.keys)).length||Object.keys(obj(idx.streets)).length||Object.keys(obj(idx.streetQueues)).length);
- function mergeIndexes(current, historical, {manual=false,catalog=null,aliasCatalog=null}={}){
+ function mergeIndexes(current, historical, {manual=false,catalog=null,aliasCatalog=null,protectHouseStreets=false}={}){
    const live=obj(current), backup=obj(historical);
    function combine(a,b){
      a=obj(a);b=obj(b);
@@ -40,9 +40,19 @@
      if(!manual)return {...b,keys:{...obj(b.keys)},streets:{...obj(b.streets)},streetQueues:{...obj(b.streetQueues)}};
      // Admin corrections are explicit, not a fuzzy merge of conflicting queues.
      const queues={...obj(a.streetQueues)};
-     for(const [street,values] of Object.entries(obj(b.streetQueues)))queues[street]=valid(values);
-     // Admin-verified edits are no longer flagged as archival.
-     const confirmed=new Set([...Object.keys(obj(b.streetQueues)),...Object.keys(obj(b.streets))]);
+     // A street-level Railway correction must NEVER override a split street
+     // with already published house-by-house assignments.
+     const houseStreets=protectHouseStreets?new Set(
+       [...Object.keys(obj(a.keys)),...Object.keys(obj(b.keys))]
+         .map(key=>key.slice(0,key.lastIndexOf('|')))):null;
+     const acceptedStreetQueues=[];
+     for(const [street,values] of Object.entries(obj(b.streetQueues))){
+       if(houseStreets?.has(street))continue;
+       queues[street]=valid(values);
+       acceptedStreetQueues.push(street);
+     }
+     // Only applied corrections remove the archival marker.
+     const confirmed=new Set([...acceptedStreetQueues,...Object.keys(obj(b.streets))]);
      const archiveOnly=(Array.isArray(a.archiveOnlyStreets)?a.archiveOnlyStreets:[]).filter(key=>!confirmed.has(key));
      return {...a,...b,keys:{...obj(a.keys),...obj(b.keys)},
        streets:{...obj(a.streets),...obj(b.streets)},streetQueues:queues,
