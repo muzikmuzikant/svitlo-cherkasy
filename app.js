@@ -954,7 +954,7 @@ function applyOverrides(){
    data.days=[...map.values()].sort((a,b)=>a.date.localeCompare(b.date));
  }
  index=mergeIndexes(addressSourceIndex||index,overrides.addresses||{},{manual:true});
- index=mergeIndexes(index,railwayAddressCorrections,{manual:true});
+ index=mergeIndexes(index,railwayAddressCorrections,{manual:true,protectHouseStreets:true});
 }
 function normalizeData(obj){if(!obj||!Array.isArray(obj.days))throw Error('Bad JSON');return {days:obj.days.filter(x=>/^20\d\d-\d\d-\d\d$/.test(x.date)&&x.verified===true),changes:Array.isArray(obj.changes)?obj.changes:[],lastChecked:obj.lastChecked||null,confirmedNoScheduleDates:Array.isArray(obj.confirmedNoScheduleDates)?obj.confirmedNoScheduleDates:undefined,reviewPending:obj.reviewPending===true,unresolvedDates:Array.isArray(obj.unresolvedDates)?obj.unresolvedDates.filter(x=>/^20\d\d-\d\d-\d\d$/.test(x)):undefined}}
 function mergeIndexes(live,backup,options={}){
