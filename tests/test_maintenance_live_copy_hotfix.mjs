@@ -48,7 +48,7 @@ test('manual editor copies a VERIFIED live Railway queue to another queue withou
  let calls=0,confirms=0;
  const sandbox={
   window:{SvitloSchedulePlanner:planner},document,Option:class{constructor(label,value){this.label=label;this.value=value}},
-  Intl,Date,Array,Object,console,setTimeout,clearTimeout,
+  Intl,Date,Array,Object,URL,console,setTimeout,clearTimeout,
   fetch:async url=>{calls++;assert.match(url,/api\/data\/schedules\.json/);return {ok:true,json:async()=>response}},
   AbortSignal,
   confirm:()=>{confirms++;return true},
