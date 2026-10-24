@@ -196,9 +196,9 @@
   push:['M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9','M10 21h4']
  };
  function symbol(kind){
-  const svg=document.createElementNS(svgNS,'svg');
+  const svg=document.createElementNS?document.createElementNS(svgNS,'svg'):document.createElement('svg');
   svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');
-  for(const d of (iconPaths[kind]||iconPaths.push)){const p=document.createElementNS(svgNS,'path');p.setAttribute('d',d);svg.append(p)}
+  for(const d of (iconPaths[kind]||iconPaths.push)){const p=document.createElementNS?document.createElementNS(svgNS,'path'):document.createElement('path');p.setAttribute('d',d);svg.append(p)}
   return svg;
  }
  const labels={schedule:'Графіки',emergency:'Важливе',announcement:'Оголошення',push:'Сповіщення',support:'Підтримка'};
@@ -301,6 +301,7 @@
    if(section!==previous){previous=section;root.append(el('h2',messageSection(section,today,yesterday),'inbox-day-label'))}
    const card=el('article','','inbox-item'+(!item.read?' is-unread':'')+(item.pinned?' is-pinned':''));
    if(item.id.startsWith('notice:'))card.dataset.noticeId=item.id;
+   card.onclick=event=>{if(event?.target?.closest?.('button'))return;open(item.id)};
    const leading=el('span','','inbox-leading kind-'+(iconPaths[item.kind]?item.kind:'push'));
    leading.setAttribute('aria-hidden','true');leading.append(symbol(item.kind));
    const opener=el('button','','inbox-card-opener');opener.type='button';
@@ -315,8 +316,8 @@
    if(item.pinned)opener.append(el('span','Закріплено','inbox-pin-note'));
    const more=el('button','','inbox-row-more');more.type='button';
    more.setAttribute('aria-label','Дії з повідомленням: '+item.title);
-   const dots=document.createElementNS(svgNS,'svg');dots.setAttribute('viewBox','0 0 24 24');dots.setAttribute('aria-hidden','true');
-   for(const x of [5,12,19]){const dot=document.createElementNS(svgNS,'circle');dot.setAttribute('cx',String(x));dot.setAttribute('cy','12');dot.setAttribute('r','1.7');dots.append(dot)}
+   const dots=document.createElementNS?document.createElementNS(svgNS,'svg'):document.createElement('svg');dots.setAttribute('viewBox','0 0 24 24');dots.setAttribute('aria-hidden','true');
+   for(const x of [5,12,19]){const dot=document.createElementNS?document.createElementNS(svgNS,'circle'):document.createElement('circle');dot.setAttribute('cx',String(x));dot.setAttribute('cy','12');dot.setAttribute('r','1.7');dots.append(dot)}
    more.append(dots);more.onclick=()=>showActions(item);
    card.append(leading,opener,more);root.append(card);
   }
