@@ -75,3 +75,19 @@ test('independent 20-second OFF and ON dispatcher tracks results and has priorit
  assert.match(server,/deliveryStats\.lastCycle=cycle/);
  assert.match(server,/automatic:subscribers\[key\]\?\.automatic\|\|\{\}/);
 });
+
+test('Beta admin distinguishes provider acceptance from service-worker display requests',()=>{
+ const sw=read('sw.js'),admin=read('admin.js'),panel=read('admin.html'),adminServer=read('push-server/admin.js');
+ assert.match(server,/browserDisplay:pushReceipts\.snapshot\(\)/);
+ assert.match(server,/manualPush\.automaticStatus=/);
+ assert.match(adminServer,/automatic:manualPush\.automaticStatus\?\.\(\)/);
+ assert.match(panel,/id="pushAutoStatus"/);
+ assert.match(admin,/d\.displayRequested/);
+ assert.match(sw,/reportPushDisplay\(msg\.receiptId\)/);
+ assert.match(sw,/showNotification\(title,/);
+});
+test('an installed foreground PWA cannot create new native OS alerts after Push consent',()=>{
+ assert.match(client,/if\(consent==='yes'\|\|consent==='no'\)return;/);
+ assert.match(client,/\['off','on','changes','tomorrow','emergency'\]\.every/);
+ assert.match(server,/preferences:rec\?\{off:!!rec\.preferences\?\.off,on:!!rec\.preferences\?\.on,changes:/);
+});
