@@ -147,7 +147,7 @@
  };
  const backupPlaces=()=>{
   try{const list=JSON.parse(localStorage.getItem('svitlo-addresses-v6')||'[]');
-   return Array.isArray(list)?list.filter(a=>a&&/^([1-6])\\.[12]$/.test(a.queue||'')).slice(0,30):[]}
+   return Array.isArray(list)?list.filter(a=>a&&/^([1-6])\.[12]$/.test(a.queue||'')).slice(0,30):[]}
   catch{return []}
  };
  function drawBackup(){
@@ -173,7 +173,7 @@
    note.textContent='Для цієї підчерги немає підтвердженого розкладу. Спробуйте перевірити офіційний графік.';
    return;
   }
-  const toMinute=t=>t==='24:00'?1440:/^\\d{2}:\\d{2}$/.test(t||'')?Number(t.slice(0,2))*60+Number(t.slice(3)):-1;
+  const toMinute=t=>t==='24:00'?1440:/^\d{2}:\d{2}$/.test(t||'')?Number(t.slice(0,2))*60+Number(t.slice(3)):-1;
   const off=Array.isArray(item?.off)?item.off.map(v=>[toMinute(v[0]),toMinute(v[1])]).filter(v=>v[0]>=0&&v[1]>v[0]&&v[1]<=1440):[];
   const known=toMinute(item?.knownFrom||'00:00');
   for(let i=0;i<48;i++){

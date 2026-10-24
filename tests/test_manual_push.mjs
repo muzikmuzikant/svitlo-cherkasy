@@ -84,7 +84,9 @@ test('admin login issues an expiring session; logout revokes it',async()=>{
     assert.equal(login.data.ok,true);
     assert.ok(login.data.token.length>=40);
     const token=login.data.token;
-    assert.equal((await call('/api/admin/status',{token})).data.editingEnabled,false);
+    const editing=(await call('/api/admin/status',{token})).data;
+    assert.equal(editing.editingEnabled,true);
+    assert.deepEqual(editing.editable,['overrides']);
     assert.equal((await call('/api/admin/push/status',{token})).data.subscribers,2);
     const testResult=await call('/api/admin/push/test',{token,body:{target:'mine',endpoint:'https://web.push.apple.com/b'}});
     assert.equal(testResult.status,200);assert.equal(testResult.data.accepted,1);

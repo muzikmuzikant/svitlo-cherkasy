@@ -14,7 +14,7 @@ const color=(v,def)=>/^#[0-9a-f]{6}$/i.test(String(v||''))?String(v):def;
 const when=v=>{const s=text(v,35);return !s?'':Number.isFinite(Date.parse(s))?new Date(s).toISOString():''};
 const kinds=['iPhone','iPad','Android','Windows','macOS','Linux','Інше'];
 const defaults={
- enabled:false,pageVisible:true,rotationSeconds:8,promoEvery:4,showPromo:true,manualSwipe:true,animation:'fade',
+ enabled:false,rotationSeconds:8,promoEvery:4,showPromo:true,pageVisible:true,manualSwipe:true,animation:'fade',
  promoTitle:'Тут може бути ваша реклама',promoText:'Розкажіть про свій бізнес користувачам «Світло Черкаси»',
  contactLabel:'Зв’язатися з нами',pageTitle:'Реклама у Світло Черкаси',
  pageIntro:'Невелике рекламне оголошення на головній сторінці застосунку. Обговорімо умови розміщення.',

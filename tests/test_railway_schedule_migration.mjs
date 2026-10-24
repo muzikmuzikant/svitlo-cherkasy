@@ -51,7 +51,8 @@ test('PWA prefers live Railway schedules with static/offline fallback',()=>{
  assert.match(app,/source:'device'/);
  assert.match(app,/nextStamp>=currentStamp/);
  const server=read('push-server/server.js');
- assert.match(server,/const published=officialSchedules\.schedule\(\)/);
+ assert.match(server,/const published=\(typeof liveSchedule/);
+ assert.match(server,/const liveSchedule=\(\)=>manualOverrides\.applySchedule\(officialSchedules\.schedule\(\)\)/);
  assert.match(server,/if\(!usableSchedule\(published\)\)/);
  assert.match(server,/fallback=fetched/);
  assert.match(server,/preferFreshSchedule\(published,fallback,timestamp\)/);
