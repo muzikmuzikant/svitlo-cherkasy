@@ -205,6 +205,14 @@
      <div class="maintenance-time-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
      <div class="maintenance-time-text"><span id="maintenanceTimeLabel">Орієнтовне завершення</span><strong id="maintenanceEta">Час поки невідомий</strong></div>
     </div>
+<section id="maintenanceBackup" class="maintenance-backup" aria-labelledby="maintenanceBackupTitle">
+     <div class="maintenance-backup-header"><strong id="maintenanceBackupTitle">Резервний графік</strong><span>Доступний під час техробіт</span></div>
+     <label for="maintenanceBackupPlace" id="maintenanceBackupPlaceLabel">Збережена адреса</label>
+     <select id="maintenanceBackupPlace" aria-label="Збережена адреса"></select>
+     <p id="maintenanceBackupDate" class="maintenance-backup-date"></p>
+     <div id="maintenanceBackupBars" class="maintenance-backup-bars" aria-label="Часові інтервали на сьогодні"></div>
+     <p id="maintenanceBackupText" class="maintenance-backup-text" role="status"></p>
+    </section>
     <div class="maintenance-actions">
      <button type="button" id="maintenanceRefresh" class="maintenance-refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg><span>Перевірити доступність</span></button>
      <a class="maintenance-official" href="https://www.cherkasyoblenergo.com/off" target="_blank" rel="noopener noreferrer">Офіційні графіки <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>

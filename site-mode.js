@@ -139,6 +139,70 @@
   }
   maintenanceFocus=null;
  }
+ // Read-only mini schedule. Remains usable while the main PWA is inert.
+ let backupSnapshot=null,backupFetchedAt=0,backupPromise=null;
+ const backupSelect=$('maintenanceBackupPlace');
+ const backupLocal=()=>{
+  try{const v=JSON.parse(localStorage.getItem('svitlo-offline-schedule-v74')||'null');return Array.isArray(v?.days)?v:null}catch{return null}
+ };
+ const backupPlaces=()=>{
+  try{const list=JSON.parse(localStorage.getItem('svitlo-addresses-v6')||'[]');
+   return Array.isArray(list)?list.filter(a=>a&&/^([1-6])\\.[12]$/.test(a.queue||'')).slice(0,30):[]}
+  catch{return []}
+ };
+ function drawBackup(){
+  const host=$('maintenanceBackup');if(!host||overlay.hidden)return;
+  const places=backupPlaces(),previous=backupSelect.value;
+  backupSelect.replaceChildren();
+  for(const [i,a] of places.entries())backupSelect.add(new Option(
+   (a.nickname||[a.street,a.house].filter(Boolean).join(', ')||a.settlement||'Місце')+' · '+a.queue,String(i)));
+  backupSelect.value=places[Number(previous)]?previous:'0';
+  backupSelect.hidden=!places.length;
+  $('maintenanceBackupPlaceLabel').hidden=!places.length;
+  const bars=$('maintenanceBackupBars'),note=$('maintenanceBackupText'),date=$('maintenanceBackupDate');
+  bars.replaceChildren();
+  if(!places.length){date.textContent='';note.textContent='Після завершення техробіт додайте адресу, щоб переглядати тут її графік.';return}
+  const a=places[Number(backupSelect.value)||0],snapshot=backupSnapshot||backupLocal();
+  const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).map(p=>[p.type,p.value]));
+  const today=parts.year+'-'+parts.month+'-'+parts.day;
+  date.textContent='Сьогодні · '+today+' · Підчерга '+a.queue;
+  const day=snapshot?.days?.find(d=>d.date===today&&d.verified===true),item=day?.queues?.[a.queue];
+  const checked=Date.parse(snapshot?.lastChecked||''),fresh=Number.isFinite(checked)&&Date.now()-checked<55*60_000;
+  const absent=!day&&fresh&&snapshot?.confirmedNoScheduleDates?.includes(today);
+  if(!Array.isArray(item?.off)&&!absent){
+   note.textContent='Для цієї підчерги немає підтвердженого розкладу. Спробуйте перевірити офіційний графік.';
+   return;
+  }
+  const toMinute=t=>t==='24:00'?1440:/^\\d{2}:\\d{2}$/.test(t||'')?Number(t.slice(0,2))*60+Number(t.slice(3)):-1;
+  const off=Array.isArray(item?.off)?item.off.map(v=>[toMinute(v[0]),toMinute(v[1])]).filter(v=>v[0]>=0&&v[1]>v[0]&&v[1]<=1440):[];
+  const known=toMinute(item?.knownFrom||'00:00');
+  for(let i=0;i<48;i++){
+   const start=i*30;
+   const unknown=known>=0&&start<known,cut=off.some(([a,b])=>start<b&&start+30>a);
+   const el=document.createElement('span');el.className=unknown?'unknown':cut?'off':'on';
+   el.title=(String(Math.floor(start/60)).padStart(2,'0')+':'+String(start%60).padStart(2,'0'))+
+    (unknown?' · без даних':cut?' · планове відключення':' · світло є');
+   bars.append(el);
+  }
+  const fmt=n=>n===1440?'24:00':String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');
+  note.textContent=absent?'За останньою перевіркою графік планових відключень не опубліковано.':
+   off.length?'За графіком без світла: '+off.map(([a,b])=>fmt(a)+'–'+fmt(b)).join(', '):
+   'За опублікованим графіком планових відключень немає.';
+  if(!fresh)note.textContent+=' Дані можуть бути застарілими.';
+ }
+ async function refreshBackup(){
+  if(overlay.hidden)return;
+  drawBackup();
+  if(!apiBase||backupPromise||Date.now()-backupFetchedAt<60_000)return;
+  backupFetchedAt=Date.now();
+  backupPromise=fetch(apiBase+'/api/data/schedules.json',{cache:'no-store',signal:AbortSignal.timeout(7000)})
+   .then(r=>{if(!r.ok)throw Error('Schedule HTTP '+r.status);return r.json()})
+   .then(data=>{if(Array.isArray(data?.days)){backupSnapshot=data;drawBackup()}})
+   .catch(error=>console.warn('Backup schedule:',error.message))
+   .finally(()=>{backupPromise=null});
+  await backupPromise;
+ }
+ backupSelect?.addEventListener('change',drawBackup);
  function setMaintenanceVisible(visible){
   if(visible){
    if(maintenanceExitTimer){clearTimeout(maintenanceExitTimer);maintenanceExitTimer=null}
@@ -146,6 +210,7 @@
    if(overlay.hidden){
     maintenanceFocus=document.activeElement;
     overlay.hidden=false;
+    backupFetchedAt=0;backupSnapshot=null;void refreshBackup();
     document.body.classList.add('svitlo-maintenance-active');
     // Announce the screen without scrolling the page behind it.
     $('maintenanceRefresh')?.focus({preventScroll:true});
@@ -293,7 +358,7 @@
    }
    const response=await fetch(apiBase+'/api/app-config',{cache:'no-store',signal:AbortSignal.timeout(9000)});
    if(!response.ok)throw Error('Public config HTTP '+response.status);
-   const data=await response.json();lastConfig=data;display(data);connectLive();updatePlannedCountdown();
+   const data=await response.json();lastConfig=data;display(data);connectLive();updatePlannedCountdown();if(!overlay.hidden)void refreshBackup();
    success=true;
    if(manual&&status)status.textContent=!timed(data.maintenance)||data.maintenance?.mode==='limited'?'Доступ до застосунку відновлюється.':'Роботи ще тривають. Перевірка успішна.';
   }catch(e){

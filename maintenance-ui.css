@@ -243,3 +243,15 @@ body.svitlo-maintenance-active{overscroll-behavior:none}
   gap:clamp(28px,5vw,70px)!important;max-width:none!important
  }
 }
+
+/* Isolated read-only timetable in full maintenance and urgent-incident view. */
+.maintenance-backup{margin:16px 0 10px;padding:15px 16px;border:1px solid var(--maint-outline,rgba(255,255,255,.24));border-radius:18px;background:var(--maint-panel,rgba(255,255,255,.08));width:100%;text-align:left;color:var(--maint-ink,#fff)}
+.maintenance-backup-header{display:flex;align-items:center;flex-wrap:wrap;justify-content:space-between;gap:8px;font-size:14px}
+.maintenance-backup-header span,.maintenance-backup-date,.maintenance-backup-text{font-size:12px;line-height:1.5;color:var(--maint-muted,#d9e6fa)}
+.maintenance-backup label{display:block;margin:12px 0 5px;font-size:12px}
+.maintenance-backup select{width:100%;padding:12px;border:1px solid var(--maint-outline,#c2cfe0);border-radius:11px;background:#fff;color:#173453;font-size:14px}
+.maintenance-backup-bars{display:grid;grid-template-columns:repeat(48,minmax(0,1fr));gap:2px;min-height:26px;border-radius:7px;overflow:hidden}
+.maintenance-backup-bars span{min-width:0;background:#8cddab}
+.maintenance-backup-bars span.off{background:#efa5b2}
+.maintenance-backup-bars span.unknown{background:#a6b6ca}
+.maintenance-backup-date{margin:12px 0 8px}.maintenance-backup-text{margin:10px 0 0}
