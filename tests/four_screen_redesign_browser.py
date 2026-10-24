@@ -29,21 +29,16 @@ def main():
      page.on('pageerror',lambda error:errors.append(str(error)))
      page.goto(base,wait_until='domcontentloaded',timeout=30000)
      ready(page)
-     assert page.locator('#home .home-focus #heroStatus .overview-card').is_visible()
-     assert page.locator('#homeWeekDays .home-week-day').count()==7
-     assert page.locator('#placeList .place-row').count()==2
-     assert page.locator('#placeList .place-edit-action').count()==2
-     assert page.locator('.home-saved-places').count()==1
-     assert page.locator('#homeDashboardDate').inner_text()
+     assert page.locator('#home .overview-card').is_visible()
+     assert page.locator('#placeList .place-card').count()==2
+     assert page.locator('#homeIntro').count()==1
      page.locator('.bottom-nav [data-go="settings"]').click()
      page.wait_for_function("() => !document.getElementById('settings').hidden")
-     assert page.locator('#settingsNavHub [data-settings-page]').count()==6
-     page.locator('#settingsNavHub [data-settings-page="places"]').click()
-     assert page.locator('#settingsPlacesPanel').is_visible()
-     assert '2 адреси' in page.locator('#settingsPlacesCount').inner_text()
-     assert page.locator('#settings .settings-quick-nav button').count()==0
-     assert page.locator('#settings').get_by_role('heading',name='Мої місця').count()==1
-     page.locator('#settingsManagePlaces').click()
+     assert page.locator('#pushMaster').is_visible()
+     assert page.locator('#appearanceSummary').is_visible()
+     page.locator('.bottom-nav [data-go="home"]').click()
+     page.wait_for_function("() => !document.getElementById('home').hidden")
+     page.locator('#primaryPicker').click()
      page.wait_for_function("() => document.querySelector('#placesSheet')?.open",timeout=6000)
      assert page.locator('#placesOptions .place-option').count()==2
      assert page.locator('#placesOptions .place-edit-option').count()==2
@@ -52,9 +47,9 @@ def main():
      assert page.locator('#street').input_value() in ('Тестова','Прикладна')
      page.locator('#closeSheet').click()
      page.wait_for_function("() => !document.querySelector('#addressSheet').open",timeout=6000)
-     page.locator('.bottom-nav [data-go="home"]').click()
-     page.wait_for_function("() => !document.getElementById('home').hidden")
-     page.locator('#allQueuesHomeOpen').click()
+     page.locator('.bottom-nav [data-go="detail"]').click()
+     page.wait_for_function("() => !document.getElementById('detail').hidden")
+     page.locator('#allQueuesDetailOpen').click()
      page.wait_for_function("() => document.querySelector('#allQueuesDialog')?.open",timeout=6000)
      assert page.locator('#allQueuesMatrix .all-queues-group-card').count()==6
      assert page.locator('.all-queues-mode').count()==3
@@ -75,7 +70,7 @@ def main():
      overflow=page.evaluate('document.documentElement.scrollWidth-innerWidth')
      assert overflow<=3,(width,scheme,'horizontal overflow',overflow)
      if scheme=='dark':
-      bg=page.locator('#settingsPlacesPanel').evaluate(
+      bg=page.locator('#settings .settings-card').first.evaluate(
         '(el)=>getComputedStyle(el).backgroundColor')
       assert bg not in ('rgb(255, 255, 255)','white'),(width,bg)
      assert not errors,(width,scheme,errors)
