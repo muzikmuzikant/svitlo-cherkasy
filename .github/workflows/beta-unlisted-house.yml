@@ -1,0 +1,23 @@
+name: Beta Unlisted House Regression Checks
+on:
+  pull_request:
+    branches: [staging]
+    paths:
+      - 'address-lookup.js'
+      - 'tests/test_address_lookup.cjs'
+      - '.github/workflows/beta-unlisted-house.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  house-queue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check address matcher syntax
+        run: node --check address-lookup.js
+      - name: Verify no guessed queues for unlisted houses
+        run: node --test tests/test_address_lookup.cjs
