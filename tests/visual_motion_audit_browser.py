@@ -92,7 +92,8 @@ def main():
      assert not errors,(width,scheme,errors)
      context.close();count+=1
    # Plain web pages should never overflow at narrow widths with light/dark palettes.
-   with browser.new_context(viewport={"width":320,"height":750},service_workers="block") as context:
+   context=browser.new_context(viewport={"width":320,"height":750},service_workers="block")
+   try:
     context.route("https://**/*",lambda route:route.abort())
     for name in PAGES:
      page=context.new_page()
@@ -104,6 +105,8 @@ def main():
      assert val["scroll"]<=val["width"]+3,(name,"horizontal overflow",val)
      assert not errors,(name,errors)
      page.close()
+   finally:
+    context.close()
    print("PASS: 8 viewport/theme combinations, 4 PWA tabs each, stable home geometry and 12-row focus persistence")
    print("PASS: 8 public pages checked for 320px overflow, no JS errors, dock fixed",flush=True)
   finally:
