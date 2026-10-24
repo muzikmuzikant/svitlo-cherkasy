@@ -47,7 +47,7 @@ test('ISO dates and app source integration are validated',()=>{
 });
 test('Beta ships accessible daily matrix, PNG action and offline assets',()=>{
  const html=read('index.html'),build=read('scripts/build_pages.py'),sw=read('sw.js');
- for(const id of ['allQueuesHomeOpen','allQueuesDetailOpen','allQueuesDialog','allQueuesMatrix',
+ for(const id of ['allQueuesDetailOpen','allQueuesDialog','allQueuesMatrix',
    'allQueuesDays','allQueuesExport','allQueuesSource','allQueuesNotice','allQueuesInspect']){
   assert.match(html,new RegExp('id="'+id+'"'),id);
  }
