@@ -16,7 +16,8 @@
  const dateString=date=>new Intl.DateTimeFormat('uk-UA',{timeZone:'UTC',day:'numeric',month:'long',weekday:'long'}).format(new Date(date+'T12:00:00Z'));
  const weekday=date=>['Нд','Пн','Вт','Ср','Чт','Пт','Сб'][new Date(date+'T12:00:00Z').getUTCDay()];
  let selected='',closing=false,timer=null,selectedCell=null,busy=false;
- let currentSignature='',expandedToken=0;
+ let currentSignature='',expandedToken=0,groupFilter='all';
+ const filters=$('allQueuesGroupFilters'),filterLabel=$('allQueuesFilterStatus');
  function gradient(parts){
   if(parts.length===1&&parts[0].state===-1)
    return 'repeating-linear-gradient(135deg,#dce4ef,#dce4ef 3px,#eff3f8 3px,#eff3f8 6px)';
@@ -50,6 +51,27 @@
    if(!opening&&node.isConnected)node.remove();
   }).catch(()=>{if(!opening)node.remove()});
  }
+ function applyGroupFilter(){
+  for(const node of root.querySelectorAll('.all-queues-lane')){
+   node.hidden=groupFilter!=='all'&&!node.dataset.queue.startsWith(groupFilter+'.');
+  }
+  if(filterLabel)filterLabel.textContent=groupFilter==='all'?'Показано всі 12':'Група '+groupFilter+' · 2 підчерги';
+  for(const button of filters?.querySelectorAll('[data-queue-group]')||[]){
+   button.setAttribute('aria-pressed',String(button.dataset.queueGroup===groupFilter));
+  }
+  if(selectedCell&&groupFilter!=='all'&&!selectedCell.queue.startsWith(groupFilter+'.')){
+   selectedCell=null;root.querySelectorAll('.all-queues-row-detail').forEach(node=>node.remove());
+   for(const row of root.querySelectorAll('.all-queues-lane.is-selected')){
+    row.classList.remove('is-selected');row.setAttribute('aria-expanded','false');
+   }
+   status.textContent='Виберіть підчергу для перегляду точних годин.';
+  }
+ }
+ filters?.addEventListener('click',event=>{
+  const button=event.target.closest?.('[data-queue-group]');
+  if(!button||!filters.contains(button))return;
+  groupFilter=button.dataset.queueGroup;applyGroupFilter();
+ });
  function toggleQueue(queue){
   const previous=selectedCell?.queue||'',token=++expandedToken;
   selectedCell=previous===queue?null:{queue};
@@ -96,7 +118,7 @@
    confirmed?'За опублікованим графіком планових відключень немає.':
    'Немає підтвердженого графіка. Невідомі години позначено сірим.';
   const signature=selected+'|'+math.QUEUES.map(q=>JSON.stringify(math.allDaySegments(src().timeline(selected,q)))).join('|');
-  if(signature===currentSignature&&root.querySelectorAll('.all-queues-lane').length===12)return;
+  if(signature===currentSignature&&root.querySelectorAll('.all-queues-lane').length===12){applyGroupFilter();return}
   currentSignature=signature;expandedToken++;root.replaceChildren();
   const axis=e('div','all-queues-time-scale');
   for(const t of ['00:00','06:00','12:00','18:00','24:00'])axis.append(e('span','',t));
@@ -114,8 +136,9 @@
     segment.style.width=((p.end-p.start)/1440*100).toFixed(5)+'%';
     bar.append(segment);
    }
+   const hours=(totalOff(parts)/60).toLocaleString('uk-UA',{maximumFractionDigits:1});
    const line=e('span','all-queues-lane-caption',off.length?
-     off.slice(0,3).join('  ·  ')+(off.length>3?'  ·  ще '+(off.length-3):''):
+     (unknown?'Відомо без світла: ':'Без світла: ')+hours+' год · '+off.slice(0,3).join(' · ')+(off.length>3?' · ще '+(off.length-3):''):
      unknown?'Години не підтверджені':'Світло весь день');
    content.append(bar,line);
    const arrow=e('span','all-queues-lane-arrow','›');arrow.setAttribute('aria-hidden','true');
@@ -125,6 +148,7 @@
    root.append(lane);
 
   }
+  applyGroupFilter();
   const key=$('allQueues24Label');if(key)key.hidden=true;
   if(selectedCell){const q=selectedCell.queue;selectedCell=null;toggleQueue(q)}
   else status.textContent='Натисніть на будь-яку підчергу, щоб розгорнути точні години відключень.';
@@ -149,7 +173,7 @@
   if(!src())return;
   const dates=src().dates();
   selected=math.safeDate(date)&&dates.includes(date)?date:src().today();
-  selectedCell=null;currentSignature='';
+  selectedCell=null;currentSignature='';groupFilter='all';
   if(!dialog.open)try{dialog.showModal()}catch(error){console.warn('All queues:',error);return}
   render();
  }
