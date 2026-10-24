@@ -24,6 +24,7 @@ async function activateSession(status,identity){
  editableKinds=Array.isArray(status.editable)?status.editable:['overrides'];
  canPublish=adminRole==='owner'&&!profile.managed&&!!status.editingEnabled;
  $('adminLoginScreen').hidden=true;$('adminDashboard').hidden=false;
+ document.body.classList.remove('admin-auth-checking');
  $('connection').textContent='Увійшли · '+({owner:'Власник',editor:'Редактор',operator:'Оператор',viewer:'Перегляд'}[adminRole]||'Адміністратор');
  $('connection').className='pill ok';
  $('adminUsername').value=profile.username;
