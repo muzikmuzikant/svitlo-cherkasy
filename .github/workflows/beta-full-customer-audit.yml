@@ -41,6 +41,8 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Audit all public pages at five widths in both themes, all PWA tabs and installer
         run: python tests/full_beta_customer_audit.py
+      - name: Exercise four newly redesigned screens on mobile in both themes
+        run: python tests/four_screen_redesign_browser.py
       - name: Click through schedules, sharing, inbox, Help and support forms in both themes
         run: python tests/deep_beta_customer_journeys.py
       - name: Verify stable geometry, controls and all-queue motion across viewports
