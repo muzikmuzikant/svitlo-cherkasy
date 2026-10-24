@@ -1,4 +1,4 @@
-/* Privileged, human-reviewed exact-building subqueue corrections.
+/* Privileged, human-reviewed street-level and exact-building queue corrections.
  * No automated verification is claimed. Only published records reach PWA. */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -16,8 +16,8 @@ function fields(data,old={}){
  const queue=String(data.queue??old.queue??'');
  const source=String(data.source??old.source??'').trim();
  const comment=String(data.comment??old.comment??'').trim();
- if(!TOWN.test(settlementKey)||!STREET.test(streetKey)||!HOUSE.test(house)||!QUEUES.has(queue)
-  ||!SOURCE.test(source)||source.length>350||comment.length>600)throw Error('Вкажіть точну адресу, підчергу й офіційне посилання обленерго');
+ if(!TOWN.test(settlementKey)||!STREET.test(streetKey)||(house!==''&&!HOUSE.test(house))||!QUEUES.has(queue)
+  ||!SOURCE.test(source)||source.length>350||comment.length>600)throw Error('Вкажіть вулицю, підчергу й офіційне посилання обленерго');
  return {settlementKey,streetKey,house,queue,source,comment};
 }
 export function createAddressCorrectionStore({directory,record=()=>{}}){
@@ -42,7 +42,7 @@ export function createAddressCorrectionStore({directory,record=()=>{}}){
  const create=(input,actor)=>{
   load();if(state.items.length>=600)throw Error('Перевищено ліміт адресних уточнень');
   const values=fields(input);
-  if(conflict(values))throw Error('Для цієї точної адреси картка вже існує');
+  if(conflict(values))throw Error('Для цієї адреси або вулиці картка вже існує');
   const stamp=new Date().toISOString(),entry={id:'AC-'+crypto.randomBytes(6).toString('hex').toUpperCase(),
    ...values,status:'draft',revision:1,createdAt:stamp,updatedAt:stamp,createdBy:actor,publishedAt:null};
   state.items.unshift(entry);save();record('address.draft.create',entry.id);return {...entry};
@@ -59,7 +59,7 @@ export function createAddressCorrectionStore({directory,record=()=>{}}){
   if(nextStatus==='published'&&!isOwner)throw Error('Підтвердження доступне лише власнику');
   const proofChanged=['settlementKey','streetKey','house','queue','source'].some(key=>payload[key]!==row[key]);
   if(nextStatus==='published'&&(row.status!=='published'||proofChanged)&&input.confirmSourceReviewed!==true)
-   throw Error('Підтвердьте, що власноруч звірили будинок із джерелом');
+   throw Error('Підтвердьте, що власноруч звірили адресу з джерелом');
   const stamp=new Date().toISOString();
   Object.assign(row,payload,{status:nextStatus,revision:row.revision+1,updatedAt:stamp,
    publishedAt:nextStatus==='published'?(row.publishedAt||stamp):null,reviewedBy:nextStatus==='published'?actor:null});
@@ -77,8 +77,9 @@ export function createAddressCorrectionStore({directory,record=()=>{}}){
   for(const entry of state.items){
    if(entry.status!=='published')continue;
    const target=entry.settlementKey==='черкаси'?corrections:
-    (corrections.localities[entry.settlementKey]??={keys:{}});
-   target.keys[entry.streetKey+'|'+entry.house]=[entry.queue];
+    (corrections.localities[entry.settlementKey]??={keys:{},streetQueues:{}});
+   if(entry.house)target.keys[entry.streetKey+'|'+entry.house]=[entry.queue];
+   else (target.streetQueues??={})[entry.streetKey]=[entry.queue];
   }
   return {schemaVersion:1,updatedAt:state.updatedAt,corrections};
  };

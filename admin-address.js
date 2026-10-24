@@ -43,18 +43,15 @@
   const towns=[['черкаси',catalogue],...Object.entries(catalogue?.localities||{})];
   for(const [town,idx] of towns){
    if(!idx?.streets)continue;
-   const known=new Set();
    for(const [key,queues] of Object.entries(idx.keys||{})){
     const cut=key.lastIndexOf('|');if(cut<0)continue;
     const street=key.slice(0,cut),house=key.slice(cut+1);
     if(!street||!house||!Array.isArray(queues)||!queues.length)continue;
-    known.add(street);
     addresses.push({town,street,house,queues,streetLabel:idx.streets[street]||street.replace('|',' '),catalog:true});
    }
    for(const [street,name] of Object.entries(idx.streets||{})){
-    // A listed street with no per-house record is still selectable.
-    // An operator must enter a specific house before publishing a correction.
-    if(known.has(street))continue;
+    // Every street is selectable without a house even if the catalog has house-level records.
+    // On split streets, a street-wide published correction must not change exact house data.
     addresses.push({town,street,house:'',queues:idx.streetQueues?.[street]||[],streetLabel:name,catalog:true});
    }
   }
@@ -64,10 +61,12 @@
   const town=item?.settlementKey||base?.town||$('corrBrowseTown')?.value||'черкаси';
   const street=item?.streetKey||base?.street||'',house=item?.house||base?.house||'';
   const current=base?.queues||[];
+  const hasDetailedHouses= !house && addresses.some(a=>a.town===town&&a.street===street&&a.house);
   $('corrHeading').textContent=item?'Уточнення '+item.id:base?'Адреса з довідника':'Нове адресне уточнення';
   $('corrRevision').textContent=item?'Редакція '+item.revision:
    base?'Довідник · '+(current.length?'Поточна підчерга: '+current.join(', '):'Підчерга не підтверджена')+' · Зміни спочатку зберігаються як чернетка':
    'Нове уточнення · Чернетка';
+  if(!house && hasDetailedHouses)$('corrRevision').textContent+=' · Є окремі підчерги будинків: загальне уточнення їх не змінить';
   $('corrTown').value=town;streets(street);
   $('corrHouse').value=house;
   $('corrQueue').value=item?.queue||(current.length===1?current[0]:'');
@@ -81,7 +80,6 @@
   for(const field of $('corrForm').querySelectorAll('input,select,textarea,button'))
    field.disabled=!canEdit()||(field.id==='corrPublish'&&!owner())||(field.id==='corrProof'&&!owner());
   $('corrDelete').disabled=!owner();
-  $('corrHouse').required=true;
  }
  function linkedCorrection(base,lookup){
   return lookup.get(identity(base.town,base.street,base.house));
@@ -116,7 +114,7 @@
    button.type='button';
    button.append(create('strong',base.streetLabel+(base.house?' · '+base.house:'')),
     create('span',item?'Уточнення: '+item.queue:'У довіднику: '+(base.queues.join(', ')||'підчергу уточнити')),
-    create('small',item?(item.status==='published'?'Опубліковано':'Чернетка'):base.house?'Адреса з каталогу':'Вулиця, укажіть номер будинку'));
+    create('small',item?(item.status==='published'?'Опубліковано':'Чернетка'):base.house?'Адреса з каталогу':'Уся вулиця · номер будинку необов’язковий'));
    button.onclick=()=>{selectItem(item||null,base);draw()};
    list.append(button);
   }
@@ -162,15 +160,15 @@
    house:$('corrHouse').value.trim(),queue:$('corrQueue').value,
    source:$('corrSource').value.trim(),comment:$('corrComment').value.trim()
   };
-  if(!payload.house){announce('Укажіть точний номер будинку. Вулиці без будинку не отримують довільну підчергу.',true);return}
   if(item){
    payload.expectedRevision=item.revision;
    payload.status=$('corrPublish').checked?'published':'draft';
    const changed=['settlementKey','streetKey','house','queue','source'].some(key=>payload[key]!==item[key]);
    if(payload.status==='published'&&(item.status!=='published'||changed)){
-    if(!owner()||!$('corrProof').checked){announce('Підтвердьте перевірку конкретного будинку за офіційним джерелом.',true);return}
+    if(!owner()||!$('corrProof').checked){announce('Підтвердьте перевірку адреси за офіційним джерелом.',true);return}
     payload.confirmSourceReviewed=true;
-    if(!confirm('Опублікувати підчергу '+payload.queue+' для будинку '+payload.house+'? Зміна вплине на всіх користувачів за цією адресою.'))return;
+    const subject=payload.house?'будинку '+payload.house:'вулиці без номера будинку';
+    if(!confirm('Опублікувати підчергу '+payload.queue+' для '+subject+'? Відомі точні адреси будинків залишаться без змін.'))return;
    }
   }
   busy=true;$('corrSave').disabled=true;

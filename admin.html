@@ -103,19 +103,19 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
   <select id="corrFilter" aria-label="Фільтр статусів"><option value="">Усі</option><option value="draft">Чернетки</option><option value="published">Опубліковані</option><option value="catalog">Без уточнення</option></select></div>
   <div id="corrList" class="corr-list"></div></div>
  <div class="corr-form"><h3 id="corrHeading">Нова картка</h3><small class="hint" id="corrRevision"></small>
-  <p class="corr-info">Звернення користувача не підтверджує чергу автоматично. Звіряйте точний номер будинку з актуальними даними обленерго перед публікацією.</p>
+  <p class="corr-info">Номер будинку необов’язковий. Якщо залишити поле порожнім, уточнення стосується вулиці. Для вулиць із розподілом за будинками точні підчерги збережуться без змін. Перед публікацією звірте дані з офіційним джерелом.</p>
   <form id="corrForm">
   <div class="two"><div class="field"><label for="corrTown">Населений пункт</label><select id="corrTown"><option value="черкаси">Черкаси</option></select></div>
   <div class="field"><label for="corrStreet">Вулиця з офіційного каталогу</label><select id="corrStreet" required><option value="">Оберіть вулицю</option></select></div></div>
-  <div class="two"><div class="field"><label for="corrHouse">Номер будинку</label><input id="corrHouse" required maxlength="20" placeholder="30 або 160/1"></div>
+  <div class="two"><div class="field"><label for="corrHouse">Номер будинку (необов’язково)</label><input id="corrHouse" maxlength="20" placeholder="Уся вулиця або 30, 160/1"><small class="hint">Порожнє поле: уточнення для вулиці, без зміни підтверджених будинків.</small></div>
   <div class="field"><label for="corrQueue">Підчерга</label><select id="corrQueue" required><option value="">Оберіть</option>
   <option value="1.1">1.1</option><option value="1.2">1.2</option><option value="2.1">2.1</option><option value="2.2">2.2</option>
   <option value="3.1">3.1</option><option value="3.2">3.2</option><option value="4.1">4.1</option><option value="4.2">4.2</option>
   <option value="5.1">5.1</option><option value="5.2">5.2</option><option value="6.1">6.1</option><option value="6.2">6.2</option></select></div></div>
   <div class="field"><label for="corrSource">Посилання на джерело обленерго</label><input id="corrSource" type="url" maxlength="350" required placeholder="https://www.cherkasyoblenergo.com/..."></div>
   <div class="field"><label for="corrComment">Службова примітка</label><textarea id="corrComment" maxlength="600" rows="3" placeholder="Деталі звірки"></textarea></div>
-  <label class="corr-check" id="corrPublishRow" hidden><input type="checkbox" id="corrPublish"> Публікувати виправлення для всіх користувачів цієї адреси</label>
-  <label class="corr-check" id="corrProofRow" hidden><input type="checkbox" id="corrProof"> Я особисто перевірив підчергу конкретного будинку за офіційним джерелом</label>
+  <label class="corr-check" id="corrPublishRow" hidden><input type="checkbox" id="corrPublish"> Опублікувати уточнення для користувачів за цією адресою</label>
+  <label class="corr-check" id="corrProofRow" hidden><input type="checkbox" id="corrProof"> Я перевірив підчергу вулиці або конкретного будинку за офіційним джерелом</label>
   <div class="corr-actions"><button id="corrSave" type="submit">Зберегти</button><button id="corrDelete" type="button" class="danger" hidden>Видалити</button></div>
   </form></div></div><p id="corrMessage" role="status" class="registry-status"></p>
 </section>
