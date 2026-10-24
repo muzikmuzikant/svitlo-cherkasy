@@ -189,7 +189,7 @@
  const fullPreview=document.createElement('dialog');fullPreview.className='ops-full-message-preview';
  fullPreview.id='opsFullMessagePreview';document.body.append(fullPreview);
  $('opsPreviewFull').onclick=()=>{
-  const title=document.createElement('h2');title.textContent=read('opsNoticeTitle')||'Нове повідомлення';
+  const title=document.createElement('h2');title.textContent=displayNoticeTitle()||'Нове повідомлення';
   const body=document.createElement('p');body.textContent=read('opsNoticeBody');
   const rich=document.createElement('div');renderFormatted(rich,read('opsNoticeContent'));
   const images=document.createElement('div');images.className='ops-preview-images';
@@ -199,7 +199,7 @@
   fullPreview.replaceChildren(close,title,body,images,rich);fullPreview.showModal();
  };
  $('opsTestNotice').onclick=async()=>{
-  const title=read('opsNoticeTitle'),body=read('opsNoticeBody');
+  const title=displayNoticeTitle(),body=read('opsNoticeBody');
   if(!title||!body)return status('Заповніть заголовок і короткий текст для тесту.',true);
   try{
    if(!('serviceWorker'in navigator))throw Error('Потрібен встановлений застосунок із Push');
@@ -210,10 +210,15 @@
   }catch(e){status('Тест Push: '+e.message,true)}
  };
 
+ function displayNoticeTitle(){
+  const notice={title:read('opsNoticeTitle'),icon:read('opsNoticeIcon'),kind:read('opsNoticeKind')};
+  const icon=notice.icon||kinds[notice.kind]||'💬';
+  return /^\p{Extended_Pictographic}/u.test(notice.title)||notice.title.startsWith(icon)?notice.title:(icon+' '+notice.title).trim();
+ }
  function previewMessage(){
-  $('opsEditorPreviewTitle').textContent=read('opsNoticeTitle')||'Заголовок повідомлення';
+  $('opsEditorPreviewTitle').textContent=displayNoticeTitle()||'Заголовок повідомлення';
   $('opsEditorPreviewBody').textContent=read('opsNoticeBody')||'Короткий текст для користувачів';
-  $('opsPreviewPushTitle').textContent=read('opsNoticeTitle')||'Назва сповіщення';
+  $('opsPreviewPushTitle').textContent=displayNoticeTitle()||'Назва сповіщення';
   $('opsPreviewPushBody').textContent=read('opsNoticeBody')||'Текст Push';
   renderFormatted($('opsRichContentPreview'),read('opsNoticeContent'));
  }
