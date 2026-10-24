@@ -2,6 +2,41 @@
 const $=id=>document.getElementById(id);
 const FILES={overrides:'manual_overrides.json',schedules:'schedules.json',addresses:'addresses.json',streets:'published_street_fallback.json',emergency:'emergency.json'};
 let server='',sessionToken='',sha='',current='',remote=false,canPublish=false,editableKinds=['overrides'],original=null,pushBusy=false,adminRole='owner';
+const SESSION_KEY='svitlo-office-session-v1';
+let adminIdentity=null;
+const readSession=()=>{try{return JSON.parse(sessionStorage.getItem(SESSION_KEY)||'null')}catch{return null}};
+const clearSession=()=>{try{sessionStorage.removeItem(SESSION_KEY)}catch{}};
+function saveSession(status){
+ if(!sessionToken||!server)return;
+ try{sessionStorage.setItem(SESSION_KEY,JSON.stringify({
+  server,token:sessionToken,until:status.expiresAt||new Date(Date.now()+8*3600000).toISOString()
+ }))}catch{}
+}
+async function activateSession(status,identity){
+ const profile={username:status.username||identity?.username||'owner',role:status.role||identity?.role||'viewer',
+  permissions:Array.isArray(status.permissions)?status.permissions:Array.isArray(identity?.permissions)?identity.permissions:null,
+  managed:Boolean(status.managed??identity?.managed??Array.isArray(identity?.permissions)),
+  expiresAt:status.expiresAt||null};
+ adminIdentity=Object.freeze(profile);
+ adminRole=profile.role;
+ document.body.dataset.adminRole=adminRole;
+ remote=true;
+ editableKinds=Array.isArray(status.editable)?status.editable:['overrides'];
+ canPublish=adminRole==='owner'&&!profile.managed&&!!status.editingEnabled;
+ $('adminLoginScreen').hidden=true;$('adminDashboard').hidden=false;
+ $('connection').textContent='Увійшли · '+({owner:'Власник',editor:'Редактор',operator:'Оператор',viewer:'Перегляд'}[adminRole]||'Адміністратор');
+ $('connection').className='pill ok';
+ $('adminUsername').value=profile.username;
+ $('password').value='';
+ setPushReady(adminRole==='owner'&&!profile.managed);
+ window.SvitloAdminIdentity=()=>({...adminIdentity});
+ window.SvitloAdminAccess?.apply(profile);
+ saveSession(status);
+ await Promise.allSettled([load(),diagnostics(),refreshPushStatus(),refreshTickets()]);
+ document.dispatchEvent(new Event('svitlo:admin-ready'));
+ window.SvitloDashboard?.refresh?.();
+}
+
 function message(s,good){$('result').textContent=s;$('result').style.background=good?'#e5f7ed':'#fff2db';$('result').style.color=good?'#15633e':'#825310'}
 function validate(kind,obj){
  if(!obj||typeof obj!=='object'||Array.isArray(obj))throw Error('Потрібен JSON-об’єкт');
@@ -59,7 +94,9 @@ async function diagnostics(){
 function signOut(revoke=true){
  const oldToken=sessionToken,oldServer=server;
  if(revoke&&oldToken&&oldServer){fetch(oldServer+'/api/admin/logout',{method:'POST',headers:{authorization:'Bearer '+oldToken,'content-type':'application/json'},body:'{}'}).catch(()=>{})}
+ clearSession();adminIdentity=null;window.SvitloAdminIdentity=()=>null;
  remote=false;canPublish=false;editableKinds=['overrides'];sessionToken='';sha='';adminRole='owner';document.body.dataset.adminRole='';
+ window.SvitloAdminAccess?.reset();
  $('adminDashboard').hidden=true;$('adminLoginScreen').hidden=false;
  $('connection').textContent='Авторизовано';$('publish').disabled=true;
  $('password').value='';if($('otp'))$('otp').value='';setPushReady(false);
@@ -76,15 +113,10 @@ $('loginForm').onsubmit=async event=>{
    const response=await fetch(url+'/api/admin/login',{method:'POST',cache:'no-store',headers:{'content-type':'application/json'},body:JSON.stringify({username:$('adminUsername').value.trim(),password:enteredPassword,code:enteredCode})});
    const result=await response.json().catch(()=>({}));
    if(!response.ok||!result.token)throw Error(result.error||'Помилка входу: HTTP '+response.status);
-   server=url;sessionToken=result.token;adminRole=result.role||'owner';document.body.dataset.adminRole=adminRole;
-   // Verify session before revealing protected tools.
+   server=url;sessionToken=result.token;
+   // Server verifies every scope again before protected content is shown.
    const status=await api('status');
-   remote=true;editableKinds=Array.isArray(status.editable)?status.editable:['overrides'];canPublish=adminRole==='owner'&&!!status.editingEnabled;
-   $('adminLoginScreen').hidden=true;$('adminDashboard').hidden=false;
-   $('connection').textContent='Увійшли · '+({owner:'Власник',editor:'Редактор',operator:'Оператор',viewer:'Перегляд'}[adminRole]||'Адміністратор');$('connection').className='pill ok';
-   $('password').value='';setPushReady(adminRole==='owner');
-   await Promise.allSettled([load(),diagnostics(),refreshPushStatus(),refreshTickets()]);
-   document.dispatchEvent(new Event('svitlo:admin-ready'));
+   await activateSession(status,result);
  }catch(e){sessionToken='';remote=false;canPublish=false;$('loginError').textContent=e.message;setPushReady(false)}
  finally{$('password').value='';if($('otp'))$('otp').value='';$('connect').disabled=false;$('connect').textContent='Увійти до панелі →'}
 };
@@ -100,7 +132,31 @@ $('publish').onclick=async()=>{
    $('publish').disabled=true;const r=await api('file?kind='+kind,{method:'PUT',body:JSON.stringify({sha,contents:obj})});message(kind==='overrides'?'Уточнення збережено в Railway. Оновлений графік уже доступний через API.':'Опубліковано. Коміт: '+r.commit+'. Дані на GitHub Pages оновляться після розгортання.',true);await load();
  }catch(e){message('Публікація не вдалася: '+e.message,false);$('publish').disabled=false}
 };
-(async()=>{try{const r=await fetch('./push-config.json',{cache:'no-store'});if(r.ok){const c=await r.json();if(/^https:\/\/[^\s]+$/.test(c.apiBase||''))$('server').value=new URL(c.apiBase).origin}}catch{ $('loginError').textContent='Не вдалося визначити сервер. Оновіть сторінку.' } })();
+(async()=>{
+ try{
+  const response=await fetch('./push-config.json',{cache:'no-store'});
+  if(!response.ok)throw Error('Немає конфігурації сервера');
+  const config=await response.json();
+  if(!/^https:\/\/[^\s]+$/.test(config.apiBase||''))throw Error('Адресу Railway не налаштовано');
+  const approved=new URL(config.apiBase).origin;
+  $('server').value=approved;
+  const saved=readSession();
+  if(!saved?.token||saved.server!==approved)return;
+  if(!Number.isFinite(Date.parse(saved.until))||Date.parse(saved.until)<=Date.now()){
+   clearSession();return;
+  }
+  server=approved;sessionToken=saved.token;
+  const status=await api('status'); // 401/revocation never reveals the dashboard.
+  if(!status.ok||!status.username)throw Error('Сеанс більше не активний');
+  await activateSession(status);
+ }catch(error){
+  if(error.message.includes('Сеанс')||error.message.includes('активний')){
+   clearSession();sessionToken='';server='';remote=false;
+  }else $('loginError').textContent='Не вдалося відновити сеанс. Перевірте з’єднання або увійдіть знову.';
+ }finally{
+  document.body.classList.remove('admin-auth-checking');
+ }
+})();
 
 // Guided editor: never directly changes public data. Edits the JSON staging area.
 const queues=Array.from({length:6},(_,i)=>[`${i+1}.1`,`${i+1}.2`]).flat();
