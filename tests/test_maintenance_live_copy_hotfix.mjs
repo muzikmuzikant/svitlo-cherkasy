@@ -58,7 +58,7 @@ test('manual editor copies a VERIFIED live Railway queue to another queue withou
  vm.runInNewContext(read('admin-planner.js'),sandbox,{filename:'admin-planner.js'});
  callbacks['svitlo:admin-ready']();
  await new Promise(resolve=>setTimeout(resolve,15));
- assert.ok(get('plannerSummary').textContent.includes('1 год'));
+ assert.ok(get('plannerSummary').textContent.includes('1 год'),'summary='+get('plannerSummary').textContent+'; status='+get('plannerStatus').textContent+'; day='+get('plannerDate').value+'; q='+get('plannerQueue').value);
  assert.equal(get('plannerSource').value,url);
  get('plannerCopyFrom').value='2.2';
  await get('plannerCopy').onclick();
