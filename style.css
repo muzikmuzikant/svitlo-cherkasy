@@ -925,3 +925,9 @@ body{overflow-wrap:break-word}
 .inbox-rich .message-space{height:7px}
 .inbox-item{transition:background-color .18s,border-color .18s,transform .18s}.inbox-item:active{transform:scale(.995)}
 @media(max-width:420px){.inbox-smart-bar{grid-template-columns:minmax(0,1fr) 136px}.inbox-search-label input{font-size:12px}#inboxSort{font-size:11px}}
+
+.inbox-search-label:focus-within{border-color:var(--blue,#3678df);box-shadow:0 0 0 3px #3678df20}
+:root[data-theme="dark"] .inbox-smart-bar :is(.inbox-search-label,#inboxSort),:root[data-theme="dark"] .inbox-stat{background:#1d242f;color:#e4ebf5;border-color:#394354}
+:root[data-theme="dark"] .inbox-search-label input{color:#eaf0fb}
+:root[data-theme="dark"] .inbox-rich blockquote{background:#202f46;color:#d5e2f7}
+:root[data-theme="dark"] .inbox-rich code{background:#26344a;color:#e3eeff}
