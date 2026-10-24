@@ -25,8 +25,8 @@ class ReleasePreflightTests(unittest.TestCase):
                                         "publicKey": "A" * 87})
         self.write("manifest.webmanifest", {"id": "./?app=beta" if channel == "beta" else "./",
                                             "display": "standalone"})
-        self.write("robots.txt", "User-agent: *\\nDisallow: /\\n" if channel == "beta" else
-                                 "User-agent: *\\nDisallow: /admin.html\\n")
+        self.write("robots.txt", "User-agent: *\nDisallow: /\n" if channel == "beta" else
+                                 "User-agent: *\nDisallow: /admin.html\n")
         if channel == "production":
             self.write("CNAME", PROD_DOMAIN)
 
@@ -58,7 +58,7 @@ class ReleasePreflightTests(unittest.TestCase):
 
     def test_block_all_robots_rejected_in_production(self):
         self.fixture("production")
-        self.write("robots.txt", "User-agent: *\\nDisallow: /\\n")
+        self.write("robots.txt", "User-agent: *\nDisallow: /\n")
         with self.assertRaises(PreflightFailure):
             check(self.root, "production", require_build=False)
 
