@@ -919,3 +919,6 @@ body{overflow-wrap:break-word}
 .inbox-detail{touch-action:pan-y;-webkit-overflow-scrolling:touch}
 .inbox-detail-content{touch-action:pan-y}
 /* The draggable handle's touch-action is defined in motion.css on small screens. */
+
+/* Full long-notice text remains readable without huge DOM trees. */
+.inbox-rich-remainder{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}

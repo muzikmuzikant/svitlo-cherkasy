@@ -130,7 +130,8 @@
  });
  function rich(target,raw){
   const text=String(raw||'');target.replaceChildren();
-  for(const line of text.split('\n').slice(0,300)){
+  const lines=text.split('\n');
+  for(const line of lines.slice(0,300)){
    const txt=line.trim();
    if(!txt){target.append(el('div','','inbox-line-space'));continue}
    const heading=/^#{1,3}\s+/.test(txt),bullet=/^[-*]\s+/.test(txt);
@@ -149,6 +150,8 @@
    });
    target.append(p);
   }
+  // Preserve remaining text without creating thousands of separate elements.
+  if(lines.length>300)target.append(el('p',lines.slice(300).join('\n'),'inbox-rich-remainder'));
  }
  function open(id){
   const item=rows.find(x=>x.id===id);if(!item)return false;
