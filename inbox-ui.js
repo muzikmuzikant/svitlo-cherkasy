@@ -334,7 +334,7 @@
    for(const a of notices){
     const linked=linkedNoticeIds.has('notice:'+a.id);
     if(a.active!==true||(!targeted(a)&&!linked)||(a.queue&&a.queue!=='all'&&a.queue!==queue&&!linked)||a.scheduledAt&&Date.parse(a.scheduledAt)>now||a.expiresAt&&Date.parse(a.expiresAt)<=now)continue;
-    incoming.push({id:'notice:'+a.id,kind:'announcement',title:(a.icon||({important:'📣',update:'✨',emergency:'⚠️',schedule:'🗓️'})[a.kind]||'💬')+' '+a.title,
+    incoming.push({id:'notice:'+a.id,kind:'announcement',title:(copy.noticeDisplayTitle?copy.noticeDisplayTitle(a):((a.icon||'📣')+' '+a.title)),icon:a.icon,
      body:a.body,content:a.content,images:a.images,at:a.publishedAt,updatedAt:a.updatedAt,pinned:a.pinned,priority:a.priority,authoritative:true});
    }
    if(incoming.length){
