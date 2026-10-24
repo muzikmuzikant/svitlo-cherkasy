@@ -12,6 +12,7 @@
   data:'owner',security:'owner',backup:'owner',revisions:'owner'
  };
  const ROLE={owner:'Власник',editor:'Редактор',operator:'Оператор',viewer:'Перегляд'};
+ const PERM_LABEL={view:'Огляд і аналітика',feedback:'Звернення',notices:'Оголошення',push:'Push',schedules:'Графіки',ads:'Реклама',help:'Центр допомоги',media:'Медіатека',settings:'Службові доручення'};
  const legacy={
   editor:new Set(['overview','insights','quality','audit','registry','corrections','sources','planner','tools','operations','media','ads','feedback','help']),
   operator:new Set(['overview','insights','quality','feedback']),
@@ -111,7 +112,7 @@
   identRole.textContent=ROLE[identity.role]||'Користувач';
   homeCard.querySelector('.office-my-account-name').textContent=identity.username;
   homeCard.querySelector('.office-my-account-role').textContent='Роль: '+(ROLE[identity.role]||identity.role);
-  const rights=identity.managed?identity.permissions?.length?identity.permissions.join(' · '):'Без додаткових прав':
+  const rights=identity.managed?identity.permissions?.length?identity.permissions.map(right=>PERM_LABEL[right]||right).join(' · '):'Без додаткових прав':
    identity.role==='owner'?'Повний доступ':'Доступ відповідно до ролі';
   homeCard.querySelector('.office-my-account-rights').textContent=rights;
   dashboard.dataset.officeAccountRole=identity.role;
