@@ -6,7 +6,7 @@ const extraDate=stamp=>{const n=Date.parse(stamp||'');return Number.isFinite(n)?
 let helpDraft=null,selectedHelpId='',monitorBusy=false;
 let adminTabSequence=0;
 function setTab(tab){
- if(!remote)return;
+ if(!remote||window.SvitloAdminAccess?.canTab(tab)===false)return;
  ++adminTabSequence;
  // Switch directly without browser-wide View Transition snapshots.
  // Live tables, charts and editors must not flash or jump between panels.

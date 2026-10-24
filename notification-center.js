@@ -11,8 +11,8 @@
   const at=Number.isFinite(Date.parse(item.at))?new Date(item.at).toISOString():new Date().toISOString();
   const images=Array.isArray(item.images)?item.images.slice(0,6).map(httpImage).filter(Boolean):[];
   const kind=['schedule','emergency','announcement','push','support'].includes(item.kind)?item.kind:'announcement';
-  return {id,title:String(item.title||'Повідомлення').slice(0,100),body:String(item.body||'').slice(0,500),
-   content:String(item.content||'').slice(0,20000),images,kind,at,
+  return {id,title:String(item.title||'Повідомлення').slice(0,100),body:String(item.body||'').slice(0,350),
+   content:String(item.content||'').slice(0,6000),images,kind,at,
    priority:['normal','important','urgent'].includes(item.priority)?item.priority:'normal',
    pinned:item.pinned===true,icon:String(item.icon||'').slice(0,18),
    updatedAt:typeof item.updatedAt==='string'?item.updatedAt:null,

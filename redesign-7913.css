@@ -1,0 +1,71 @@
+/* Scoped Beta address-sheet improvements. The pre-redesign Home and Settings use style.css. */
+:root{
+ --r13-blue:#357bef;--r13-ink:#20334d;--r13-muted:#72839b;
+ --r13-stroke:#e1e8f3;--r13-surface:#fff;--r13-wash:#f3f7fe;
+ --r13-soft-shadow:0 5px 22px #284d8310;
+ --r13-ease:cubic-bezier(.22,.84,.26,1);
+}
+/* Address picker: actions are explicit and touch-friendly, not invisible gestures. */
+.redesigned-places-sheet .sheet-top{align-items:flex-start}
+.redesigned-places-sheet .places-sheet-eyebrow{margin-bottom:5px}
+.redesigned-places-sheet .sheet-top h2{letter-spacing:-.65px}
+.redesigned-places-sheet .place-options{display:grid;gap:8px;min-width:0}
+.redesigned-places-sheet .place-option{
+ display:flex;gap:7px;align-items:center;min-height:76px;
+ border:1px solid #dfe8f3;border-radius:16px;padding:7px;
+ background:#fff;box-shadow:0 3px 12px #1b41770a;min-width:0;
+}
+.redesigned-places-sheet .place-option.is-current{border-color:#87b5ee;background:#f3f8ff}
+.redesigned-places-sheet .place-choose{
+ min-width:0;flex:1;display:flex;align-items:center;justify-content:space-between;
+ gap:7px;min-height:59px;border-radius:11px;padding:10px 7px;
+ text-align:left;background:transparent;color:#263e60;
+}
+.redesigned-places-sheet .place-choose>span:first-child{display:block;min-width:0;flex:1}
+.redesigned-places-sheet .place-choose :is(strong,small){display:block;min-width:0;overflow-wrap:anywhere}
+.redesigned-places-sheet .place-choose strong{font-size:13px;font-weight:820}
+.redesigned-places-sheet .place-choose small{font-size:10px;line-height:1.4;margin-top:4px;color:#70849e}
+.redesigned-places-sheet .place-option-indicator{
+ color:#3376d1;font-size:10px;font-weight:810;white-space:nowrap;
+}
+.redesigned-places-sheet .place-moves{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.redesigned-places-sheet .move-btn{
+ display:grid;place-items:center;min-width:32px;min-height:35px;
+ border:1px solid #dce6f3;border-radius:10px;background:#f3f7fd;
+ color:#4d75a7;font-size:14px;padding:0;
+}
+.redesigned-places-sheet .move-btn.favorite-btn{color:#bd8b28;font-size:18px}
+.redesigned-places-sheet .move-btn:disabled{opacity:.28;cursor:default}
+.redesigned-places-sheet .move-btn:focus-visible{outline:2px solid #357bef;outline-offset:2px}
+.redesigned-places-sheet .sheet-add{min-height:48px;border-radius:14px}
+#addressSheet .address-form-hint{
+ margin:0 0 17px;padding:12px 13px;border-radius:11px;
+ background:#f0f6ff;color:#5d7696;font-size:11px;line-height:1.55;
+}
+#addressSheet .field-label{letter-spacing:0}
+#addressSheet .sheet-inner :is(input,select){transition:border-color .2s ease,box-shadow .2s ease}
+#addressSheet .sheet-inner :is(input,select):focus{border-color:#5394ee;box-shadow:0 0 0 3px #478deb24}
+#addressSheet #saveAddress{min-height:51px;border-radius:15px}
+#addressSheet :is(.lookup-feedback,.house-coverage,.queue-override-control,.possible-queues){
+ border-radius:12px;line-height:1.45;
+}
+
+/* One dark palette, no white flashes while entering or switching panels. */
+:root[data-theme="dark"]{
+ --r13-blue:#76a9fc;--r13-ink:#eef4fd;--r13-muted:#b0c3d9;
+ --r13-stroke:#3a4b61;--r13-surface:#1b2737;--r13-wash:#202f43;
+ --r13-soft-shadow:none;
+}
+:root[data-theme="dark"] .redesigned-places-sheet .place-option{background:#1f2e41;border-color:#384d67;box-shadow:none}
+:root[data-theme="dark"] .redesigned-places-sheet .place-option.is-current{background:#293e5a;border-color:#638ab7}
+:root[data-theme="dark"] .redesigned-places-sheet .place-choose{color:#ecf3ff;background:transparent}
+:root[data-theme="dark"] .redesigned-places-sheet .place-choose small{color:#b7c9de}
+:root[data-theme="dark"] .redesigned-places-sheet .place-option-indicator{color:#aad0fc}
+:root[data-theme="dark"] .redesigned-places-sheet .move-btn{background:#2a3d57;border-color:#3f5878;color:#dce9fd}
+:root[data-theme="dark"] #addressSheet .address-form-hint{background:#24384f;color:#c7d7eb}
+@media(max-width:390px){
+ .redesigned-places-sheet .place-moves{gap:3px}
+ .redesigned-places-sheet .move-btn{min-width:29px;min-height:34px}
+ .redesigned-places-sheet .place-choose{padding-inline:3px}
+}
+@media(prefers-reduced-motion:reduce){.redesigned-places-sheet .move-btn{transition:none!important}}

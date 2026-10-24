@@ -6,7 +6,7 @@ export function cleanMessage(input) {
   const title = String(input.title || '').trim();
   const body = String(input.body || '').trim();
   if (!title || title.length > 85) throw Error('Заголовок: від 1 до 85 символів');
-  if (!body || body.length > 500) throw Error('Текст: від 1 до 500 символів');
+  if (!body || body.length > 280) throw Error('Текст: від 1 до 280 символів');
   if (/[\x00-\x1f\x7f]/.test(title) || /[\x00-\x08\x0b-\x1f\x7f]/.test(body)) throw Error('Неприпустимі символи в повідомленні');
   const queue = input.queue == null || input.queue === '' ? 'all' : String(input.queue);
   if (queue !== 'all' && !ALL_QUEUES.has(queue)) throw Error('Невідома підчерга');

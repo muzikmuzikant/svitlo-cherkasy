@@ -49,18 +49,15 @@
    if(dialog.matches('.share-preview-dialog,.inbox-detail')&&!isMobile())return false;
    const handle=target.closest(handles);
    const content=target.closest('.sheet-inner,.share-preview-scroll,.inbox-detail-content');
-   // The full-screen Inbox has one scrolling surface. Its body must NEVER
-   // trigger swipe-to-dismiss, even when a long message reaches either edge.
-   // Dragging the small top handle still closes it.
+   // Long Inbox messages scroll normally; only the dedicated drag handle dismisses.
    if(dialog.matches('.inbox-detail')&&!target.closest('.inbox-drag-handle'))return false;
    if(!handle&&!content)return false;
    if(!dialog.contains(handle||content)||target.closest(interactive))return false;
    // Within content, let the inner scroller move normally until it reaches top.
    // A downward pull at the top becomes the native-sheet dismissal gesture.
    if(!handle){
-    for(let node=target;node;node=node.parentElement){
+    for(let node=target;node&&node!==dialog;node=node.parentElement){
      if(node.scrollHeight>node.clientHeight+2&&node.scrollTop>1)return false;
-     if(node===dialog)break;
     }
    }
    return true;

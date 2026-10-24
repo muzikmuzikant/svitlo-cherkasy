@@ -1,7 +1,7 @@
 /* Read-only, server-verified messages for cross-device links.
  * Never trust text supplied through a URL and never reveal subscriber data.
  */
-import {firstPublishedAt,dayId,changeId,emergencyId,tomorrowCopy,changeCopy,emergencyCopy,transitionCopy} from './notification-copy.js';
+import {firstPublishedAt,dayId,changeId,emergencyId,tomorrowCopy,changeCopy,emergencyCopy,transitionCopy,noticeDisplayTitle} from './notification-copy.js';
 
 const QUEUE=/^[1-6]\.[12]$/;
 const VALID_ID=/^(?:notice|day|change|transition|emergency):[A-Za-z0-9_.:+-]{1,145}$/;
@@ -16,7 +16,7 @@ export function resolvePublicMessage(id,{schedule,announcements=[],emergencies=[
  if(id.startsWith('notice:')){
   const notice=announcements.find(a=>a.active!==false&&a.id===id.slice(7));
   if(!notice)return null;
-  return {id,kind:'announcement',title:(notice.icon||({important:'📣',update:'✨',emergency:'⚠️',schedule:'🗓️'})[notice.kind]||'💬')+' '+notice.title,
+  return {id,kind:'announcement',title:noticeDisplayTitle(notice),
    body:notice.body||'',content:notice.content||'',images:notice.images||[],priority:notice.priority||'normal',
    pinned:notice.pinned===true,at:cleanAt(notice.publishedAt),updatedAt:notice.updatedAt||null,authoritative:true};
  }

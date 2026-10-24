@@ -237,7 +237,7 @@ function el(tag,cls,text){const n=document.createElement(tag);if(cls)n.className
 function label(a){return a?.nickname?.trim()||[a?.street,a?.house].filter(Boolean).join(', ')||'Додайте адресу'}
 function fullAddress(a){return a?[a.settlement||'Черкаси',[a.street,a.house].filter(Boolean).join(', ')].join(' · '):'Оберіть адресу'}
 function setText(id,text){if($(id).textContent!==String(text))$(id).textContent=String(text)}
-function render(){renderHome();if(active==='detail')renderDetail();if(active==='updates')renderUpdates();if(active==='settings')renderSettings()}
+function render(){renderHome();if(active==='detail')renderDetail();if(active==='updates')renderUpdates();if(active==='settings')renderSettings();window.SvitloAllQueues?.refresh?.()}
 function scheduleQueueChanged(before, after, queue) {
  // Ignore rollovers and re-publications which do not change actual queue intervals.
  if (!queue || !before?.days?.length || !after?.days?.length) return false;
@@ -287,9 +287,11 @@ function renderFreshness(){
 }
 function renderHome(){
  const intro=$('homeIntro');if(intro)intro.hidden=Boolean(primary());
+
  try{window.SvitloTelemetry?.sampleSelected(primary())}catch{}
  renderEmergency();renderFreshness();const a=primary(),date=today(),m=nowMinutes();
  setText('primaryName',label(a));setText('primarySub',a?`${a.settlement||'Черкаси'} · ${a.queue?'підчерга '+a.queue:'підчергу не визначено'}`:'Черкаси або села району');
+
  const schedule=a?.queue?currentDay(date):null;
  const timelineToday=a?.queue?timeline(date,a.queue):null,st=stateAt(timelineToday,m);
  const nxt=a?.queue?nextChange(date,a.queue,m):null,copy=statusCopy(st,nxt,a?.queue,date);
@@ -314,8 +316,11 @@ function renderHome(){
  // A genuine tomorrow preview, not a guessed network status.
  renderTomorrowPreview();
  renderQuickPlaces();
+
  updatePushInvite();
- const list=$('placeList');list.replaceChildren();
+ const list=$('placeList');
+ const placeKey=JSON.stringify([date,prefs.primaryId,addresses.map(a=>[a.id,a.queue,a.nickname,a.settlement,a.street,a.house,stateAt(timeline(date,a.queue),m)])]);
+ if(list.dataset.renderKey!==placeKey){list.dataset.renderKey=placeKey;list.replaceChildren();
  for(const item of addresses){
   const b=el('button','place-card');b.type='button';
   const avatar=el('span','place-avatar');avatar.innerHTML=PIN;b.append(avatar);
@@ -326,6 +331,7 @@ function renderHome(){
  }
  if(!addresses.length){const e=el('div','empty-places');e.append(el('strong','','Ще немає збережених місць'),el('span','','Додайте адресу, щоб отримати персональний графік.'));list.append(e)}
  const add=el('button','add-place-card','+  Додати адресу');add.onclick=()=>openAddressSheet();list.append(add);
+ }
 }
 function formatDuration(minutes){
  if(!Number.isFinite(minutes)||minutes<0)return '—';
@@ -354,7 +360,10 @@ function renderTomorrowPreview(){
 }
 function renderQuickPlaces(){
  const host=$('homeQuickPlaces');if(!host)return;
- host.replaceChildren();host.hidden=addresses.length<2; if(host.hidden)return;
+ host.hidden=addresses.length<2;if(host.hidden)return;
+ const key=JSON.stringify([prefs.primaryId,addresses.map(a=>[a.id,a.queue,a.nickname,a.street,a.house,a.favorite])]);
+ if(host.dataset.renderKey===key)return;
+ host.dataset.renderKey=key;host.replaceChildren();
  if(!addresses.length){host.append(el('span','quick-place-empty','Додайте адресу, щоб перемикатися одним дотиком'));return}
  [...addresses].sort((a,b)=>Number(!!b.favorite)-Number(!!a.favorite)).forEach(item=>{
   const button=el('button','quick-place'+(primary()?.id===item.id?' selected':''),(item.favorite?'⭐  ':'')+label(item));
@@ -547,7 +556,9 @@ async function shareSchedule(date,{copy=false}={}){
   }else await openSharePreview(blob,filename,date,info.queue);
  }catch(error){if(error?.name==='AbortError')return;console.warn('Share schedule:',error);flash('Не вдалося поділитися графіком')}
 }
-function renderBar(a){const bar=$('overviewBar');bar.replaceChildren();if(!a){const b=el('span','bar-segment unknown');b.style.flex='1';bar.append(b);return}let start=0,v=a[0];for(let i=1;i<=1440;i++){if(i===1440||a[i]!==v){const seg=el('span','bar-segment '+(v===1?'off':v===0?'on':'unknown'));seg.style.flex=String(i-start);seg.title=`${clock(start)}–${clock(i)} · ${v===1?'відключення':v===0?'світло':'немає даних'}`;bar.append(seg);start=i;v=a[i]}}const line=el('span','bar-now');line.style.left=(nowMinutes()/1440*100)+'%';bar.append(line)}
+function renderBar(a){const bar=$('overviewBar'),key=a?Array.from(a).join(''):'unknown';
+ if(bar.dataset.paintKey===key){const line=bar.querySelector('.bar-now');if(line)line.style.left=(nowMinutes()/1440*100)+'%';return}
+ bar.dataset.paintKey=key;bar.replaceChildren();if(!a){const b=el('span','bar-segment unknown');b.style.flex='1';bar.append(b);return}let start=0,v=a[0];for(let i=1;i<=1440;i++){if(i===1440||a[i]!==v){const seg=el('span','bar-segment '+(v===1?'off':v===0?'on':'unknown'));seg.style.flex=String(i-start);seg.title=`${clock(start)}–${clock(i)} · ${v===1?'відключення':v===0?'світло':'немає даних'}`;bar.append(seg);start=i;v=a[i]}}const line=el('span','bar-now');line.style.left=(nowMinutes()/1440*100)+'%';bar.append(line)}
 // Latest tap wins. Previous WAAPI animations are interrupted at their actual
 // visual position rather than rewinding, and clicks are never rate-limited.
 let tabMotion=null;
@@ -642,19 +653,26 @@ function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Пі�
  $('editActive').hidden=!!previewQueue;
  setText('detailAddress',previewQueue?'Підчерга '+previewQueue+' · тимчасовий перегляд':fullAddress(a));const tToday=timeline(today(),a.queue),st=stateAt(tToday,nowMinutes()),nxt=nextChange(today(),a.queue,nowMinutes());const status=$('detailStatus');status.className='detail-status '+st;status.textContent=statusCopy(st,nxt,a.queue,today()).title;
  const day=daySelected&&stripContains(today(),daySelected)?daySelected:today();daySelected=day;
- const root=$('days');root.replaceChildren();
- // Always show only the seven weekday names. No calendar dates or manual switching.
- for(const d of stripDates()){
-  const b=el('button','day-choice'+(d===day?' selected':'')+(d===today()?' is-today':''),weekdayShort(d));
-  b.type='button';
-  b.setAttribute('aria-pressed',String(d===day));
-  b.setAttribute('aria-label',weekdayFull(d));
-  b.onclick=()=>showDay(d);root.append(b);
+ const root=$('days'),calendarDays=stripDates(),daysKey=calendarDays.join(',');
+ if(root.dataset.renderKey!==daysKey){
+  root.dataset.renderKey=daysKey;root.replaceChildren();
+  for(const d of calendarDays){
+   const b=el('button','day-choice',weekdayShort(d));b.type='button';
+   b.setAttribute('aria-label',weekdayFull(d));b.onclick=()=>showDay(d);root.append(b);
+  }
  }
+ [...root.children].forEach((b,i)=>{
+  const d=calendarDays[i];
+  b.className='day-choice'+(d===day?' selected':'')+(d===today()?' is-today':'');
+  b.setAttribute('aria-pressed',String(d===day));
+ });
  const pub=currentDay(day),t=timeline(day,a.queue);
  const dayStats=stats(t);
  setText('detailDayStat',dayStats?(pub?(dayStats.unknown?'Частина годин уточнюється':'Без світла '+formatDuration(dayStats.off)+' · Зі світлом '+formatDuration(dayStats.on)):''):'Немає даних');
- setText('detailDayLabel',weekdayFull(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:verifiedNoSchedule(day)?'Світло весь день':'Немає підтверджених даних');const grid=$('hourGrid');grid.replaceChildren();
+ setText('detailDayLabel',weekdayFull(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:verifiedNoSchedule(day)?'Світло весь день':'Немає підтверджених даних');const grid=$('hourGrid');
+ const paintKey=JSON.stringify([day,a.queue,document.documentElement.dataset.theme,pub?.verified,pub?.queues?.[a.queue]||null,day===today()?Math.floor(nowMinutes()/60):null,verifiedNoSchedule(day)]);
+ if(grid.dataset.paintKey!==paintKey){
+  grid.dataset.paintKey=paintKey;grid.replaceChildren();
  for(let h=0;h<24;h++){
    let on=0,off=0;
    for(let m=h*60;m<h*60+60;m++){if(t?.[m]===0)on++;if(t?.[m]===1)off++}
@@ -673,6 +691,7 @@ function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Пі�
    c.setAttribute('role','img');
    c.setAttribute('aria-label',clock(h*60)+': '+(type==='unknown'?'немає підтверджених даних':type==='mixed'?`за графіком зі світлом ${on} хвилин, без світла ${off} хвилин`:type==='off'?'за графіком немає світла':'за графіком є світло'));
    c.title=c.getAttribute('aria-label');grid.append(c);
+ }
  }
  const next=nxt;
  setText('nextTime',next?nextChangeLabel(next):st==='on'?'Не заплановано':'Невідомо');
@@ -902,14 +921,18 @@ function saveAddress(event){
 function deleteAddress(){if(!editId||!confirm('Видалити цю адресу?'))return;addresses=addresses.filter(x=>x.id!==editId);if(prefs.primaryId===editId)prefs.primaryId=addresses[0]?.id||null;saveAddresses();savePrefs();closeSheet($('addressSheet'));navigate('home');flash('Адресу видалено');if(!primary())disableNotifications().catch(console.warn);else updatePushSubscription().catch(console.warn)}
 function movePlace(id,direction){const i=addresses.findIndex(x=>x.id===id);const j=i+direction;if(i<0||j<0||j>=addresses.length)return;[addresses[i],addresses[j]]=[addresses[j],addresses[i]];saveAddresses();openPickerContent();renderHome()}
 function openPickerContent(){const root=$('placesOptions');root.replaceChildren();for(const [i,a] of addresses.entries()){
- const row=el('div','place-option');row.draggable=true;row.dataset.id=a.id;
- const choose=el('button','place-choose');const txt=el('span');txt.append(el('strong','',label(a)),el('small','',fullAddress(a)));choose.append(txt,el('span','',a.id===primary()?.id?'✅':'➡️'));choose.onclick=()=>{prefs.primaryId=a.id;savePrefs();closeSheet($('placesSheet'));render();updatePushSubscription().catch(()=>{})};row.append(choose);
+ const row=el('div','place-option'+(a.id===primary()?.id?' is-current':''));row.draggable=true;row.dataset.id=a.id;
+ const choose=el('button','place-choose');const txt=el('span');txt.append(el('strong','',label(a)),el('small','',fullAddress(a)));choose.append(txt,el('span','place-option-indicator',a.id===primary()?.id?'Поточна':'Обрати'));choose.onclick=()=>{prefs.primaryId=a.id;savePrefs();closeSheet($('placesSheet'));render();updatePushSubscription().catch(()=>{})};row.append(choose);
  const moves=el('span','place-moves');
- const favorite=el('button','move-btn favorite-btn'+(a.favorite?' selected':''),a.favorite?'⭐':'🤍');
+ const favorite=el('button','move-btn favorite-btn'+(a.favorite?' selected':''),a.favorite?'★':'☆');
  favorite.type='button';favorite.title=a.favorite?'Прибрати з улюблених':'Додати до улюблених';
  favorite.setAttribute('aria-label',favorite.title);
  favorite.onclick=()=>{a.favorite=!a.favorite;saveAddresses();openPickerContent();renderHome()};
  moves.append(favorite);
+ const edit=el('button','move-btn place-edit-option','✎');
+ edit.type='button';edit.title='Редагувати адресу';edit.setAttribute('aria-label','Редагувати '+label(a));
+ edit.onclick=()=>{const sheet=$('placesSheet');sheet.addEventListener('close',()=>openAddressSheet(a),{once:true});closeSheet(sheet)};
+ moves.append(edit);
  for(const [n,txtval] of [[-1,'↑'],[1,'↓']]){const b=el('button','move-btn',txtval);b.type='button';b.disabled=n===-1?i===0:i===addresses.length-1;b.setAttribute('aria-label',n<0?'Перемістити вище':'Перемістити нижче');b.onclick=()=>movePlace(a.id,n);moves.append(b)}row.append(moves);
  row.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',a.id);e.dataTransfer.effectAllowed='move'});row.addEventListener('dragover',e=>e.preventDefault());row.addEventListener('drop',e=>{e.preventDefault();const from=e.dataTransfer.getData('text/plain');const at=addresses.findIndex(x=>x.id===from),to=addresses.findIndex(x=>x.id===a.id);if(at<0||to<0||at===to)return;const [m]=addresses.splice(at,1);addresses.splice(to,0,m);saveAddresses();openPickerContent();renderHome()});root.append(row)}}
 function openPicker(){openPickerContent();showSheet($('placesSheet'))}
@@ -940,13 +963,12 @@ function notifyEmergencyEvent(){
 }
 let railwayAddressCorrections={keys:{},localities:{}},addressSourceIndex=null;
 const RAILWAY_ADDRESS_CACHE='svitlo-railway-address-corrections-v1';
-const RAILWAY_OVERRIDES_CACHE='svitlo-railway-manual-overrides-v1';
 function applyOverrides(){
  const days=overrides.schedules?.days;
  if(Array.isArray(days)&&days.length){
    const map=new Map(data.days.map(d=>[d.date,d]));
    for(const correction of days){
-     if(!/^20\d{2}-\d{2}-\d{2}$/.test(correction.date)||!/^https:\/\/(?:www\.)?cherkasyoblenergo\.com\//.test(correction.source||'')||correction.verified!==true)continue;
+     if(!/^20\d{2}-\d{2}-\d{2}$/.test(correction.date)||!correction.source?.startsWith('https://www.cherkasyoblenergo.com/')||correction.verified!==true)continue;
      const base=map.get(correction.date)||{date:correction.date,queues:{},verified:true,publishedAt:correction.publishedAt,source:correction.source};
      const queueSources={...(base.queueSources||{})};
      for(const q of Object.keys(correction.queues||{}))queueSources[q]=correction.source;
@@ -955,7 +977,7 @@ function applyOverrides(){
    data.days=[...map.values()].sort((a,b)=>a.date.localeCompare(b.date));
  }
  index=mergeIndexes(addressSourceIndex||index,overrides.addresses||{},{manual:true});
- index=mergeIndexes(index,railwayAddressCorrections,{manual:true});
+ index=mergeIndexes(index,railwayAddressCorrections,{manual:true,protectHouseStreets:true});
 }
 function normalizeData(obj){if(!obj||!Array.isArray(obj.days))throw Error('Bad JSON');return {days:obj.days.filter(x=>/^20\d\d-\d\d-\d\d$/.test(x.date)&&x.verified===true),changes:Array.isArray(obj.changes)?obj.changes:[],lastChecked:obj.lastChecked||null,confirmedNoScheduleDates:Array.isArray(obj.confirmedNoScheduleDates)?obj.confirmedNoScheduleDates:undefined,reviewPending:obj.reviewPending===true,unresolvedDates:Array.isArray(obj.unresolvedDates)?obj.unresolvedDates.filter(x=>/^20\d\d-\d\d-\d\d$/.test(x)):undefined}}
 function mergeIndexes(live,backup,options={}){
@@ -1071,23 +1093,6 @@ async function refreshData(manual=false){
      ]);
      if(alertRes.status==='fulfilled'&&alertRes.value.ok){const parsed=await alertRes.value.json();if(Array.isArray(parsed.events))emergency=parsed}
      if(overrideRes.status==='fulfilled'&&overrideRes.value.ok){const parsed=await overrideRes.value.json();if(parsed.schemaVersion===1)overrides=parsed}
-     // Railway manual overrides take precedence over the static GitHub fallback.
-     try{
-      const base=pushConfig?.apiBase;
-      if(!base||!/^https:\/\//.test(base))throw Error('Missing API base');
-      const live=await fetch(base.replace(/\/$/,'')+'/api/data/manual_overrides.json?t='+Date.now(),
-       {cache:'no-store',signal:AbortSignal.timeout(3500)});
-      if(live.ok){
-       const updated=await live.json();
-       if(updated.schemaVersion===1&&Array.isArray(updated.schedules?.days)){
-        overrides=updated;try{localStorage.setItem(RAILWAY_OVERRIDES_CACHE,JSON.stringify(updated))}catch{}
-       }
-      }else if(live.status!==404)throw Error('Overrides HTTP '+live.status);
-     }catch(e){
-      console.warn('Live overrides fallback:',e.message);
-      const previous=safeJSON(RAILWAY_OVERRIDES_CACHE,null);
-      if(previous?.schemaVersion===1)overrides=previous;
-     }
      try{
       const apiBase=pushConfig?.apiBase;
       if(apiBase&&/^https:\/\//.test(apiBase)){
@@ -1107,7 +1112,6 @@ async function refreshData(manual=false){
      applyOverrides();
    }catch(error){console.warn('Bulletin or admin overrides:',error)}
    }
-   if(!refreshAuxiliary)applyOverrides();
    hasCheckedOnce=true;render();checkNotifications();
    if(manual&&!schedulesOk)flash('Сервер недоступний. Показуємо збережені дані.');
    if(schedulesOk){
@@ -1307,6 +1311,14 @@ async function enableNotifications(){if(!('Notification' in window)){flash('Це
 // An iOS permission change can happen in system Settings while the PWA is suspended.
 window.addEventListener('focus',()=>{updatePushInvite();checkPushDelivery().catch(console.warn);if(!document.hidden)refreshData().catch(console.warn)});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){updatePushInvite();checkNotifications();checkPushDelivery().catch(console.warn)}});
+// All subqueue charts use the same verified minute timelines as normal schedules.
+window.SvitloAllQueuesSource={
+ dates:stripDates,today,
+ selectedDate:()=>daySelected||today(),
+ timeline,day:currentDay,noSchedule:verifiedNoSchedule,
+ offline:isOfflineMode,lastChecked:()=>data.lastChecked,
+ sharePreview:openSharePreview
+};
 // Event wiring
 // Inbox uses the existing screen and date picker; no external navigation.
 window.addEventListener('svitlo:open-schedule',event=>{

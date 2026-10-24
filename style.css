@@ -907,18 +907,27 @@ body{overflow-wrap:break-word}
  .status-panel,.bar-segment,.inbox-item,.appearance-choice>span{transition:none!important}
 }
 
-/* Inbox context menus must paint above neighbouring cards and expanded groups.
-   The default isolated cards otherwise trap their dropdown in a lower layer. */
-#updates .inbox-item.has-open-context{position:relative;z-index:110;transform:none!important;overflow:visible}
-#updates .inbox-auto-group{position:relative;overflow:visible}
-#updates .inbox-auto-group.has-open-context{z-index:100}
-#updates .inbox-context[open]{z-index:120}
-#updates .inbox-context.opens-up .inbox-context-actions{top:auto;bottom:43px;transform-origin:calc(100% - 15px) 100%}
-#updates .inbox-context.opens-up[open].is-closing .inbox-context-actions{transform:translate3d(0,7px,0) scale(.975)}
-/* Keep full-screen Inbox reader scrolling naturally; only the grabber dismisses. */
-.inbox-detail{touch-action:pan-y;-webkit-overflow-scrolling:touch}
-.inbox-detail-content{touch-action:pan-y}
-/* The draggable handle's touch-action is defined in motion.css on small screens. */
+/* Beta Inbox: search, priority overview, readable mobile card controls. */
+.inbox-smart-bar{display:grid;grid-template-columns:minmax(0,1fr) minmax(134px,auto);gap:9px;margin:0 0 10px}
+.inbox-search-label{display:flex;align-items:center;gap:7px;min-width:0;padding:0 12px;border:1px solid var(--inbox-line);border-radius:14px;background:var(--surface,#fff);color:var(--muted,#778)}
+.inbox-search-label>span{font-size:21px;line-height:1}
+.inbox-search-label input{width:100%;min-width:0;height:44px;background:transparent;border:0;outline:none;color:var(--inbox-ink);font-size:13px}
+#inboxSort{min-width:0;max-width:170px;border:1px solid var(--inbox-line);background:var(--surface,#fff);color:var(--inbox-ink);border-radius:14px;padding:0 10px;font-size:12px;font-weight:700}
+.inbox-overview{display:flex;flex-wrap:wrap;gap:7px;margin:7px 0 14px}
+.inbox-stat{font-size:11px;padding:7px 11px;background:var(--surface,#fff);border:1px solid var(--inbox-line);border-radius:30px;color:#577193}
+.inbox-stat strong{color:#2b73d5;font-weight:850;font-size:12px}
+.inbox-rich ul,.inbox-rich ol{margin:7px 0 14px;padding-left:23px}
+.inbox-rich li{padding-left:2px;margin-bottom:7px;line-height:1.55}
+.inbox-rich blockquote{border-left:3px solid #4686ec;padding:9px 12px;background:#edf5ff;border-radius:0 10px 10px 0;margin:11px 0;color:#3e5b7c}
+.inbox-rich hr{height:1px;border:0;background:#d8e5f5;margin:19px 0}
+.inbox-rich code{background:#eff3fc;border-radius:5px;padding:2px 5px;font-size:.93em}
+.inbox-rich .message-heading{font-size:16px;margin:14px 0 8px}
+.inbox-rich .message-space{height:7px}
+.inbox-item{transition:background-color .18s,border-color .18s,transform .18s}.inbox-item:active{transform:scale(.995)}
+@media(max-width:420px){.inbox-smart-bar{grid-template-columns:minmax(0,1fr) 136px}.inbox-search-label input{font-size:12px}#inboxSort{font-size:11px}}
 
-/* Full long-notice text remains readable without huge DOM trees. */
-.inbox-rich-remainder{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}
+.inbox-search-label:focus-within{border-color:var(--blue,#3678df);box-shadow:0 0 0 3px #3678df20}
+:root[data-theme="dark"] .inbox-smart-bar :is(.inbox-search-label,#inboxSort),:root[data-theme="dark"] .inbox-stat{background:#1d242f;color:#e4ebf5;border-color:#394354}
+:root[data-theme="dark"] .inbox-search-label input{color:#eaf0fb}
+:root[data-theme="dark"] .inbox-rich blockquote{background:#202f46;color:#d5e2f7}
+:root[data-theme="dark"] .inbox-rich code{background:#26344a;color:#e3eeff}
