@@ -7,6 +7,7 @@
  const PRESS='button:not(:disabled),a[href],[role="button"],[role="tab"],summary,.place-card,.quick-place,.setting-line,.all-queues-lane';
  const control='input,select,textarea,[role="switch"],[role="checkbox"],[role="radio"]';
  const live='[role="status"],[role="alert"],.toast,.snackbar,.push-state';
+ let lastInteraction=-100000;
  const timers=new WeakMap();
  const pressed=new Set();
  function release(el){
@@ -17,6 +18,7 @@
  }
  function press(el){
   if(reduce()||!el?.isConnected||el.closest('[hidden],[inert]')||el.matches(':disabled'))return;
+  lastInteraction=performance.now();
   el.classList.add('micro-pressed');pressed.add(el);
   const old=timers.get(el);if(old)clearTimeout(old);
   timers.set(el,setTimeout(()=>release(el),260));
@@ -46,7 +48,7 @@
   },300);
  }
  doc.addEventListener('change',event=>{
-  if(event.target.matches?.(control))acknowledge(event.target);
+  if(event.target.matches?.(control)){lastInteraction=performance.now();acknowledge(event.target)}
  },{passive:true});
  // Notifications only animate when their contents change, not every heartbeat.
  const messageState=new WeakMap();
@@ -76,6 +78,8 @@
    const value=element.textContent?.trim()||'';
    if(!value||value===messageState.get(element)||!element.isConnected||!element.getClientRects().length)continue;
    messageState.set(element,value);
+   // Remote polling and countdowns must update instantly, never blink on their own.
+   if(performance.now()-lastInteraction>1200)continue;
    element.animate([{opacity:.72},{opacity:1}],{duration:190,easing:'ease-out'});
   }
  });
