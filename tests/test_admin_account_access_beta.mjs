@@ -40,7 +40,9 @@ test('Authenticated Office home names current user, role and rights and hides di
 test('Previously disliked Settings and queue filter are rolled back with functionality preserved',()=>{
  const html=read('index.html'),queue=read('all-queues.js');
  assert.match(html,/<h1>Опції<\/h1>/);
- assert.match(html,/id="settingsManagePlaces"/);
+ assert.match(html,/id="addFromSettings"/);
+ assert.match(html,/class="surface settings-card appearance-card"/);
+ assert.doesNotMatch(html,/id="settingsNavHub"|id="settingsPlacesPanel"/);
  assert.doesNotMatch(html,/class="settings-quick-nav"/);
  assert.doesNotMatch(html,/data-queue-group=/);
  assert.match(queue,/function toggleQueue\(queue\)/);
