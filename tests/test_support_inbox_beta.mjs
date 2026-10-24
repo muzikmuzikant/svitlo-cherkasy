@@ -72,8 +72,8 @@ test('support receipt seed and import baseline do not expose tokens in snapshot'
 });
 test('support notifications never have public share buttons and link only to an owned ticket',()=>{
  const ui=file('inbox-ui.js'),html=file('feedback.html'),feedback=file('feedback.js');
- assert.ok(ui.includes("if(item.kind!=='support')action('Поділитися'"));
- assert.ok(ui.includes("if(item.kind!=='support')action('Копіювати посилання'"));
+ assert.ok(ui.includes("if(item.kind!=='support'){") && ui.includes("add('Поділитися'"));
+ assert.ok(ui.includes("if(item.kind!=='support'){") && ui.includes("add('Копіювати посилання'"));
  assert.ok(ui.includes("support:'Підтримка'"));
  assert.ok(ui.includes('feedback.html?tab=tickets&ticket='));
  assert.ok(feedback.includes("ticketParams.get('ticket')"));
