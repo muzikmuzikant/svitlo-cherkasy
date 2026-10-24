@@ -133,7 +133,7 @@
  },true);
  const observer=new MutationObserver(records=>{
   if(!identity)return;
-  if(!records.some(r=>r.addedNodes.length))return;
+  if(!records.some(r=>[...r.addedNodes].some(node=>node.nodeType===1)))return;
   // Coalesce writes, never react to statistics text updates.
   if(observer.pending)return;
   observer.pending=true;
