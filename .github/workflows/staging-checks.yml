@@ -57,7 +57,7 @@ jobs:
       - name: Validate official source parser syntax
         run: python -m py_compile scripts/update_data.py scripts/railway_schedule_cron.py
       - name: Verify Railway work registry persistence
-        run: node --test tests/test_admin_work_registry.mjs tests/test_admin_office.mjs tests/test_admin_address_corrections.mjs tests/test_admin_address_ui.mjs
+        run: node --test tests/test_admin_work_registry.mjs tests/test_admin_office.mjs tests/test_admin_address_corrections.mjs tests/test_admin_address_ui.mjs tests/test_optional_house_corrections_beta.mjs
       - name: Run Beta advertising contract tests
         run: node --test tests/test_schedule_review_beta.mjs tests/test_tomorrow_dedupe_beta.mjs tests/test_push_options_7911.mjs tests/test_one_time_analytics_consent.mjs tests/test_notice_metrics_7911.mjs tests/test_manual_notice_update_badge.mjs tests/test_beta_799_live.mjs tests/test_pwa_updates.mjs tests/test_beta_monetization.mjs tests/test_admin_users_beta.mjs tests/test_legal_revision_beta.mjs tests/test_schedule_quality_beta.mjs tests/test_manual_push.mjs tests/test_feedback.mjs tests/test_diagnostics_beta.mjs tests/test_daily_reports_beta.mjs tests/test_beta_ui_regressions.mjs tests/test_fixed_tab_dock_beta.mjs tests/test_mobile_admin_beta.mjs tests/test_workstation_v3_beta.mjs tests/test_support_inbox_beta.mjs tests/test_theme_beta.mjs tests/test_theme_collision_beta.mjs tests/test_night_theme_ui_beta.mjs tests/test_office_correspondence_beta.mjs tests/test_motion_beta.mjs tests/test_offline_readiness_beta.mjs
       - name: Validate live support, deletion sync and enterprise admin contracts
