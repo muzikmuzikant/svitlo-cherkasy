@@ -47,6 +47,7 @@ export function createPushReceipts({directory,clock=()=>Date.now()}){
  function rejected(id,error){
   delete records[id];failedSinceBoot++;
   lastFailure={at:new Date(clock()).toISOString(),status:String(error||'network').slice(0,30)};
+  persist();
  }
  function acknowledge(id){
   if(typeof id!=='string'||!/^[A-Za-z0-9_-]{24}$/.test(id))return false;
