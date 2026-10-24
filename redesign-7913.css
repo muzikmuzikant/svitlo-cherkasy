@@ -307,3 +307,24 @@
  .all-queues-group-filters button{transition:none!important}
 }
 html.feature-off-animations :is(#settings .settings-quick-nav button,#home .place-edit-action,.all-queues-group-filters button){transition:none!important}
+
+/* A proper signed-in Home dashboard header replaces the one-time onboarding copy. */
+#home .home-dashboard-intro{
+ display:flex;align-items:center;justify-content:space-between;gap:14px;
+ min-width:0;margin:13px 0 19px;padding:0 2px;
+}
+#home .home-dashboard-intro[hidden]{display:none!important}
+#home .home-dashboard-eyebrow{font-size:9px;letter-spacing:1.25px;font-weight:860;color:#7795c2}
+#home .home-dashboard-intro h1{
+ margin:5px 0 4px;line-height:1.1;font-size:clamp(28px,7vw,36px);
+ font-weight:850;letter-spacing:-1.1px;color:var(--r13-ink);
+}
+#home .home-dashboard-intro p{
+ font-size:12px;line-height:1.45;color:var(--r13-muted);margin:0;text-transform:capitalize;
+}
+#home .home-dashboard-mark{
+ display:grid;place-items:center;width:48px;height:48px;flex:0 0 48px;
+ color:#4883d4;background:#e9f2ff;border:1px solid #dbe9fc;border-radius:16px;
+}
+#home .home-dashboard-mark svg{width:24px;height:24px}
+:root[data-theme="dark"] #home .home-dashboard-mark{background:#263e5a;color:#b4d5ff;border-color:#3c5878}
