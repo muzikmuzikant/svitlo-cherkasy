@@ -4,13 +4,14 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 const app=read('app.js'),css=read('style.css');
-const nav=app.slice(app.indexOf('function navigate(name){'),app.indexOf('function renderDetail(){'));
+const nav=app.slice(app.indexOf('function navigate(name,'),app.indexOf('function renderDetail(){'));
 test('rapid tap sequence always shows the last requested screen synchronously',()=>{
- const pages=Object.fromEntries(['home','detail','updates','settings'].map(id=>[id,{hidden:id!=='home',classList:{add(){},remove(){}},style:{cssText:''}}]));
+ const pages=Object.fromEntries(['home','detail','updates','settings'].map(id=>[id,{hidden:id!=='home',classList:{add(){},remove(){}},style:{cssText:''},
+ animate(frames,opts){return {finished:new Promise(()=>{}),cancel(){}}}}]));
  const html={style:{scrollBehavior:''},dataset:{},classList:{contains:()=>false}};
- const context={active:'home',tabMotion:null,TAB_MOTION_MS:260,previewQueue:null,primary:()=>({queue:'1.1'}),SCREEN_RETURN:'saved',sessionStorage:{setItem(){}},today:()=> '2026-10-15',
+ const context={active:'home',tabMotion:null,TAB_MOTION_MS:460,previewQueue:null,primary:()=>({queue:'1.1'}),history:{pushState(){}},location:{href:'https://svitlo-cherkasy.pp.ua/'},SCREEN_RETURN:'saved',sessionStorage:{setItem(){}},today:()=> '2026-10-15',
   renderDetail(){},renderHome(){},renderUpdates(){},renderSettings(){},
-  window:{scrollTo(){},matchMedia:()=>({matches:false})},
+  window:{scrollTo(){},matchMedia:()=>({matches:false}),getComputedStyle:()=>({transform:'none',opacity:1})},
   document:{documentElement:html,querySelector:()=>null,querySelectorAll:()=>[]},
   $:id=>pages[id]
  };
