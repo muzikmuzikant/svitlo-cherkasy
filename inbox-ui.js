@@ -129,6 +129,7 @@
   const next=afterDetailClose;afterDetailClose=null;if(next)next();
  });
  function rich(target,raw){
+  if(window.SvitloMessageFormat?.render)return window.SvitloMessageFormat.render(target,raw);
   const text=String(raw||'');target.replaceChildren();
   for(const line of text.split('\n').slice(0,100)){
    const txt=line.trim();
