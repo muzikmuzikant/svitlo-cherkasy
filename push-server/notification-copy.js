@@ -51,6 +51,11 @@ const emergencyCopy=status=>status==='active'?({
   title:'✅ Екстрені обмеження завершено',body:'Оператор повідомив про завершення обмежень. Перевірте графік.',
   content:'**Оновлення від оператора**\n\nЧеркасиобленерго повідомило про завершення екстрених обмежень. Відновлення електропостачання за конкретною адресою може відбуватися не одразу.\n\nПеревірте актуальний плановий графік і наступні повідомлення оператора.'
  }):null;
+export function noticeDisplayTitle(notice){
+ const title=String(notice?.title||'').trim();
+ const icon=String(notice?.icon||'').trim()||({important:'📣',update:'✨',emergency:'⚠️',schedule:'🗓️'})[notice?.kind]||'💬';
+ return /^\p{Extended_Pictographic}/u.test(title)||title.startsWith(icon)?title:(icon+' '+title).trim();
+}
 const testCopy=()=>({title:'🧪 Тестове сповіщення',body:'Push працює! Сповіщення від «Світло Черкаси» успішно надійшло.'});
 
 export {firstPublishedAt,dayId,changeId,isLatestRevision,emergencyId,transitionCopy,tomorrowCopy,changeCopy,emergencyCopy,testCopy};
