@@ -34,7 +34,7 @@ test('Push displays and stores an official OFF reminder even when no PWA window 
  })});
  assert.equal(w.notifications.length,1);
  assert.equal(w.notifications[0].body,'Орієнтовно за 30 хвилин');
- assert.equal(w.notifications[0].tag,'transition:4.1:2026-10-16:1140:off');
+ assert.match(w.notifications[0].tag,/^transition:4\.1:2026-10-16:1140:off-[a-z0-9]+$/,'Browser tag has a deterministic collision-resistant suffix');
  assert.equal(w.inbox.length,1);
  assert.equal(w.inbox[0].id,'transition:4.1:2026-10-16:1140:off');
  assert.equal(w.inbox[0].content,'Графік оновлено');
