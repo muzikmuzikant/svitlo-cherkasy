@@ -45,14 +45,11 @@ def main():
 
     # Main settings sharing must never leak a street, queue or staging URL.
     page.locator('.bottom-nav [data-go="settings"]').first.click()
-    page.locator('#settingsNavHub [data-settings-page="help"]').click()
     page.locator("#shareApp").click()
     result=page.evaluate("window.__appShares")
     assert len(result)==1,result
     assert result[0]["url"]=="https://svitlo-cherkasy.pp.ua/",result
     assert "Тестова" not in str(result) and "1.1" not in str(result)
-    page.locator('.ios-settings-back').click()
-    page.locator('#settingsNavHub [data-settings-page="places"]').click()
     page.locator("#addFromSettings").click()
     page.wait_for_function("() => document.getElementById('addressSheet').open")
     assert page.locator("#street").is_visible()
