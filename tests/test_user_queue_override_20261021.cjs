@@ -70,5 +70,5 @@ test('manual queue selector is visible in the address sheet and its selection is
   assert.match(app,/manual\.hidden=r\.status==='incomplete'/);
   assert.match(app,/SvitloAddressLookup\.chooseQueue\(r,\$\('manualQueue'\)\.value/);
   assert.match(app,/method,?favorite/);
-  assert.match(app,/!\['automatic','street-auto'\]\.includes\(item\.method\)/);
+  assert.match(app,/\['manual-override','manual','street-choice'\]\.includes\(item\.method\)/);
 });
