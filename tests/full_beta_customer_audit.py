@@ -111,6 +111,7 @@ def main():
                         report=check_document(page,theme+"/app/"+tab,width)
                         reports.append({"page":"app/"+tab,"theme":theme,"width":width,**report})
                     page.locator('[data-go="settings"]').first.click()
+                    page.locator('#settingsNavHub [data-settings-page="places"]').click()
                     page.locator("#addFromSettings").click()
                     page.wait_for_function("() => document.querySelector('#addressSheet')?.open",timeout=4500)
                     sheet=page.locator("#addressSheet").bounding_box()

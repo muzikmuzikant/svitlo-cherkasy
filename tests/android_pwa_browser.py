@@ -53,6 +53,7 @@ def main():
             page.wait_for_function("() => !document.querySelector('#settings').hidden", timeout=4000)
             print("PASS: Android Back returns to the prior tab")
 
+            page.locator('#settingsNavHub [data-settings-page="help"]').click()
             page.locator('#settings a[href^="./help.html"]').first.click()
             page.wait_for_function("""() => {
               const shell=document.querySelector('#svitloInternalPage');
@@ -71,6 +72,8 @@ def main():
             )
             print("PASS: Android Back exits an internal help page")
 
+            page.locator('.ios-settings-back').click()
+            page.locator('#settingsNavHub [data-settings-page="places"]').click()
             page.locator('#addFromSettings').click()
             page.wait_for_function("() => document.querySelector('#addressSheet').open")
             position = page.evaluate("""() => {

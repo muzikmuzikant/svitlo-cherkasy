@@ -29,17 +29,20 @@ def main():
      page.on('pageerror',lambda error:errors.append(str(error)))
      page.goto(base,wait_until='domcontentloaded',timeout=30000)
      ready(page)
-     assert page.locator('#homeDashboardIntro').is_visible()
+     assert page.locator('#home .home-focus #heroStatus .overview-card').is_visible()
+     assert page.locator('#homeWeekDays .home-week-day').count()==7
      assert page.locator('#placeList .place-row').count()==2
      assert page.locator('#placeList .place-edit-action').count()==2
-     assert page.locator('#manageFromHome').is_visible()
+     assert page.locator('.home-saved-places').count()==1
      assert page.locator('#homeDashboardDate').inner_text()
      page.locator('.bottom-nav [data-go="settings"]').click()
      page.wait_for_function("() => !document.getElementById('settings').hidden")
+     assert page.locator('#settingsNavHub [data-settings-page]').count()==6
+     page.locator('#settingsNavHub [data-settings-page="places"]').click()
      assert page.locator('#settingsPlacesPanel').is_visible()
      assert '2 адреси' in page.locator('#settingsPlacesCount').inner_text()
      assert page.locator('#settings .settings-quick-nav button').count()==0
-     assert page.locator('#settings').get_by_role('heading',name='Опції').count()==1
+     assert page.locator('#settings').get_by_role('heading',name='Мої місця').count()==1
      page.locator('#settingsManagePlaces').click()
      page.wait_for_function("() => document.querySelector('#placesSheet')?.open",timeout=6000)
      assert page.locator('#placesOptions .place-option').count()==2
@@ -53,13 +56,20 @@ def main():
      page.wait_for_function("() => !document.getElementById('home').hidden")
      page.locator('#allQueuesHomeOpen').click()
      page.wait_for_function("() => document.querySelector('#allQueuesDialog')?.open",timeout=6000)
-     assert page.locator('#allQueuesGroupFilters button').count()==0
+     assert page.locator('#allQueuesMatrix .all-queues-group-card').count()==6
+     assert page.locator('.all-queues-mode').count()==3
      assert page.locator('#allQueuesMatrix .all-queues-lane:visible').count()==12
      page.locator('.all-queues-lane[data-queue="1.1"]').click()
-     assert page.locator('.all-queues-row-detail').count()==1
+     assert page.locator('.all-queues-detail-panel:not([hidden])').count()==1
      page.evaluate('window.__firstQueue=document.querySelector(".all-queues-lane")')
      page.evaluate('window.SvitloAllQueues.refresh()')
      assert page.evaluate('window.__firstQueue===document.querySelector(".all-queues-lane")')
+     page.locator('.all-queues-mode').filter(has_text='Групи').click()
+     assert page.locator('#allQueuesMatrix .all-queues-lane').count()==2
+     page.locator('.all-queues-mode').filter(has_text='Порівняння').click()
+     assert page.locator('#allQueuesMatrix .all-queues-lane').count()==2
+     assert page.locator('.all-queues-compare-field select').count()==2
+     assert page.locator('.all-queues-compare-stat').count()==3
      page.locator('#allQueuesClose').click()
      page.wait_for_function("() => !document.querySelector('#allQueuesDialog').open",timeout=6000)
      overflow=page.evaluate('document.documentElement.scrollWidth-innerWidth')
