@@ -31,7 +31,7 @@ import webpush from 'web-push';
 import {adminRouter} from './admin.js';
 import {createManualPush} from './manual-push.js';
 import {transitionCopy,tomorrowCopy,changeCopy,emergencyCopy,firstPublishedAt,dayId,changeId,isLatestRevision,emergencyId} from './notification-copy.js';
-import {QUEUES,timeline,dueTransition,latestOfficialEvent,freshEvent,freshSchedule,dueTransitionAcrossDays,usableSchedule,verifiedScheduleDay,preferFreshSchedule} from './schedule-engine.js';
+import {QUEUES,timeline,dueTransition,latestOfficialEvent,freshEvent,freshSchedule,dueTransitionAcrossDays,usableSchedule,verifiedScheduleDay,preferFreshSchedule,kyivWallInstants} from './schedule-engine.js';
 
 const {VAPID_PUBLIC_KEY,PUSH_PRIVATE_KEY,PUSH_CONTACT,APP_ORIGIN,SCHEDULE_URL,DATA_FILE='./subscribers.json',PORT='8080'}=process.env;
 if(!VAPID_PUBLIC_KEY||!PUSH_PRIVATE_KEY||!PUSH_CONTACT||!APP_ORIGIN||!SCHEDULE_URL){
@@ -161,8 +161,10 @@ async function transitionJob(){
     if(!pref[type])continue;
     // Recover reminders delayed by Railway restarts or temporarily slow schedule imports.
     // The helper never returns transitions that have already started.
-    const boundary=dueTransitionAcrossDays(values,valuesTomorrow,minutes,offset,target,offset-1);
-    if(boundary!==null){const eta=boundary-minutes;
+    const due=dueTransitionAcrossDays(values,valuesTomorrow,minutes,offset,target,offset-1,timestamp,now.date);
+    if(due!==null){
+     const boundary=typeof due==='number'?due:due.boundary;
+     const eta=typeof due==='number'?boundary-minutes:due.eta;
      const msg=transitionCopy(type,q,boundary,eta,boundary>=1440?nextDate:now.date);
      const key=`${prefix}:${type}:${now.date}:${boundary}`;
      if(sent[key]){cycle.transitionAlreadySent++;continue}
@@ -550,9 +552,14 @@ const server=http.createServer(async(req,res)=>{
      const pos=time.m+ahead;if(pos>=2880)break;
      const value=pos>=1440?following?.[pos-1440]:current?.[pos];
      const previous=pos-1>=1440?following?.[pos-1441]:current?.[pos-1];
-     if(value===target&&previous!==undefined&&previous!==-1&&previous!==target)
-      return {date:pos>=1440?tomorrowDate:time.date,
-       time:String(Math.floor((pos%1440)/60)).padStart(2,'0')+':'+String(pos%60).padStart(2,'0'),inMinutes:ahead};
+     if(value===target&&previous!==undefined&&previous!==-1&&previous!==target){
+      const day=pos>=1440?tomorrowDate:time.date,wallMinute=pos%1440;
+      const instants=kyivWallInstants(day,wallMinute);
+      if(instants.length!==1)continue;
+      const inMinutes=Math.ceil((instants[0]-timestamp)/60000);
+      if(inMinutes<=0)continue;
+      return {date:day,time:String(Math.floor(wallMinute/60)).padStart(2,'0')+':'+String(wallMinute%60).padStart(2,'0'),inMinutes};
+     }
     }
     return null;
    };

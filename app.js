@@ -149,17 +149,48 @@ function timeline(date,queue){
  }return a;
 }
 function stateAt(a,m){return a?.[m]===1?'off':a?.[m]===0?'on':'unknown'}
+
+const kyivCivilFormatter=new Intl.DateTimeFormat('en-GB',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+function kyivWallInstants(date,minute){
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date||'')||!Number.isInteger(minute)||minute<0||minute>=1440)return [];
+ const [y,m,d]=date.split('-').map(Number),wallUtc=Date.UTC(y,m-1,d,Math.floor(minute/60),minute%60);
+ if(new Date(wallUtc).toISOString().slice(0,10)!==date)return [];
+ const parts=t=>{const p=Object.fromEntries(kyivCivilFormatter.formatToParts(new Date(t)).map(x=>[x.type,x.value]));
+  return {date:p.year+'-'+p.month+'-'+p.day,minute:Number(p.hour)*60+Number(p.minute)}};
+ const offsets=new Set();
+ for(const h of [-12,0,12]){
+  const t=wallUtc+h*3600_000,p=parts(t),[yy,mm,dd]=p.date.split('-').map(Number);
+  offsets.add(Math.round((Date.UTC(yy,mm-1,dd,Math.floor(p.minute/60),p.minute%60)-Math.floor(t/60000)*60000)/60000));
+ }
+ const matches=[];
+ for(const off of offsets){
+  const t=wallUtc-off*60000,p=parts(t);
+  if(p.date===date&&p.minute===minute)matches.push(t);
+ }
+ return matches.sort((a,b)=>a-b);
+}
+
 function transition(a,m){if(!a||a[m]<0)return null;for(let i=m+1;i<1440;i++)if(a[i]!==a[m])return {time:i,to:a[i]};return null}
 // Look beyond midnight without assuming information about day after tomorrow.
 function nextChange(date,queue,minuteNow){
  const initial=timeline(date,queue);if(!initial||initial[minuteNow]<0)return null;
+ const liveClock=typeof nowMinutes==='function'&&date===today()&&minuteNow===nowMinutes();
  let state=initial[minuteNow];
  for(let offset=0;offset<=1;offset++){
   const d=shiftDay(date,offset),arr=offset?timeline(d,queue):initial;
   if(!arr)return null;
   for(let m=offset?0:minuteNow+1;m<1440;m++){
    if(arr[m]<0)return null;
-   if(arr[m]!==state)return {time:m,date:d,dayOffset:offset,to:arr[m],minutesUntil:offset*1440+m-minuteNow};
+   if(arr[m]!==state){
+    let minutesUntil=offset*1440+m-minuteNow;
+    if(liveClock){
+     const matches=kyivWallInstants(d,m);
+     if(matches.length!==1)return null;
+     minutesUntil=Math.ceil((matches[0]-Date.now())/60000);
+     if(minutesUntil<=0)return null;
+    }
+    return {time:m,date:d,dayOffset:offset,to:arr[m],minutesUntil};
+   }
    state=arr[m];
   }
  }return null;
