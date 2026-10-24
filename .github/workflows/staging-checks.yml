@@ -48,6 +48,12 @@ jobs:
           node --check admin-system.js && node --check admin-address.js && node --check admin-office.js && node --check push-server/work-registry.js && node --check admin-source-review.js && node --check push-server/schedule-review.js && node --check push-server/schedule-publication.js && node --check push-server/server.js && node --check push-server/public-message.js && node --check push-server/admin.js && node --check push-server/ads.js && node --check push-server/admin-users.js && node --check push-server/daily-reports.js && node --check push-server/diagnostics.js && node --check push-server/legal-store.js && node --check push-server/schedule-quality.js
           test -f _site/support-inbox.js && test -f _site/admin-workstation-v3.js && test -f _site/admin-workstation-v3.css && test -f _site/theme.js && test -f _site/theme.css && test -f _site/admin-office.js && test -f _site/admin-office.css && test -f _site/admin-system.js && test -f _site/admin-system.css && test -f _site/admin-address.js && test -f _site/admin-address.css && test -f _site/admin-source-review.js && test -f _site/motion.js && test -f _site/motion.css && test -f _site/beta-ads.js && test -f _site/admin-ads.js && test -f _site/admin-users.js && test -f _site/internal-pages.js
           test -f _site/ad-detail.html && test -f _site/advertising.html && test -f _site/support-project.html
+      - name: Verify notice formatting, Push emoji and full address catalog
+        run: |
+          node --check message-format.js
+          node --check admin-richtext.js
+          node --check admin-address.js
+          node --test tests/test_beta_message_catalog_20261024.mjs
       - name: Validate official source parser syntax
         run: python -m py_compile scripts/update_data.py scripts/railway_schedule_cron.py
       - name: Verify Railway work registry persistence
