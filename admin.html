@@ -94,13 +94,13 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  <div class="control-nav-foot"><span id="controlNavigationCount">24 розділи</span><a href="./index.html" target="_blank" rel="noopener">Відкрити застосунок ↗</a></div>
 </nav>
 <section class="card admin-corrections" data-admin-panel="corrections" hidden>
- <div class="registry-lead"><div><div class="panel-eyebrow">КАРТОТЕКА / АДРЕСНІ УТОЧНЕННЯ</div><h2>Уточнення підчерг без GitHub</h2>
- <p>Виправлення лише конкретного будинку. Чернетки не впливають на користувачів. Публікація можлива після перевірки власником за офіційним джерелом.</p></div>
+ <div class="registry-lead"><div><div class="panel-eyebrow">КАРТОТЕКА / АДРЕСНІ УТОЧНЕННЯ</div><h2>Адресна картотека та уточнення підчерг</h2>
+ <p>Усі відомі адреси довідника доступні для перегляду та вибору. Зміни підчерги зберігаються окремим уточненням і стають доступними користувачам тільки після перевірки та публікації власником.</p></div>
  <div class="flex"><button id="corrReload" type="button" class="secondary">Оновити</button><button id="corrNew" type="button">+ Нова картка</button></div></div>
  <div class="registry-badges"><span id="corrCount">Завантаження…</span><span>Захищений реєстр Railway</span></div>
  <div class="corr-layout"><div>
-  <div class="registry-toolbar"><input type="search" id="corrSearch" placeholder="Пошук адреси" aria-label="Пошук адресних уточнень">
-  <select id="corrFilter" aria-label="Фільтр статусів"><option value="">Усі</option><option value="draft">Чернетки</option><option value="published">Опубліковані</option></select></div>
+  <div class="registry-toolbar"><select id="corrBrowseTown" aria-label="Населений пункт у картотеці"><option value="черкаси">Черкаси</option></select><input type="search" id="corrSearch" placeholder="Вулиця, будинок, підчерга" aria-label="Пошук у каталозі адрес">
+  <select id="corrFilter" aria-label="Фільтр статусів"><option value="">Усі</option><option value="draft">Чернетки</option><option value="published">Опубліковані</option><option value="catalog">Без уточнення</option></select></div>
   <div id="corrList" class="corr-list"></div></div>
  <div class="corr-form"><h3 id="corrHeading">Нова картка</h3><small class="hint" id="corrRevision"></small>
   <p class="corr-info">Звернення користувача не підтверджує чергу автоматично. Звіряйте точний номер будинку з актуальними даними обленерго перед публікацією.</p>
