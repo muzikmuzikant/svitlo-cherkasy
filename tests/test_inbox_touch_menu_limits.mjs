@@ -10,7 +10,7 @@ import {cleanMessage} from '../push-server/manual-push.js';
 const read=file=>fs.readFileSync(new URL('../'+file,import.meta.url),'utf8');
 
 test('Inbox action controls open a dedicated dialog instead of a stacking dropdown',()=>{
- const inbox=read('inbox-ui.js'),css=read('style.css');
+ const inbox=read('inbox-ui.js'),css=read('inbox-refresh.css');
  assert.match(inbox,/function showActions\(item\)/);
  assert.match(inbox,/more\.onclick=\(\)=>showActions\(item\)/);
  assert.match(inbox,/actionsSheet\.showModal\(\)/);
