@@ -1071,8 +1071,11 @@ function notify(title,body,key,{offlineLocal=false}={}){
  // Never let the foreground PWA duplicate the server's Push delivery.
  // A transient failed status check does NOT mean an existing server
  // subscription has disappeared. Also respect an explicit Push opt-out.
- const localMode=offlineLocal&&navigator.onLine===false&&!document.hidden&&localStorage.getItem(PUSH_CONSENT)!=='no';
- if(!localMode&&(localStorage.getItem(PUSH_CONSENT)==='yes'||localStorage.getItem(PUSH_CONSENT)==='no'))return;
+ const consent=localStorage.getItem(PUSH_CONSENT);
+ // A subscribed device must never create a delayed foreground OS alert on launch,
+ // even while temporarily offline. Background Web Push owns OS notifications.
+ if(consent==='yes'||consent==='no')return;
+ const localMode=offlineLocal&&navigator.onLine===false&&!document.hidden;
  if((pushActive&&!localMode)||notified.has(key)||!('Notification' in window)||Notification.permission!=='granted')return;notified.add(key);localStorage.setItem(SEEN,JSON.stringify([...notified].slice(-400)));navigator.serviceWorker?.ready.then(r=>r.showNotification(title,{body,icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',tag:key})).catch(()=>{try{new Notification(title,{body})}catch{}})}
 function announceChanges(previous,current){if(!prefs.changes||!previous?.lastChecked)return;const a=primary();if(!a?.queue)return;for(const c of current.changes||[])if(c.queues?.includes(a.queue)&&!previous.changes?.some(x=>x.date===c.date&&(x.revisionId||x.publishedAt)===(c.revisionId||c.publishedAt))){notify('🔄 Графік оновлено',`Підчерга ${a.queue} · Змінено години на ${formatDate(c.date)}. Перевірте розклад.`, `change:${c.date}:${c.revisionId||c.publishedAt}:${a.queue}`)}}
 function checkNotifications(){
@@ -1174,7 +1177,7 @@ async function checkPushDelivery(force=false){
    if(!response.ok)throw Error('Push diagnostic HTTP '+response.status);
    const remote=await response.json();
    const sameQueue=remote.queue===primary().queue;
-   const samePrefs=remote.preferences?.off===!!prefs.off&&remote.preferences?.on===!!prefs.on;
+   const samePrefs=['off','on','changes','tomorrow','emergency'].every(name=>remote.preferences?.[name]===!!prefs[name]);
    if(!remote.registered||!sameQueue||!samePrefs){
     await updatePushSubscription();
     pushHealthMessage('Push-підписку оновлено для підчерги '+primary().queue+'. Перевіряємо майбутні нагадування автоматично.');
