@@ -55,7 +55,11 @@ function validate(kind,obj){
 async function api(route,opts={}){
  const response=await fetch(server+'/api/admin/'+route,{...opts,cache:'no-store',headers:{authorization:'Bearer '+sessionToken,'content-type':'application/json',...opts.headers}});
  const data=await response.json().catch(()=>({}));
- if(response.status===401&&remote){signOut(false);throw Error('Сеанс завершився. Увійдіть знову.')}
+ if(response.status===401){
+  // Revoked/expired credentials are invalid even while restoring before remote=true.
+  if(remote)signOut(false);else{clearSession();sessionToken='';}
+  throw Error('Сеанс завершився. Увійдіть знову.');
+ }
  if(!response.ok)throw Error(data.error||'HTTP '+response.status);
  return data;
 }
