@@ -20,7 +20,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png?v=692">
 <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192-v692.png">
 <link rel="icon" type="image/svg+xml" href="./assets/icon.svg">
-<link rel="stylesheet" href="./maintenance-ui.css"><link rel="stylesheet" href="./motion.css"><link rel="stylesheet" href="./social-links.css"><link rel="stylesheet" href="./theme.css"><link rel="stylesheet" href="./inbox-refresh.css"><script defer src="./motion.js"></script><script defer src="./bottom-sheet.js"></script><script defer src="./social-links.js"></script></head>
+<link rel="stylesheet" href="./maintenance-ui.css"><link rel="stylesheet" href="./motion.css"><link rel="stylesheet" href="./social-links.css"><link rel="stylesheet" href="./theme.css"><link rel="stylesheet" href="./all-queues.css"><link rel="stylesheet" href="./inbox-refresh.css"><script defer src="./motion.js"></script><script defer src="./bottom-sheet.js"></script><script defer src="./social-links.js"></script></head>
 <body data-deployment-channel="beta">
 <div id="stagingBadge" aria-label="Тестова версія Beta 7.9.12" style="position:fixed;z-index:100001;top:calc(env(safe-area-inset-top, 0px) + 7px);right:9px;border-radius:10px;padding:4px 8px;background:#202a45;color:#fff;font:600 10px/1.3 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 8px #0002">BETA</div>
 <script>
@@ -116,6 +116,11 @@ document.addEventListener('DOMContentLoaded', () => {
 <section class="beta-ad" id="betaAd" aria-label="Рекламна інформація" hidden></section>
 <div class="section-head"><h2>Графік на сьогодні</h2><button class="inline-link" id="openDetail">Детальніше <svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button></div>
 <div class="surface overview-card"><div class="overview-top"><span id="overviewDate">Сьогодні</span><span class="small-source" id="overviewLabel">—</span></div><div class="bar-track" id="overviewBar"></div><div class="bar-time"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div><div class="legend"><span><i class="dot dot-light"></i> Є світло</span><span><i class="dot dot-off"></i> Немає</span><span><i class="dot dot-unknown"></i> Без даних</span></div></div>
+<button type="button" id="allQueuesHomeOpen" class="all-queues-entry">
+ <span class="all-queues-entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 14h18M9 4v16M15 4v16"/></svg></span>
+ <span><strong>Графік усіх підчерг</strong><small>Усі 12 підчерг та 24 години в одній таблиці</small></span>
+ <svg class="all-queues-entry-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 5 7 7-7 7"/></svg>
+</button>
 <div class="stats-row"><div class="surface stat-card"><div class="stat-top"><span class="stat-icon sun-icon">☀</span> Зі світлом</div><div class="stat-val" id="hoursOn">—</div><div class="stat-caption">год за графіком</div></div><div class="surface stat-card"><div class="stat-top"><span class="stat-icon moon-icon">◕</span> Без світла</div><div class="stat-val" id="hoursOff">—</div><div class="stat-caption">год за графіком</div></div></div>
 <section class="tomorrow-preview" aria-labelledby="tomorrowHeading">
  <div class="section-head"><h2 id="tomorrowHeading">Завтра</h2><button type="button" class="inline-link" id="tomorrowOpen">До графіка ↗</button></div>
@@ -137,6 +142,10 @@ document.addEventListener('DOMContentLoaded', () => {
 <section id="detail" class="screen" hidden><div class="screen-header"><button class="back-btn" data-go="home" aria-label="Назад">‹</button><div><h1>Графік відключень</h1><p id="detailAddress">Моя адреса</p></div><button class="icon-btn" id="editActive" aria-label="Редагувати адресу"><svg viewBox="0 0 24 24"><path d="m16 5 3 3M4 20l4.5-1 11-11a2.12 2.12 0 0 0-3-3l-11 11L4 20z"/></svg></button></div>
 <div class="detail-status" id="detailStatus"></div>
  <div class="surface detail-surface"><div class="days-row fixed-weekdays" id="days" aria-label="Дні графіка"></div><div class="dayline"><span id="detailDayLabel">Сьогодні</span><span id="detailUpdated"></span></div><div class="hour-grid" id="hourGrid"></div><div class="legend"><span><i class="dot dot-light"></i> Є світло</span><span><i class="dot dot-off"></i> Відключення</span><span><i class="dot dot-mixed"></i> Частково</span><span><i class="dot dot-unknown"></i> Невідомо</span></div></div>
+<button type="button" id="allQueuesDetailOpen" class="all-queues-detail-button">
+ <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 14h18M9 4v16M15 4v16"/></svg>
+ <span>Усі підчерги за вибраний день</span><span aria-hidden="true" class="all-queues-detail-chevron">›</span>
+</button>
 <div class="schedule-meta"><span id="detailDayStat">Підраховуємо години…</span><button id="shareDetail" type="button" class="schedule-share">Поділитися ↗</button></div>
 <div class="surface info-card"><div class="tiny-label">НАЙБЛИЖЧА ЗМІНА</div><div class="big-number" id="nextTime">Перевіряємо</div><p id="nextDescription">Немає підтверджених даних</p></div>
 <section class="quick-queue-lookup" aria-labelledby="quickQueueTitle">
@@ -248,6 +257,38 @@ document.addEventListener('DOMContentLoaded', () => {
   </footer>
  </div>
 </div>
+<dialog id="allQueuesDialog" class="all-queues-dialog" aria-labelledby="allQueuesTitle">
+ <div class="sheet-handle all-queues-handle" aria-hidden="true"></div>
+ <header class="all-queues-head sheet-top">
+  <div><div class="all-queues-eyebrow">ЗАГАЛЬНИЙ ГРАФІК</div><h2 id="allQueuesTitle">Усі підчерги</h2>
+  <p>Зведений графік на 24 години</p></div>
+  <button type="button" id="allQueuesClose" class="all-queues-close" aria-label="Закрити загальний графік">
+   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 5 19 19M19 5 5 19"/></svg>
+  </button>
+ </header>
+ <div class="all-queues-scroll">
+  <nav id="allQueuesDays" class="all-queues-days" aria-label="Оберіть день"></nav>
+  <div class="all-queues-date-block"><h3 id="allQueuesDate">Сьогодні</h3><p id="allQueuesNotice">Завантажуємо підтверджений графік…</p></div>
+  <div class="all-queues-chart">
+   <div class="all-queues-matrix" id="allQueuesMatrix" role="group" aria-label="Похвилинний графік 12 підчерг за 24 години"></div>
+   <div class="all-queues-end" id="allQueues24Label">24:00</div>
+  </div>
+  <div class="all-queues-legend">
+   <span><i class="all-queues-swatch is-on"></i> Світло</span>
+   <span><i class="all-queues-swatch is-off"></i> Відключення</span>
+   <span><i class="all-queues-swatch is-unknown"></i> Невідомо</span>
+  </div>
+  <p id="allQueuesInspect" class="all-queues-inspect" role="status" aria-live="polite">Натисніть на годину, щоб побачити її точний інтервал.</p>
+  <p class="all-queues-disclaimer">Тільки планові відключення за даними оператора. Реальна наявність електроенергії може відрізнятися.</p>
+  <a id="allQueuesSource" class="all-queues-source" href="https://www.cherkasyoblenergo.com/news" target="_blank" rel="noopener noreferrer">Офіційне джерело ↗</a>
+ </div>
+ <footer class="all-queues-footer">
+  <button type="button" id="allQueuesExport" class="all-queues-export">
+   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3"/></svg>
+   <span>Зберегти або поділитися PNG</span>
+  </button>
+ </footer>
+</dialog>
 <dialog class="share-preview-dialog" id="sharePreviewDialog" aria-labelledby="sharePreviewHeading">
  <div class="share-preview-grabber" aria-hidden="true"><span></span></div><div class="share-preview-head"><div><span class="share-preview-eyebrow">ВАША КАРТКА</span><h2 id="sharePreviewHeading">Попередній перегляд</h2><p>Саме так картинка виглядатиме після збереження або надсилання.</p></div>
  <button id="sharePreviewClose" type="button" class="share-preview-x" aria-label="Закрити">×</button></div>
@@ -265,4 +306,4 @@ document.addEventListener('DOMContentLoaded', () => {
  <p class="beta-consent-detail">Для добровільної статистики використовується випадковий ідентифікатор інсталяції, основна підчерга, населений пункт без вулиці й будинку, тип пристрою й версія. Додатково враховуємо взаємодії з власними повідомленнями без персональних списків прочитання. Відмовитися можна будь-коли. <a href="./privacy.html" target="_blank" rel="noopener">Докладніше</a></p>
  <div class="beta-consent-actions"><button type="button" id="betaConsentAccept">Дозволити аналітику</button><button type="button" id="betaConsentDecline">Ні, дякую</button></div>
  </dialog>
-<script defer src="./message-format.js"></script><script defer src="./client-errors.js"></script><script defer src="./internal-pages.js"></script><script defer src="./legal-consent.js"></script><script defer src="./beta-ads.js"></script><script defer src="./install.js"></script><script defer src="./site-mode.js"></script></body></html>
+<script defer src="./all-queues-core.js"></script><script defer src="./all-queues.js"></script><script defer src="./message-format.js"></script><script defer src="./client-errors.js"></script><script defer src="./internal-pages.js"></script><script defer src="./legal-consent.js"></script><script defer src="./beta-ads.js"></script><script defer src="./install.js"></script><script defer src="./site-mode.js"></script></body></html>
