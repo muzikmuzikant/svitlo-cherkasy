@@ -56,9 +56,9 @@ test('preserve existing beautiful application icons and admin navigation, never 
 });
 
 
-test('Android-first navigation uses responsive 265ms animation with no cooldown and correct neutral legend',()=>{
+test('Bottom navigation keeps agreed 460ms animation without cooldown and correct neutral legend',()=>{
  const style=read('style.css'),paint=read('hour-paint.js');
- assert.match(app,/const TAB_MOTION_MS=window\.matchMedia\?\.\('\(pointer:coarse\)'\)\?\.matches\?265:300/);
+ assert.match(app,/const TAB_MOTION_MS=460;/);
  assert.match(app,/token\.incoming\.finished/);
  assert.match(app,/token\.outgoing\.cancel/);
  assert.match(app,/getComputedStyle/);
