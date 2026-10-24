@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-const QUEUES=new Set(Array.from({length:6},(_,i)=>[String(i+1)+'.1',String(i+1)+'.2']).flat()));
+const QUEUES=new Set(Array.from({length:6},(_,i)=>[String(i+1)+'.1',String(i+1)+'.2']).flat());
 const stamp=value=>crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const minute=x=>x==='24:00'?1440:typeof x==='string'&&/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(x)?Number(x.slice(0,2))*60+Number(x.slice(3)):-1;
 const official=x=>typeof x==='string'&&/^https:\/\/(?:www\.)?cherkasyoblenergo\.com\//i.test(x);
