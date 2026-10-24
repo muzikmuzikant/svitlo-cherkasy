@@ -23,6 +23,7 @@ import {createMediaStore} from './media-store.js';
 import {createSchedulePublication} from './schedule-publication.js';
 import {createScheduleReview} from './schedule-review.js';
 import {createScheduleMirror} from './schedule-mirror.js';
+import {createPushReceipts} from './push-receipts.js';
 import {tomorrowKey,alreadySentTomorrow} from './tomorrow-dedupe.js';
 import {resolvePublicMessage} from './public-message.js';
 import {originPolicy} from './origins.js';
@@ -67,6 +68,7 @@ const officialSchedules=createSchedulePublication({directory:path.dirname(DATA_F
  token:process.env.SCHEDULE_INGEST_SECRET||'',reviewApprovals:scheduleReview});
 const betaScheduleMirror=createScheduleMirror({publisher:officialSchedules,sourceOrigin:process.env.SCHEDULE_MIRROR_API_BASE||''});
 const appUrl=new URL('/',APP_ORIGIN).href; // Push opens PWA, never the GitHub raw JSON host.
+const pushReceipts=createPushReceipts({directory:path.dirname(DATA_FILE)});
 const manualPush=createManualPush({subscribers,webpush,appUrl,hash,save,
  onBroadcast:(notificationId,result)=>{const id=notificationId.startsWith('notice:')?notificationId.slice(7):'';if(id)noticeMetrics.push(id,result)}
 });
@@ -93,9 +95,10 @@ async function send(rec,message,key,options={}){
  if(sent[key]||pendingPushKeys.has(key))return 'already-sent';
  pendingPushKeys.add(key);
  const category=String(options.notificationId||'').split(':')[0]||'automatic';
+ const receiptId=pushReceipts.begin({category,queue:rec.queue});
  const payload=JSON.stringify({title:message.title,body:message.body,content:message.content||'',
   url:appUrl,notificationId:options.notificationId,kind:options.kind||'schedule',
-  at:options.at||new Date().toISOString(),tag:options.notificationId||key.slice(-90)});
+  at:options.at||new Date().toISOString(),tag:options.notificationId||key.slice(-90),receiptId});
  deliveryStats.lastAttempt=new Date().toISOString();
  try{
   await webpush.sendNotification(rec.subscription,payload,{TTL:options.ttl||1200,urgency:options.urgency||'normal'});
@@ -104,11 +107,13 @@ async function send(rec,message,key,options={}){
   // must not replay already accepted reminders just because the cycle is unfinished.
   // Failure to write is not a Web Push failure: retrying would create duplicates.
   try{save()}catch(e){console.error('[auto-push] accepted, but dedupe save failed:',e.message)}
+  pushReceipts.accepted(receiptId);
   deliveryStats.totalAcceptedSinceBoot++;
   deliveryStats.lastAccepted={at:sent[key],category};
   if(category==='transition')console.info('[auto-push] transition accepted by Web Push provider');
   return 'accepted';
  }catch(e){
+  pushReceipts.rejected(receiptId,e?.statusCode||e?.message);
   deliveryStats.totalFailedSinceBoot++;
   deliveryStats.lastFailure={at:new Date().toISOString(),category,status:e?.statusCode||'network'};
   if([404,410].includes(e?.statusCode)){
@@ -511,7 +516,19 @@ const server=http.createServer(async(req,res)=>{
  }
  if(req.url==='/health'&&req.method==='GET'){
   response(res,200,{ok:true,subscriberCount:Object.keys(subscribers).length,lastPushCheck:lastSuccess,
-   pushCheckError:lastError,schedulePublisher:officialSchedules.status(),delivery:deliveryStats});return;
+   pushCheckError:lastError,schedulePublisher:officialSchedules.status(),delivery:deliveryStats,
+   browserDisplay:pushReceipts.snapshot()});return;
+ }
+ if(requestPath==='/api/push/receipt'&&req.method==='POST'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  try{
+   const body=await readPayload(req,320);
+   if(body?.status!=='display-requested'||!pushReceipts.acknowledge(body.receiptId)){
+    response(res,404,{error:'Unknown or expired receipt'});return;
+   }
+   response(res,202,{ok:true});
+  }catch{response(res,400,{error:'Invalid receipt'})}
+  return;
  }
  if(requestPath==='/api/push/subscription-status'&&req.method==='POST'){
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
