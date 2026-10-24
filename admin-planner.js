@@ -10,7 +10,7 @@
  const summary=by('plannerSummary'),status=by('plannerStatus'),grid=by('plannerGrid');
  const from=by('plannerCopyFrom'),fromDate=by('plannerCopyDate');
  const importButton=by('plannerImport');
- let slots=Array(48).fill(false),dirty=false,knownFrom='00:00';
+ let slots=Array(48).fill(false),dirty=false,knownFrom='00:00',preparedKey='';
  let published=null,lastFetch=0,pending=null,selectionId=0,loadedDate='',loadedQueue='';
  const isOfficial=url=>/^https:\/\/(?:www\.)?cherkasyoblenergo\.com\//i.test(url||'');
  function announce(value,error=false){status.textContent=value;status.className='push-state'+(error?' error':' good')}
@@ -93,7 +93,7 @@
  async function reload(){
   const id=++selectionId,d=date.value,q=queue.value;
   if(!d||!queues.includes(q))return;
-  dirty=false;knownFrom='00:00';slots.fill(false);source.value='';draw();
+  dirty=false;preparedKey='';knownFrom='00:00';slots.fill(false);source.value='';draw();
   announce('Отримуємо чинний графік Railway…');
   try{
    const doc=stagedDoc(),manual=manualEntry(doc,d,q);
@@ -104,7 +104,7 @@
    if(entry){applyEntry(entry,'load')}
    else announce('Для '+d+' підчерги '+q+' підтвердженого графіка немає. Порожня сітка є лише шаблоном, а не підтвердженням безперебійного світла.',true);
   }catch(e){if(id===selectionId)announce(e.message,true)}
-  loadedDate=d;loadedQueue=q;
+  if(id===selectionId){loadedDate=d;loadedQueue=q}
  }
  function guardSelect(change){
   if(dirty&&!confirm('Скасувати незбережені зміни поточного графіка?')){
@@ -114,7 +114,11 @@
   void reload();
  }
  function stage(){
-  if(!dirty)throw Error('Спочатку змініть інтервали, завантажте чинний графік або скористайтеся копіюванням.');
+  const key=date.value+'|'+queue.value+'|'+source.value.trim();
+  if(!dirty){
+   if(preparedKey===key){announce('Цей графік уже підготовлено. Можна публікувати.');return true}
+   throw Error('Спочатку змініть інтервали, завантажте чинний графік або скористайтеся копіюванням.');
+  }
   const doc=stagedDoc(),url=source.value.trim(),d=date.value,q=queue.value;
   if(!/^20\d\d-\d\d-\d\d$/.test(d)||!queues.includes(q))throw Error('Оберіть дату й підчергу');
   if(!isOfficial(url))throw Error('Вкажіть офіційне джерело Черкасиобленерго саме для '+d);
@@ -126,7 +130,7 @@
   else doc.schedules.days.push({date:d,source:url,publishedAt:new Date().toISOString(),verified:true,queues:{[q]:item}});
   doc.updatedAt=new Date().toISOString();
   by('editor').value=JSON.stringify(doc,null,2);
-  dirty=false;
+  dirty=false;preparedKey=key;
   announce('Зміну підготовлено. Натисніть «Опублікувати графік» для збереження на Railway.');
   return true;
  }

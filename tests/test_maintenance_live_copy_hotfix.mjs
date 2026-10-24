@@ -45,7 +45,8 @@ test('manual editor copies a VERIFIED live Railway queue to another queue withou
  const response={lastChecked:new Date().toISOString(),days:[{date,verified:true,source:url,queues:{
   '1.1':{knownFrom:'00:00',off:offA},'2.2':{knownFrom:'00:00',off:offB}
  }}]};
- let calls=0,confirms=0;
+ let calls=0,confirms=0,publishedClicks=0;
+ get('publish').click=()=>{publishedClicks++};
  const sandbox={
   window:{SvitloSchedulePlanner:planner},document,Option:class{constructor(label,value){this.label=label;this.value=value}},
   Intl,Date,Array,Object,URL,console,setTimeout,clearTimeout,
@@ -64,6 +65,8 @@ test('manual editor copies a VERIFIED live Railway queue to another queue withou
  await get('plannerCopy').onclick();
  assert.ok(get('plannerSummary').textContent.includes('2,5'));
  get('plannerStage').onclick();
+ get('plannerPublish').onclick();
+ assert.equal(publishedClicks,1,'prepared schedule should publish on the second step');
  const next=JSON.parse(get('editor').value);
  assert.deepEqual(next.schedules.days[0].queues['1.1'].off,offB);
  assert.equal(next.schedules.days[0].source,url);
