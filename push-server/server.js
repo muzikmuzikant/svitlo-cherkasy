@@ -6,23 +6,32 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import {createFeedbackStore,readFeedbackBody} from './feedback-store.js';
+import {createSupportTicketNotifier} from './support-ticket-notifier.js';
 import {createAdminExtras} from './admin-extras.js';
 import {createAnalyticsStore} from './analytics.js';
 import {createAdsStore} from './ads.js';
 import {createAdminUserStore} from './admin-users.js';
+import {createWorkRegistry} from './work-registry.js';
+import {createAddressCorrectionStore} from './address-corrections.js';
 import {createLegalStore} from './legal-store.js';
 import {auditSchedule} from './schedule-quality.js';
 import {createDiagnosticsStore} from './diagnostics.js';
 import {createDailyReports} from './daily-reports.js';
+import {createNoticeMetrics} from './notice-metrics.js';
 import {createAppConfig} from './app-config.js';
 import {createMediaStore} from './media-store.js';
 import {createSchedulePublication} from './schedule-publication.js';
+import {createScheduleReview} from './schedule-review.js';
+import {createScheduleMirror} from './schedule-mirror.js';
+import {createPushReceipts} from './push-receipts.js';
+import {tomorrowKey,alreadySentTomorrow} from './tomorrow-dedupe.js';
+import {resolvePublicMessage} from './public-message.js';
 import {originPolicy} from './origins.js';
 import webpush from 'web-push';
 import {adminRouter} from './admin.js';
 import {createManualPush} from './manual-push.js';
 import {transitionCopy,tomorrowCopy,changeCopy,emergencyCopy,firstPublishedAt,dayId,changeId,isLatestRevision,emergencyId} from './notification-copy.js';
-import {QUEUES,timeline,dueTransition,latestOfficialEvent,freshEvent,freshSchedule,dueTransitionAcrossDays} from './schedule-engine.js';
+import {QUEUES,timeline,dueTransition,latestOfficialEvent,freshEvent,freshSchedule,dueTransitionAcrossDays,usableSchedule,verifiedScheduleDay,preferFreshSchedule,kyivWallInstants} from './schedule-engine.js';
 
 const {VAPID_PUBLIC_KEY,PUSH_PRIVATE_KEY,PUSH_CONTACT,APP_ORIGIN,SCHEDULE_URL,DATA_FILE='./subscribers.json',PORT='8080'}=process.env;
 if(!VAPID_PUBLIC_KEY||!PUSH_PRIVATE_KEY||!PUSH_CONTACT||!APP_ORIGIN||!SCHEDULE_URL){
@@ -41,7 +50,10 @@ function save(){
  catch(e){console.error('Persistent subscriber save failed:',e.message);throw e}
 }
 const feedback=createFeedbackStore({filePath:process.env.FEEDBACK_FILE||path.join(path.dirname(DATA_FILE),'feedback.json')});
+const supportTicketNotifier=createSupportTicketNotifier();
 const extras=createAdminExtras({directory:path.dirname(DATA_FILE)});
+const workRegistry=createWorkRegistry({directory:path.dirname(DATA_FILE),record:extras.record});
+const addressCorrections=createAddressCorrectionStore({directory:path.dirname(DATA_FILE),record:extras.record});
 const analytics=createAnalyticsStore({filePath:path.join(path.dirname(DATA_FILE),'analytics.json')});
 const ads=createAdsStore({directory:path.dirname(DATA_FILE)});
 const adminUsers=createAdminUserStore({directory:path.dirname(DATA_FILE)});
@@ -50,9 +62,16 @@ const errorCounts=createDiagnosticsStore({directory:path.dirname(DATA_FILE)});
 const dailyReports=createDailyReports({directory:path.dirname(DATA_FILE)});
 const siteControls=createAppConfig({directory:path.dirname(DATA_FILE),record:extras.record});
 const mediaStore=createMediaStore(path.dirname(DATA_FILE));
-const officialSchedules=createSchedulePublication({directory:path.dirname(DATA_FILE),token:process.env.SCHEDULE_INGEST_SECRET||''});
+const noticeMetrics=createNoticeMetrics({directory:path.dirname(DATA_FILE)});
+const scheduleReview=createScheduleReview({directory:path.dirname(DATA_FILE)});
+const officialSchedules=createSchedulePublication({directory:path.dirname(DATA_FILE),
+ token:process.env.SCHEDULE_INGEST_SECRET||'',reviewApprovals:scheduleReview});
+const betaScheduleMirror=createScheduleMirror({publisher:officialSchedules,sourceOrigin:process.env.SCHEDULE_MIRROR_API_BASE||''});
 const appUrl=new URL('/',APP_ORIGIN).href; // Push opens PWA, never the GitHub raw JSON host.
-const manualPush=createManualPush({subscribers,webpush,appUrl,hash,save});
+const pushReceipts=createPushReceipts({directory:path.dirname(DATA_FILE)});
+const manualPush=createManualPush({subscribers,webpush,appUrl,hash,save,
+ onBroadcast:(notificationId,result)=>{const id=notificationId.startsWith('notice:')?notificationId.slice(7):'';if(id)noticeMetrics.push(id,result)}
+});
 const fmtKyiv=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
 function dayInKyiv(d=new Date()){const p=Object.fromEntries(fmtKyiv.formatToParts(d).map(x=>[x.type,x.value]));return {date:`${p.year}-${p.month}-${p.day}`,m:Number(p.hour)*60+Number(p.minute)}}
 function shiftDay(s,n){const d=new Date(s+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
@@ -71,26 +90,38 @@ const deliveryStats={
  lastAttempt:null,lastAccepted:null,lastFailure:null,
  lastCycle:null,totalAcceptedSinceBoot:0,totalFailedSinceBoot:0
 };
+// Only aggregate delivery diagnostics, never device endpoints, are exposed to the admin.
+manualPush.automaticStatus=()=>({delivery:deliveryStats,browserDisplay:pushReceipts.snapshot()});
 const pendingPushKeys=new Set();
 async function send(rec,message,key,options={}){
  if(sent[key]||pendingPushKeys.has(key))return 'already-sent';
  pendingPushKeys.add(key);
  const category=String(options.notificationId||'').split(':')[0]||'automatic';
+ const receiptId=pushReceipts.begin({category,queue:rec.queue});
  const payload=JSON.stringify({title:message.title,body:message.body,content:message.content||'',
   url:appUrl,notificationId:options.notificationId,kind:options.kind||'schedule',
-  at:options.at||new Date().toISOString(),tag:options.notificationId||key.slice(-90)});
+  at:options.at||new Date().toISOString(),tag:options.notificationId||key.slice(-90),receiptId});
  deliveryStats.lastAttempt=new Date().toISOString();
  try{
   await webpush.sendNotification(rec.subscription,payload,{TTL:options.ttl||1200,urgency:options.urgency||'normal'});
   sent[key]=new Date().toISOString();
+  // Persist each accepted event BEFORE continuing the fan-out. A Railway restart
+  // must not replay already accepted reminders just because the cycle is unfinished.
+  // Failure to write is not a Web Push failure: retrying would create duplicates.
+  try{save()}catch(e){console.error('[auto-push] accepted, but dedupe save failed:',e.message)}
+  pushReceipts.accepted(receiptId);
   deliveryStats.totalAcceptedSinceBoot++;
   deliveryStats.lastAccepted={at:sent[key],category};
   if(category==='transition')console.info('[auto-push] transition accepted by Web Push provider');
   return 'accepted';
  }catch(e){
+  pushReceipts.rejected(receiptId,e?.statusCode||e?.message);
   deliveryStats.totalFailedSinceBoot++;
   deliveryStats.lastFailure={at:new Date().toISOString(),category,status:e?.statusCode||'network'};
-  if([404,410].includes(e?.statusCode))delete subscribers[hash(rec.subscription.endpoint)];
+  if([404,410].includes(e?.statusCode)){
+   delete subscribers[hash(rec.subscription.endpoint)];
+   try{save()}catch(error){console.error('[auto-push] invalid subscription save failed:',error.message)}
+  }
   else console.warn('Auto Push failed:',e?.statusCode||e?.message);
   return 'failed';
  }finally{pendingPushKeys.delete(key)}
@@ -101,18 +132,19 @@ async function forEachLimited(items,limit,fn){
   while(next<items.length){const i=next++;try{await fn(items[i])}catch(e){console.warn('Delivery worker:',e.message)}}
  }));
 }
-let lastSuccess=null,lastError=null,running=false,lastLoadedSchedule=null,transitionRunning=false;
+let lastSuccess=null,lastError=null,running=false,lastLoadedSchedule=null,lastLoadedBulletins=[],transitionRunning=false;
 // Dedicated short ticker: external bulletin requests must never delay a planned
 // outage/restoration reminder. No browser or opened PWA is required.
 async function transitionJob(){
  if(transitionRunning)return;
  transitionRunning=true;
  try{
-  const source=officialSchedules.schedule()||lastLoadedSchedule;
-  const now=dayInKyiv(),timestamp=Date.now(),schedulesSafe=freshSchedule(source,timestamp);
-  const current=schedulesSafe?source.days.find(d=>d.date===now.date&&d.verified===true):null;
+  const now=dayInKyiv(),timestamp=Date.now();
+  const source=preferFreshSchedule(officialSchedules.schedule(),lastLoadedSchedule,timestamp);
+  const schedulesSafe=usableSchedule(source,timestamp);
+  const current=verifiedScheduleDay(source,now.date,timestamp);
   const nextDate=shiftDay(now.date,1);
-  const tomorrow=schedulesSafe?source.days.find(d=>d.date===nextDate&&d.verified===true):null;
+  const tomorrow=verifiedScheduleDay(source,nextDate,timestamp);
   const all=Object.values(subscribers);
   const cycle={at:new Date().toISOString(),subscribers:all.length,
    offEnabled:all.filter(x=>x?.preferences?.off).length,
@@ -129,8 +161,10 @@ async function transitionJob(){
     if(!pref[type])continue;
     // Recover reminders delayed by Railway restarts or temporarily slow schedule imports.
     // The helper never returns transitions that have already started.
-    const boundary=dueTransitionAcrossDays(values,valuesTomorrow,minutes,offset,target,offset-2);
-    if(boundary!==null){const eta=boundary-minutes;
+    const due=dueTransitionAcrossDays(values,valuesTomorrow,minutes,offset,target,offset-1,timestamp,now.date);
+    if(due!==null){
+     const boundary=typeof due==='number'?due:due.boundary;
+     const eta=typeof due==='number'?boundary-minutes:due.eta;
      const msg=transitionCopy(type,q,boundary,eta,boundary>=1440?nextDate:now.date);
      const key=`${prefix}:${type}:${now.date}:${boundary}`;
      if(sent[key]){cycle.transitionAlreadySent++;continue}
@@ -173,16 +207,25 @@ async function job(){
  if(running)return;
  running=true;
  try{
-  let source,scheduleIssue=null;
-  try{source=officialSchedules.schedule()||await loadJson(SCHEDULE_URL);if(!Array.isArray(source.days))throw Error('Invalid schedule structure')}
-  catch(e){scheduleIssue='Schedule fetch: '+e.message;console.warn(scheduleIssue);source={days:[],changes:[]}}
-  lastLoadedSchedule=source;
+  let scheduleIssue=null;
+  const published=officialSchedules.schedule();
+  let fallback=lastLoadedSchedule;
+  // Railway may miss an import. Try the public, independently verified feed
+  // instead of allowing a stale local publication to mute every reminder.
+  if(!usableSchedule(published)){
+   try{
+    const fetched=await loadJson(SCHEDULE_URL);
+    if(!Array.isArray(fetched.days))throw Error('Invalid schedule structure');
+    fallback=fetched;lastLoadedSchedule=fetched;
+   }catch(e){scheduleIssue='Schedule fetch: '+e.message;console.warn(scheduleIssue)}
+  }
   const now=dayInKyiv(),timestamp=Date.now();
-  const schedulesSafe=freshSchedule(source,timestamp);
+  const source=preferFreshSchedule(published,fallback,timestamp)||{days:[],changes:[]};
+  const schedulesSafe=usableSchedule(source,timestamp);
   if(!schedulesSafe)scheduleIssue=scheduleIssue||'Schedule data stale, unconfirmed or awaiting review';
-  const current=source.days.find(d=>d.date===now.date&&d.verified===true);
+  const current=verifiedScheduleDay(source,now.date,timestamp);
   const nextDate=shiftDay(now.date,1);
-  const tomorrow=source.days.find(d=>d.date===nextDate&&d.verified===true);
+  const tomorrow=verifiedScheduleDay(source,nextDate,timestamp);
   let bulletin=[];
   for(const [filename,path] of [['emergency.json','events'],['manual_overrides.json','override']]){
    try{const u=new URL(SCHEDULE_URL);u.pathname=u.pathname.replace(/schedules\.json$/,filename);
@@ -190,6 +233,8 @@ async function job(){
        if(Array.isArray(events))bulletin.push(...events)}
    catch(e){console.warn('Bulletin refresh:',e.message)}
   }
+  // Allow a verified cross-device link to resolve recent published emergency messages.
+  lastLoadedBulletins=bulletin.filter(e=>e&&typeof e.publishedAt==='string').slice(-40);
   // The freshest verified bulletin determines whether an emergency is active or ended.
   const event=latestOfficialEvent(bulletin,timestamp);
   const all=Object.values(subscribers);
@@ -205,8 +250,15 @@ async function job(){
    const tomorrowRevised=freshChanges.some(change=>isLatestRevision(change,tomorrow,q));
    if(schedulesSafe&&pref.tomorrow&&tomorrow?.verified===true&&minutes>=19*60&&!(pref.changes&&tomorrowRevised)){
     const revision=firstPublishedAt(tomorrow),msg=tomorrowCopy(q,nextDate,tomorrow);
-    await send(record,msg,`${prefix}:tomorrow:${nextDate}:${revision}`,{
-     notificationId:dayId(q,tomorrow),at:revision,source:tomorrow.source});
+    // One daily preview per subscriber and calendar date. Revisions are handled
+    // separately by 'change' notifications, not repeated 'tomorrow' pushes.
+    // Recognize previous timestamp-qualified keys so upgrading mid-evening
+    // does not cause one more duplicate notification.
+    if(!alreadySentTomorrow(sent,prefix,nextDate)){
+     const outcome=await send(record,msg,tomorrowKey(prefix,nextDate),{
+      notificationId:dayId(q,tomorrow),at:revision,source:tomorrow.source});
+     if(outcome==='accepted')console.info('[auto-push] tomorrow accepted (once per day) queue='+q+' day='+nextDate);
+    }
    }
    if(pref.emergency&&freshEvent(event,timestamp)&&(!Array.isArray(event.queues)||!event.queues.length||event.queues.includes(q))){
     const msg=emergencyCopy(event.status);
@@ -214,7 +266,9 @@ async function job(){
      notificationId:emergencyId(event),at:event.publishedAt,source:event.source,kind:'emergency',ttl:3600,urgency:'high'});
    }
    if(schedulesSafe&&pref.changes)for(const change of freshChanges){
-    const msg=changeCopy(q,change.date,source.days.find(d=>d.date===change.date&&d.verified===true));
+    const changedDay=verifiedScheduleDay(source,change.date,timestamp);
+    if(!changedDay)continue;
+    const msg=changeCopy(q,change.date,changedDay);
     await send(record,msg,`${prefix}:change:${change.date}:${change.revisionId||change.publishedAt}`,{
      notificationId:changeId(q,change),at:change.detectedAt||change.publishedAt,source:change.source});
    }
@@ -245,6 +299,7 @@ async function readPayload(req,limit=12000){
  return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 const statusAttempts=new Map();
+const attachmentAttempts=new Map();
 // Real-time one-way updates for iOS/Android/desktop without extra dependencies.
 const liveConnections=new Set();
 function publishLive(kind,stamp){
@@ -306,10 +361,30 @@ const server=http.createServer(async(req,res)=>{
  if(requestPath==='/api/ads'&&req.method==='GET'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}response(res,200,ads.publicState());return}
  if(requestPath==='/api/ads/event'&&req.method==='POST'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}try{const body=await readPayload(req,500);response(res,ads.event(String(body.id||'').slice(0,55),body.type,crypto.createHash('sha256').update(String(req.socket.remoteAddress||'')+new Date().toISOString().slice(0,10)).digest('hex').slice(0,20))?202:400,{ok:true})}catch{response(res,400,{error:'Bad event'})}return}
  if(requestPath==='/api/pwa/presence'&&req.method==='POST'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}try{const body=await readPayload(req,500);response(res,ads.activity(body)?202:400,{ok:true})}catch{response(res,400,{error:'Bad presence'})}return}
+ if(requestPath==='/api/notice/engagement'&&req.method==='POST'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  try{
+   const data=await readPayload(req,550);
+   if(!ads.hasInstallation(data?.installId)){response(res,403,{error:'Analytics consent not registered'});return}
+   const noticeId=String(data?.noticeId||'');
+   if(!siteControls.get().announcements.some(x=>x.id===noticeId)){
+    response(res,404,{error:'Notice unavailable'});return
+   }
+   const ok=noticeMetrics.event({noticeId,installId:data.installId,type:data.type});
+   response(res,ok?202:400,{ok});
+  }catch{response(res,400,{error:'Bad engagement event'})}return;
+ }
  if(requestPath==='/api/pwa/forget'&&req.method==='POST'){
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
-  try{const body=await readPayload(req,500);response(res,ads.optOut(body)?200:400,{ok:true})}
+  try{const body=await readPayload(req,500);noticeMetrics.forget(body?.id);response(res,ads.optOut(body)?200:400,{ok:true})}
   catch{response(res,400,{error:'Bad request'})}return
+ }
+ if(requestPath==='/api/public/message'&&req.method==='GET'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  const id=new URL(req.url,'http://localhost').searchParams.get('id');
+  const message=resolvePublicMessage(id,{schedule:officialSchedules.schedule()||lastLoadedSchedule,
+   announcements:siteControls.publicState().announcements,emergencies:lastLoadedBulletins});
+  response(res,message?200:404,message||{error:'Повідомлення більше недоступне'});return;
  }
  if(requestPath==='/api/data/status'&&req.method==='GET'){
   response(res,200,officialSchedules.status());return;
@@ -326,6 +401,13 @@ const server=http.createServer(async(req,res)=>{
    const state=officialSchedules.update(body.schedules,body.review);
    console.log('[railway-schedules] Verified publication',state.lastChecked,'days='+state.verifiedDays.length);
    response(res,200,{ok:true,...state});
+   // Do not wait for the next one-minute poll after an official publication.
+   // Newly published tomorrow plans and revised schedules may be time-critical.
+   // The independent transition ticker also catches a newly confirmed outage.
+   queueMicrotask(()=>{
+    void job().catch(error=>console.error('[auto-push] publication cycle:',error.message));
+    void transitionJob().catch(error=>console.error('[auto-push] publication reminder:',error.message));
+   });
   }catch(e){console.error('[railway-schedules] Publish rejected:',e.message);
    response(res,400,{error:e.message});}
   return;
@@ -345,21 +427,25 @@ const server=http.createServer(async(req,res)=>{
     await Promise.all([['schedules',SCHEDULE_URL],['emergency',new URL('emergency.json',SCHEDULE_URL).href],['review',new URL('source_review.json',SCHEDULE_URL).href]].map(async([name,url])=>{
       try{
         const data=(name==='schedules'?officialSchedules.schedule():name==='review'?officialSchedules.review():null)||await loadJson(url);
-        result.sources[name]=name==='schedules'?{lastChecked:data.lastChecked,days:(data.days||[]).map(d=>({date:d.date,verified:d.verified,source:d.source,publishedAt:d.publishedAt})),changes:(data.changes||[]).length}:
+        result.sources[name]=name==='schedules'?{lastChecked:data.lastChecked,days:(data.days||[]).map(d=>({date:d.date,verified:d.verified,source:d.source,publishedAt:d.publishedAt})),changes:(data.changes||[]).length,reviewPending:data.reviewPending===true,unresolvedDates:data.unresolvedDates||[]}:
           name==='emergency'?{lastChecked:data.lastChecked,count:(data.events||[]).length,latest:data.events?.[0]?.status||null}:
-          {lastChecked:data.lastChecked,rejectedCount:data.rejectedCount||0,items:(data.items||[]).slice(0,30)};
+          {lastChecked:data.lastChecked,rejectedCount:data.rejectedCount||0,warningCount:data.warningCount||0,items:(data.items||[]).slice(0,30)};
       }catch(e){result.sources[name]={error:e.message}}
     }));
     const tickets=feedback.list().items;
     result.feedback={total:tickets.length,new:tickets.filter(t=>t.status==='new').length,inProgress:tickets.filter(t=>t.status==='in_progress').length};
     return result;
-  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule(officialSchedules.schedule()||lastLoadedSchedule),errorCounts,dailyReports);return}
+  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule(officialSchedules.schedule()||lastLoadedSchedule),errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry,addressCorrections);return}
  if(req.url?.startsWith('/api/media/')&&req.method==='GET'){
    const id=req.url.slice('/api/media/'.length).split('?')[0],file=mediaStore.read(id);
    if(!file){response(res,404,{error:'Фото не знайдене'});return}
    res.writeHead(200,{'content-type':file.mime,'content-length':file.data.length,'x-content-type-options':'nosniff',
      'cache-control':'public, max-age=2592000, immutable','access-control-allow-origin':originPolicy.list[0]||APP_ORIGIN});
    res.end(file.data);return;
+ }
+ if(requestPath==='/api/address-corrections'&&req.method==='GET'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  response(res,200,addressCorrections.published());return;
  }
  if(req.url==='/api/app-config'&&req.method==='GET'){
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
@@ -368,6 +454,20 @@ const server=http.createServer(async(req,res)=>{
  if(req.url==='/api/help'&&req.method==='GET'){
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   response(res,200,extras.getHelp());return;
+ }
+ if(requestPath==='/api/ticket/attachment'&&req.method==='POST'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  try{
+   const data=await readPayload(req,1200),id=String(data.id||'').trim().toUpperCase();
+   if(!/^SC-[0-9A-F]{10}$/.test(id)){response(res,400,{error:'Некоректний номер звернення'});return}
+   const now=Date.now(),key=id+'|'+String(req.socket.remoteAddress||'unknown').slice(0,90);
+   for(const [entry,info] of attachmentAttempts)if(info.until<now)attachmentAttempts.delete(entry);
+   const limit=attachmentAttempts.get(key)||{count:0,until:now+60000};
+   if(limit.count>=20){response(res,429,{error:'Забагато завантажень. Повторіть за хвилину.'});return}
+   limit.count++;attachmentAttempts.set(key,limit);
+   response(res,200,feedback.getAttachment(id,data.attachmentId,data.token));
+  }catch(error){response(res,error.statusCode||400,{error:error.message||'Файл недоступний'})}
+  return;
  }
  if(req.url==='/api/ticket/status'&&req.method==='POST'){
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
@@ -393,17 +493,17 @@ const server=http.createServer(async(req,res)=>{
   if(req.url==='/api/ticket/reply'&&req.method==='POST'){
    if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
    try{
-    const data=await readPayload(req,3500);
+    const data=await readPayload(req,13_000_000);
     const id=String(data.id||'').trim().toUpperCase();
     if(!/^SC-[0-9A-F]{10}$/.test(id)){response(res,400,{error:'Перевірте номер звернення.'});return}
     const ip=(String(req.headers['x-forwarded-for']||'').split(',')[0].trim()||req.socket.remoteAddress||'unknown').slice(0,80);
-    response(res,200,feedback.reply(id,data.token,data.message,ip));
+    response(res,200,feedback.reply(id,data.token,data,ip));
    }catch(e){response(res,e.statusCode||500,{error:e.statusCode?e.message:'Не вдалося надіслати відповідь.'})}
    return;
  }
  if(requestPath==='/api/feedback/categories'&&req.method==='GET'){
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
-  response(res,200,{categories:feedback.getCategories().filter(c=>c.enabled)});return
+  response(res,200,{categories:feedback.getCategories().filter(c=>c.enabled),capabilities:{attachments:true,imageMaxBytes:4*1048576,videoMaxBytes:8*1048576,totalMaxBytes:9*1048576,maxFiles:3}});return
  }
   if(req.url==='/api/feedback'){
   if(req.method!=='POST'){response(res,405,{error:'Method not allowed'});return}
@@ -413,12 +513,26 @@ const server=http.createServer(async(req,res)=>{
    const ip=(String(req.headers['x-forwarded-for']||'').split(',')[0].trim()||req.socket.remoteAddress||'unknown').slice(0,80);
    const saved=feedback.submit(data,ip);
    response(res,201,saved);
+   // Best effort: network delivery may fail without affecting the submitted case.
+   void supportTicketNotifier.notify({id:saved.id,topic:data.topic}).catch(()=>{});
   }catch(e){response(res,e.statusCode||500,{error:e.statusCode?e.message:'Не вдалося зберегти звернення.'})}
   return;
  }
  if(req.url==='/health'&&req.method==='GET'){
   response(res,200,{ok:true,subscriberCount:Object.keys(subscribers).length,lastPushCheck:lastSuccess,
-   pushCheckError:lastError,schedulePublisher:officialSchedules.status(),delivery:deliveryStats});return;
+   pushCheckError:lastError,schedulePublisher:officialSchedules.status(),delivery:deliveryStats,
+   browserDisplay:pushReceipts.snapshot()});return;
+ }
+ if(requestPath==='/api/push/receipt'&&req.method==='POST'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  try{
+   const body=await readPayload(req,320);
+   if(body?.status!=='display-requested'||!pushReceipts.acknowledge(body.receiptId)){
+    response(res,404,{error:'Unknown or expired receipt'});return;
+   }
+   response(res,202,{ok:true});
+  }catch{response(res,400,{error:'Invalid receipt'})}
+  return;
  }
  if(requestPath==='/api/push/subscription-status'&&req.method==='POST'){
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
@@ -426,25 +540,31 @@ const server=http.createServer(async(req,res)=>{
    const data=await readPayload(req,4096),endpoint=data?.subscription?.endpoint;
    if(!validEndpoint(endpoint))throw Error('Invalid endpoint');
    const rec=subscribers[hash(endpoint)];
-   const source=officialSchedules.schedule()||lastLoadedSchedule;
-   const time=dayInKyiv(),fresh=freshSchedule(source);
-   const day=fresh?source.days.find(x=>x.date===time.date&&x.verified===true):null;
+   const time=dayInKyiv(),timestamp=Date.now();
+   const source=preferFreshSchedule(officialSchedules.schedule(),lastLoadedSchedule,timestamp);
+   const fresh=usableSchedule(source,timestamp);
+   const day=verifiedScheduleDay(source,time.date,timestamp);
    const tomorrowDate=shiftDay(time.date,1);
-   const tomorrow=fresh?source.days.find(x=>x.date===tomorrowDate&&x.verified===true):null;
+   const tomorrow=verifiedScheduleDay(source,tomorrowDate,timestamp);
    const current=rec&&fresh?timeline(day,rec.queue):null,following=rec&&fresh?timeline(tomorrow,rec.queue):null;
    const next=target=>{
     for(let ahead=1;ahead<=1440;ahead++){
      const pos=time.m+ahead;if(pos>=2880)break;
      const value=pos>=1440?following?.[pos-1440]:current?.[pos];
      const previous=pos-1>=1440?following?.[pos-1441]:current?.[pos-1];
-     if(value===target&&previous!==undefined&&previous!==-1&&previous!==target)
-      return {date:pos>=1440?tomorrowDate:time.date,
-       time:String(Math.floor((pos%1440)/60)).padStart(2,'0')+':'+String(pos%60).padStart(2,'0'),inMinutes:ahead};
+     if(value===target&&previous!==undefined&&previous!==-1&&previous!==target){
+      const day=pos>=1440?tomorrowDate:time.date,wallMinute=pos%1440;
+      const instants=kyivWallInstants(day,wallMinute);
+      if(instants.length!==1)continue;
+      const inMinutes=Math.ceil((instants[0]-timestamp)/60000);
+      if(inMinutes<=0)continue;
+      return {date:day,time:String(Math.floor(wallMinute/60)).padStart(2,'0')+':'+String(wallMinute%60).padStart(2,'0'),inMinutes};
+     }
     }
     return null;
    };
    response(res,200,{ok:true,registered:!!rec,queue:rec?.queue||null,
-    preferences:rec?{off:!!rec.preferences?.off,on:!!rec.preferences?.on}:null,
+    preferences:rec?{off:!!rec.preferences?.off,on:!!rec.preferences?.on,changes:!!rec.preferences?.changes,tomorrow:!!rec.preferences?.tomorrow,emergency:!!rec.preferences?.emergency}:null,
     latestAutomatic:rec?.automatic||null,upcoming:rec&&fresh?{
      off:rec.preferences?.off?next(1):null,on:rec.preferences?.on?next(0):null}:null,
     lastPushCheck:lastSuccess,checkError:lastError,scheduleFresh:fresh,
@@ -477,6 +597,8 @@ const reportSources={feedback,ads,push:manualPush,diagnostics:errorCounts,audit:
 function refreshDailyReport(){try{dailyReports.capture(reportSources)}catch(error){console.warn('Daily reports update:',error.message)}}
 setTimeout(refreshDailyReport,15_000).unref?.();
 setInterval(refreshDailyReport,60*60_000).unref?.();
+betaScheduleMirror.sync().catch(error=>console.warn('[beta-schedule-mirror]',error.message));
+if(betaScheduleMirror.enabled)setInterval(()=>betaScheduleMirror.sync().catch(error=>console.warn('[beta-schedule-mirror]',error.message)),60_000).unref?.();
 job().catch(console.error);
 transitionJob().catch(console.error);
 setInterval(()=>job().catch(console.error),60_000);

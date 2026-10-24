@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="light"><meta name="robots" content="noindex,nofollow"><title>Підтримати Світло Черкаси</title>
+<html lang="uk"><head><script src="./theme.js"></script><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no"><meta name="color-scheme" content="light dark"><meta name="robots" content="noindex,nofollow"><title>Підтримати Світло Черкаси</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;--bg:#f6f8fc;--accent:#397bff;color:#1a2a41}
 *,*:before,*:after{box-sizing:border-box}html{background:var(--bg);scroll-behavior:smooth}body{margin:0;min-height:100svh;overflow-x:hidden}a{text-decoration:none;color:inherit}button{font:inherit;cursor:pointer}[hidden]{display:none!important}
@@ -66,8 +66,8 @@ button:focus-visible,a:focus-visible{outline:3px solid #79a8ff;outline-offset:3p
 @media(prefers-reduced-motion:reduce){.hero[data-content-loading="true"] .hero-copy h1,.hero[data-content-loading="true"] .hero-copy p{animation:none!important;background:#ffffff24!important}.hero[data-content-loading="false"] .hero-copy h1,.hero[data-content-loading="false"] .hero-copy p{animation:none!important}}
 .logo-mark img,.brand-symbol img{display:block;width:100%;height:100%;border-radius:12px;object-fit:contain}
 
-</style><link rel="stylesheet" href="./motion.css"><script defer src="./motion.js"></script></head>
-<body><main class="shell">
+</style><link rel="stylesheet" href="./motion.css"><script defer src="./motion.js"></script><link rel="stylesheet" href="./theme.css"><link rel="stylesheet" href="./social-links.css"></head>
+<body class="svitlo-support-project-page"><main class="shell">
 <nav class="nav"><div class="brand"><span class="brand-symbol"><img src="./assets/icon.svg" alt="" width="38" height="38"></span><span>світло<b>.</b> Черкаси</span></div><a href="./index.html" class="back">🔙 До застосунку</a></nav>
 <header class="hero" data-content-loading="true"><img id="heroImage" alt="" hidden><div class="hero-copy"><div class="kicker">ПІДТРИМКА ПРОЄКТУ</div><h1 id="title">Зробімо корисне ще кращим.</h1><p id="intro">«Світло Черкаси» допомагає стежити за графіками відключень. Якщо хочете підтримати його розвиток, оберіть зручний спосіб.</p><a href="#methods" class="hero-cta">Способи підтримки <span>🔗</span></a></div><div class="hero-graphic" aria-hidden="true"><span class="heart-graphic">💙</span><span class="hero-floating">Дякуємо за підтримку</span></div></header>
 <section class="section" id="methods"><div class="section-heading"><span class="kicker">ЗРУЧНИЙ СПОСІБ</span><h2>Обирайте, як вам комфортніше.</h2><p>Кожен спосіб підтримки налаштовується адміністратором. Внески добровільні, суми та можливість переказу визначає обраний сервіс.</p></div>
@@ -110,7 +110,6 @@ button:focus-visible,a:focus-visible{outline:3px solid #79a8ff;outline-offset:3p
   const config=await timedFetch('./push-config.json').then(r=>{if(!r.ok)throw Error('Configuration unavailable');return r.json()});
   const response=await timedFetch(new URL(config.apiBase).origin+'/api/ads');if(!response.ok)throw Error('Support unavailable');
   const s=(await response.json()).support||{};
-  if(!s.enabled){const main=document.querySelector('main');main.replaceChildren();const notice=el('section',undefined,'section');notice.append(el('h1','Приймання внесків поки вимкнене'),el('p','Застосунок залишається безкоштовним. Дякуємо за вашу підтримку.'));const back=el('a','До застосунку');back.href='./index.html';notice.append(back);main.append(notice);return;}
   for(const [id,field] of [['title','title'],['intro','description'],['details','details'],['whyTitle','whyTitle'],['thanksTitle','thanksTitle']])put(id,s[field]);
   document.documentElement.style.setProperty('--bg',s.background||'#f6f8fc');document.documentElement.style.setProperty('--accent',s.accent||'#397bff');
   if(s.heroImage&&url(s.heroImage)){const hero=$('heroImage');hero.src=url(s.heroImage);hero.hidden=false}
@@ -155,4 +154,4 @@ button:focus-visible,a:focus-visible{outline:3px solid #79a8ff;outline-offset:3p
   document.querySelector('.hero').dataset.contentLoading='false';
  }
 })();
-</script></body></html>
+</script><script defer src="./social-links.js"></script></body></html>

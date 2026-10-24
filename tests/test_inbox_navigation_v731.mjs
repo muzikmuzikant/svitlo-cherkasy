@@ -34,11 +34,17 @@ async function mountInbox(item){
  return {elements,page,events,readState:()=>markedRead,card:()=>elements.inboxList.children.find(n=>n.tag==='article'),
   dialog:()=>page.children.find(n=>n.tag==='dialog')};
 }
+// The entire card content is a semantic button; the action menu stays separate.
+function openCard(view){
+ const opener=allNodes(view.card()).find(n=>n.tag==='button'&&n.className.includes('inbox-card-opener'));
+ assert.ok(opener,'Notification card has a large accessible opener');
+ opener.onclick();
+}
 test('a tap on the entire schedule card opens detail, then opens in-app graph',async()=>{
  const view=await mountInbox({id:'day:2.1:2026-10-12:2026-10-12T09:55:00+03:00',title:'🗓️ Графік на 12 жовтня',body:'Підчерга 2.1',
   kind:'schedule',at:'2026-10-12T06:55:00Z',url:'https://www.cherkasyoblenergo.com/media/official'});
  assert.equal(view.card().getAttribute,undefined);
- view.card().onclick();
+ openCard(view);
  assert.equal(view.dialog().open,true);
  const action=allNodes(view.dialog()).find(n=>n.tag==='button'&&n.textContent.includes('Відкрити графік'));
  assert.ok(action,'internal graph action exists in detail');
@@ -49,7 +55,7 @@ test('a tap on the entire schedule card opens detail, then opens in-app graph',a
 });
 test('tomorrow Push opens next Kyiv day from its original timestamp',async()=>{
  const view=await mountInbox({id:'push:tomorrow:queue_1:random',title:'🗓️ Графік на завтра',body:'Підчерга 1.1',kind:'push',at:'2026-10-12T14:00:00Z'});
- view.card().onclick();
+ openCard(view);
  const action=allNodes(view.dialog()).find(n=>n.tag==='button'&&n.textContent.includes('Відкрити графік'));
  assert.ok(action);action.onclick();assert.equal(view.events.find(event=>event.type==='svitlo:open-schedule').detail.date,'2026-10-13');
 });
@@ -57,7 +63,7 @@ test('admin announcement opens a full detail, but has no false schedule shortcut
  const view=await mountInbox({id:'notice:announcement1',title:'📣 Оголошення',body:'Є нові можливості',content:'## Деталі\n**Важливо**',
   images:['https://svitlo-cherkasy-production.up.railway.app/api/media/safe.png'],
   kind:'announcement',at:'2026-10-12T10:00:00Z'});
- view.card().onclick();
+ openCard(view);
  assert.equal(view.dialog().open,true);
  assert.ok(allNodes(view.dialog()).some(x=>x.tag==='img'));
  assert.ok(!allNodes(view.dialog()).some(x=>x.tag==='button'&&x.textContent.includes('Відкрити графік')));

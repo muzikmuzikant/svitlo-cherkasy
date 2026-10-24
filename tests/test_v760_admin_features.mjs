@@ -106,7 +106,8 @@ test('favorite places persist without losing selection and restore online refres
  assert.match(app,/favorite:editId\?addresses\.find/);
  assert.match(app,/a\.favorite=!a\.favorite;saveAddresses\(\);openPickerContent\(\);renderHome\(\)/);
  assert.match(app,/Number\(!!b\.favorite\)-Number\(!!a\.favorite\)/);
- assert.match(app,/Зв’язок відновлено\. Оновлюємо графіки та повідомлення/);
+ assert.match(app,/addEventListener\('online'/);
+ assert.match(app,/refreshData\(\)/,'Network recovery triggers schedule refresh');
  assert.match(css,/\.favorite-btn\.selected/);
 });
 test('inbox detail occupies full mobile screen without stale updated badges',()=>{

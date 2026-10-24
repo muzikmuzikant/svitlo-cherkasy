@@ -1,0 +1,60 @@
+name: Production Release Candidate Checks
+on:
+  push:
+    branches: [release/7.9.12-production-prep-20261024]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'push-server/ads.js'
+      - 'admin-ads.js'
+      - 'tests/test_production_ads_release.mjs'
+      - 'scripts/release_preflight.py'
+      - 'tests/test_release_preflight.py'
+      - 'release.json'
+      - 'manifest.webmanifest'
+      - 'push-config.json'
+      - 'sw.js'
+      - '.github/workflows/production-release-candidate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Refuse outdated Production snapshot or rebased-away code
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor origin/main HEAD; then
+            echo "::error::Release candidate is behind main. Import newest verified schedule data and rerun checks."
+            exit 1
+          fi
+          if ! git diff --quiet origin/main HEAD -- data/schedules.json data/source_review.json data/emergency.json; then
+            echo "::error::Production verified schedules/review/emergency payloads diverge from main."
+            exit 1
+          fi
+      - name: Check production ad and server syntax
+        run: node --check push-server/ads.js && node --check push-server/admin.js && node --check push-server/server.js && node --check beta-ads.js && node --check admin-ads.js
+      - name: Test owner-controlled ads, legacy migrations and scheduling contracts
+        run: node --test tests/test_production_ads_release.mjs tests/test_beta_monetization.mjs tests/test_schedule_engine.mjs tests/test_transition_server_dispatch.mjs
+      - name: Test integrated Beta DST, Push, schedules and freshness
+        run: |
+          node --test tests/test_dst_kyiv_2026.mjs tests/test_push_receipts_beta.mjs tests/test_verified_no_schedule_freshness.mjs tests/test_release_fixes_7912.mjs tests/test_schedule_mirror_beta.mjs
+      - name: Validate release configurations
+        run: python -m unittest discover -s tests -p test_release_preflight.py -v
+      - name: Build Production-target PWA without deployment
+        run: python scripts/build_pages.py
+      - name: Verify Production identity and cache separation
+        run: python scripts/release_preflight.py --channel production

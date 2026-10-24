@@ -2,7 +2,7 @@
  * Single stable ID deduplicates a public announcement and its Web Push.
  */
 (function(root){'use strict';
- const NAME='svitlo-inbox-v1',STORE='messages',FALLBACK='svitlo-inbox-fallback-v1',MAX=180;
+ const NAME='svitlo-inbox-v1',STORE='messages',FALLBACK='svitlo-inbox-fallback-v1',MAX=600;
  const LEGACY_ADMIN=/^push:svitlo-admin-/;
  const httpImage=u=>{try{const x=new URL(String(u));return x.protocol==='https:'&&x.href.length<=900?x.href:''}catch{return ''}};
  function normalize(item){
@@ -10,7 +10,7 @@
   const id=String(item.id||'').slice(0,150);if(!id)return null;
   const at=Number.isFinite(Date.parse(item.at))?new Date(item.at).toISOString():new Date().toISOString();
   const images=Array.isArray(item.images)?item.images.slice(0,6).map(httpImage).filter(Boolean):[];
-  const kind=['schedule','emergency','announcement','push'].includes(item.kind)?item.kind:'announcement';
+  const kind=['schedule','emergency','announcement','push','support'].includes(item.kind)?item.kind:'announcement';
   return {id,title:String(item.title||'Повідомлення').slice(0,100),body:String(item.body||'').slice(0,350),
    content:String(item.content||'').slice(0,6000),images,kind,at,
    priority:['normal','important','urgent'].includes(item.priority)?item.priority:'normal',
@@ -63,14 +63,8 @@
     request.onsuccess=()=>store.put(merge(request.result,item))}
    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
   });
-  const rows=await all();
-  if(rows.length>MAX){await new Promise((resolve,reject)=>{
-   const tx=database.transaction(STORE,'readwrite'),store=tx.objectStore(STORE);
-   // Keep unread items preferentially when pruning very old entries.
-   const oldest=[...rows].sort((a,b)=>Number(!!b.read)-Number(!!a.read)||String(a.at).localeCompare(String(b.at)));
-   oldest.slice(0,rows.length-MAX).forEach(x=>store.delete(x.id));
-   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
-  })}
+  // Keep the entire Inbox history in IndexedDB; no count/age pruning.
+  // Device/browser storage cleanup remains outside application control.
   }catch{
    const entries=new Map(fallback().map(x=>[x.id,x]));
    for(const item of batch)entries.set(item.id,merge(entries.get(item.id),item));
@@ -85,7 +79,7 @@
   })
  }catch{saveFallback(fallback().filter(x=>!predicate(x)||edit(x)).map(x=>predicate(x)?edit(x):x).filter(Boolean))}}
  async function mark(ids){const keys=new Set(ids);await mutate(x=>keys.has(x.id),x=>({...x,read:true}))}
- async function clearRead(){await mutate(x=>x.read,()=>null)}
+ async function unmark(ids){const keys=new Set(ids);await mutate(x=>keys.has(x.id),x=>({...x,read:false}))}
  async function remove(id){await mutate(x=>x.id===id,()=>null)}
  async function reconcileAnnouncements(ids){
   // Once Railway confirms the current publication list, remove deleted,
@@ -106,5 +100,5 @@
    return Boolean(date&&dates.has(date));
   },()=>null);
  }
- root.SvitloInbox={normalize,all,add,mark,clearRead,remove,reconcileAnnouncements,reconcileAutomated};
+ root.SvitloInbox={normalize,all,add,mark,unmark,remove,reconcileAnnouncements,reconcileAutomated};
 })(typeof self!=='undefined'?self:globalThis);

@@ -1,0 +1,774 @@
+/* SVITLO / NIGHT / 7.9.20
+   One graphite color system. Only the appearance changes; schedules and status remain factual.
+   Loaded last on user pages. Daytime styles live in style.css. */
+:root[data-theme="dark"]{
+ /* An older cached site-mode.js might still inject light CSS variables inline.
+    These scoped declarations are deliberately stronger than inline normal styles. */
+ --bg:#090b0f!important;
+ --surface:#161a21!important;
+ --blue:#83b5ff!important;
+ color-scheme:dark;
+ --bg:#090b0f;
+ --surface:#161a21;
+ --raised:#20252e;
+ --raised-2:#272e39;
+ --line:#2b313c;
+ --ink:#f2f5f9;
+ --muted:#a9b3c1;
+ --blue:#83b5ff;
+ --bluewash:#202e43;
+ --shadow:0 8px 28px #00000022;
+ --sub:#a9b3c1;
+ --inbox-ink:#f2f5f9;
+ --inbox-line:#303743;
+ background:#090b0f;
+ color:#f2f5f9;
+}
+:root[data-theme="dark"] body{background:var(--bg);color:var(--ink)}
+:root[data-theme="dark"] .viewport{background:transparent}
+:root[data-theme="dark"] .ambient{background:radial-gradient(circle,#303d5229,transparent 75%)}
+:root[data-theme="dark"] :is(.surface,.picker-btn,.place-card,.empty-places,.update-card,.setting-line,.setting-action,.icon-btn,.back-btn,.place-option,.manual-lookup){
+ background:var(--surface);border-color:var(--line);color:var(--ink);box-shadow:var(--shadow)
+}
+:root[data-theme="dark"] :is(.brand small,.hero-heading p,.picker-sub,.place-text small,.small-source,.stat-top,.stat-caption,.grid-note,.info-card p,.screen-header p,.setting-line p,.notification-help p,.sheet-top p,.field-label span,.settings-foot,.dayline span:last-child){
+ color:var(--muted)
+}
+:root[data-theme="dark"] :is(.section-head h2,.screen-header h1,.empty-places strong,.picker-place,.place-text strong,.stat-val,.big-number,.setting-line strong){color:var(--ink)}
+:root[data-theme="dark"] .brand-period{color:var(--blue)}
+:root[data-theme="dark"] :is(.icon-btn,.back-btn){color:#d1d9e6}
+:root[data-theme="dark"] .bottom-nav{
+ background:#11151b;border-top:1px solid #2b3039;
+ backdrop-filter:none;-webkit-backdrop-filter:none;
+ box-shadow:0 -4px 24px #0004
+}
+:root[data-theme="dark"] .nav-item{color:#adb7c4}
+:root[data-theme="dark"] .bottom-nav .nav-item.active{background:#242d3a;color:#a9cbff}
+:root[data-theme="dark"] .bottom-nav .nav-item.active::before{background:#263f5b}
+:root[data-theme="dark"] .nav-unread{border-color:#101319}
+:root[data-theme="dark"] .place-avatar{background:#29364b;color:#a8caff}
+:root[data-theme="dark"] .place-status{background:#2a323f;color:#dce4ee}
+:root[data-theme="dark"] .place-status.on{background:#183c2c;color:#a5ecc2}
+:root[data-theme="dark"] .place-status.off{background:#462a30;color:#ffc0c8}
+:root[data-theme="dark"] .add-place-card{background:#1a2535;border:1px dashed #456486;color:#b3d2ff}
+:root[data-theme="dark"] .sun-icon{background:#214133;color:#aff0c5}
+:root[data-theme="dark"] .moon-icon{background:#2b3547;color:#c1d5ee}
+:root[data-theme="dark"] .status-panel{box-shadow:0 10px 26px #0003}
+:root[data-theme="dark"] .status-panel.status-on{background:linear-gradient(140deg,#143725,#19442c);color:#a8f0bc}
+:root[data-theme="dark"] .status-panel.status-off{background:linear-gradient(140deg,#392028,#46262e);color:#ffc4cb}
+:root[data-theme="dark"] .status-panel.status-unknown{background:linear-gradient(140deg,#1a2c42,#213751);color:#cae0ff}
+:root[data-theme="dark"] .status-decor{background:#ffffff0d;box-shadow:0 0 0 38px #ffffff08}
+:root[data-theme="dark"] .queue-chip{background:#ffffff1a}
+:root[data-theme="dark"] .state-icon{background:#ffffff18}
+:root[data-theme="dark"] .bar-track{background:#222934}
+:root[data-theme="dark"] .bar-segment.on{background:#72b58a}
+:root[data-theme="dark"] .bar-segment.off{background:#202731}
+:root[data-theme="dark"] .bar-segment.unknown{background:repeating-linear-gradient(-45deg,#424c59,#424c59 6px,#343d49 6px,#343d49 12px)}
+:root[data-theme="dark"] .bar-now{background:#ffb363;box-shadow:0 0 0 2px #1b1e23}
+:root[data-theme="dark"] :is(.bar-time,.legend,.tiny-label,.selected-label){color:#b0b9c5}
+:root[data-theme="dark"] .dot{border-color:#66717f}
+:root[data-theme="dark"] .legend .dot-light{background:#d7f3df!important;border-color:#83b49a!important}
+:root[data-theme="dark"] .dot-off{background:#202731}
+:root[data-theme="dark"] .dot-unknown{background:#424c59}
+:root[data-theme="dark"] .legend .dot-mixed{background:linear-gradient(90deg,#202731 50%,#d7f3df 50%)!important;border-color:#71818f!important}
+:root[data-theme="dark"] .day-choice{color:#b3bdca}
+:root[data-theme="dark"] .day-choice b{color:#e4eaf2}
+:root[data-theme="dark"] .day-choice.selected{background:#3779dd;color:#fff}
+:root[data-theme="dark"] .day-choice.selected b{color:#fff}
+:root[data-theme="dark"] .hour-cell{box-shadow:none;border-color:#3c4656!important}
+:root[data-theme="dark"] .hour-cell.on{border-color:#337551!important}
+:root[data-theme="dark"] .hour-cell.off{border-color:#354453!important}
+:root[data-theme="dark"] .hour-cell.mixed{border-color:#577589!important}
+:root[data-theme="dark"] .hour-cell.current{outline-color:#83b5ff}
+:root[data-theme="dark"] .hour-ink-on{color:#dcfbe7}
+:root[data-theme="dark"] .hour-ink-off{color:#fff}
+:root[data-theme="dark"] .hour-ink-unknown{color:#d7e0eb}
+
+/* Schedule and controls */
+:root[data-theme="dark"] .detail-status{background:#202d40;color:#cee0ff}
+:root[data-theme="dark"] .detail-status.on{background:#193e2b;color:#b0f0c5}
+:root[data-theme="dark"] .detail-status.off{background:#432931;color:#ffd0d4}
+:root[data-theme="dark"] .hour-cell.unknown{background:#27313e;color:#d3deeb}
+:root[data-theme="dark"] .grid-note{color:var(--muted)}
+:root[data-theme="dark"] .info-card{background:var(--surface);border-color:var(--line)}
+:root[data-theme="dark"] .calendar-period{color:#d5e1ee}
+:root[data-theme="dark"] :is(.calendar-arrows button,.calendar-shortcuts button,.house-choice,.schedule-share,.home-quick-places .quick-place){
+ background:var(--raised);border-color:#384453;color:#d3e4f8
+}
+:root[data-theme="dark"] :is(.calendar-shortcuts button.active,.home-quick-places .quick-place.selected){background:#28446b;border-color:#527fad;color:#eaf4ff}
+:root[data-theme="dark"] :is(.calendar-arrows button:active,.house-choice:active){background:#313d50}
+:root[data-theme="dark"] .house-coverage{background:#202e42;color:#cbdef3}
+:root[data-theme="dark"] .house-coverage.no-house-list{background:#252d38;color:#bdcad9}
+:root[data-theme="dark"] .house-choices-title{color:#cbd7e5}
+:root[data-theme="dark"] :is(.house-choices-more,.possible-title){color:#b6c6d8}
+:root[data-theme="dark"] .possible-queue{background:#243853;color:#c4deff}
+:root[data-theme="dark"] .possible-queue.selected{background:#336cc0;color:#fff}
+:root[data-theme="dark"] .move-btn{background:#283c57;color:#c6dfff}
+:root[data-theme="dark"] .quick-queue-lookup{
+ background:var(--surface);color:var(--ink);border-color:var(--line);box-shadow:none
+}
+:root[data-theme="dark"] .quick-queue-lookup :is(p,span){color:#b9c6d5}
+:root[data-theme="dark"] .quick-queue-controls select{background:var(--raised);color:var(--ink);border-color:#415167}
+:root[data-theme="dark"] .queue-override-control{background:#202d3f;border-color:#405672}
+:root[data-theme="dark"] .queue-override-toggle strong{color:var(--ink)}
+:root[data-theme="dark"] .queue-override-toggle small{color:var(--muted)}
+:root[data-theme="dark"] .verified-source-badge.is-verified{background:#183b2b;border:1px solid #34664b;color:#b2ebc4}
+:root[data-theme="dark"] .verified-source-badge.is-unpublished{background:#28313e;border:1px solid #3a4757;color:#c7d4e4}
+/* Options and the interactive sheets */
+:root[data-theme="dark"] :is(.setting-line,.setting-action){box-shadow:none}
+:root[data-theme="dark"] .setting-action span{color:#acbdd1}
+:root[data-theme="dark"] .settings-foot{color:#aab7c7}
+:root[data-theme="dark"] .switch span{background:#424b58}
+:root[data-theme="dark"] .switch span::before{background:#f7f9fd}
+:root[data-theme="dark"] .switch input:checked+span{background:#2b9f70}
+:root[data-theme="dark"] .sheet{background:#131820;color:var(--ink);border:1px solid #2f3642}
+:root[data-theme="dark"] .sheet::backdrop{background:#000a}
+:root[data-theme="dark"] .sheet-handle{background:#4a5260}
+:root[data-theme="dark"] .sheet-close{background:#29303c;color:#dce6f1}
+:root[data-theme="dark"] .sheet :is(input:not([type=checkbox]),select,textarea){
+ background:#212732;color:#f1f4f8;border-color:#444e5d
+}
+:root[data-theme="dark"] .sheet :is(input,textarea)::placeholder{color:#a4b1c1}
+:root[data-theme="dark"] .sheet :is(input,select,textarea):focus{border-color:#82b3fb;box-shadow:0 0 0 3px #83b5ff28}
+:root[data-theme="dark"] .suggestions{background:#1d2430;border-color:#3b4554}
+:root[data-theme="dark"] .suggestions button{background:transparent;color:#e9f0fa;border-color:#353f4c}
+:root[data-theme="dark"] .suggestions button:active{background:#2e3a4b}
+:root[data-theme="dark"] .lookup-feedback{background:#202f43;color:#cfdef2}
+:root[data-theme="dark"] .lookup-feedback.found{background:#1b392b;color:#afeac3}
+:root[data-theme="dark"] .lookup-feedback.warn{background:#433622;color:#f7dbaa}
+:root[data-theme="dark"] .manual-lookup p{color:#b9c7d7}
+:root[data-theme="dark"] :is(.official-btn,.secondary-action){background:#243955;border:1px solid #3c5472;color:#c5deff}
+:root[data-theme="dark"] .toast{background:#eff4fa;color:#19222f;box-shadow:0 12px 38px #0006}
+:root[data-theme="dark"] .delete-action{color:#ff9ba7}
+
+/* Inbox and the notification reader: flat, readable, and clearly grouped */
+:root[data-theme="dark"] .inbox-filters button{background:#20252e;border-color:#313a46;color:#b9c6d5}
+:root[data-theme="dark"] .inbox-filters button.selected{background:#3168b7;border-color:#4775b0;color:#fff}
+:root[data-theme="dark"] .inbox-mark{color:var(--blue)}
+:root[data-theme="dark"] :is(.inbox-item,.inbox-empty,.inbox-history summary,.inbox-detail){
+ background:var(--surface);border-color:var(--line);color:var(--ink);box-shadow:none
+}
+:root[data-theme="dark"] .inbox-item.is-unread{background:#1c2737;border-color:#4b6786}
+:root[data-theme="dark"] .inbox-interactive.is-pinned{background:#1c2939;border-color:#425a75}
+:root[data-theme="dark"] .inbox-item.is-unread::before{background:#78adff}
+:root[data-theme="dark"] :is(.inbox-item>strong,.inbox-detail-content h2,.inbox-rich-heading){color:var(--ink)}
+:root[data-theme="dark"] :is(.inbox-time,.inbox-item>p,.inbox-empty p,.inbox-detail-top,.inbox-detail-summary,.inbox-rich,.inbox-history summary){color:#b9c7d7}
+:root[data-theme="dark"] :is(.inbox-kind,.inbox-more,.inbox-detail-category){color:#99c5ff}
+:root[data-theme="dark"] .inbox-empty{color:#dce5f1}
+:root[data-theme="dark"] .inbox-rich{border-color:#343e4c}
+:root[data-theme="dark"] :is(.inbox-rich a,.inbox-detail-actions a){color:var(--blue)}
+:root[data-theme="dark"] .inbox-detail-close{background:#2b323f;color:#e1eaf5}
+:root[data-theme="dark"] .inbox-detail::backdrop{background:#000c}
+:root[data-theme="dark"] .inbox-gallery img{background:#262f3c}
+:root[data-theme="dark"] .inbox-auto-group{background:#131d29;border-color:#303f50}
+:root[data-theme="dark"] .inbox-context summary{background:#262d39;border-color:#3e4b5b;color:#e5edf8}
+:root[data-theme="dark"] :is(.inbox-context,.inbox-context-actions){color:var(--ink)}
+:root[data-theme="dark"] .inbox-context-actions{background:#202732;border-color:#424b59;box-shadow:0 12px 30px #0006}
+:root[data-theme="dark"] .inbox-context-actions button{background:transparent;color:#c4ddff}
+:root[data-theme="dark"] .inbox-context-actions button:hover{background:#304155;color:#fff}
+:root[data-theme="dark"] .inbox-clear{color:#b4c1d1}
+/* Informational UI, custom messages and announcements */
+:root[data-theme="dark"] .app-update-banner{
+ background:#1c2a3c;border:1px solid #385374;color:#f1f6fd;box-shadow:none
+}
+:root[data-theme="dark"] .app-update-banner::before{background:radial-gradient(circle,#597fbc24,transparent 70%)}
+:root[data-theme="dark"] .app-update-copy p{color:#bdccde}
+:root[data-theme="dark"] .app-update-notes li{color:#d7e6f5}
+:root[data-theme="dark"] .app-update-eyebrow{color:#9dc9ff}
+:root[data-theme="dark"] .app-update-close{background:#303e51;color:#d3e1f1}
+:root[data-theme="dark"] .update-card{box-shadow:none}
+:root[data-theme="dark"] .push-invite{
+ background:#1c2b3d;color:var(--ink);border-color:#3a5571;box-shadow:none
+}
+:root[data-theme="dark"] .push-invite p{color:#bacce0}
+:root[data-theme="dark"] .push-invite-art{background:#2a3b50;color:#c2dcff;box-shadow:none}
+:root[data-theme="dark"] .emergency-banner{background:#3e3020;border-color:#6d5130;color:#ffe3ad}
+:root[data-theme="dark"] .emergency-banner.is-note{background:#23334a;border-color:#425c80;color:#c4ddff}
+:root[data-theme="dark"] .emergency-banner .emergency-icon{background:#67502d;color:#ffeca9}
+:root[data-theme="dark"] .emergency-banner.is-note .emergency-icon{background:#334966;color:#d2e8ff}
+:root[data-theme="dark"] .freshness-warning{background:#3d301f;border-color:#765b32;color:#ffe0a3}
+:root[data-theme="dark"] .offline-chip{background:#3d301f;border-color:#765b32;color:#ffe0a3}
+:root[data-theme="dark"] .maintenance-inline.is-active,:root[data-theme="dark"] .maintenance-inline.is-planned{
+ background:#202b3a!important;border-color:#42566f;color:#e3effa;box-shadow:none
+}
+:root[data-theme="dark"] .maintenance-inline.planned-highlight{background:#433725!important;border-color:#705a34;color:#ffe6b4}
+:root[data-theme="dark"] .svitlo-managed-banner{background:#21354b;color:#d3e7ff;border-color:#3b5671}
+:root[data-theme="dark"] .svitlo-modules-banner{background:#3c301f;color:#ffe0ac;border-color:#6f542e}
+:root[data-theme="dark"] .tomorrow-card{background:#1b2430;color:var(--ink);border-color:#343f4f;box-shadow:none}
+:root[data-theme="dark"] .tomorrow-symbol{background:#29394f}
+:root[data-theme="dark"] .beta-ad-label{color:#b1bece}
+:root[data-theme="dark"] .beta-ad-content:not([data-style="dark"]){background:#1a2330;color:#ebf3ff;border-color:#333f50;box-shadow:none}
+
+/* Dialogs, previews, onboarding and feedback consent */
+:root[data-theme="dark"] .share-preview-dialog{background:#151b24;color:#f0f5fb;border:1px solid #303846}
+:root[data-theme="dark"] .share-preview-head p{color:#bbc8d6}
+:root[data-theme="dark"] .share-preview-head button{background:#292f3b;color:#e3eefa}
+:root[data-theme="dark"] .share-preview-scroll{background:#0d1016}
+:root[data-theme="dark"] .beta-consent-dialog{background:#191e27;color:#eef4fd;border:1px solid #323a49}
+:root[data-theme="dark"] .beta-consent-dialog :is(p,.beta-consent-detail){color:#bac6d6}
+:root[data-theme="dark"] .beta-consent-illustration{background:#24334a;color:#b3d3ff}
+:root[data-theme="dark"] .beta-consent-points{background:#232b36;color:#d8e6f5}
+:root[data-theme="dark"] .beta-consent-actions #betaConsentDecline{background:#2a313e;color:#f2f6fc}
+:root[data-theme="dark"] .app-boot-screen{background:radial-gradient(ellipse 300px 280px at 50% 5%,#1d2938,#090b0f 80%);color:#f5f7fb}
+:root[data-theme="dark"] #svitloInternalPage{background:#090b0f}
+:root[data-theme="dark"] .svitlo-internal-head{background:#161a21;border-color:#2b313c}
+:root[data-theme="dark"] .svitlo-internal-title{color:#eff4fb}
+:root[data-theme="dark"] .svitlo-internal-back{background:#253245;color:#c8deff}
+:root[data-theme="dark"] .svitlo-internal-frame{background:#090b0f}
+/* Installation landing: outside a home-screen installation this remains a coherent page */
+:root[data-theme="dark"] .install-landing{
+ --i-ink:#eff4f9;--i-muted:#b1bdcb;--i-blue:#91beff;
+ --i-border:#343b47;--i-surface:#1a202a;
+ background:radial-gradient(ellipse 440px 310px at 78% 45%,#35435744,transparent 83%),linear-gradient(155deg,#0a0d11,#171d26);color:var(--i-ink)
+}
+:root[data-theme="dark"] .install-landing :is(.install-card,.install-faq,.install-step,.install-phone,.install-feature){
+ background:#181f29;border-color:#323c49;color:var(--i-ink)
+}
+:root[data-theme="dark"] .install-landing :is(.install-help-link,.install-footer a){color:#c1d9ff}
+/* Appearance controls: three equally weighted choices, no gradients or fake screen screenshots */
+.appearance-control{margin:0;border:0;padding:16px 14px 12px;min-width:0}
+.appearance-control legend{font-size:0;width:0;height:0;overflow:hidden}
+.appearance-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.appearance-choice{position:relative;cursor:pointer;min-width:0;display:block}
+.appearance-choice input{position:absolute;opacity:0;width:1px;height:1px;left:50%;bottom:0}
+.appearance-choice>span{
+ background:var(--surface);color:var(--ink);border:1px solid var(--line);
+ border-radius:15px;min-height:105px;padding:12px 5px;display:grid;justify-items:center;
+ align-content:center;gap:7px;
+ transition:background .2s ease,border-color .2s ease,transform .2s ease
+}
+.appearance-choice .appearance-icon{
+ width:37px;height:37px;border-radius:11px;display:grid;place-items:center;
+ font-size:22px;line-height:1;background:var(--bluewash);color:var(--blue)
+}
+.appearance-choice b{font-size:12px;font-weight:760;text-align:center}
+.appearance-choice small{font-size:10px;line-height:1.35;color:var(--muted);text-align:center}
+.appearance-choice input:checked+span{border-color:var(--blue);background:var(--bluewash);box-shadow:inset 0 0 0 1px var(--blue)}
+.appearance-choice input:focus-visible+span{outline:3px solid var(--blue);outline-offset:2px}
+.appearance-choice:active>span{transform:scale(.985)}
+.appearance-summary{margin:0;padding:0 18px 16px;color:var(--muted);font-size:12px;line-height:1.5}
+@media(max-width:370px){.appearance-options{gap:5px}.appearance-choice>span{min-height:98px;padding:9px 2px}.appearance-choice b{font-size:11px}.appearance-choice small{font-size:9px}}
+@media(prefers-reduced-motion:reduce){.appearance-choice>span{transition:none}}
+
+/* Independent linked pages: one design language, not separate blue night styles */
+:root[data-theme="dark"] .support-shell{color:var(--ink)}
+:root[data-theme="dark"] .support-hero{
+ background:#171d26;border:1px solid #303946;color:var(--ink)
+}
+:root[data-theme="dark"] :is(.support-card,.support-tab.selected,.support-back,.support-help,.support-side-card,.ticket-status){
+ background:var(--surface);border-color:var(--line);color:var(--ink);box-shadow:none
+}
+:root[data-theme="dark"] .support-tab:not(.selected){color:#aab5c4}
+:root[data-theme="dark"] :is(.support-pill,.support-step,.support-side-icon){background:#27364b;color:#bbd9ff}
+:root[data-theme="dark"] :is(.support-hero p,.support-card-title p,.support-side-card p,.support-side-card>span,.support-help small,.support-privacy p,.ticket-status p){color:#b4c1d0}
+:root[data-theme="dark"] .support-side-divider{background:#353d49}
+:root[data-theme="dark"] .support-shell :is(input,select,textarea){
+ background:#202731;color:#f1f4fa;border:1px solid #404b59
+}
+:root[data-theme="dark"] .support-shell :is(input,textarea)::placeholder{color:#a4b0be}
+:root[data-theme="dark"] .support-shell :is(label,.support-card-title h2,.support-side-card h3){color:#e9f1fa}
+:root[data-theme="dark"] :is(.support-privacy,.topic-hint){background:#222c39;color:#c9d7e7}
+:root[data-theme="dark"] .support-top .support-back{color:#b9d5ff}
+:root[data-theme="dark"] .layout{color:var(--ink)}
+:root[data-theme="dark"] .layout .hero,:root[data-theme="dark"] .layout .contact,:root[data-theme="dark"] .layout .ticket-status{
+ background:var(--surface);border-color:var(--line);box-shadow:none
+}
+:root[data-theme="dark"] .layout :is(.search,.faq-item,.faq-question,.faq-answer,.contact-card){
+ background:#202730;color:var(--ink);border-color:#39434f
+}
+:root[data-theme="dark"] .layout :is(input,.wordmark,.faq-item h3,.faq-question strong){color:#eff5fc}
+:root[data-theme="dark"] .layout :is(.hero p,.section-head p,.contact p,.ticket-status p,.faq-answer){color:#b5c4d4}
+:root[data-theme="dark"] .layout .ticket-form input{background:#222b37;border:1px solid #445468}
+:root[data-theme="dark"] .layout .ticket-form button{background:#2a4363;color:#c9e0ff}
+:root[data-theme="dark"] :is(.body,.wrapper article,article.box,.box){
+ background:var(--surface);color:var(--ink);border-color:var(--line);box-shadow:none
+}
+:root[data-theme="dark"] .wrapper{color:#ecf3fc}
+:root[data-theme="dark"] .wrapper :is(p,li,.lead,.meta,.eyebrow),:root[data-theme="dark"] .box p{color:#becbd9}
+:root[data-theme="dark"] .wrapper a,:root[data-theme="dark"] .box a{color:#a5caff}
+:root[data-theme="dark"] .wrapper .hero{background:#1c2736;border-color:#354356}
+:root[data-theme="dark"] .wrapper .note{background:#27303c;border-color:#414d5d}
+:root[data-theme="dark"] .shell :is(.back,.nav-tools .back){background:#212a36;color:#c0d9ff;border-color:#3c4a5b}
+:root[data-theme="dark"] .shell :is(.card,.feature,.plan,.method,.contact,.stat,.faq-item){
+ background:var(--surface);border-color:var(--line);color:var(--ink);box-shadow:none
+}
+:root[data-theme="dark"] .shell :is(.section-title p,.card p,.feature p,.method p,.plan p){color:#b7c5d3}
+:root[data-theme="dark"] .top .back{background:#202a37;border-color:#3f4c5c;color:#d9e7f8}
+:root[data-theme="dark"] main .info{background:#1c2633;border-color:#364252;color:#edf4fc}
+
+/* Beta dark-theme contrast audit: retain a single readable palette.
+   Base style.css still has literal LIGHT text colors in some sections. */
+:root[data-theme="dark"] .bottom-nav{
+ border:1px solid #303743;
+ border-top-color:#303743;
+ outline:none;
+ background:#11151b;
+ box-shadow:0 8px 30px #0007;
+}
+:root[data-theme="dark"] .bottom-nav::before{
+ background:#293749;
+ border:0;
+ box-shadow:inset 0 0 0 1px #344b68;
+}
+:root[data-theme="dark"] .bottom-nav .nav-item{color:#bbc5d2}
+:root[data-theme="dark"] .bottom-nav .nav-item.active{color:#aecdff;background:transparent!important}
+:root[data-theme="dark"] .bottom-nav .nav-item:focus-visible{outline:2px solid #9bbfff;outline-offset:-2px}
+:root[data-theme="dark"] .nav-unread{border-color:#11151b}
+:root[data-theme="dark"] :is(.notice-strip strong,.notice-strip svg,.chevron-svg){color:#bbc8d8}
+:root[data-theme="dark"] :is(.tomorrow-copy strong,.push-invite-copy strong,.quick-queue-lookup strong,.queue-override-toggle strong){
+ color:#f0f5fc
+}
+:root[data-theme="dark"] :is(.tomorrow-copy small,.tomorrow-chevron,.schedule-meta,.push-invite-copy p,.quick-queue-lookup p,.queue-override-toggle small){
+ color:#bdc9d9
+}
+:root[data-theme="dark"] .schedule-share{color:#b6d5ff}
+:root[data-theme="dark"] .inbox-auto-summary{color:#e7eff9}
+:root[data-theme="dark"] .inbox-auto-summary span:last-child{color:#b9c8d8}
+:root[data-theme="dark"] .inbox-card-opener>p{color:#bdcadb}
+:root[data-theme="dark"] .inbox-card-opener>strong{color:#eff5fd}
+:root[data-theme="dark"] .inbox-context-actions button{color:#dce9f9}
+:root[data-theme="dark"] .inbox-context-actions button:active{background:#2c3d52;color:#fff}
+:root[data-theme="dark"] .inbox-context[open] summary{background:#2d3f56;border-color:#5a7593;color:#c8e2ff}
+@media(hover:hover){
+ :root[data-theme="dark"] .inbox-context-actions button:hover{background:#30445b;color:#fff}
+}
+:root[data-theme="dark"] .inbox-actions a,:root[data-theme="dark"] .inbox-actions button{color:#aaccff}
+:root[data-theme="dark"] .push-state-label{background:#2b3440;color:#d9e3f0}
+:root[data-theme="dark"] .push-state-label[data-status="connected"]{background:#193d2e;color:#abe8c1}
+:root[data-theme="dark"] .push-state-label[data-status="pending"]{background:#233d5e;color:#b6d5ff}
+:root[data-theme="dark"] .push-delivery-status{color:#b9c8d9}
+:root[data-theme="dark"] .days-row.fixed-weekdays .day-choice.is-today:not(.selected){
+ background:#25364b;color:#c4dcff;box-shadow:inset 0 0 0 1px #48698d
+}
+:root[data-theme="dark"] .days-row.fixed-weekdays .day-choice.selected{background:#3877d7;color:#fff}
+:root[data-theme="dark"] .home-cache-hint{color:#b8d9c5}
+:root[data-theme="dark"] .home-cache-hint>span{background:#213e30;color:#b1e8c2}
+:root[data-theme="dark"] .beta-ad-counter,:root[data-theme="dark"] .beta-ad-arrowbtn{color:#b8c6d9}
+:root[data-theme="dark"] :is(.beta-consent-eyebrow,.beta-consent-points p,.beta-consent-dialog .beta-consent-detail){
+ color:#bdcbdb
+}
+:root[data-theme="dark"] .beta-consent-dialog .beta-consent-detail a{color:#a9d0ff}
+:root[data-theme="dark"] .share-preview-eyebrow{color:#a9d0ff}
+:root[data-theme="dark"] .share-preview-x{background:#283747;color:#dae9fb}
+:root[data-theme="dark"] .share-preview-save{background:#293e58;color:#c4dcff}
+:root[data-theme="dark"] :is(.app-boot-content p,.app-boot-content small){color:#bac8d9}
+:root[data-theme="dark"] .app-boot-brand span{color:#95bfff}
+:root[data-theme="dark"] .archive-street-tag{color:#f0cb8b}
+:root[data-theme="dark"] .setting-action span{color:#bac9db}
+:root[data-theme="dark"] .inbox-empty p{color:#b8c9da}
+
+/* 7.9.27: complete night surfaces on all eight internal pages.
+   The subsidiary documents have their OWN CSS and cannot rely on the
+   main application's .surface override. Keep the hero's intentional
+   photographic/dark-gradient treatment, not its old white cards. */
+:root[data-theme="dark"]{
+ --ink:#f2f5f9!important;--muted:#b2bfce!important;--line:#313b49!important;
+ --bluewash:#243349!important;--raised:#202732!important;
+ background:#090b0f!important;color:#f2f5f9!important;color-scheme:dark!important
+}
+:root[data-theme="dark"] body{background:#090b0f;color:#eef4fb}
+:root[data-theme="dark"] :is(input,textarea,select){color-scheme:dark}
+:root[data-theme="dark"] :is(input,textarea)::placeholder{color:#aab8cb}
+/* Help center */
+:root[data-theme="dark"] .layout :is(.hero,.quick,.articles details,.empty,.ticket-status){
+ background:#161c25;border-color:#354151;color:#eef4fb;box-shadow:none
+}
+:root[data-theme="dark"] .layout :is(.search,.filters button,.search kbd){
+ background:#232b37;border-color:#3b4859;color:#d4e3f6
+}
+:root[data-theme="dark"] .layout .search input{background:transparent;color:#edf4ff}
+:root[data-theme="dark"] .layout .search input::placeholder{color:#b0becd}
+:root[data-theme="dark"] .layout :is(.wordmark,.quick b,.articles summary,.ticket-status label){color:#f0f5fa}
+:root[data-theme="dark"] .layout :is(.back,.quick small,.count,.arrow,.hero p,.section-head p,.contact p,.ticket-status p,footer){
+ color:#b7c4d5
+}
+:root[data-theme="dark"] .layout :is(.hero-label,.point,.quick-icon,.search span,.articles summary::after,footer a,.answer a){color:#a6c8ff}
+:root[data-theme="dark"] .layout .filters button[aria-pressed="true"]{background:#3165aa;border-color:#4d84cc;color:#fff}
+:root[data-theme="dark"] .layout .answer{background:#161c25;color:#c9d6e5;border-color:#354151}
+:root[data-theme="dark"] .layout .answer h3{color:#eef4fa}
+:root[data-theme="dark"] .layout .contact{background:#202e42;border-color:#3d5270;color:#eff5fb}
+:root[data-theme="dark"] .layout .notice{background:#3a2e1d;border-color:#70522d}
+:root[data-theme="dark"] .layout .notice strong{color:#ffdaa0}
+:root[data-theme="dark"] .layout .notice p{color:#f3d4a4}
+:root[data-theme="dark"] .layout .ticket-form input{background:#252e3c;color:#ecf5ff}
+:root[data-theme="dark"] .layout .ticket-form button{background:#2b4570;color:#d7e6ff}
+/* Support center: both new-ticket form and "my tickets" conversation */
+:root[data-theme="dark"] .support-shell :is(.support-hero,.support-card,.support-side-card,.support-help,.saved-ticket,.saved-empty,.conversation){
+ background:#161c25;border-color:#354151;color:#ecf3fb;box-shadow:none
+}
+:root[data-theme="dark"] .support-shell :is(.support-brand small,.support-footer,.support-footer a,.tickets-heading p,.support-card-title p,.form-help,.optional,.saved-ticket-copy small,.conversation-head small,.conversation-meta,.reply-actions span,.support-success>p,.support-success .receipt-note){
+ color:#b6c4d5
+}
+:root[data-theme="dark"] .support-shell :is(.support-brand strong,.support-card-title h2,.support-side-card h3,.saved-ticket-copy strong,.saved-empty strong,.conversation-head h2){color:#f0f5fb}
+:root[data-theme="dark"] .support-shell :is(.support-kicker,.support-brand strong,.support-hero h1 span,.receipt strong,.support-help>span:last-child){color:#a4c8ff}
+:root[data-theme="dark"] .support-shell :is(.support-import,.support-diagnostics,.ticket-rating,.receipt,.topic-hint,.support-privacy){
+ background:#222b37;border-color:#3a4658;color:#e3edf9
+}
+:root[data-theme="dark"] .support-shell :is(.support-diagnostics strong,.support-privacy strong,.support-import h3,.ticket-rating h3){color:#edf4fb}
+:root[data-theme="dark"] .support-shell :is(.support-diagnostics small,.support-diagnostics-preview,.support-import p,.ticket-rating p,.support-privacy p,.receipt small){
+ color:#b9c8d8
+}
+:root[data-theme="dark"] .support-shell :is(label,.support-import label){color:#d7e2f1}
+:root[data-theme="dark"] .support-shell :is(input:not([type="checkbox"]),textarea,select,.extra-ticket-field input:not([type="checkbox"]),.extra-ticket-field select){
+ background:#222c39;color:#f0f5fc;border-color:#455264
+}
+:root[data-theme="dark"] .support-shell :is(input:not([type="checkbox"]),textarea,select):focus{background:#263446;border-color:#86b4ff}
+:root[data-theme="dark"] .support-shell :is(.support-tab.selected,.support-refresh,.support-secondary,.success-actions button,.rating-options button){
+ background:#273449;border-color:#455975;color:#b7d8ff
+}
+:root[data-theme="dark"] .support-shell .support-tab:not(.selected){color:#b8c7d7}
+:root[data-theme="dark"] .support-shell .saved-ticket:hover{background:#202b39;border-color:#57779d}
+:root[data-theme="dark"] .support-shell .conversation-bubble{background:#222c39;border-color:#3c4a5b;color:#d7e4f3}
+:root[data-theme="dark"] .support-shell .conversation-bubble.from-admin{background:#203752;border-color:#456991}
+:root[data-theme="dark"] .support-shell .conversation-bubble :is(strong,p,time){color:#d9e8fa}
+:root[data-theme="dark"] .support-shell .support-status{background:#2b3644;color:#d5e2f3}
+:root[data-theme="dark"] .support-shell .support-status.is-new{background:#253f60;color:#bbd9ff}
+:root[data-theme="dark"] .support-shell .support-status.is-in_progress{background:#43351f;color:#f6d6a5}
+:root[data-theme="dark"] .support-shell .support-status.is-resolved{background:#1e4633;color:#b5f0ce}
+:root[data-theme="dark"] .support-shell .support-alert{background:#443521;color:#ffe2af}
+:root[data-theme="dark"] .support-shell .support-alert.good{background:#1e4432;color:#bcf0d0}
+:root[data-theme="dark"] .support-shell .success-symbol{background:#1a4330;color:#b0eec5}
+:root[data-theme="dark"] .support-shell .rating-options button:hover{background:#2b4261}
+:root[data-theme="dark"] .support-shell .support-side-card>span{color:#bbcee4}
+/* Privacy, terms, about: remove light note/paragraph cards and dark-on-dark ink. */
+:root[data-theme="dark"] :is(.wrapper,.wrapper article,.wrapper .body,.wrapper .hero,.wrapper .note,article.box,.box){color:#f1f5fb}
+:root[data-theme="dark"] :is(.wrapper article,.wrapper .body,article.box,.box){
+ background:#161c25;border-color:#344151;box-shadow:none
+}
+:root[data-theme="dark"] .wrapper .hero{background:#1e2b3e;border-color:#354963}
+:root[data-theme="dark"] .wrapper :is(.hero p,.meta,.eyebrow,p,li,.lead,article p,article li){color:#c3d1e0}
+:root[data-theme="dark"] .wrapper :is(h1,h2,h3,h4,strong,.note strong){color:#eff5fd}
+:root[data-theme="dark"] .wrapper .note{background:#243246;border-color:#41536b}
+:root[data-theme="dark"] .wrapper .warning{background:#3f321e;border-color:#72562f;color:#f4dab2}
+:root[data-theme="dark"] :is(.wrapper a,.box a,body>main a){color:#a9cfff}
+/* Public "About" body has hardcoded white background, independent of theme vars. */
+:root[data-theme="dark"] body:has(main .box){background:#090b0f;color:#eef4fb}
+:root[data-theme="dark"] body:has(main .box) main{color:#eef4fb}
+/* Advertising: preserve deliberate illustrated hero but darken white phone UI and cards */
+:root[data-theme="dark"] .shell :is(.benefit,.format:not(:nth-child(2)),.plan,.faq details,.empty,.conditions){
+ background:#161c25;color:#eef4fb;border-color:#344252;box-shadow:none
+}
+:root[data-theme="dark"] .shell :is(.section-heading p,.format p,.plan-desc,.plan-price small,.plan-duration,.plan-features li,.faq p,.foot,.empty,.conditions){color:#bdcadb}
+:root[data-theme="dark"] .shell :is(.benefit h3,.format h3,.plan h3,.faq summary,.section-heading h2,.plan-price){color:#eef4fa}
+:root[data-theme="dark"] .shell :is(.nav-tools a,.back,.action-secondary){color:#c5dcff}
+:root[data-theme="dark"] .shell .format:nth-child(2){background:#1c3b63;border-color:#5379a4;color:#fff}
+:root[data-theme="dark"] .shell .format:nth-child(2) p{color:#d6e3f3}
+:root[data-theme="dark"] .shell :is(.phone,.phone-ad,.phone-schedule i){background:#202b3b}
+:root[data-theme="dark"] .shell :is(.phone-logo,.phone-ad b){color:#eaf2fb}
+:root[data-theme="dark"] .shell .phone-ad p{color:#b3c5da}
+:root[data-theme="dark"] .shell .phone-ad small{color:#a6bddc}
+:root[data-theme="dark"] .shell .phone-status{background:#1e4934;color:#baf0cc}
+:root[data-theme="dark"] .shell .phone-schedule i:nth-child(3n){background:#416b9e}
+:root[data-theme="dark"] .shell :is(.benefit-icon,.format-icon,.method-icon,.goal-icon,.amount){background:#263b55;color:#b7d5ff}
+:root[data-theme="dark"] .shell .contact-banner{background:linear-gradient(120deg,#1b334e,#172c43);border-color:#455b73}
+:root[data-theme="dark"] .shell .contact-banner :is(p,.contact){color:#e0eafa}
+:root[data-theme="dark"] .shell .contact-banner .contact{background:#ffffff12}
+/* Support-project special panels */
+:root[data-theme="dark"] .shell :is(.method,.goal,.expense,.faq details,.empty){
+ background:#161c25;border-color:#344252;color:#eef4fa;box-shadow:none
+}
+:root[data-theme="dark"] .shell :is(.method p,.method-label,.goal p,.amount-hint,.expense small,.faq p,.footer-note,.section-heading p){color:#bac9d8}
+:root[data-theme="dark"] .shell :is(.method-details,.why-text){background:#233246;color:#cbdcf0;border-color:#405671}
+:root[data-theme="dark"] .shell .method-actions button{background:#263f5c;color:#c9e0ff}
+:root[data-theme="dark"] .shell .expense strong{color:#c1dcff}
+:root[data-theme="dark"] .shell .gratitude{background:#1c314a;color:#f2f6fc}
+:root[data-theme="dark"] .shell .gratitude p{color:#d0dfef}
+:root[data-theme="dark"] .shell .goal .amount{color:#c4ddff}
+/* Ad details: the hero remains dark; content and aside no longer translucent white */
+:root[data-theme="dark"] :is(.article,.aside){background:#161c25!important;border-color:#364253;color:#eef4fb}
+:root[data-theme="dark"] :is(.article .copy,.aside p,.foot,.error p){color:#bacbdd}
+:root[data-theme="dark"] .article img{background:#202938}
+:root[data-theme="dark"] .top .back{background:#233448;color:#c2dcff}
+:root[data-theme="dark"] .top .mark{color:#eff5fc}
+
+/* Inbox: purposeful action, no fake white rim in night appearance. */
+:root[data-theme="dark"] #updates .inbox-mark{
+ background:#274b78;border-color:#477bb8;color:#f3f8ff;
+ box-shadow:0 4px 18px #00000023
+}
+:root[data-theme="dark"] #updates .inbox-mark:disabled{
+ background:#222b36;border-color:#364252;color:#b3c0d0;box-shadow:none
+}
+:root[data-theme="dark"] #updates .inbox-unread-note{color:#bac7d8}
+:root[data-theme="dark"] #updates .inbox-filters>button:not(.selected){
+ background:#202831;border-color:#3c4856;color:#d2deea
+}
+:root[data-theme="dark"] #updates .inbox-filters>button.selected{
+ background:#2a568a;border-color:#4f81ba;color:#fff
+}
+
+/* iOS PWA scaling guard: horizontal/vertical pan remain functional.
+   Do not set touch-action:none, which would break normal scroll. */
+html,body{touch-action:pan-x pan-y;overscroll-behavior-x:none;-webkit-text-size-adjust:100%}
+@media(max-width:600px){input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:max(16px,1em)}}
+
+/* STAGING: Consistent high-contrast dark appearance across ALL secondary pages.
+   Each page is scoped; editorial hero mockups retain their designed colors. */
+:root[data-theme="dark"] body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page){
+ background:#090b0f!important;color:#f0f5fb!important;min-width:0;overflow-x:clip
+}
+:root[data-theme="dark"] body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page) a{color:#a9caff}
+:root[data-theme="dark"] body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page) :is(input,textarea,select){
+ background:#121923!important;color:#eff6ff!important;border-color:#3c4b5d!important
+}
+:root[data-theme="dark"] body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page) :is(input,textarea)::placeholder{color:#9eadc1}
+:root[data-theme="dark"] body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page) :is(input,textarea,select,button,a):focus-visible{outline-color:#90bdff}
+/* FAQ / help: every card, chip and expanded answer is dark. */
+:root[data-theme="dark"] .svitlo-help-page :is(.hero,.quick,.articles details,.empty,.filters button:not([aria-pressed="true"]),.search,.search kbd){
+ background:#171d26!important;color:#edf5fd!important;border-color:#344052!important;box-shadow:none!important
+}
+:root[data-theme="dark"] .svitlo-help-page :is(.search,.quick:hover){border-color:#587ea8!important}
+:root[data-theme="dark"] .svitlo-help-page :is(.hero h1,.quick b,.wordmark,.articles summary,.section-head h2,.contact h2){color:#eff4fd!important}
+:root[data-theme="dark"] .svitlo-help-page :is(.hero p,.quick small,.section-head p,.contact p,.count,.back,footer,.answer){color:#b7c7d9!important}
+:root[data-theme="dark"] .svitlo-help-page .answer{border-color:#334052!important}
+:root[data-theme="dark"] .svitlo-help-page .contact{background:#1e3046!important;color:#f0f5fc!important;border-color:#3b5b7a!important}
+:root[data-theme="dark"] .svitlo-help-page .notice{background:#3c2d1f!important;border-color:#695137!important}
+:root[data-theme="dark"] .svitlo-help-page .notice :is(strong,p){color:#f5d6a9!important}
+:root[data-theme="dark"] .svitlo-help-page .filters button[aria-pressed="true"]{background:#3168b7;color:white}
+/* About and legal documents: remove white article sheets and unreadable text. */
+:root[data-theme="dark"] .svitlo-about-page :is(.box){background:#171d26!important;color:#edf4fb!important;border-color:#354253!important}
+:root[data-theme="dark"] .svitlo-privacy-page .body,:root[data-theme="dark"] .svitlo-terms-page article{
+ background:#171d26!important;border-color:#344253!important;box-shadow:none!important;color:#eaf3fc!important
+}
+:root[data-theme="dark"] .svitlo-terms-page .hero{background:linear-gradient(135deg,#202f44,#171f2a)!important;border-color:#3a4c62!important;color:#edf4fb!important}
+:root[data-theme="dark"] .svitlo-terms-page :is(.hero p,.meta,article p,article li){color:#c0cddd!important}
+:root[data-theme="dark"] .svitlo-privacy-page :is(.body p,.body li,.body ul,.lead,.meta,.eyebrow,.footer){color:#c1cddd!important}
+:root[data-theme="dark"] .svitlo-privacy-page :is(.note,.warning),:root[data-theme="dark"] .svitlo-terms-page .note{
+ background:#243347!important;border-color:#3c526c!important;color:#dfebfa!important
+}
+:root[data-theme="dark"] .svitlo-privacy-page .note strong{color:#d6e8ff!important}
+:root[data-theme="dark"] .svitlo-privacy-page .warning{background:#403020!important;border-color:#6e5231!important}
+:root[data-theme="dark"] .svitlo-privacy-page .body code{color:#c0dafe;overflow-wrap:anywhere}
+/* Advertising & project support: keep the dark-blue banners and phone preview,
+   but fully theme secondary sections, floating surfaces and controls. */
+:root[data-theme="dark"] .svitlo-advertising-page :is(.nav-tools .back,.benefit,.format,.plan,.empty,.faq details,.conditions,.contact-banner,.contact),
+:root[data-theme="dark"] .svitlo-support-project-page :is(.back,.method,.goal,.expenses,.faq details,.gratitude,.empty,.why-grid,.footer-note){
+ background:#171e28!important;color:#edf4fd!important;border-color:#354255!important;box-shadow:none!important
+}
+:root[data-theme="dark"] .svitlo-advertising-page :is(.section-heading h2,.benefit h3,.format h3,.plan h3,.faq summary,.conditions h3,.contact-banner h2),
+:root[data-theme="dark"] .svitlo-support-project-page :is(.section-heading h2,.method h3,.goal h3,.faq summary,.why-text h3,.expenses h3){
+ color:#f0f5fc!important
+}
+:root[data-theme="dark"] .svitlo-advertising-page :is(.section-heading p,.benefit p,.format p,.plan p,.faq p,.conditions p,.contact-banner p,.nav-tools a),
+:root[data-theme="dark"] .svitlo-support-project-page :is(.section-heading p,.method p,.goal p,.why-text p,.expenses p,.footer-note p){
+ color:#b8c9dd!important
+}
+:root[data-theme="dark"] .svitlo-support-project-page :is(.method-icon,.method-details){background:#22354f!important;color:#cee2ff!important;border-color:#415a79!important}
+:root[data-theme="dark"] .svitlo-support-project-page .method-actions :is(button,a){background:#294262;color:#dcecff}
+:root[data-theme="dark"] .svitlo-advertising-page :is(.phone,.phone-ad,.phone-status){color:#203a5e}
+/* Detail screens: no white article/sidebar during dark mode. */
+:root[data-theme="dark"] .svitlo-ad-detail-page :is(.article,.aside,.back){
+ background:#171e28!important;border-color:#354255!important;color:#eff4fb!important;box-shadow:none!important
+}
+:root[data-theme="dark"] .svitlo-ad-detail-page :is(.copy,.aside p,.foot,.error p,.mark){color:#bac9d9!important}
+:root[data-theme="dark"] .svitlo-ad-detail-page .article img{background:#242d38}
+@media(max-width:520px){
+ :root[data-theme="dark"] body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page) :is(.hero,.article,.aside,.body,.method,.benefit){min-width:0}
+}
+
+/* STAGING / APPLICATION-WIDE NIGHT FINISH
+ * This layer is purposely scoped to PWA UI and preserves outage/on/off
+ * colors, meaning and all existing dynamic state transitions. */
+:root[data-theme="dark"] .viewport{
+ --ui-surface:#161c25;--ui-surface-raised:#202a36;
+ --ui-border:#344252;--ui-text:#eef5fd;--ui-subtle:#bac9d9;
+}
+:root[data-theme="dark"] .viewport :is(.surface,.picker-btn,.place-card,.settings-card,.overview-card,.stat-card,.detail-surface,.inbox-item,.inbox-history summary){
+ border-color:#344151;color:#eef4fc;box-shadow:none
+}
+:root[data-theme="dark"] .viewport :is(.surface,.picker-btn,.place-card,.stat-card,.overview-card,.detail-surface,.settings-card,.inbox-history summary){
+ background:#171d26
+}
+:root[data-theme="dark"] .viewport :is(.section-head h2,.screen-header h1,.picker-place,.overview-top,.stat-val,.place-text strong,.settings-card strong){
+ color:#f2f6fc
+}
+:root[data-theme="dark"] .viewport :is(.hero-heading p,.small-source,.picker-sub,.stat-caption,.place-text small,.screen-header p,.settings-card p,.legend,.bar-time,.notice-strip,.sources-row,.settings-foot,.dayline span:last-child){
+ color:#b9c7d8
+}
+:root[data-theme="dark"] .viewport .place-card:hover{border-color:#4b6687}
+:root[data-theme="dark"] .viewport .place-card:focus-visible{outline-color:#a3caff}
+:root[data-theme="dark"] .viewport .icon-btn:disabled{background:#1d2531;color:#8795a9}
+:root[data-theme="dark"] .viewport .picker-btn:active{background:#202c3c}
+:root[data-theme="dark"] .overview-top .small-source{color:#b5c3d6}
+:root[data-theme="dark"] .bar-track{background:#273340}
+:root[data-theme="dark"] .bar-segment.unknown{background:repeating-linear-gradient(-45deg,#455263,#455263 6px,#374353 6px,#374353 12px)}
+:root[data-theme="dark"] .legend :is(span,b){color:#c6d3e0}
+:root[data-theme="dark"] .dayline{color:#eaf2fb}
+:root[data-theme="dark"] .hour-cell.unknown{background:#263444;border-color:#39475a;color:#cbd8e8}
+:root[data-theme="dark"] .hour-cell.on{background:#1d412d;border-color:#2a6042;color:#bceacb}
+:root[data-theme="dark"] .hour-cell.off{background:#293443;border-color:#3d5064;color:#f3f6fa}
+:root[data-theme="dark"] .hour-cell.mixed{border-color:#526a7c}
+:root[data-theme="dark"] .detail-surface .day-choice:not(.selected):not(.is-today){color:#aebccd}
+:root[data-theme="dark"] .detail-surface .day-choice:not(.selected) b{color:#d8e4f3}
+:root[data-theme="dark"] .info-card .big-number{color:#eef4fa}
+:root[data-theme="dark"] .sources-row a{color:#acd0ff}
+:root[data-theme="dark"] .home-quick-places .quick-place{background:#242f3f;border-color:#455b74;color:#e6effc}
+:root[data-theme="dark"] .home-quick-places .quick-place.selected{background:#2d4c72;border-color:#5684b8;color:#f0f6ff}
+:root[data-theme="dark"] .offline-data-card .setting-line{border-color:#344152}
+:root[data-theme="dark"] .push-categories .setting-line{border-bottom-color:#354152}
+:root[data-theme="dark"] .push-categories .switch input:disabled+span{background:#3c4655}
+:root[data-theme="dark"] .push-categories .switch input:disabled:checked+span{background:#38614e}
+:root[data-theme="dark"] .maintenance-inline-icon{background:#2b405e;color:#a8d0ff}
+:root[data-theme="dark"] .maintenance-inline-eyebrow{color:#b3d2fb}
+:root[data-theme="dark"] .maintenance-inline-summary{color:#c4d3e4}
+:root[data-theme="dark"] .maintenance-inline-dates{color:#d3e6ff}
+:root[data-theme="dark"] .maintenance-inline-countdown{background:#345071;color:#ebf4ff}
+:root[data-theme="dark"] .maintenance-inline-action{background:#366fbc;color:#fff!important}
+:root[data-theme="dark"] .maintenance-inline-foot{color:#bccbdd}
+:root[data-theme="dark"] .tomorrow-card:active{background:#243448}
+:root[data-theme="dark"] .tomorrow-card :is(strong,small){color:#edf5ff}
+:root[data-theme="dark"] .tomorrow-card small{color:#b8c7d9}
+:root[data-theme="dark"] .inbox-item{background:#171e29;border-color:#354256}
+:root[data-theme="dark"] .inbox-item.is-unread{background:#1d2d43;border-color:#516f92}
+:root[data-theme="dark"] .inbox-item.is-unread:before{background:#9bc7ff}
+:root[data-theme="dark"] .inbox-card-opener :is(strong,p){color:#edf4fc}
+:root[data-theme="dark"] .inbox-card-opener p{color:#becddd}
+:root[data-theme="dark"] .inbox-item-head .inbox-time{color:#b6c6d9}
+:root[data-theme="dark"] .inbox-auto-group{background:#172333;border-color:#364b66}
+:root[data-theme="dark"] .inbox-auto-summary{color:#edf4fb}
+:root[data-theme="dark"] .inbox-auto-summary>span:last-child{color:#c0cfe0}
+:root[data-theme="dark"] .inbox-context-actions{background:#202b3a;border-color:#435368}
+:root[data-theme="dark"] .inbox-context-actions button{color:#e1ecf9}
+:root[data-theme="dark"] #updates .inbox-unread-note{color:#bbcadb}
+:root[data-theme="dark"] .inbox-detail :is(h1,h2,h3,strong){color:#f1f5fb}
+:root[data-theme="dark"] .inbox-detail :is(p,time,small){color:#c1cddd}
+:root[data-theme="dark"] .inbox-detail :is(.inbox-rich,.inbox-detail-summary){color:#cbd6e4}
+:root[data-theme="dark"] .inbox-detail :is(button,a):focus-visible{outline-color:#93c1ff}
+:root[data-theme="dark"] .settings-card :is(label,legend){color:#e5effb}
+:root[data-theme="dark"] .settings-card :is(input,select,textarea){color-scheme:dark}
+:root[data-theme="dark"] .settings-card .setting-action:hover{background:#233143}
+:root[data-theme="dark"] .appearance-choice>span{background:#202a37;border-color:#3a485b}
+:root[data-theme="dark"] .appearance-choice input:checked+span{background:#293e59;border-color:#82b6ff;box-shadow:inset 0 0 0 1px #82b6ff}
+:root[data-theme="dark"] .appearance-choice :is(b,small){color:#e7f1fd}
+:root[data-theme="dark"] .appearance-choice small{color:#b8cadd}
+:root[data-theme="dark"] .appearance-summary{color:#b9c8da}
+:root[data-theme="dark"] .sheet :is(.field-label,.sheet-title,.sheet-top h2,.house-choices-title){color:#edf4fc}
+:root[data-theme="dark"] .sheet :is(.sheet-top p,.field-label span,.house-choices-more,.grid-note){color:#b6c6d8}
+:root[data-theme="dark"] .sheet :is(input:not([type=checkbox]),select,textarea){background:#1f2a37;border-color:#425267;color:#f0f5fc}
+:root[data-theme="dark"] .sheet :is(input,textarea)::placeholder{color:#a9b8ca}
+:root[data-theme="dark"] .sheet :is(.suggestions button,.house-choice){background:#222f40;border-color:#425a76;color:#d8e9ff}
+:root[data-theme="dark"] .sheet .suggestions button:active{background:#30445c}
+:root[data-theme="dark"] .share-preview-dialog :is(.share-preview-head,.share-preview-actions){background:#151d28;color:#ecf4ff}
+:root[data-theme="dark"] .share-preview-dialog :is(p,small){color:#bfccdd}
+:root[data-theme="dark"] .share-preview-dialog .share-preview-save{background:#2b486e;color:#dcecff}
+:root[data-theme="dark"] .beta-consent-dialog :is(button:not(.beta-consent-accept),input,select){color:#e6effb}
+:root[data-theme="dark"] .app-boot-progress{background:#2c405d}
+:root[data-theme="dark"] .app-boot-progress i{background:#84b7ff}
+:root[data-theme="dark"] .toast{background:#e9f2ff;color:#17283d}
+@media(max-width:390px){
+ :root[data-theme="dark"] .inbox-item{border-radius:17px}
+ :root[data-theme="dark"] .detail-surface{border-radius:19px}
+}
+
+/* Conversation sender contrast: the user's own messages remain blue and right-
+ * aligned in night mode, support messages remain neutral and left-aligned. */
+:root[data-theme="dark"] .support-shell .conversation-bubble:not(.from-admin){
+ margin-left:auto;margin-right:0;background:#203c5b!important;border-color:#3e648e!important;border-bottom-right-radius:5px
+}
+:root[data-theme="dark"] .support-shell .conversation-bubble.from-admin{
+ margin-left:0;margin-right:auto;background:#262e3a!important;border-color:#3f4a59!important;border-bottom-left-radius:5px
+}
+:root[data-theme="dark"] .support-shell .conversation-bubble :is(p,strong,time){color:#edf4fc}
+
+/* STAGING / EMBEDDED & STANDALONE PAGE GEOMETRY
+ * Consistent responsive geometry even when a page opens inside the PWA iframe. */
+body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page){
+ min-width:0;max-width:100%;overflow-x:clip;overflow-wrap:break-word
+}
+body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page) :is(.layout,.wrapper,.shell,main,.section,.hero,.article,.aside,.body,.nav,.top,.contact,.search,.filters,.benefit,.plan,.method,.goal,.empty,.faq){
+ min-width:0;box-sizing:border-box
+}
+body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page) :is(img,video,iframe){
+ max-width:100%
+}
+body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page) :is(.hero h1,.hero h2,.section-heading h2,.article h2,.body h2,.faq summary,.method h3,.benefit h3,.nav-tools,.contact,.method-details){
+ overflow-wrap:anywhere
+}
+body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page) :is(input,textarea,select){
+ min-width:0;max-width:100%;box-sizing:border-box
+}
+body:is(.svitlo-help-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-ad-detail-page,.svitlo-support-project-page) :is(button,.btn,.action,.action-primary,.action-secondary,.hero-cta,.back){
+ max-width:100%;box-sizing:border-box;overflow-wrap:anywhere
+}
+body.svitlo-help-page :is(.quick-grid,.articles,.search,.contact){min-width:0}
+body.svitlo-help-page .search input{min-width:0;flex:1}
+body.svitlo-help-page .articles summary{min-width:0;overflow-wrap:anywhere}
+body.svitlo-ad-detail-page .layout>*{min-width:0}
+body.svitlo-ad-detail-page .copy{overflow-wrap:anywhere}
+body.svitlo-privacy-page .wrapper,body.svitlo-terms-page .wrapper{max-width:100%}
+body.svitlo-support-project-page :is(.methods,.method,.method-actions){min-width:0}
+body.svitlo-advertising-page :is(.benefits,.plans,.contact-banner,.contacts){min-width:0}
+@media(max-width:620px){
+ body.svitlo-ad-detail-page .layout{grid-template-columns:minmax(0,1fr)}
+ body.svitlo-advertising-page :is(.benefits,.plans){grid-template-columns:minmax(0,1fr)}
+ body.svitlo-support-project-page .methods{grid-template-columns:minmax(0,1fr)}
+ body.svitlo-help-page .quick-grid{grid-template-columns:minmax(0,1fr)}
+ body:is(.svitlo-privacy-page,.svitlo-terms-page) .wrapper{width:100%;padding-inline:clamp(12px,4vw,20px)}
+}
+@media(max-width:390px){
+ body.svitlo-help-page .hero{padding:24px 18px}
+ body.svitlo-ad-detail-page .article{padding:20px 16px}
+ body.svitlo-advertising-page .hero-copy{padding:24px 19px}
+ body.svitlo-support-project-page .hero-copy{padding:25px 20px}
+ body.svitlo-support-project-page .method{padding:20px 16px}
+ body.svitlo-help-page .search{gap:7px}
+}
+
+/* 7.9.12: landing uses .install-panel/.install-steps/.install-benefit, not
+   the legacy .install-card/.install-step selectors. Keep every visible layer
+   coherent in a system-selected or manually selected night theme. */
+:root[data-theme="dark"] .install-landing{
+ --i-ink:#f0f4fa;--i-muted:#b4c0cf;--i-blue:#93beff;
+ --i-border:#394656;--i-surface:#1b232e;
+ color:#f0f4fa!important;
+ background:radial-gradient(ellipse 480px 360px at 78% 45%,#29446b44,transparent 84%),
+  linear-gradient(160deg,#0c1016,#151e2a 70%,#111720)!important;
+}
+:root[data-theme="dark"] .install-landing :is(.install-brand strong,.install-content h1,.install-panel-heading strong,.install-mock-heading){
+ color:#f0f4fa
+}
+:root[data-theme="dark"] .install-landing :is(.install-lead,.install-brand small,.install-panel-heading small,.install-open-hint,.install-bottom-note,.install-privacy,.install-footer,.install-footer>span){
+ color:#aebed0
+}
+:root[data-theme="dark"] .install-landing .install-panel{
+ background:#1b2430;border-color:#37485e;
+ box-shadow:0 22px 60px #0005,0 3px 12px #0003
+}
+:root[data-theme="dark"] .install-landing :is(.install-benefit,.install-steps>div,.install-campaign){
+ background:#222f40;border:1px solid #3c516b;color:#d6e3f3
+}
+:root[data-theme="dark"] .install-landing .install-steps strong{color:#eff4fc}
+:root[data-theme="dark"] .install-landing .install-steps small{color:#b4c3d4}
+:root[data-theme="dark"] .install-landing :is(.install-steps span,.install-kicker-icon,.install-panel-icon){
+ background:#263d5c;color:#a6cbff
+}
+:root[data-theme="dark"] .install-landing .install-kicker{color:#a0c8ff}
+:root[data-theme="dark"] .install-landing :is(.install-benefit-icon,.install-campaign span){color:#a3caff}
+:root[data-theme="dark"] .install-landing .install-instructions{
+ background:#202d3c;border-color:#43566e;color:#d4e0ed;
+ box-shadow:inset 0 0 0 1px #273d52
+}
+:root[data-theme="dark"] .install-landing .install-instructions :is(strong,li){color:#e0edfb}
+:root[data-theme="dark"] .install-landing .install-instructions .install-note{color:#b6c6d7}
+:root[data-theme="dark"] .install-landing .install-free{
+ background:#173e31;border-color:#285a46;color:#a9eac8
+}
+:root[data-theme="dark"] .install-landing .install-copy{color:#9dc8ff}
+:root[data-theme="dark"] .install-landing .install-phone{
+ background:#171e29;border-color:#0b121c;box-shadow:17px 29px 63px #0008,0 0 0 2px #43546a
+}
+:root[data-theme="dark"] .install-landing .install-phone-island{background:#090d13}
+:root[data-theme="dark"] .install-landing :is(.install-screen-top,.install-phone-apphead strong,.install-mock-heading){color:#dfe8f5}
+:root[data-theme="dark"] .install-landing :is(.install-phone-apphead small,.install-mock-label,.install-mock-days,.install-mock-label span){color:#a1b2c5}
+:root[data-theme="dark"] .install-landing .install-mock-main{
+ background:#17372b;border-color:#295c43;color:#aff1ca
+}
+:root[data-theme="dark"] .install-landing .install-mock-info{color:#9ac7ad}
+:root[data-theme="dark"] .install-landing .install-mock-bars i{background:#3b7758}
+:root[data-theme="dark"] .install-landing .install-orbit{border-color:#7ba7ee24}
+:root[data-theme="dark"] .install-landing .install-footer{border-color:#354455}
+:root[data-theme="dark"] .install-landing .install-privacy span{color:#7bd8a8}
+@media(max-width:750px){
+ :root[data-theme="dark"] .install-landing{
+  background:linear-gradient(160deg,#0c1016,#182131 70%,#121923)!important
+ }
+}

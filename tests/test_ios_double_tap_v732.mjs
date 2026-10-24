@@ -9,17 +9,18 @@ test('rapid taps in schedule calendar cannot trigger Safari double-tap zoom',()=
  assert.match(css,/\.viewport,\s*\.viewport button,\s*\.viewport a,[\s\S]*?\.calendar-arrows,[\s\S]*?\.days-row\s*\{\s*touch-action:\s*manipulation\s*;/);
  assert.match(css,/\.calendar-arrows button,[\s\S]*?\.day-choice\s*\{[^}]*-webkit-user-select:\s*none\s*;/);
  const html=read('index.html');
- assert.match(html,/id="weekPrev"/);
- assert.match(html,/id="weekNext"/);
+ assert.doesNotMatch(html,/id="weekPrev"/,'Fixed weekdays have no previous-week arrow');
+ assert.doesNotMatch(html,/id="weekNext"/,'Fixed weekdays have no next-week arrow');
  assert.match(html,/id="days"/);
 });
 
-test('accessibility zoom remains enabled rather than being locked in viewport settings',()=>{
+test('installed PWA prevents browser zoom as requested while keeping manual scrolling',()=>{
  const html=read('index.html');
  const meta=html.match(/<meta name="viewport"[^>]*>/)?.[0]||'';
  assert.match(meta,/width=device-width/);
  assert.match(meta,/initial-scale=1/);
- assert.doesNotMatch(meta,/user-scalable\s*=\s*no|maximum-scale\s*=\s*1|minimum-scale\s*=\s*1/i);
+ assert.match(meta,/maximum-scale\s*=\s*1/i);
+ assert.match(meta,/user-scalable\s*=\s*no/i);
  const css=read('style.css');
  const block=css.split('/* v7.3.2 — prevent iOS')[1];
  assert.ok(block);

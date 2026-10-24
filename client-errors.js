@@ -1,7 +1,7 @@
 /* Coarse error analytics are strictly opt-in. Never submit messages, stacks, paths or addresses. */
 (()=>{'use strict';
- const pref='svitlo-beta-analytics-opt-in',rev='svitlo-beta-analytics-consent-revision',REV='7.9.9-audience';
- const consent=()=>{try{return localStorage.getItem(pref)==='yes'&&localStorage.getItem(rev)===REV}catch{return false}};
+ const pref='svitlo-beta-analytics-opt-in',choice='svitlo-beta-analytics-choice';
+ const consent=()=>{try{return localStorage.getItem(pref)==='yes'&&localStorage.getItem(choice)!=='declined'}catch{return false}};
  const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
  const seen=new Set(),started=Date.now();let api='',sent=0;
  const post=async kind=>{

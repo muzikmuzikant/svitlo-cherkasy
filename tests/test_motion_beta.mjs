@@ -30,8 +30,8 @@ test('new dialogs and internal pages animate on open AND close',()=>{
 test('animation preferences and interruptible admin tabs are respected',()=>{
  assert.match(css,/prefers-reduced-motion:reduce/);
  assert.match(motion,/prefers-reduced-motion: reduce/);
- assert.match(source('admin-extra.js'),/skipTransition/);
- assert.match(source('admin-extra.js'),/startViewTransition/);
+ assert.match(source('admin-extra.js'),/function setTab\(tab\)/);
+ assert.doesNotMatch(source('admin-extra.js'),/startViewTransition|skipTransition/,'Avoid browser-wide snapshots');
  assert.match(motion,/anim\.finished\.then/);
  assert.match(motion,/\.cancel\(\)/);
 });

@@ -14,10 +14,12 @@ test('Cold-start loading cover exists only in installed PWA, and cannot trap a b
   assert.match(css,/\.app-boot-screen\.is-complete\{opacity:0;pointer-events:none\}/);
 });
 
-test('On full cold start, app waits for schedules before removing launch cover',()=>{
+test('Full cold start starts schedule refresh but does not hang on slow or offline networks',()=>{
   const app=source('app.js'),install=source('install.js');
   assert.match(app,/async function finishInitialLoad\(\)/);
-  assert.match(app,/try\{await refreshData\(\)\}/);
+  assert.match(app,/const refresh=refreshData\(\)/);
+  assert.match(app,/Promise\.race\(\[refresh\.then\(\(\)=> 'loaded'\),deadline\]\)/);
+  assert.match(app,/navigator\.onLine===false\?350:1800/);
   assert.match(app,/finally\{[\s\S]*?splash\.classList\.add\('is-complete'\)/);
   assert.match(app,/finishInitialLoad\(\);/);
   assert.match(install,/hour\.onerror = reportLaunchFailure/);
@@ -32,6 +34,6 @@ test('Persisted permitted Push does not show an invitation before subscription c
 
 test('Never change the rule: no published schedule is 24h green',()=>{
   const app=source('app.js');
-  assert.match(app,/if\(!day\)\{[\s\S]*?return new Int8Array\(1440\)/);
-  assert.match(app,/a&&!schedule\?'Світло весь день'/);
+  assert.match(app,/return verifiedNoSchedule\(date\)\?new Int8Array\(1440\):null/);
+  assert.match(app,/unknownOffline\?'Немає підтверджених даних':'Світло весь день'/);
 });

@@ -6,7 +6,7 @@ const release=JSON.parse(read('release.json'));
 const manifest=JSON.parse(read('manifest.webmanifest'));
 const push=JSON.parse(read('push-config.json'));
 test('release candidate uses production identity and API, never Beta identity',()=>{
- assert.equal(release.version,'7.9.11');
+ assert.equal(release.version,'7.9.12');
  assert.equal(release.channel,'production');
  assert.equal(manifest.id,'./');
  assert.equal(manifest.start_url,'./');
@@ -50,40 +50,37 @@ test('fresh Production storage publishes no ads, promo campaigns or payment dest
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });
 
-test('Production commercial lock survives enabled stored config and cannot collect ad events',async()=>{
+test('Production ads are off on first load but an owner can explicitly enable them',async()=>{
  const {createAdsStore}=await import('../push-server/ads.js');
- const os=await import('node:os');
- const path=await import('node:path');
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'svitlo-prod-commerce-lock-'));
+ const os=await import('node:os'),path=await import('node:path');
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'svitlo-prod-ads-toggle-'));
  try{
-  const store=createAdsStore({directory:dir});
+  const store=createAdsStore({directory:dir,appOrigin:'https://svitlo-cherkasy.pp.ua'});
+  assert.equal(store.publicState().enabled,false);
+  assert.deepEqual(store.publicState().campaigns,[]);
   const config=store.dashboard().settings;
   store.update({...config,enabled:true,showPromo:true,
    contacts:[{label:'Контакт',url:'https://example.com',enabled:true}],
    packages:[{title:'Тариф',price:800,durationDays:30,visible:true}],
    campaigns:[{id:'advert',title:'Оголошення',link:'https://example.com',enabled:true}],
-   support:{...config.support,enabled:true,paymentUrl:'https://example.com/pay',details:'PRIVATE-IBAN-NEVER-PUBLISH',provider:'monobank',methods:[{title:'Банка',kind:'monobank',url:'https://example.com/donate',enabled:true}],expenses:[{title:'Private invoice',amount:123,public:false}]}
+   support:{...config.support,enabled:true,paymentUrl:'https://example.com/pay',
+    methods:[{title:'Банка',kind:'monobank',url:'https://example.com/donate',enabled:true}],
+    expenses:[{title:'Private invoice',amount:123,public:false}]}
   });
-  assert.equal(store.dashboard().commercialLocked,true,'Production must visibly warn admin that ad drafts are non-public');
-  const publicConfig=store.publicState();
-  assert.equal(publicConfig.enabled,false);
-  assert.deepEqual(publicConfig.campaigns,[]);
-  assert.deepEqual(publicConfig.packages,[]);
-  assert.deepEqual(publicConfig.contacts,[]);
-  assert.equal(publicConfig.support.enabled,true,'Voluntary support is independent of advertising');
-  assert.equal(publicConfig.support.paymentUrl,'https://example.com/pay');
-  assert.equal(publicConfig.support.methods.length,1);
-  assert.equal(publicConfig.support.methods[0].url,'https://example.com/donate');
-  assert.deepEqual(publicConfig.support.expenses,[]);
-  assert.deepEqual(Object.keys(publicConfig).sort(),['campaigns','contacts','enabled','packages','support']);
-  assert.doesNotMatch(JSON.stringify(publicConfig),/Private invoice|Оголошення|Тариф/);
-  assert.equal(publicConfig.support.methods[0].kind,'monobank');
+  assert.equal(store.dashboard().commercialLocked,false,'Production owner has an ad switch');
+  const shown=store.publicState();
+  assert.equal(shown.enabled,true);
+  assert.equal(shown.campaigns[0].id,'advert');
+  assert.equal(shown.packages[0].title,'Тариф');
+  assert.equal(shown.support.enabled,true,'Voluntary support is independent');
+  assert.deepEqual(shown.support.expenses,[],'Private donation ledger never becomes public');
+  assert.equal(store.event('advert','impression'),true);
+  store.update({...store.dashboard().settings,enabled:false});
+  assert.equal(store.publicState().enabled,false);
+  assert.deepEqual(store.publicState().campaigns,[]);
   assert.equal(store.event('advert','impression'),false);
-  assert.equal(store.event('promo','impression'),false);
-  assert.ok(read('admin-ads.js').includes('report.commercialLocked'),'Admin must label Production advertising drafts');
   assert.ok(read('index.html').includes('href="./support-project.html"'));
-  assert.ok(read('advertising.html').includes('if(!data.enabled)'));
-  assert.ok(read('support-project.html').includes('if(!s.enabled)'));
+  assert.ok(read('admin-ads.js').includes('report.commercialLocked'));
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });
 

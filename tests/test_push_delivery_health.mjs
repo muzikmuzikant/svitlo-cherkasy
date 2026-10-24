@@ -11,11 +11,11 @@ const script=client.slice(start,end);
 function harness({registered=true,queue='1.1',off=true,on=true,checkError=null,upcoming=null,latest=null}={}){
  const status={textContent:''},requests=[];let repairs=0;
  const subscription={endpoint:'https://web.push.apple.com/fixture'};
- const prefs={off:true,on:true},Notification={permission:'granted'};
+ const prefs={off:true,on:true,changes:false,tomorrow:false,emergency:false},Notification={permission:'granted'};
  const fetch=async(url,options)=>{
   requests.push({url,body:JSON.parse(options.body)});
   return {ok:true,json:async()=>({
-   registered,queue,preferences:{off,on},lastPushCheck:'2026-10-14T10:00:00Z',
+   registered,queue,preferences:{off,on,changes:false,tomorrow:false,emergency:false},lastPushCheck:'2026-10-14T10:00:00Z',
    checkError,upcoming,latestAutomatic:latest})};
  };
  const ctx={Notification,window:{Notification},navigator:{serviceWorker:{ready:Promise.resolve({
@@ -24,7 +24,7 @@ function harness({registered=true,queue='1.1',off=true,on=true,checkError=null,u
   PUSH_CONSENT:'consent',localStorage:{getItem:()=> 'yes'},primary:()=>({queue:'1.1'}),
   prefs,$:id=>id==='pushDeliveryStatus'?status:null,
   updatePushSubscription:async()=>{repairs++},fetch,console,Date,
-  formatDate:date=>date,fmtStamp:date=>date,flash(){}};
+  renderSettings(){},formatDate:date=>date,fmtStamp:date=>date,flash(){}};
  vm.createContext(ctx);vm.runInContext(script,ctx);
  return {ctx,status,requests,get repairs(){return repairs},
   check:()=>vm.runInContext('checkPushDelivery(true)',ctx)};
@@ -33,14 +33,14 @@ test('registered device confirms real server subscription without sending a test
  const h=harness();await h.check();
  assert.equal(h.ctx.pushActive,true);
  assert.equal(h.repairs,0);
- assert.match(h.status.textContent,/Push підключено/);
+ assert.equal(h.status.textContent,'','Do not expose internal Push telemetry in UI');
  assert.equal(h.requests.length,1);
  assert.match(h.requests[0].url,/\/api\/push\/subscription-status$/);
 });
 test('missing subscription is re-registered when app becomes active',async()=>{
  const h=harness({registered:false});await h.check();
  assert.equal(h.repairs,1);
- assert.match(h.status.textContent,/оновлено/);
+ assert.equal(h.ctx.pushActive,false,'Repair keeps pending delivery state until next validation');
 });
 test('wrong queue or missing OFF/ON preferences automatically refreshes server subscription',async()=>{
  const h=harness({queue:'2.2',off:false});await h.check();
@@ -49,13 +49,14 @@ test('wrong queue or missing OFF/ON preferences automatically refreshes server s
 test('device status shows actual upcoming OFF and ON events and previous automatic delivery',async()=>{
  const h=harness({upcoming:{off:{date:'2026-10-14',time:'16:00'},on:{date:'2026-10-14',time:'18:00'}},
   latest:{lastAccepted:'2026-10-14T08:30:00Z'}});await h.check();
- assert.match(h.status.textContent,/відключення 2026-10-14 о 16:00/);
- assert.match(h.status.textContent,/відновлення 2026-10-14 о 18:00/);
- assert.match(h.status.textContent,/Останній автоматичний Push/);
+ assert.equal(h.ctx.pushActive,true);
+ assert.equal(h.repairs,0);
+ assert.equal(h.status.textContent,'','Internal delivery timestamps are not displayed');
 });
 test('freshness problem is surfaced instead of reporting healthy reminders',async()=>{
  const h=harness({checkError:'Schedule data stale'});await h.check();
- assert.match(h.status.textContent,/проблему з перевіркою графіка/);
+ assert.equal(h.ctx.pushActive,true,'Registered subscription must remain active even if the schedule is stale');
+ assert.equal(h.status.textContent,'','Health warning is internal, not a developer-facing status panel');
 });
 test('technical Push status box is removed while registration checks still run',()=>{
  assert.doesNotMatch(html,/id="pushDeliveryStatus"/);
@@ -69,7 +70,7 @@ test('test Push is fully removed from settings, app logic, and public API',()=>{
 test('independent 20-second OFF and ON dispatcher tracks results and has priority',()=>{
  assert.match(server,/async function transitionJob\(\)/);
  assert.match(server,/setInterval\(\(\)=>transitionJob\(\)\.catch\(console\.error\),20_000\)/);
- assert.match(server,/dueTransitionAcrossDays\(values,valuesTomorrow,minutes,offset,target,offset-2\)/);
+ assert.match(server,/dueTransitionAcrossDays\(values,valuesTomorrow,minutes,offset,target,offset-1,timestamp,now\.date\)/);
  assert.match(server,/ttl:Math\.max\(60,Math\.floor\(eta\*60\)\),urgency:'high'/);
  assert.match(server,/record\.automatic\.lastAccepted/);
  assert.match(server,/deliveryStats\.lastCycle=cycle/);

@@ -3,7 +3,7 @@
  const section=document.querySelector('[data-admin-panel="operations"]');
  if(!section||!document.getElementById('opsNoticeContent'))return;
  const $=id=>document.getElementById(id);
- let state=null,serverState=null,selectedId='',busy=false,photos=[],autoSaveTimer=null;
+ let state=null,serverState=null,selectedId='',busy=false,photos=[],autoSaveTimer=null,metricsReport=null;
  const kinds={info:'💬',important:'📣',update:'✨',schedule:'🗓️',emergency:'⚠️'};
  const options=(field,value)=>{if($(field))$(field).value=value==null?'':String(value)};
  const check=(field,value)=>{if($(field))$(field).checked=value===true};
@@ -33,6 +33,44 @@
    expiresAt:n.expiresAt,images:n.images});
   if(before!==after)n.updatedAt=now();
  }
+ function metricNumber(value){
+  if(value==='<5')return 'менше 5';
+  if(!Number.isSafeInteger(value)||value<0)return '—';
+  if(value>0&&value<5)return 'менше 5';
+  return new Intl.NumberFormat('uk-UA').format(value);
+ }
+ function renderNoticeMetrics(){
+  const root=$('opsNoticeMetrics');if(!root)return;
+  root.replaceChildren();const notice=target();
+  if(!notice){root.textContent='Оберіть повідомлення.';return}
+  if(!metricsReport){root.textContent='Статистику ще не завантажено.';return}
+  const stats=metricsReport.items?.[notice.id]||{};
+  for(const [key,label,detail] of [
+   ['pushAttempted','Push: спроб доставки','Кількість вибраних підписок'],
+   ['pushAccepted','Push прийнято','Провайдер прийняв повідомлення'],
+   ['pushClick','Натиснули Push','Унікальні інсталяції зі згодою'],
+   ['seen','Побачили картку','Показ картки у «Вхідних»'],
+   ['opened','Відкрили','Повноекранний перегляд'],
+   ['read','Переглянули 2+ с','Наближена оцінка прочитання']
+  ]){
+   const card=document.createElement('div');card.className='ops-notice-metric';
+   const head=document.createElement('span');head.textContent=label;
+   const number=document.createElement('strong');number.textContent=metricNumber(stats[key]??0);
+   const small=document.createElement('small');small.textContent=detail;
+   card.append(head,number,small);root.append(card);
+  }
+  if(Number.isInteger(stats.readOfOpened)){
+   const footer=document.createElement('p');footer.className='hint ops-metrics-foot';
+   footer.textContent='Переглянули понад 2 секунди серед тих, хто відкрив: '+stats.readOfOpened+'%';
+   root.append(footer);
+  }
+ }
+ async function refreshNoticeMetrics(){
+  const root=$('opsNoticeMetrics');if(!root||!remote)return;
+  root.textContent='Завантажуємо статистику…';
+  try{metricsReport=await api('notices/metrics');renderNoticeMetrics()}
+  catch(error){root.textContent='Статистика недоступна: '+error.message}
+ }
  function fill(){
   const n=target();
   $('opsEditorStatus').textContent=n?(n.active?'Опубліковане повідомлення':'Чернетка'):'Створіть або виберіть повідомлення';
@@ -41,7 +79,7 @@
   options('opsNoticeQueue',n?.queue||'all');options('opsNoticeDelivery',n?.delivery||'inbox');options('opsNoticeSettlement',n?.settlement||'');
   options('opsNoticeSchedule',local(n?.scheduledAt));options('opsNoticeExpires',local(n?.expiresAt));
   check('opsNoticeActive',n?.active);check('opsNoticePinned',n?.pinned);
-  photos=[...(n?.images||[])];drawPhotos();previewMessage();
+  photos=[...(n?.images||[])];drawPhotos();previewMessage();renderNoticeMetrics();
   document.dispatchEvent(new CustomEvent('svitlo:cms-loaded'));
  }
  function drawList(){
@@ -286,10 +324,11 @@
   }
  }
  $('opsHistoryRefresh').onclick=()=>refreshHistory();
+ $('opsMetricsRefresh').onclick=()=>refreshNoticeMetrics();
  async function reload(){
   if(!remote)return;
   try{const incoming=await api('app-config');state=incoming;serverState=structuredClone(incoming);selectedId=state.announcements.find(x=>x.id===selectedId)?.id||state.announcements[0]?.id||'';
-   fillMaintenance(state.maintenance);fillSite(state.site);fill();drawList();refreshHistory().catch(console.warn);status('Дані завантажено. Можна редагувати.');
+   fillMaintenance(state.maintenance);fillSite(state.site);fill();drawList();refreshHistory().catch(console.warn);refreshNoticeMetrics().catch(console.warn);status('Дані завантажено. Можна редагувати.');
   }catch(e){status('Не вдалося завантажити редактор: '+e.message,true)}
  }
  async function uploadPhoto(file){
@@ -455,5 +494,5 @@
   });
   $('opsCloseUpdatePreview')?.addEventListener('click',()=>{$('opsUpdatePreview').hidden=true});
  document.querySelector('[data-admin-tab="revisions"]')?.addEventListener('click',()=>refreshHistory().catch(console.warn));
- document.addEventListener('svitlo:admin-logout',()=>{state=null;status('Для керування потрібен вхід.')});
+ document.addEventListener('svitlo:admin-logout',()=>{state=null;metricsReport=null;renderNoticeMetrics();status('Для керування потрібен вхід.')});
 })();

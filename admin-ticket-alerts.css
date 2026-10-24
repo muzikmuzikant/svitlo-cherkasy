@@ -1,0 +1,54 @@
+/* Svitlo Office ticket notification surface, no intrusive modal popups. */
+.office-ticket-alert-count{
+ display:inline-flex;align-items:center;justify-content:center;
+ margin-inline-start:auto;min-width:22px;height:21px;padding:2px 6px;border-radius:7px;
+ color:#fff;background:#c15036;font-size:10px;font-weight:800;font-variant-numeric:tabular-nums
+}
+.office-ticket-alert-count[hidden]{display:none!important}
+.office-ticket-alert-line{
+ display:flex;justify-content:space-between;align-items:center;gap:15px;
+ padding:14px 16px;margin:10px 0 13px;border:1px solid #bddfd4;border-radius:9px;
+ background:#f1f9f7;color:#234f47;min-width:0
+}
+.office-ticket-alert-info{display:grid;gap:3px;min-width:0}
+.office-ticket-alert-info strong{font-size:13px;line-height:1.4}
+.office-ticket-alert-info span{font-size:11px;line-height:1.5;color:#607c75}
+.office-ticket-alert-actions{display:flex;flex-wrap:wrap;gap:7px}
+.office-ticket-alert-button{
+ border:1px solid #aacabc!important;color:#245f50!important;background:#fff!important;
+ border-radius:7px!important;min-height:36px;padding:8px 12px!important;
+ font-size:11px!important;font-weight:750!important;box-shadow:none!important
+}
+.office-ticket-alert-button.is-primary{
+ background:#277b60!important;border-color:#277b60!important;color:#fff!important
+}
+.office-ticket-alert-toast{
+ position:fixed;z-index:100500;right:18px;top:calc(18px + env(safe-area-inset-top));
+ display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 12px;
+ align-items:center;max-width:min(350px,calc(100vw - 28px));width:350px;
+ padding:16px 17px;color:#284558;background:#fff;border:1px solid #bddce4;
+ border-left:4px solid #3a9377;border-radius:13px;box-shadow:0 18px 45px #10294333;
+ animation:ticketAlertIn .25s cubic-bezier(.2,.8,.2,1) both
+}
+.office-ticket-alert-toast strong,.office-ticket-alert-toast span{grid-column:1;overflow-wrap:anywhere}
+.office-ticket-alert-toast strong{font-size:13px}
+.office-ticket-alert-toast span{font-size:11px;color:#708396}
+.office-ticket-alert-toast button:not(.office-ticket-toast-close){
+ grid-column:1;justify-self:start;background:#e6f4ed;color:#216548;
+ border:1px solid #b9decb;border-radius:7px;padding:8px 11px;
+ font-size:11px;font-weight:770;cursor:pointer
+}
+.office-ticket-alert-toast .office-ticket-toast-close{
+ grid-column:2;grid-row:1;align-self:start;font-size:18px;background:none;
+ border:0;color:#7d90a0;cursor:pointer
+}
+@keyframes ticketAlertIn{
+ from{opacity:.3;transform:translate3d(0,-11px,0)}
+ to{opacity:1;transform:translate3d(0,0,0)}
+}
+@media(max-width:650px){
+ .office-ticket-alert-line{align-items:stretch;flex-direction:column;padding:12px;gap:12px}
+ .office-ticket-alert-actions button{flex:1 1 auto}
+ .office-ticket-alert-toast{top:auto;bottom:calc(16px + env(safe-area-inset-bottom));right:14px}
+}
+@media(prefers-reduced-motion:reduce){.office-ticket-alert-toast{animation:none}}

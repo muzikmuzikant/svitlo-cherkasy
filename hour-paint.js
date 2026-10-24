@@ -2,6 +2,7 @@
 (function(root){
  'use strict';
  const COLOR={0:'#ffffff',1:'#29384f','-1':'#eaf0f7'};
+ const NIGHT={0:'#295941',1:'#172535','-1':'#34465a'};
  function segments(timeline,hour){
    const at=hour*60;
    if(!timeline||!Number.isInteger(hour)||hour<0||hour>23)return [];
@@ -24,11 +25,12 @@
    const colors={0:mode===0?'#000':'transparent',1:mode===1?'#000':'transparent','-1':mode===-1?'#000':'transparent'};
    return gradient(parts,colors);
  }
- function paintHour(timeline,hour){
+ function paintHour(timeline,hour,appearance='light'){
+   const colors=appearance==='dark'?NIGHT:COLOR;
    const parts=segments(timeline,hour);
-   if(!parts.length)return {kind:'unknown',parts:[],background:COLOR[-1],onMask:inkMask([],0),offMask:inkMask([],1),unknownMask:inkMask([], -1)};
+   if(!parts.length)return {kind:'unknown',parts:[],background:colors[-1],onMask:inkMask([],0),offMask:inkMask([],1),unknownMask:inkMask([], -1)};
    const kind=parts.length===1?(parts[0].state===1?'off':parts[0].state===0?'on':'unknown'):'mixed';
-   return {kind,parts,background:gradient(parts,COLOR),onMask:inkMask(parts,0),offMask:inkMask(parts,1),unknownMask:inkMask(parts,-1)};
+   return {kind,parts,background:gradient(parts,colors),onMask:inkMask(parts,0),offMask:inkMask(parts,1),unknownMask:inkMask(parts,-1)};
  }
  root.SvitloHour={paintHour,segments};
  if(typeof module!=='undefined'&&module.exports)module.exports={paintHour,segments};

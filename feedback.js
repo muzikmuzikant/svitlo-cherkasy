@@ -5,6 +5,24 @@ const TOPICS={bug:'Помилка застосунку',address:'Адреса а
 const HINTS={bug:'На якому екрані виникла помилка? Що саме не працює?',address:'Вкажіть населений пункт, назву вулиці та правильну підчергу, якщо знаєте її. Номер будинку необов’язковий.',schedule:'Вкажіть дату та підчергу. Якщо можливо, порівняйте з офіційним графіком.',push:'Уточніть, яке сповіщення не надійшло або прийшло двічі, та модель пристрою.',idea:'Розкажіть, як ця функція спростить використання застосунку.',other:'Опишіть ваше питання якомога конкретніше.'};
 const STATUSES={new:'Нове',in_progress:'У роботі',resolved:'Вирішено'};
 let customCategories=null;
+let mediaAvailable=false;
+function enableMediaForms(allowed){
+ mediaAvailable=allowed===true;
+ for(const [section,input,status] of [['newTicketMediaSection','newTicketFiles','newTicketFileStatus'],['replyTicketMediaSection','replyTicketFiles','replyTicketFileStatus']]){
+  if($(section)){
+   $(section).hidden=false;
+   $(section).classList.toggle('ticket-media-unavailable',!mediaAvailable);
+  }
+  if($(input))$(input).disabled=!mediaAvailable;
+  if($(status)&&!mediaAvailable){
+   $(status).textContent='Фото та відео тимчасово недоступні. Чекаємо оновлення сервера підтримки.';
+  }else if($(status)&&mediaAvailable&&$(status).textContent.includes('тимчасово недоступні')){
+   $(status).textContent='';
+  }
+ }
+ for(const id of ['newTicketMediaRetry','replyTicketMediaRetry'])if($(id))$(id).hidden=mediaAvailable;
+}
+
 function selectedCategory(){return customCategories?.find(c=>c.id===$('topic').value)||null}
 function renderExtraFields(){
  const root=$('extraTicketFields');if(!root)return;root.replaceChildren();
@@ -22,20 +40,129 @@ function renderExtraFields(){
 async function loadTicketCategories(){
  try{
   const base=await service();const r=await fetch(base+'/api/feedback/categories',{cache:'no-store'});
-  if(!r.ok)return;const data=await r.json();if(!data.categories?.length)return;
+  if(!r.ok)return;const data=await r.json();enableMediaForms(data.capabilities?.attachments===true);
+   if(!data.categories?.length)return;
   customCategories=data.categories;const previous=$('topic').value;$('topic').replaceChildren();
   for(const c of customCategories){TOPICS[c.id]=c.title;HINTS[c.id]=c.hint||c.title;$('topic').append(new Option(c.title,c.id))}
   if(customCategories.some(c=>c.id===previous))$('topic').value=previous;
   setTopic();
- }catch(e){console.warn('Feedback categories:',e.message)}
+ }catch(e){enableMediaForms(false);console.warn('Feedback categories:',e.message)}
 }
 
 const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||'null')??fallback}catch{return fallback}};
 let saved=Array.isArray(read(SAVED,[]))?read(SAVED,[]):[];
 let selectedTicket=null,lastSent=null,basePromise=null;
+let initialFiles=null,replyFiles=null;
+const filesApi=()=>window.SvitloTicketMedia;
+const CHAT_REFRESH_MS=4500;
+let chatRequestBusy=false,chatFingerprint='',chatGeneration=0;
+const ticketFingerprint=t=>JSON.stringify([
+ t.status,t.updatedAt,t.rating,t.canReply,
+ (t.messages||[]).map(m=>[m.id,m.from,m.text,m.at,(m.attachments||[]).map(a=>a.id)]),
+ (t.attachments||[]).map(a=>a.id)
+]);
+function chatIndicator(message,mode='ok'){
+ const el=$('chatLiveStatus');if(!el)return;
+ el.textContent=message;el.dataset.state=mode;
+}
+function updateSavedStatus(ticket){
+ const item=saved.find(x=>x.id===ticket.id);
+ if(item&&item.status!==ticket.status){item.status=ticket.status;storeTickets()}
+}
+async function refreshOpenChat(){
+ if(chatRequestBusy||document.hidden||$('viewTickets').hidden||$('ticketConversation').hidden||!selectedTicket?.token)return;
+ const id=selectedTicket.id,token=selectedTicket.token,generation=chatGeneration;
+ chatRequestBusy=true;
+ try{
+  const ticket=await loadTicket(id,token);
+  if(generation!==chatGeneration||selectedTicket?.id!==id||$('ticketConversation').hidden)return;
+  const hash=ticketFingerprint(ticket);
+  chatIndicator('На зв’язку · оновлено '+new Date().toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'}));
+  if(hash===chatFingerprint)return;
+  chatFingerprint=hash;
+  updateSavedStatus(ticket);
+  const root=$('conversationMessages');
+  const entries=[...(ticket.message?[{id:'initial',from:'user',text:ticket.message,at:ticket.createdAt,attachments:ticket.attachments||[]}]:[]),...(ticket.messages||[])];
+  const existing=[...root.querySelectorAll('.conversation-bubble')];
+  const isPrefix=existing.length<=entries.length&&existing.every((node,i)=>node.dataset.messageKey===String(entries[i].id||i));
+  if(isPrefix){
+   const nearBottom=(document.scrollingElement?.scrollHeight-(window.scrollY+window.innerHeight)<360)&&
+    document.activeElement!==$('replyMessage');
+   for(const [i,entry] of entries.entries()){
+    if(i<existing.length)continue;
+    const node=bubble(entry.from,entry.text,entry.at,entry.attachments||[],id,token);node.dataset.messageKey=String(entry.id||i);
+    root.append(node);
+   }
+   if(nearBottom&&entries.length>existing.length)root.lastElementChild?.scrollIntoView({block:'nearest',behavior:'smooth'});
+  }else{
+   root.replaceChildren();
+   entries.forEach((entry,i)=>{const node=bubble(entry.from,entry.text,entry.at,entry.attachments||[],id,token);node.dataset.messageKey=String(entry.id||i);root.append(node)});
+  }
+  $('conversationStatus').replaceWith(Object.assign(statusNode(ticket.status),{id:'conversationStatus'}));
+  $('ticketRating').hidden=ticket.canReply!==true||ticket.status!=='resolved';
+  $('ticketRatingOptions').hidden=!!ticket.rating;
+  $('replyForm').hidden=ticket.canReply!==true;
+  if(!$('viewTickets').classList.contains('is-reading'))renderSaved();
+ }catch(error){
+  if(generation!==chatGeneration)return;
+  if(wasDeleted(error)){forgetDeletedTicket(id);return}
+  chatIndicator('З’єднання нестабільне · повторюємо перевірку','error');
+ }finally{chatRequestBusy=false}
+}
+setInterval(()=>{void refreshOpenChat()},CHAT_REFRESH_MS);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refreshOpenChat()});
+window.addEventListener('online',()=>{void refreshOpenChat();scanVisibleReceipts(8)});
+window.addEventListener('focus',()=>{void refreshOpenChat();scanVisibleReceipts(8)});
+$('chatRefresh')?.addEventListener('click',()=>void refreshOpenChat());
+
 const safeTickets=()=>saved.filter(x=>x&&/^SC-[A-F0-9]{10}$/.test(x.id)&&(!x.token||/^[a-zA-Z0-9_-]{32,80}$/.test(x.token))).slice(0,60);
 saved=safeTickets();
 const storeTickets=()=>{try{localStorage.setItem(SAVED,JSON.stringify(saved))}catch{}};
+// Only an authenticated lookup returning an exact missing-ticket 404 may
+// remove a receipt. Temporary network, session and throttling failures do not.
+const wasDeleted=error=>error?.status===404&&error?.message==='Звернення не знайдено.';
+function syncSavedReceipts(){
+ const current=read(SAVED,[]);
+ saved=Array.isArray(current)?current:[];
+ saved=safeTickets();
+ if(selectedTicket&&!saved.some(row=>row.id===selectedTicket.id)){
+  chatGeneration++;chatFingerprint='';
+  selectedTicket=null;
+  $('ticketConversation').hidden=true;
+  $('viewTickets').classList.remove('is-reading');
+  const notice=$('supportTicketsNotice');
+  if(notice){notice.textContent='Це звернення видалено службою підтримки. Воно більше не доступне.';notice.hidden=false}
+ }
+ updateSavedCount();renderSaved();
+}
+function forgetDeletedTicket(id){
+ if(!/^SC-[A-F0-9]{10}$/.test(id))return;
+ const handled=window.SvitloSupportInbox?.forgetDeleted?.(id);
+ if(!handled){
+  const current=read(SAVED,[]);
+  if(Array.isArray(current)&&current.some(row=>row?.id===id)){
+   try{localStorage.setItem(SAVED,JSON.stringify(current.filter(row=>row?.id!==id)))}catch{}
+  }
+ }
+ syncSavedReceipts();
+}
+window.addEventListener('svitlo:support-ticket-deleted',event=>{
+ if(!event.detail?.id)return;
+ syncSavedReceipts();
+ if(!$('viewTickets').hidden){
+  const notice=$('supportTicketsNotice');
+  if(notice){notice.textContent='Видалене службою підтримки звернення прибрано з вашого списку.';notice.hidden=false}
+ }
+});
+window.addEventListener('storage',event=>{
+ if(event.key===SAVED||event.key===null)syncSavedReceipts();
+});
+function scanVisibleReceipts(limit=4){
+ if(document.hidden||$('viewTickets').hidden||!$('ticketConversation').hidden)return;
+ window.SvitloSupportInbox?.scan?.({limit})?.catch?.(()=>{});
+}
+setInterval(()=>scanVisibleReceipts(4),20000);
+
 function service(){
  if(basePromise)return basePromise;
  basePromise=fetch('./push-config.json',{cache:'no-store',signal:AbortSignal.timeout(10000)})
@@ -46,9 +173,13 @@ function service(){
 }
 async function post(route,payload){
  const base=await service();
- const response=await fetch(base+route,{method:'POST',headers:{'content-type':'application/json'},cache:'no-store',signal:AbortSignal.timeout(17000),body:JSON.stringify(payload)});
+ const response=await fetch(base+route,{method:'POST',headers:{'content-type':'application/json'},cache:'no-store',signal:AbortSignal.timeout(payload?.attachments?.length||route==='/api/ticket/attachment'?90_000:17000),body:JSON.stringify(payload)});
  const value=await response.json().catch(()=>({}));
- if(!response.ok)throw Error(value.error||'Не вдалося зв’язатися з підтримкою.');
+ if(!response.ok){
+  const error=new Error(value.error||'Не вдалося зв’язатися з підтримкою.');
+  error.status=response.status;
+  throw error;
+ }
  return value;
 }
 function friendlyError(error){
@@ -62,7 +193,8 @@ function chooseTab(name){
  for(const [id,active] of [['tabNew',newer],['tabTickets',!newer]]){
   $(id).classList.toggle('selected',active);$(id).setAttribute('aria-selected',String(active));
  }
- if(!newer)renderSaved();
+ if(newer){chatGeneration++;$('viewTickets').classList.remove('is-reading');$('ticketConversation').hidden=true;selectedTicket=null;}
+ if(!newer){syncSavedReceipts();scanVisibleReceipts(8)}
 }
 function setTopic(){
  const topic=$('topic').value;
@@ -112,7 +244,7 @@ function renderSaved(){
   const card=document.createElement('button');card.type='button';card.className='saved-ticket';
   card.append(text('span','✉','saved-ticket-icon'));
   const copy=text('div','','saved-ticket-copy');
-  copy.append(text('strong',item.subject||TOPICS[item.topic]||'Звернення'),text('small',item.id+' · '+displayDate(item.createdAt)));
+  copy.append(text('strong',item.subject||TOPICS[item.topic]||'Звернення'),text('small',displayDate(item.createdAt)));
   card.append(copy,statusNode(item.status),'›');
   card.addEventListener('click',()=>openTicket(item.id));
   root.append(card);
@@ -122,28 +254,35 @@ async function loadTicket(id,token){
  const payload={id};if(token)payload.token=token;
  return post('/api/ticket/status',payload);
 }
-function bubble(from,value,at){
+function bubble(from,value,at,attachments=[],ticketId=selectedTicket?.id,token=selectedTicket?.token){
  const box=text('div','','conversation-bubble'+(from==='admin'?' from-admin':''));
- box.append(text('strong',from==='admin'?'Підтримка «Світло Черкаси»':'Ви'),text('time',displayDate(at)),text('p',value));
+ box.append(text('strong',from==='admin'?'Підтримка «Світло Черкаси»':'Ви'),text('time',displayDate(at)));
+ if(value)box.append(text('p',value));
+ if(attachments.length){
+  const view=filesApi()?.render(attachments,attachmentId=>post('/api/ticket/attachment',{id:ticketId,token,attachmentId}));
+  if(view)box.append(view);
+ }
  return box;
 }
 function showConversation(ticket){
  selectedTicket={id:ticket.id,token:saved.find(x=>x.id===ticket.id)?.token||''};
+ chatFingerprint=ticketFingerprint(ticket);
+ $('viewTickets').classList.add('is-reading');
  $('ticketConversation').hidden=false;$('conversationId').textContent=ticket.id;
  $('conversationHeading').textContent=ticket.subject||TOPICS[ticket.topic]||'Ваше звернення';
  $('conversationStatus').replaceWith(Object.assign(statusNode(ticket.status),{id:'conversationStatus'}));
  $('conversationMeta').replaceChildren(text('span','Створено: '+displayDate(ticket.createdAt)),...(ticket.queue?[text('span','Підчерга '+ticket.queue)]:[]));
  const root=$('conversationMessages');root.replaceChildren();
  if(ticket.message){
-  root.append(bubble('user',ticket.message,ticket.createdAt));
-  for(const entry of ticket.messages||[])root.append(bubble(entry.from,entry.text,entry.at));
+  const first=bubble('user',ticket.message,ticket.createdAt,ticket.attachments||[],ticket.id,selectedTicket.token);first.dataset.messageKey='initial';root.append(first);
+  for(const [i,entry] of (ticket.messages||[]).entries()){const node=bubble(entry.from,entry.text,entry.at,entry.attachments||[],ticket.id,selectedTicket.token);node.dataset.messageKey=String(entry.id||i);root.append(node)}
  }else root.append(text('p','Для старого звернення доступний лише статус. Для листування потрібен приватний код доступу.','support-alert'));
  $('ticketRating').hidden=ticket.canReply!==true||ticket.status!=='resolved';
  $('ticketRatingOptions').hidden=!!ticket.rating;
  $('ratingNotice').textContent=ticket.rating?'Ваша оцінка: '+ticket.rating+' із 5. Дякуємо!':'';
  $('replyForm').hidden=ticket.canReply!==true;
  $('conversationMessage').hidden=true;
- $('ticketConversation').scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+ /* Preserve scroll position when a reply or a status is refreshed. */
 }
 $('ticketRatingOptions')?.addEventListener('click',async event=>{
  const button=event.target.closest('button[data-rating]');if(!button||!selectedTicket?.token)return;
@@ -156,14 +295,25 @@ $('ticketRatingOptions')?.addEventListener('click',async event=>{
  finally{button.disabled=false}
 });
 async function openTicket(id){
+ const notice=$('supportTicketsNotice');if(notice)notice.hidden=true;
  const item=saved.find(x=>x.id===id);if(!item)return;
+ const changingCase=selectedTicket?.id!==id;
+ const requestGeneration=++chatGeneration;
+ if(changingCase)chatFingerprint='';
+ $('viewTickets').classList.add('is-reading');
  $('ticketConversation').hidden=false;$('conversationId').textContent=id;
  $('conversationHeading').textContent='Завантажуємо звернення…';
  $('conversationMessages').replaceChildren();
  try{
   const result=await loadTicket(id,item.token);
+  if(requestGeneration!==chatGeneration)return;
   item.status=result.status;storeTickets();renderSaved();showConversation(result);
- }catch(e){alertAt('conversationMessage',friendlyError(e));$('conversationHeading').textContent='Не вдалося отримати звернення';}
+  chatIndicator('На зв’язку · повідомлення оновлюються автоматично');
+  if(changingCase)$('viewTickets').scrollIntoView({block:'start',behavior:'auto'});
+ }catch(e){if(requestGeneration===chatGeneration){
+  if(wasDeleted(e)){forgetDeletedTicket(id);return}
+  alertAt('conversationMessage',friendlyError(e));$('conversationHeading').textContent='Не вдалося отримати звернення';
+ }}
 }
 $('tabNew').addEventListener('click',()=>chooseTab('new'));
 $('tabTickets').addEventListener('click',()=>chooseTab('tickets'));
@@ -188,6 +338,12 @@ function updateDiagnosticsPreview(){
 $('includeDiagnostics')?.addEventListener('change',updateDiagnosticsPreview);
 loadTicketCategories();
 updateDiagnosticsPreview();
+enableMediaForms(false);
+for(const id of ['newTicketMediaRetry','replyTicketMediaRetry'])$(id)?.addEventListener('click',()=>void loadTicketCategories());
+window.addEventListener('online',()=>void loadTicketCategories());
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!mediaAvailable)void loadTicketCategories()});
+initialFiles=filesApi()?.picker($('newTicketFiles'),$('newTicketFilePreview'),$('newTicketFileStatus'));
+replyFiles=filesApi()?.picker($('replyTicketFiles'),$('replyTicketFilePreview'),$('replyTicketFileStatus'));
 $('feedbackForm').addEventListener('submit',async event=>{
  event.preventDefault();
  if(!$('feedbackForm').reportValidity())return;
@@ -198,16 +354,24 @@ $('feedbackForm').addEventListener('submit',async event=>{
   const extraFields=[...document.querySelectorAll('#extraTicketFields [data-key]')];
   if(extraFields.length){payload.extra={};for(const inp of extraFields){payload.extra[inp.dataset.key]=inp.dataset.type==='checkbox'?inp.checked:inp.value.trim()}}
   if($('includeDiagnostics')?.checked){payload.includeDiagnostics=true;payload.diagnostics=coarseDiagnostics()}
+  if(initialFiles?.count())payload.attachments=await initialFiles.collect();
   const result=await post('/api/feedback',payload);
+  if(payload.attachments?.length&&result.attached!==payload.attachments.length){
+   // A stale server must never make us claim media was received.
+   remember({...result,topic:payload.topic,subject:payload.subject});
+   alertAt('formMessage','Звернення створено, але сервер не підтвердив вкладення. Перевірте звернення перед повторним надсиланням.');
+   return;
+  }
   remember({...result,topic:payload.topic,subject:payload.subject});
-  lastSent=result;
+  window.dispatchEvent(new CustomEvent('svitlo:support-receipt-saved',{detail:{id:result.id,token:result.token,status:'new'}}));
+  lastSent=result;initialFiles?.clear();
   $('ticketId').textContent=result.id;
   $('feedbackForm').hidden=true;$('success').hidden=false;
   try{sessionStorage.removeItem(DRAFT)}catch{}
  }catch(e){alertAt('formMessage',friendlyError(e))}
  finally{button.disabled=false;button.textContent='Надіслати звернення →'}
 });
-$('another').addEventListener('click',()=>{$('feedbackForm').reset();updateDiagnosticsPreview();$('feedbackForm').hidden=false;$('success').hidden=true;$('formMessage').hidden=true;restoreDraft()});
+$('another').addEventListener('click',()=>{initialFiles?.clear();$('feedbackForm').reset();updateDiagnosticsPreview();$('feedbackForm').hidden=false;$('success').hidden=true;$('formMessage').hidden=true;restoreDraft()});
 $('openSent').addEventListener('click',()=>{if(!lastSent)return;chooseTab('tickets');openTicket(lastSent.id)});
 $('copyReceipt').addEventListener('click',async()=>{
  if(!lastSent)return;
@@ -217,32 +381,60 @@ $('copyReceipt').addEventListener('click',async()=>{
 $('refreshSaved').addEventListener('click',async()=>{
  const button=$('refreshSaved');button.disabled=true;button.textContent='Перевіряємо…';
  try{
-  await Promise.all(saved.map(async item=>{try{const status=await loadTicket(item.id,item.token);item.status=status.status}catch{}}));
-  storeTickets();renderSaved();
+  const copies=saved.slice();
+  await Promise.all(copies.map(async item=>{
+   try{
+    const result=await loadTicket(item.id,item.token);
+    const actual=saved.find(row=>row.id===item.id);
+    if(actual)actual.status=result.status;
+   }catch(error){if(wasDeleted(error))forgetDeletedTicket(item.id)}
+  }));
+  storeTickets();updateSavedCount();renderSaved();
  }finally{button.disabled=false;button.textContent='Оновити статуси ↻'}
 });
-$('lookupForm').addEventListener('submit',async event=>{
+$('lookupForm')?.addEventListener('submit',async event=>{
  event.preventDefault();const id=$('lookupId').value.trim().toUpperCase(),token=$('lookupToken').value.trim();
  if(!/^SC-[A-F0-9]{10}$/.test(id)){alertAt('lookupMessage','Перевірте номер звернення, наприклад SC-12AB34CD56.');return}
- $('lookupMessage').hidden=true;
+ const button=$('lookupForm').querySelector('[type="submit"]');
+ button.disabled=true;button.textContent='Перевіряємо доступ…';$('lookupMessage').hidden=true;
  try{
   const result=await loadTicket(id,token);
   remember({id,token,topic:result.topic,subject:result.subject,status:result.status,createdAt:result.createdAt});
-  renderSaved();showConversation(result);$('lookupForm').reset();
+  window.dispatchEvent(new CustomEvent('svitlo:support-receipt-saved',{detail:{id,token,status:result.status,ticket:result}}));
+  chooseTab('tickets');renderSaved();showConversation(result);
+  $('viewTickets').classList.add('is-reading');$('recoverTicket').open=false;
+  $('lookupForm').reset();
+  $('ticketConversation').scrollIntoView({block:'start',behavior:'auto'});
  }catch(e){alertAt('lookupMessage',friendlyError(e))}
+ finally{button.disabled=false;button.textContent='Відновити звернення'}
 });
-$('closeConversation').addEventListener('click',()=>{$('ticketConversation').hidden=true;selectedTicket=null});
+$('closeConversation').addEventListener('click',()=>{chatGeneration++;chatFingerprint='';$('ticketConversation').hidden=true;$('viewTickets').classList.remove('is-reading');selectedTicket=null;renderSaved();});
 $('replyForm').addEventListener('submit',async event=>{
  event.preventDefault();if(!selectedTicket?.token||!$('replyForm').reportValidity())return;
+ if($('replyMessage').value.trim().length<3&&!replyFiles?.count()){alertAt('conversationMessage','Напишіть повідомлення або прикріпіть файл.');return}
  const button=$('sendReply');button.disabled=true;button.textContent='Надсилаємо…';$('conversationMessage').hidden=true;
  try{
-  await post('/api/ticket/reply',{id:selectedTicket.id,token:selectedTicket.token,message:$('replyMessage').value.trim()});
-  const id=selectedTicket.id;$('replyForm').reset();await openTicket(id);
+  const payload={id:selectedTicket.id,token:selectedTicket.token,message:$('replyMessage').value.trim()};
+  if(replyFiles?.count())payload.attachments=await replyFiles.collect();
+  const result=await post('/api/ticket/reply',payload);
+  if(payload.attachments?.length&&result.attached!==payload.attachments.length){
+   const id=selectedTicket.id;await openTicket(id);
+   alertAt('conversationMessage','Повідомлення надіслано, але сервер не підтвердив вкладення. Перевірте історію перед повторним надсиланням.');
+   return;
+  }
+  const id=selectedTicket.id;$('replyForm').reset();replyFiles?.clear();await openTicket(id);
   alertAt('conversationMessage','Доповнення надіслано. Підтримка побачить його у зверненні.',true);
- }catch(e){alertAt('conversationMessage',friendlyError(e))}
+ }catch(e){if(wasDeleted(e))forgetDeletedTicket(selectedTicket?.id||'');
+  else alertAt('conversationMessage',friendlyError(e))}
  finally{button.disabled=false;button.textContent='Надіслати →'}
 });
 const topicQuery=new URLSearchParams(location.search).get('topic');if(TOPICS[topicQuery])$('topic').value=topicQuery;
 restoreDraft();if(TOPICS[topicQuery]){$('topic').value=topicQuery;setTopic()}
 updateSavedCount();
-if(new URLSearchParams(location.search).get('tab')==='tickets')chooseTab('tickets');
+const ticketParams=new URLSearchParams(location.search);
+if(ticketParams.get('tab')==='tickets'||ticketParams.has('ticket'))chooseTab('tickets');
+const linkedTicket=ticketParams.get('ticket');
+if(linkedTicket&&/^SC-[A-F0-9]{10}$/.test(linkedTicket)&&saved.some(x=>x.id===linkedTicket&&VALID_TOKEN_HELPER(x.token))){
+ openTicket(linkedTicket).catch(console.warn);
+}
+function VALID_TOKEN_HELPER(value){return /^[a-zA-Z0-9_-]{32,80}$/.test(String(value||''))}

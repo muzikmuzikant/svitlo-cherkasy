@@ -23,13 +23,13 @@
  .svitlo-motion-ready [data-admin-panel]:not([hidden]):not(.motion-panel-no-animate){
   animation:svitloAdminEnter .27s var(--svitlo-ease-out) both;
  }
- .svitlo-motion-ready dialog[open]:not(.share-preview-dialog):not(.sheet):not(.svitlo-motion-closing){
+ .svitlo-motion-ready dialog[open]:not(.inbox-detail):not(.share-preview-dialog):not(.sheet):not(.svitlo-motion-closing){
   animation:svitloDialogEnter .36s var(--svitlo-ease-out) both;
  }
  .svitlo-motion-ready dialog[open]:not(.share-preview-dialog):not(.sheet):not(.svitlo-motion-closing)::backdrop{
   animation:svitloBackdropEnter .26s ease-out both;
  }
- .svitlo-motion-ready dialog[open].svitlo-motion-closing:not(.share-preview-dialog):not(.sheet){
+ .svitlo-motion-ready dialog[open].svitlo-motion-closing:not(.inbox-detail):not(.share-preview-dialog):not(.sheet){
   animation:svitloDialogExit .21s var(--svitlo-ease-in) both;
   pointer-events:none;
  }
@@ -59,3 +59,118 @@
  @keyframes svitloAdminOld{to{opacity:0;transform:translate3d(-11px,0,0) scale(.989)}}
  @keyframes svitloAdminNew{from{opacity:0;transform:translate3d(12px,0,0) scale(.99)}to{opacity:1;transform:none}}
 }
+
+/* BETA / NATIVE BOTTOM SHEETS
+ * Shared opening/closing curves for address creation, saved places,
+ * preview cards and inbox reader. Drag only the grabber/header so content
+ * scroll and text editing stay native on iPhone. */
+.sheet.svitlo-draggable .sheet-handle{
+ width:43px;height:5px;margin:11px auto 5px;
+ border-radius:100px;background:#bcc7d6;touch-action:none;cursor:grab
+}
+.sheet.svitlo-draggable .sheet-top{
+ touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none
+}
+.sheet.svitlo-draggable .sheet-top :is(button,input,select,textarea){
+ touch-action:manipulation;cursor:pointer
+}
+.sheet.svitlo-draggable{contain:layout style;will-change:transform;overscroll-behavior-y:contain}
+.sheet.svitlo-draggable.svitlo-sheet-gesture,
+.sheet.svitlo-draggable.svitlo-sheet-dragging,
+.share-preview-dialog.svitlo-sheet-gesture,
+.share-preview-dialog.svitlo-sheet-dragging,
+.inbox-detail.svitlo-sheet-gesture,
+.inbox-detail.svitlo-sheet-dragging{
+ animation:none!important;transition:none!important;will-change:transform;
+}
+.sheet.svitlo-draggable.svitlo-sheet-settled:not(.svitlo-sheet-closing),
+.share-preview-dialog.svitlo-sheet-settled:not(.is-closing),
+.inbox-detail.svitlo-sheet-settled:not(.is-leaving){animation:none!important;will-change:transform}
+.sheet.svitlo-draggable.svitlo-sheet-snapping,
+.share-preview-dialog.svitlo-sheet-snapping,
+.inbox-detail.svitlo-sheet-snapping{animation:none!important;will-change:transform}
+.sheet.svitlo-draggable.svitlo-sheet-closing{pointer-events:none}
+@media(prefers-reduced-motion:no-preference){
+ html:not(.feature-off-animations) dialog.sheet[open]:not(.svitlo-sheet-settled):not(.svitlo-sheet-gesture):not(.svitlo-sheet-closing){
+  animation:svitloBottomSheetEnter .48s cubic-bezier(.22,1,.36,1) both!important
+ }
+ html:not(.feature-off-animations) dialog.sheet[open].svitlo-sheet-closing{
+  animation:svitloBottomSheetLeave .215s cubic-bezier(.42,0,.85,.38) both!important
+ }
+ html:not(.feature-off-animations) dialog.sheet[open]:not(.svitlo-sheet-closing)::backdrop{
+  animation:svitloBottomBackdropIn .36s ease-out both!important
+ }
+ html:not(.feature-off-animations) dialog.sheet[open].svitlo-sheet-closing::backdrop{
+  animation:svitloBottomBackdropOut .215s ease-in both!important
+ }
+ @keyframes svitloBottomSheetEnter{
+  from{transform:translate3d(0,103%,0);opacity:.9}
+  to{transform:translate3d(0,0,0);opacity:1}
+ }
+ @keyframes svitloBottomSheetLeave{
+  from{transform:translate3d(0,var(--sheet-exit-from,0px),0);opacity:1}
+  to{transform:translate3d(0,105%,0);opacity:.82}
+ }
+ @keyframes svitloBottomBackdropIn{from{opacity:0}to{opacity:1}}
+ @keyframes svitloBottomBackdropOut{from{opacity:1}to{opacity:0}}
+}
+@media(max-width:600px){
+ .share-preview-dialog{
+  position:fixed!important;inset:auto 0 0!important;margin:auto auto 0!important;
+  border-radius:27px 27px 0 0!important;
+  width:min(590px,100%)!important;max-width:100%!important;
+  max-height:94dvh!important;overscroll-behavior:contain;
+ }
+ .share-preview-grabber{
+  display:flex;align-items:center;justify-content:center;
+  height:24px;width:100%;touch-action:none;cursor:grab;
+ }
+ .share-preview-grabber span{
+  width:43px;height:5px;border-radius:99px;background:#bec9dc
+ }
+ .share-preview-head{padding-top:6px;touch-action:none}
+ .share-preview-head button{touch-action:manipulation}
+ .share-preview-scroll{max-height:58dvh;overscroll-behavior:contain}
+ .inbox-drag-handle{
+  position:relative;z-index:3;display:flex;align-items:flex-start;justify-content:center;
+  width:100%;height:23px;padding:9px 0 0;touch-action:none;cursor:grab;
+ }
+ .inbox-drag-handle::before{
+  content:"";height:5px;width:42px;background:#bac8d8;border-radius:99px
+ }
+ .inbox-detail.svitlo-draggable .inbox-detail-content{padding-top:15px}
+}
+@media(min-width:601px){
+ .share-preview-grabber,.inbox-drag-handle{display:none}
+}
+@media(prefers-reduced-motion:no-preference) and (max-width:600px){
+ html:not(.feature-off-animations) .share-preview-dialog[open]:not(.is-closing):not(.svitlo-sheet-settled):not(.svitlo-sheet-gesture){
+  animation:svitloBottomSheetEnter .48s cubic-bezier(.22,1,.36,1) both!important
+ }
+ html:not(.feature-off-animations) .share-preview-dialog[open].is-closing{
+  animation:svitloBottomSheetLeave .215s cubic-bezier(.42,0,.85,.38) both!important
+ }
+ html:not(.feature-off-animations) .share-preview-dialog[open]:not(.is-closing)::backdrop{
+  animation:svitloBottomBackdropIn .36s ease-out both!important
+ }
+ html:not(.feature-off-animations) .share-preview-dialog[open].is-closing::backdrop{
+  animation:svitloBottomBackdropOut .215s ease-in both!important
+ }
+ html:not(.feature-off-animations) .inbox-detail[open].is-leaving{
+  animation:svitloBottomSheetLeave .215s cubic-bezier(.42,0,.85,.38) both!important
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ .sheet.svitlo-draggable,.sheet.svitlo-draggable::backdrop,
+ .share-preview-dialog,.share-preview-dialog::backdrop,
+ .inbox-detail,.inbox-detail::backdrop{animation:none!important;transition:none!important}
+}
+
+/* Native touch drag must not be animated by the generic sheetIn keyframes.
+   Native handles are 42px high including the grab area for iPhone thumbs. */
+dialog.sheet.svitlo-draggable .sheet-handle{height:24px;min-height:24px;width:100%;margin:0;display:flex;align-items:center;justify-content:center;background:transparent;touch-action:none}
+dialog.sheet.svitlo-draggable .sheet-handle::before{content:"";width:42px;height:5px;display:block;border-radius:99px;background:#b4c1d0}
+dialog.sheet.svitlo-draggable .sheet-top{touch-action:none}
+dialog.sheet.svitlo-draggable .sheet-top button{touch-action:manipulation}
+dialog.sheet[open].svitlo-sheet-settled:not(.svitlo-sheet-closing),
+dialog.sheet[open].svitlo-sheet-gesture{animation:none!important}

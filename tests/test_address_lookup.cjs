@@ -8,8 +8,8 @@ const ix={
 };
 const find=(street,house='',selectedKey)=>resolve({idx:ix,street,house,settlement:'Слобода',selectedKey});
 test('single street-wide queue resolves without house, but never guesses an unlisted house',()=>{
- assert.deepEqual([find('Соборна').status,find('Соборна').queue],['street','1.1']);
- assert.equal(find('Соборна','100').status,'possible');
+ assert.deepEqual([find('Соборна').status,find('Соборна').queue],['needhouse',undefined],'Exact house listing is not street-wide confirmation');
+ assert.equal(find('Соборна','100').status,'nohouse');
  assert.equal(find('Соборна','100').reason,'house-unlisted');
  assert.equal(find('Соборна','100').queue,undefined);
 });
@@ -27,7 +27,7 @@ test('multiple queues on a street are never chosen automatically',()=>{
 });
 test('single known house queue without whole-street listing still needs house',()=>{
  assert.equal(find('Узбережна').status,'needhouse');
- assert.equal(find('Узбережна','99').status,'possible');
+ assert.equal(find('Узбережна','99').status,'nohouse');
  assert.equal(find('Узбережна','99').reason,'house-unlisted');
  assert.equal(find('Узбережна','3').queue,'1.2');
 });
