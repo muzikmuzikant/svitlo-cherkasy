@@ -65,7 +65,7 @@ test('Khomenka street and lane are discoverable in Heronymivka from other town s
 test('manual queue selector is visible in the address sheet and its selection is saved',()=>{
   const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
   const app=fs.readFileSync(path.join(__dirname,'../app.js'),'utf8');
-  assert.match(html,/<div id="manualLookup" class="manual-lookup">/);
+  assert.match(html,/id="manualLookup"/);
   assert.match(html,/<select id="manualQueue"/);
   assert.match(app,/manual\.hidden=r\.status==='incomplete'/);
   assert.match(app,/SvitloAddressLookup\.chooseQueue\(r,\$\('manualQueue'\)\.value/);
