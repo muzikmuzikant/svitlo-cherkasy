@@ -39,7 +39,7 @@ test('ISO dates and app source integration are validated',()=>{
   assert.ok(app.includes(k),'shared source '+k);
  assert.match(app,/window\.SvitloAllQueues\?\.refresh\?\.\(\)/);
  const js=read('all-queues.js');
- assert.match(js,/math\.hourSegments\(src\(\)\.timeline\(selected,queue\),hour\)/);
+ assert.match(js,/math\.allDaySegments\(src\(\)\.timeline\(selected,queue\)\)/);
  assert.match(js,/math\.allDaySegments\(line\)/);
  assert.match(js,/canvas\.toBlob/);
  assert.match(js,/src\(\)\.sharePreview\(blob,filename,selected,'Усі підчерги'\)/);
