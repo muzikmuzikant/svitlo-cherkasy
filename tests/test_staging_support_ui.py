@@ -16,12 +16,13 @@ def test_customer_messages_are_on_the_right():
     assert ".conversation-bubble.from-admin{margin-left:0;margin-right:auto" in css
 
 
-def test_inbox_has_single_tick_and_no_clear_control():
+def test_inbox_has_one_mark_all_action_and_no_clear_control():
     markup = source("index.html")
     js = source("inbox-ui.js")
     store = source("notification-center.js")
     assert 'id="inboxMarkAll"' in markup
-    assert 'aria-hidden="true">✓</span><span>Прочитати всі' in markup
+    assert markup.count('id="inboxMarkAll"') == 1
+    assert 'id="inboxMarkAll" type="button" disabled>Прочитати всі</button>' in markup
     assert 'id="inboxClear"' not in markup
     assert "inboxClear" not in js
     assert "clearRead" not in store
