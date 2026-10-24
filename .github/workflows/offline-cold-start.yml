@@ -26,6 +26,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Validate 12-queue minute-accurate model and PNG integration
+        run: node --test tests/test_all_queues_beta.mjs
       - name: Build actual installable static PWA
         run: python scripts/build_pages.py
       - name: Install Chromium browser for real Service Worker test
