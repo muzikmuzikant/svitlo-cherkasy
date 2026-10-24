@@ -38,7 +38,8 @@ test('Railway delivery, iOS service worker and local fallback use the new style'
  const sw=readFileSync(new URL('../sw.js',import.meta.url),'utf8');
  const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
  assert.match(server,/transitionCopy\(type,q,boundary,eta,boundary>=1440\?nextDate:now.date\)/);
- assert.match(server,/changeCopy\(q,change\.date,source\.days\.find/);
+ assert.match(server,/const changedDay=verifiedScheduleDay\(source,change\.date,timestamp\)/);
+ assert.match(server,/changeCopy\(q,change\.date,changedDay\)/);
  assert.match(sw,/lang:'uk'/);
  assert.match(sw,/icon-192-v692.png/);
  assert.match(app,/🔴 Відключення/);
