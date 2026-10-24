@@ -918,4 +918,4 @@ body{overflow-wrap:break-word}
 /* Keep full-screen Inbox reader scrolling naturally; only the grabber dismisses. */
 .inbox-detail{touch-action:pan-y;-webkit-overflow-scrolling:touch}
 .inbox-detail-content{touch-action:pan-y}
-.inbox-drag-handle{touch-action:none}
+/* The draggable handle's touch-action is defined in motion.css on small screens. */
