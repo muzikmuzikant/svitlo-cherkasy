@@ -77,7 +77,7 @@ function serviceWorker({firstShowFails=false,receiptFetchFails=false}={}){
 
 test('background push shows an OS notification, updates inbox, and confirms display request',async()=>{
  const sw=serviceWorker();
- const id='AbCdEf0123456789ABcDef012';
+ const id='AbCdEf0123456789ABcDef01';
  await sw.receive({title:'Відключення через 30 хв',body:'Черга 6.1',receiptId:id,
   notificationId:'transition:6.1:2026-10-24:900:off'});
  assert.equal(sw.notifications.length,1);
@@ -90,7 +90,7 @@ test('background push shows an OS notification, updates inbox, and confirms disp
 
 test('browser-specific rich notification failure retries the minimal visible alert',async()=>{
  const sw=serviceWorker({firstShowFails:true});
- await sw.receive({title:'Графік оновлено',body:'Зміна',receiptId:'AbCdEf0123456789ABcDef012',
+ await sw.receive({title:'Графік оновлено',body:'Зміна',receiptId:'AbCdEf0123456789ABcDef01',
   notificationId:'change:6.1:2026-10-24:rev1'});
  assert.equal(sw.notifications.length,1);
  assert.equal(sw.notifications[0].options.icon,undefined);
@@ -100,7 +100,7 @@ test('browser-specific rich notification failure retries the minimal visible ale
 test('failed receipt network never blocks a visible OS notification',async()=>{
  const sw=serviceWorker({receiptFetchFails:true});
  await sw.receive({title:'Відновлення',body:'Повернення світла',
-  receiptId:'AbCdEf0123456789ABcDef012'});
+  receiptId:'AbCdEf0123456789ABcDef01'});
  assert.equal(sw.notifications.length,1);
  assert.equal(sw.inbox.length,1);
  assert.equal(sw.posted.length,0);
