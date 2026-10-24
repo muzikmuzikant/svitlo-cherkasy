@@ -130,7 +130,7 @@
  });
  function rich(target,raw){
   const text=String(raw||'');target.replaceChildren();
-  for(const line of text.split('\n').slice(0,100)){
+  for(const line of text.split('\n').slice(0,300)){
    const txt=line.trim();
    if(!txt){target.append(el('div','','inbox-line-space'));continue}
    const heading=/^#{1,3}\s+/.test(txt),bullet=/^[-*]\s+/.test(txt);
@@ -272,6 +272,23 @@
      }else await copyLink();
    });
    menu.append(actions);card.append(menu);
+   menu.addEventListener('toggle',()=>{
+     const open=menu.open;
+     card.classList.toggle('has-open-context',open);
+     const group=card.closest('.inbox-auto-group');
+     if(group)group.classList.toggle('has-open-context',!!group.querySelector('.inbox-context[open]'));
+     if(!open){menu.classList.remove('opens-up','is-closing');return}
+     // Only one dropdown may be open; otherwise two cards can eclipse each other.
+     root.querySelectorAll('.inbox-context[open]').forEach(other=>{
+       if(other!==menu){other.open=false;other.classList.remove('is-closing','opens-up')}
+     });
+     requestAnimationFrame(()=>{
+       if(!menu.open)return;
+       const button=trigger.getBoundingClientRect(),height=actions.getBoundingClientRect().height;
+       menu.classList.toggle('opens-up',
+         window.innerHeight-button.bottom<height+16&&button.top>height+16);
+     });
+   });
    return card;
   };
   for(const item of visible){

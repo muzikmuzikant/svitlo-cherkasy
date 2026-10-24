@@ -88,9 +88,9 @@ export function validateAppConfig(input){
  if(!Array.isArray(input.announcements)||input.announcements.length>50)throw Error('Максимум 50 повідомлень');
  const ids=new Set(),announcements=input.announcements.map(a=>{
   const id=String(a?.id||'');if(!/^[A-Za-z0-9_-]{6,64}$/.test(id)||ids.has(id))throw Error('Неправильний або повторний ID');ids.add(id);
-  const title=str(a.title,90),body=str(a.body,280),content=str(a.content||body,6000);
+  const title=str(a.title,90),body=str(a.body,500),content=str(a.content||body,20000);
   // Drafts may be empty. A published notice needs a meaningful body, but emoji are NEVER mandatory.
-  if(title.length>90||body.length>280||content.length>6000||(a.active===true&&(title.length<1||body.length<1)))
+  if(title.length>90||body.length>500||content.length>20000||(a.active===true&&(title.length<1||body.length<1)))
    throw Error('Додайте заголовок і короткий текст перед публікацією');
   const kind=a.kind||'info',priority=a.priority||'normal',queue=a.queue||'all',delivery=a.delivery||'inbox';
   const settlement=str(a.settlement,70);

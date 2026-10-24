@@ -906,3 +906,16 @@ body{overflow-wrap:break-word}
 @media(prefers-reduced-motion:reduce){
  .status-panel,.bar-segment,.inbox-item,.appearance-choice>span{transition:none!important}
 }
+
+/* Inbox context menus must paint above neighbouring cards and expanded groups.
+   The default isolated cards otherwise trap their dropdown in a lower layer. */
+#updates .inbox-item.has-open-context{position:relative;z-index:110;transform:none!important;overflow:visible}
+#updates .inbox-auto-group{position:relative;overflow:visible}
+#updates .inbox-auto-group.has-open-context{z-index:100}
+#updates .inbox-context[open]{z-index:120}
+#updates .inbox-context.opens-up .inbox-context-actions{top:auto;bottom:43px;transform-origin:calc(100% - 15px) 100%}
+#updates .inbox-context.opens-up[open].is-closing .inbox-context-actions{transform:translate3d(0,7px,0) scale(.975)}
+/* Keep full-screen Inbox reader scrolling naturally; only the grabber dismisses. */
+.inbox-detail{touch-action:pan-y;-webkit-overflow-scrolling:touch}
+.inbox-detail-content{touch-action:pan-y}
+.inbox-drag-handle{touch-action:none}

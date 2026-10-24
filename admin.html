@@ -367,7 +367,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
    <div class="headline"><div><h2>Візуальний редактор</h2><p class="hint" id="opsEditorStatus">Оберіть повідомлення або створіть нове</p></div><div class="flex"><button type="button" id="opsDuplicateNotice" class="secondary">Копія</button><button type="button" id="opsDeleteNotice" class="danger">Видалити</button></div></div>
    <div class="field"><label for="opsTemplate">Швидкий шаблон</label><select id="opsTemplate"><option value="">Без шаблону</option><option value="schedule">🗓️ Оновлення графіка</option><option value="emergency">⚠️ Важливе повідомлення</option><option value="maintenance">🛠️ Технічні роботи</option><option value="update">✨ Нова версія застосунку</option></select></div>
    <div class="field"><label for="opsNoticeTitle">Заголовок</label><input id="opsNoticeTitle" maxlength="90" placeholder="Наприклад, ⚡ Оновили графік"></div>
-   <div class="field"><label for="opsNoticeBody">Короткий текст для Push та картки</label><textarea id="opsNoticeBody" rows="2" maxlength="280" placeholder="Найголовніше одним-двома реченнями"></textarea></div>
+   <div class="field"><label for="opsNoticeBody">Короткий текст для Push та картки</label><textarea id="opsNoticeBody" rows="3" maxlength="500" placeholder="Найголовніше одним-двома реченнями"></textarea></div>
    <div class="field"><label for="opsNoticeContent">Повний текст повідомлення</label>
     <div class="ops-text-toolbar" role="toolbar" aria-label="Форматування тексту">
       <button type="button" data-ops-format="bold" aria-label="Жирний текст"><strong>Ж</strong></button>
@@ -375,7 +375,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
       <button type="button" data-ops-format="bullet" aria-label="Маркер списку">☷</button>
       <button type="button" data-ops-format="link" aria-label="Посилання"><span>↗</span></button>
     </div>
-    <textarea id="opsNoticeContent" rows="9" maxlength="6000" placeholder="Докладно опишіть, що сталося, і що робити користувачеві..."></textarea>
+    <textarea id="opsNoticeContent" rows="11" maxlength="20000" placeholder="Докладно опишіть, що сталося, і що робити користувачеві..."></textarea>
    </div>
    <div class="two">
     <div class="field"><label for="opsNoticeKind">Категорія</label><select id="opsNoticeKind"><option value="info">💬 Інформація</option><option value="important">📣 Важливе</option><option value="schedule">🗓️ Графіки</option><option value="emergency">⚠️ Екстрене</option><option value="update">✨ Оновлення</option></select></div>
@@ -580,7 +580,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
   <hr class="push-hr">
   <div class="two">
     <div class="field"><label for="pushTitle">Заголовок свого сповіщення</label><input id="pushTitle" type="text" maxlength="85" placeholder="Наприклад, Оголошення" autocomplete="off"><div class="counter" id="pushTitleCount">0 / 85</div></div>
-    <div class="field"><label for="pushBody">Текст повідомлення</label><textarea id="pushBody" maxlength="280" placeholder="Напиши, що мають побачити користувачі…"></textarea><div class="counter" id="pushBodyCount">0 / 280</div></div>
+    <div class="field"><label for="pushBody">Текст повідомлення</label><textarea id="pushBody" maxlength="500" placeholder="Напиши, що мають побачити користувачі…"></textarea><div class="counter" id="pushBodyCount">0 / 500</div></div>
   </div>
   <p class="hint">Попередній перегляд на екрані блокування (вигляд залежить від iOS):</p>
   <div class="push-preview" aria-live="polite"><span class="push-preview-icon" aria-hidden="true">ϟ</span><div><b id="pushPreviewTitle">Заголовок сповіщення</b><p id="pushPreviewBody">Тут буде твій текст повідомлення.</p></div></div>

@@ -21,7 +21,8 @@ test('title/body length and queue validated',()=>{
   assert.throws(()=>cleanMessage({title:'',body:'hello'}));
   assert.throws(()=>cleanMessage({title:'Hi',body:' ' }));
   assert.throws(()=>cleanMessage({title:'x'.repeat(86),body:'x'}));
-  assert.throws(()=>cleanMessage({title:'Title',body:'x'.repeat(281)}));
+  assert.doesNotThrow(()=>cleanMessage({title:'Title',body:'x'.repeat(500)}));
+  assert.throws(()=>cleanMessage({title:'Title',body:'x'.repeat(501)}));
   assert.throws(()=>cleanMessage({title:'hi',body:'ok',queue:'7.2'}));
   assert.deepEqual(cleanMessage({title:' Test ',body:' Text ',queue:'3.1'}),{title:'Test',body:'Text',queue:'3.1'});
 });
