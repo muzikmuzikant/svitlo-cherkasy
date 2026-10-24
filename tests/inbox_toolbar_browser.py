@@ -23,7 +23,7 @@ def main():
      const filters=document.querySelector('#updates .inbox-filters');
      const r=element=>element.getBoundingClientRect();
      if(!mark||!filters)throw Error('Inbox controls not found');
-     const separation=r(mark).top>=r(filters).bottom;
+     const separation=r(mark).bottom<=r(filters).top || r(mark).top>=r(filters).bottom;
      const params=new URLSearchParams(location.search);
      await window.SvitloInbox.add({id:'push:inbox-layout-audit',title:'Перевірка',
        body:'Перевірка прочитання',kind:'push',at:new Date().toISOString(),read:false});
@@ -54,7 +54,7 @@ def main():
    assert result['gesture'] and result['pinch'] and not result['singleTouchStopped'],result
    assert 'maximum-scale=1' in result['viewport'] and 'user-scalable=no' in result['viewport'],result
    assert result['filtersWidth']<=result['containerWidth']+1,result
-   print('PASS: button outside independently scrollable filters; all messages read; gestures blocked; single-touch scroll kept')
+   print('PASS: button does not overlap independently scrollable filters; all messages read; gestures blocked; single-touch scroll kept')
   finally:
    browser.close()
 

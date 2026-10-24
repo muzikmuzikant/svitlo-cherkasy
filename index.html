@@ -20,7 +20,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png?v=692">
 <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192-v692.png">
 <link rel="icon" type="image/svg+xml" href="./assets/icon.svg">
-<link rel="stylesheet" href="./maintenance-ui.css"><link rel="stylesheet" href="./motion.css"><link rel="stylesheet" href="./social-links.css"><link rel="stylesheet" href="./theme.css"><script defer src="./motion.js"></script><script defer src="./bottom-sheet.js"></script><script defer src="./social-links.js"></script></head>
+<link rel="stylesheet" href="./maintenance-ui.css"><link rel="stylesheet" href="./motion.css"><link rel="stylesheet" href="./social-links.css"><link rel="stylesheet" href="./theme.css"><link rel="stylesheet" href="./inbox-refresh.css"><script defer src="./motion.js"></script><script defer src="./bottom-sheet.js"></script><script defer src="./social-links.js"></script></head>
 <body data-deployment-channel="beta">
 <div id="stagingBadge" aria-label="Тестова версія Beta 7.9.12" style="position:fixed;z-index:100001;top:calc(env(safe-area-inset-top, 0px) + 7px);right:9px;border-radius:10px;padding:4px 8px;background:#202a45;color:#fff;font:600 10px/1.3 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 8px #0002">BETA</div>
 <script>
@@ -147,19 +147,34 @@ document.addEventListener('DOMContentLoaded', () => {
  </section>
 <div class="sources-row"><a id="articleLink" target="_blank" rel="noopener" href="https://www.cherkasyoblenergo.com/news">Джерело графіка ↗</a><button id="refreshDetail">Оновити ↻</button></div></section>
 <section id="updates" class="screen" hidden>
- <div class="screen-header no-back"><div><div class="eyebrow">ВАШІ ОНОВЛЕННЯ</div><h1>Повідомлення <span id="inboxUnread" class="inbox-count" hidden>0</span></h1><p>Усе важливе про вашу підчергу в одному місці</p></div></div>
- <div class="inbox-toolbar"><div class="inbox-filters" role="group" aria-label="Фільтр повідомлень">
-  <button type="button" class="selected" data-inbox-filter="all" aria-pressed="true">Усі</button>
-  <button type="button" data-inbox-filter="unread" aria-pressed="false">Нові</button>
-  <button type="button" data-inbox-filter="schedule" aria-pressed="false">Графіки</button>
-  <button type="button" data-inbox-filter="important" aria-pressed="false">Важливе</button><button type="button" data-inbox-filter="support" aria-pressed="false">Підтримка</button>
- </div></div><div class="inbox-smart-bar"><label class="inbox-search-label"><span aria-hidden="true">⌕</span><input id="inboxSearch" type="search" maxlength="90" autocomplete="off" placeholder="Знайти повідомлення" aria-label="Пошук повідомлень"></label><select id="inboxSort" aria-label="Сортування повідомлень"><option value="smart">Спочатку важливе</option><option value="new">Найновіші</option><option value="unread">Непрочитані</option></select></div><div id="inboxOverview" class="inbox-overview" role="status"></div><div class="inbox-actions-bar"><button class="inbox-mark" id="inboxMarkAll" type="button"><span aria-hidden="true">✓</span><span>Прочитати всі</span></button><span class="inbox-unread-note" id="inboxUnreadNote" role="status" aria-live="polite"></span></div>
+ <div class="screen-header no-back inbox-title-bar">
+  <div><h1>Вхідні <span id="inboxUnread" class="inbox-count" hidden>0</span></h1>
+  <p id="inboxUnreadNote" role="status" aria-live="polite">Ваші повідомлення</p></div>
+  <button class="inbox-mark" id="inboxMarkAll" type="button" disabled>Прочитати всі</button>
+ </div>
+ <div class="inbox-toolbar">
+  <div class="inbox-filters" role="group" aria-label="Фільтр повідомлень">
+   <button type="button" class="selected" data-inbox-filter="all" aria-pressed="true">Усі</button>
+   <button type="button" data-inbox-filter="unread" aria-pressed="false">Непрочитані</button>
+   <button type="button" data-inbox-filter="important" aria-pressed="false">Важливі</button>
+   <button type="button" data-inbox-filter="schedule" aria-pressed="false">Графіки</button>
+   <button type="button" data-inbox-filter="support" aria-pressed="false">Підтримка</button>
+  </div>
+  <button id="inboxSearchToggle" class="inbox-search-toggle" type="button" aria-label="Пошук повідомлень" aria-expanded="false" aria-controls="inboxSearchPanel">
+   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.7"/><path d="m16 16 4.6 4.6"/></svg>
+  </button>
+ </div>
+ <div class="inbox-smart-bar" id="inboxSearchPanel" hidden>
+  <label class="inbox-search-label"><span class="inbox-search-field-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="6.7"/><path d="m16 16 4.6 4.6"/></svg></span>
+   <input id="inboxSearch" type="search" maxlength="90" autocomplete="off" placeholder="Пошук за повідомленнями" aria-label="Пошук повідомлень"></label>
+  <button id="inboxSearchClose" type="button" aria-label="Закрити пошук">Скасувати</button>
+ </div>
  <div id="inboxList" class="inbox-list" aria-live="polite"><div class="inbox-empty">Завантажуємо повідомлення…</div></div>
- 
  <details class="inbox-history"><summary>Історія офіційних графіків <span aria-hidden="true">⌄</span></summary>
   <div class="surface update-banner"><div class="tiny-label">ОСТАННЄ ОНОВЛЕННЯ ДАНИХ</div><div id="lastCheck">Ще не перевірено</div><p id="updateNote">Отримуємо інформацію.</p></div>
   <div id="updateList" class="update-list"></div><a class="external-row" href="https://www.cherkasyoblenergo.com/news" target="_blank" rel="noopener">Новини оператора ↗</a>
- </details></section>
+ </details>
+</section>
 <section id="settings" class="screen" hidden><div class="screen-header no-back"><div><h1>Опції</h1><p>Підлаштуйте під себе</p></div></div><h2 class="subsection-title">Оформлення</h2><div class="surface settings-card appearance-card"><fieldset class="appearance-control"><legend>Тема застосунку</legend><div class="appearance-options"><label class="appearance-choice"><input type="radio" name="appearanceTheme" value="light"><span><span class="appearance-icon" aria-hidden="true">☀</span><b>Світла</b><small>Завжди світла</small></span></label><label class="appearance-choice"><input type="radio" name="appearanceTheme" value="dark"><span><span class="appearance-icon" aria-hidden="true">☾</span><b>Темна</b><small>Завжди темна</small></span></label><label class="appearance-choice"><input type="radio" name="appearanceTheme" value="system"><span><span class="appearance-icon" aria-hidden="true">◐</span><b>Як на телефоні</b><small>Автоматично</small></span></label></div></fieldset><p id="appearanceSummary" class="appearance-summary" role="status" aria-live="polite">Тема автоматично підлаштовується під ваш телефон.</p></div><div class="settings-push-controls"><h2 class="subsection-title">Сповіщення</h2>
 <div class="surface push-master-card">
  <div class="push-master-line">
