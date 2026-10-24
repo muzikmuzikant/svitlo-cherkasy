@@ -33,7 +33,7 @@
   root.querySelector('[data-queue="'+queue+'"]')?.classList.add('is-selected');
   const parts=math.allDaySegments(src().timeline(selected,queue));
   const off=intervalText(parts);
-  status.textContent='Підчерга '+queue+' · '+(parts.some(p=>p.state===-1)?'Частина дня без підтверджених даних. ':'')+
+  status.textContent='Підчерга '+queue+' · '+(parts.some(p=>p.state===-1)?'Немає підтверджених даних на частину дня. ':'')+
    (off.length?'Відключення: '+off.join(', '):parts.every(p=>p.state===0)?'За графіком світло весь день':'Підтверджених відключень немає');
  }
  function render(){
