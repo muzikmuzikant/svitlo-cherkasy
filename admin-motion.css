@@ -48,3 +48,66 @@
  #adminDashboard :is(button,input,select,textarea,.card,.pill),#adminLoginScreen :is(button,input,textarea,select){transition:none!important}
 }
 html.feature-off-animations #adminDashboard .micro-enter{animation:none!important}
+
+/* Single administrator panel animation owner.
+   Old motion.css and .micro-enter CSS cannot compete with delegated WAAPI. */
+html.svitlo-motion-ready body.svitlo-office #adminDashboard [data-admin-panel]:not([hidden]),
+html.svitlo-motion-ready body.svitlo-office #adminDashboard [data-workspace-panel]:not([hidden]){
+ animation:none!important;
+}
+#adminDashboard .micro-enter{animation:none!important}
+/* Semantic microstates for 24 office areas, not perpetual live-data pulses. */
+body.svitlo-office :is(.admin-tabs button,.desk-nav button,.desk-hub-link,.desk-rail a,.admin-sidebar button,[data-admin-tab],.office-menu-button){
+ transition:background-color 165ms ease,color 165ms ease,border-color 175ms ease,box-shadow 220ms ease,filter 165ms ease,transform 180ms cubic-bezier(.2,.84,.2,1);
+ -webkit-tap-highlight-color:transparent;
+}
+body.svitlo-office :is(.admin-tabs button,.desk-nav button,.desk-hub-link,[data-admin-tab]):focus-visible{
+ outline:2px solid #4a87e9;outline-offset:3px;
+}
+body.svitlo-office :is(.admin-tabs button,.desk-nav button,.desk-hub-link,[data-admin-tab]).micro-pressed{
+ filter:brightness(.96);transform:translate3d(0,1px,0);
+}
+body.svitlo-office :is(.office-stat,.desk-kpi,.admin-metric,.stat-card,.report-metric,.insight-card,.admin-quality-card){
+ transition:border-color 240ms ease,background-color 240ms ease,box-shadow 240ms ease;
+}
+body.svitlo-office :is(.office-work-entry,.office-ticket-entry,.desk-ticket-row,.registry-row,.desk-hub-link,.admin-address-row,.account-entry,.admin-list-row,.report-row){
+ transition:background-color 190ms ease,border-color 190ms ease,box-shadow 220ms ease;
+}
+body.svitlo-office :is(.office-task-badge,.desk-counter,.pill,.status-badge,.role-badge,.counter){
+ font-variant-numeric:tabular-nums;
+}
+body.svitlo-office :is(.desk-sidebar,.desk-workspace,.desk-main,.admin-register,.admin-corrections,.planner-grid,.desk-ticket-list,.admin-card-grid){min-width:0}
+body.svitlo-office :is(.field,.planner-tools,.ops-text-toolbar,.office-modal,.desk-modal) :is(label,small,span){min-width:0}
+body.svitlo-office :is(button,[role="tab"],[role="button"]):focus-visible{
+ outline:2px solid #4d91f3;outline-offset:2px;
+}
+body.svitlo-office :is(input,textarea,select):focus-visible{
+ border-color:#5596f5;box-shadow:0 0 0 3px #448bee26;
+}
+body.svitlo-office :is(input[type="checkbox"],input[type="radio"],[role="switch"]){
+ accent-color:#387bea;transition:filter 170ms ease;
+}
+body.svitlo-office :is(.planner-slot,[role="switch"],input[type="checkbox"],.desk-bulk-select).micro-changed{
+ filter:brightness(1.06);
+}
+body.svitlo-office :is(.office-stat,.admin-grid,.desk-card,.admin-office-card):focus-within{
+ border-color:#8fb0dc;
+}
+body.svitlo-office :is(.ops-editor-preview,.ops-rich-preview,.desk-ticket-body,.office-detail,.work-detail,.admin-content-scroll){
+ -webkit-overflow-scrolling:touch;
+ overflow-wrap:anywhere;
+}
+body.svitlo-office :is(.admin-nav,.desk-navigation,.desk-sidebar) :is(svg,.lucide){
+ transition:color 165ms ease,transform 225ms cubic-bezier(.2,.82,.2,1);
+}
+body.svitlo-office :is(.admin-tabs button,[data-admin-tab]):active svg{transform:translateX(1px)}
+body.svitlo-office .planner-slot:focus-visible{z-index:1}
+body.svitlo-office .planner-slot.is-off{transition:background-color 190ms ease,color 190ms ease,box-shadow 210ms ease}
+@media(hover:hover) and (pointer:fine){
+ body.svitlo-office :is(.office-work-entry,.registry-row,.desk-ticket-row,.admin-list-row):hover{background-color:#edf4ff}
+ body.svitlo-office :is(.office-stat,.desk-kpi,.insight-card):hover{box-shadow:0 6px 22px #315f9016}
+}
+@media(prefers-reduced-motion:reduce){
+ body.svitlo-office :is(.admin-tabs button,.desk-nav button,.desk-hub-link,.desk-hub-link svg,.office-stat,.desk-kpi,.registry-row,.desk-ticket-row,.planner-slot,.desk-sidebar,.admin-grid){transition:none!important}
+}
+html.feature-off-animations body.svitlo-office :is(button,a,input,select,textarea,[role="tab"],.planner-slot,.desk-kpi,.registry-row){transition:none!important}
