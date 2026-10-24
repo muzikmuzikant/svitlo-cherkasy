@@ -25,67 +25,118 @@
    palette[p.state]+' '+(p.end/60*100).toFixed(3)+'%'
   ]).join(',')+')';
  }
+
  const totalOff=parts=>parts.filter(p=>p.state===1).reduce((n,p)=>n+p.end-p.start,0);
  const intervalText=parts=>parts.filter(p=>p.state===1).map(p=>math.time(p.start)+'–'+math.time(p.end));
- function inspect(queue){
-  if(!src())return;
-  selectedCell={queue};
-  for(const node of root.querySelectorAll('.all-queues-lane.is-selected'))node.classList.remove('is-selected');
-  root.querySelector('[data-queue="'+queue+'"]')?.classList.add('is-selected');
-  const parts=math.allDaySegments(src().timeline(selected,queue));
-  const off=intervalText(parts);
-  status.textContent='Підчерга '+queue+' · '+(parts.some(p=>p.state===-1)?'Немає підтверджених даних на частину дня. ':'')+
-   (off.length?'Відключення: '+off.join(', '):parts.every(p=>p.state===0)?'За графіком світло весь день':'Підтверджених відключень немає');
+ const duration=n=>Math.floor(n/60)?Math.floor(n/60)+' год'+(n%60?' '+n%60+' хв':''):n+' хв';
+ const modes=e('nav','all-queues-modes'),controls=e('div','all-queues-mode-controls');
+ modes.setAttribute('aria-label','Режим перегляду');
+ dayRow.after(modes,controls);
+ const detailPanel=e('section','all-queues-detail-panel');detailPanel.hidden=true;detailPanel.setAttribute('aria-live','polite');
+ root.closest('.all-queues-chart')?.append(detailPanel);
+ let mode='all',group=1,compare=['1.1','2.1'];
+ const partsFor=queue=>math.allDaySegments(src().timeline(selected,queue));
+ function drawModes(){
+  modes.replaceChildren();controls.replaceChildren();
+  for(const [key,title] of [['all','Усі'],['groups','Групи'],['compare','Порівняння']]){
+   const b=e('button','all-queues-mode'+(mode===key?' active':''),title);b.type='button';
+   b.setAttribute('aria-pressed',String(mode===key));
+   b.onclick=()=>{mode=key;selectedCell=null;currentSignature='';render()};modes.append(b);
+  }
+  if(mode==='groups'){
+   const picker=e('div','all-queues-group-chooser');
+   for(let n=1;n<=6;n++){
+    const b=e('button','all-queues-group-pick'+(group===n?' active':''),'Група '+n);b.type='button';
+    b.setAttribute('aria-pressed',String(group===n));
+    b.onclick=()=>{group=n;selectedCell=null;currentSignature='';render()};picker.append(b);
+   }controls.append(picker);
+  }
+  if(mode==='compare'){
+   const picker=e('div','all-queues-compare-chooser');
+   for(let n=0;n<2;n++){
+    const field=e('label','all-queues-compare-field');field.append(e('span','',n?'Друга підчерга':'Перша підчерга'));
+    const select=e('select');select.setAttribute('aria-label',n?'Друга підчерга':'Перша підчерга');
+    for(const q of math.QUEUES)select.append(new Option('Підчерга '+q,q));
+    select.value=compare[n];
+    select.onchange=()=>{
+     if(select.value===compare[1-n])compare[1-n]=compare[n];
+     compare[n]=select.value;selectedCell=null;currentSignature='';render();
+    };field.append(select);picker.append(field);
+   }controls.append(picker);
+  }
  }
- function animateDetail(node,opening,token){
-  if(!node||reduced()){if(!opening)node?.remove();return}
-  const height=node.scrollHeight;
-  node.style.overflow='clip';
-  const anim=node.animate(opening?
-   [{height:'0px',opacity:0,transform:'translateY(-4px)'},{height:height+'px',opacity:1,transform:'translateY(0)'}]:
-   [{height:height+'px',opacity:1},{height:'0px',opacity:0}],
-   {duration:opening?225:150,easing:opening?'cubic-bezier(.2,.85,.25,1)':'ease-in'});
-  anim.finished.then(()=>{
-   if(opening&&token===expandedToken)node.style.removeProperty('overflow');
-   if(!opening&&node.isConnected)node.remove();
-  }).catch(()=>{if(!opening)node.remove()});
+ function drawDetail(){
+  detailPanel.replaceChildren();
+  if(!selectedCell){
+   detailPanel.hidden=true;status.textContent='Оберіть підчергу, щоб побачити точні години відключень.';return;
+  }
+  const q=selectedCell.queue,parts=partsFor(q),off=intervalText(parts),unknown=parts.some(p=>p.state===-1);
+  const head=e('div','all-queues-detail-heading');head.append(e('strong','','Підчерга '+q));
+  const close=e('button','all-queues-detail-close','Закрити');close.type='button';close.onclick=()=>toggleQueue(q);head.append(close);
+  detailPanel.append(head,e('p','all-queues-detail-summary',unknown?'Частина годин не підтверджена.':'Без світла: '+duration(totalOff(parts))));
+  const intervals=e('div','all-queues-intervals');
+  if(off.length)for(const span of off)intervals.append(e('span','all-queues-interval',span));
+  else intervals.append(e('span','all-queues-interval',unknown?'Уточнюється':'Світло весь день'));
+  detailPanel.append(intervals);detailPanel.hidden=false;
+  status.textContent='Точні інтервали підчерги '+q+' відкрито нижче графіка.';
  }
  function toggleQueue(queue){
-  const previous=selectedCell?.queue||'',token=++expandedToken;
-  selectedCell=previous===queue?null:{queue};
-  for(const row of root.querySelectorAll('.all-queues-lane')){
-   const active=row.dataset.queue===selectedCell?.queue;
-   row.classList.toggle('is-selected',active);
-   row.setAttribute('aria-expanded',String(active));
+  selectedCell=selectedCell?.queue===queue?null:{queue};
+  for(const lane of root.querySelectorAll('.all-queues-lane')){
+   const active=lane.dataset.queue===selectedCell?.queue;lane.classList.toggle('is-selected',active);
+   lane.setAttribute('aria-expanded',String(active));
+  }drawDetail();
+ }
+ function axis(){
+  const a=e('div','all-queues-time-scale');
+  for(const h of ['00:00','06:00','12:00','18:00','24:00'])a.append(e('span','',h));
+  return a;
+ }
+ function lane(queue){
+  const parts=math.allDaySegments(src().timeline(selected,queue));
+  const off=intervalText(parts),unknown=parts.some(p=>p.state===-1);
+  const row=e('button','all-queues-lane'+(selectedCell?.queue===queue?' is-selected':''));row.type='button';row.dataset.queue=queue;
+  row.setAttribute('aria-expanded',String(selectedCell?.queue===queue));
+  const name=e('span','all-queues-lane-name',queue),content=e('span','all-queues-lane-content'),track=e('span','all-queues-lane-track');
+  for(const p of parts){
+   const seg=e('span','all-queues-lane-segment state-'+(p.state===0?'on':p.state===1?'off':'unknown'));
+   seg.style.width=((p.end-p.start)/1440*100).toFixed(5)+'%';track.append(seg);
   }
-  const old=root.querySelector('.all-queues-row-detail');
-  if(old)animateDetail(old,false,token);
-  if(!selectedCell){
-   status.textContent='Натисніть на будь-яку підчергу, щоб розгорнути точні години відключень.';
-   return;
+  const times=e('span','all-queues-lane-caption',off.length?off.join(' · '):unknown?'Частина годин не підтверджена':'Світло весь день');
+  content.append(track,times);row.append(name,content);
+  row.setAttribute('aria-label','Підчерга '+queue+'. '+(off.length?'Відключення: '+off.join(', '):unknown?'Невідомі години':'Світло весь день')+'. Відкрити деталі');
+  row.onclick=()=>toggleQueue(queue);return row;
+ }
+ function groupCard(n){
+  const card=e('section','all-queues-group-card'),h=e('button','all-queues-group-title','Група '+n);h.type='button';
+  h.onclick=()=>{mode='groups';group=n;selectedCell=null;currentSignature='';render()};
+  card.append(h,axis(),lane(n+'.1'),lane(n+'.2'));return card;
+ }
+ function compareSummary(){
+  const card=e('div','all-queues-compare-summary'),a=src().timeline(selected,compare[0]),b=src().timeline(selected,compare[1]);
+  if(!a||!b||a.length!==1440||b.length!==1440){card.textContent='Для порівняння потрібні підтверджені графіки обох підчерг.';return card}
+  let bothOff=0,bothOn=0,different=0,unknown=0;
+  for(let m=0;m<1440;m++){
+   if(a[m]<0||b[m]<0){unknown++;continue}
+   if(a[m]===1&&b[m]===1)bothOff++;
+   if(a[m]===0&&b[m]===0)bothOn++;
+   if(a[m]!==b[m])different++;
   }
-  const parts=math.allDaySegments(src().timeline(selected,queue)),off=intervalText(parts);
-  const detail=e('div','all-queues-row-detail');
-  detail.append(e('strong','','Підчерга '+queue+' · без світла '+(totalOff(parts)/60).toLocaleString('uk-UA',{maximumFractionDigits:1})+' год'));
-  if(off.length)for(const interval of off)detail.append(e('span','all-queues-interval',interval));
-  else detail.append(e('span','all-queues-interval',parts.some(p=>p.state===-1)?'Не всі години підтверджені':'Відключень не заплановано'));
-  if(parts.some(p=>p.state===-1))detail.append(e('p','','Сірі проміжки не є підтвердженням наявності світла.'));
-  const row=root.querySelector('[data-queue="'+queue+'"]');
-  if(row){row.after(detail);animateDetail(detail,true,token)}
-  inspect(queue);
+  for(const [title,n] of [['Обидві без світла',bothOff],['Обидві зі світлом',bothOn],['Різний стан',different]]){
+   const stat=e('div','all-queues-compare-stat');stat.append(e('strong','',duration(n)),e('small','',title));card.append(stat);
+  }
+  if(unknown)card.append(e('p','',duration(unknown)+' не підтверджено для однієї або обох підчерг.'));
+  return card;
  }
  function render(){
   if(!src()||!dialog.open)return;
   const dates=src().dates();
   if(!dates.includes(selected))selected=dates.includes(src().today())?src().today():dates[0];
-  label.textContent=dateString(selected);
-  dayRow.replaceChildren();
+  label.textContent=dateString(selected);dayRow.replaceChildren();
   for(const date of dates){
    const b=e('button','all-queues-day'+(date===selected?' active':''),weekday(date));
-   b.type='button';b.setAttribute('aria-label',dateString(date));
-   b.setAttribute('aria-pressed',String(date===selected));
-   b.onclick=()=>{selected=date;selectedCell=null;render()};
-   dayRow.append(b);
+   b.type='button';b.setAttribute('aria-label',dateString(date));b.setAttribute('aria-pressed',String(date===selected));
+   b.onclick=()=>{selected=date;selectedCell=null;currentSignature='';render()};dayRow.append(b);
   }
   const day=src().day(selected),confirmed=src().noSchedule(selected),offline=src().offline();
   const source=day?.source||'https://www.cherkasyoblenergo.com/news';
@@ -93,41 +144,20 @@
   notice.textContent=offline?
    'Офлайн: збережені дані могли змінитися. Перевірено: '+(src().lastChecked()||'невідомо'):
    day?'Офіційний графік · '+(day.publishedAt?'опубліковано '+new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Kyiv'}).format(new Date(day.publishedAt)):'публікацію підтверджено'):
-   confirmed?'За опублікованим графіком планових відключень немає.':
-   'Немає підтвердженого графіка. Невідомі години позначено сірим.';
-  const signature=selected+'|'+math.QUEUES.map(q=>JSON.stringify(math.allDaySegments(src().timeline(selected,q)))).join('|');
-  if(signature===currentSignature&&root.querySelectorAll('.all-queues-lane').length===12)return;
-  currentSignature=signature;expandedToken++;root.replaceChildren();
-  const axis=e('div','all-queues-time-scale');
-  for(const t of ['00:00','06:00','12:00','18:00','24:00'])axis.append(e('span','',t));
-  root.append(axis);
-  for(const queue of math.QUEUES){
-   const parts=math.allDaySegments(src().timeline(selected,queue));
-   const off=intervalText(parts),unknown=parts.some(p=>p.state===-1);
-   const lane=e('button','all-queues-lane'+(selectedCell?.queue===queue?' is-selected':''));lane.type='button';lane.dataset.queue=queue;
-   lane.setAttribute('aria-expanded',String(selectedCell?.queue===queue));
-   const name=e('span','all-queues-lane-name',queue);
-   const content=e('span','all-queues-lane-content');
-   const bar=e('span','all-queues-lane-track');
-   for(const p of parts){
-    const segment=e('span','all-queues-lane-segment state-'+(p.state===0?'on':p.state===1?'off':'unknown'));
-    segment.style.width=((p.end-p.start)/1440*100).toFixed(5)+'%';
-    bar.append(segment);
-   }
-   const line=e('span','all-queues-lane-caption',off.length?
-     off.slice(0,3).join('  ·  ')+(off.length>3?'  ·  ще '+(off.length-3):''):
-     unknown?'Години не підтверджені':'Світло весь день');
-   content.append(bar,line);
-   const arrow=e('span','all-queues-lane-arrow','›');arrow.setAttribute('aria-hidden','true');
-   lane.append(name,content,arrow);
-   lane.setAttribute('aria-label','Підчерга '+queue+'. '+(off.length?'Відключення: '+off.join(', '):unknown?'Години не підтверджені':'Світло весь день')+'. Натисніть для деталей');
-   lane.onclick=()=>toggleQueue(queue);
-   root.append(lane);
-
+   confirmed?'За опублікованим графіком планових відключень немає.':'Немає підтвердженого графіка. Невідомі години позначено сірим.';
+  drawModes();
+  const signature=selected+'|'+mode+'|'+group+'|'+compare.join('/')+'|'+math.QUEUES.map(q=>JSON.stringify(math.allDaySegments(src().timeline(selected,q)))).join('|');
+  if(signature===currentSignature&&root.childElementCount)return;
+  currentSignature=signature;root.replaceChildren();
+  if(mode==='all'||mode==='groups'){
+   for(let n=1;n<=6;n++)if(mode==='all'||n===group)root.append(groupCard(n));
+  }else{
+   const card=e('section','all-queues-group-card all-queues-compare-card');
+   card.append(e('h3','all-queues-compare-title','Дві підчерги на спільній шкалі'),axis(),lane(compare[0]),lane(compare[1]));
+   root.append(card,compareSummary());
   }
   const key=$('allQueues24Label');if(key)key.hidden=true;
-  if(selectedCell){const q=selectedCell.queue;selectedCell=null;toggleQueue(q)}
-  else status.textContent='Натисніть на будь-яку підчергу, щоб розгорнути точні години відключень.';
+  drawDetail();
  }
  let afterClose=null;
  function dismiss(next){
