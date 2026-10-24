@@ -243,3 +243,52 @@ body.svitlo-maintenance-active{overscroll-behavior:none}
   gap:clamp(28px,5vw,70px)!important;max-width:none!important
  }
 }
+
+
+/* Full maintenance: a real, legible separate schedule screen. */
+.maintenance-content[hidden],.maintenance-backup-v2[hidden]{display:none!important}
+.maintenance-views{display:flex;align-self:center;margin:22px auto 0;padding:5px;gap:5px;max-width:460px;width:100%;border:1px solid var(--maint-outline);border-radius:16px;background:var(--maint-panel)}
+.maintenance-view-tab{flex:1;border:0;border-radius:12px;min-height:43px;padding:10px 11px;background:transparent;color:var(--maint-ink);font-size:13px;font-weight:720;cursor:pointer;touch-action:manipulation}
+.maintenance-view-tab.selected{background:#fff;color:#193557;box-shadow:0 4px 18px rgba(0,0,0,.14)}
+.maintenance-backup-v2{width:min(100%,820px);align-self:center;margin:24px auto 42px;min-width:0;color:#17263e;text-align:left}
+.maintenance-backup-title{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--maint-ink);margin:0 0 17px}
+.maintenance-backup-eyebrow{display:block;font-size:10px;font-weight:800;letter-spacing:.12em;color:var(--maint-accent);margin-bottom:9px}
+.maintenance-backup-title h2{font-size:clamp(23px,5vw,30px);letter-spacing:-.7px;line-height:1.2;margin:0 0 5px}
+.maintenance-backup-title p{font-size:12px;line-height:1.5;color:var(--maint-muted);margin:0}
+.maintenance-backup-refresh{flex:none;border:1px solid var(--maint-outline);border-radius:12px;padding:12px 13px;color:var(--maint-ink);background:var(--maint-panel);font-size:12px;font-weight:750;cursor:pointer}
+.maintenance-backup-refresh:disabled{opacity:.6;cursor:progress}
+.maintenance-backup-content{background:#fff;border:1px solid #e6edf4;box-shadow:0 15px 50px #020f2928;border-radius:24px;padding:clamp(16px,3vw,25px);color:#19314e}
+.maintenance-backup-content label{display:block;font-size:12px;font-weight:800;margin:0 0 8px;color:#52657f}
+.maintenance-backup-content select{display:block;width:100%;min-height:49px;padding:12px 14px;border:1px solid #cbdaee;border-radius:14px;background:#f6f9fe;color:#173657;font-size:14px;font-weight:720;appearance:auto}
+.maintenance-backup-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin:17px 0}
+.maintenance-backup-day{border:1px solid #e4ebf4;background:#f5f8fc;color:#65758e;border-radius:13px;min-width:0;min-height:55px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;padding:6px 1px;cursor:pointer;font-size:11px;font-weight:750}
+.maintenance-backup-day b{font-size:15px;color:#233955}.maintenance-backup-day.selected{background:#2f77ec;border-color:#2f77ec;color:#fff}.maintenance-backup-day.selected b{color:#fff}
+.maintenance-backup-status{border-radius:18px;padding:17px 18px;background:#f0f4fa;border:1px solid #e1e7f1;color:#294567}
+.maintenance-backup-status[data-state="on"]{background:#e5f7eb;border-color:#c9ebd6;color:#136d43}
+.maintenance-backup-status[data-state="off"]{background:#feeaec;border-color:#f5cad0;color:#9c2438}
+.maintenance-backup-status-caption{display:block;opacity:.78;font-size:11px;font-weight:750;margin-bottom:6px}
+.maintenance-backup-status strong{display:block;font-size:clamp(18px,4.5vw,24px);line-height:1.2}
+.maintenance-backup-status p{margin:8px 0 0;font-size:12px;line-height:1.5}
+.maintenance-backup-section-title{display:flex;flex-wrap:wrap;gap:6px;justify-content:space-between;align-items:baseline;margin:24px 0 11px}
+.maintenance-backup-section-title strong,.maintenance-backup-periods>strong{font-size:15px;color:#1b2c43}
+.maintenance-backup-section-title small{font-size:11px;color:#8290a1}
+.maintenance-backup-hours{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.maintenance-backup-hour{border:1px solid #e8edf4;background:#f7f9fc;border-radius:12px;padding:10px 8px;min-width:0;display:flex;flex-direction:column;gap:8px;align-items:center;color:#4c6078}
+.maintenance-backup-hour strong{font-size:12px;font-variant-numeric:tabular-nums}
+.maintenance-backup-hour.current{outline:2px solid #397eef;outline-offset:1px}
+.maintenance-backup-halves{display:flex;gap:3px;width:100%;height:19px}
+.maintenance-backup-half{display:block;flex:1;min-width:0;border-radius:5px;background:#dae3ef}
+.maintenance-backup-half.on{background:#8cd6ab}.maintenance-backup-half.off{background:#df6e81}.maintenance-backup-half.unknown{background:#c3cfdd}
+.maintenance-backup-legend{display:flex;flex-wrap:wrap;gap:9px 14px;margin:15px 0 20px;font-size:11px;color:#62768b}
+.maintenance-backup-legend span{display:flex;align-items:center;gap:6px}.maintenance-backup-legend i{width:13px;height:13px;border-radius:4px;display:inline-block}
+.maintenance-backup-legend .on{background:#8cd6ab}.maintenance-backup-legend .off{background:#df6e81}.maintenance-backup-legend .unknown{background:#c3cfdd}
+.maintenance-backup-periods{border-top:1px solid #e7edf5;padding-top:18px}
+.maintenance-backup-interval-list{display:grid;gap:7px;margin-top:10px}
+.maintenance-backup-interval{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fdf0f2;border-radius:11px;padding:11px 13px;color:#a52d45;font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}
+.maintenance-backup-interval span:last-child{font-size:11px;font-weight:650}
+.maintenance-backup-empty{font-size:13px;color:#6c7e93;line-height:1.5;margin:5px 0}
+.maintenance-backup-meta{margin:17px 0 10px;font-size:11px;color:#60738c;line-height:1.5}
+.maintenance-backup-official{display:inline-flex;align-items:center;gap:5px;color:#1c65cc;font-size:12px;font-weight:760;text-decoration:none}
+.maintenance-backup-day:focus-visible,.maintenance-view-tab:focus-visible,.maintenance-backup-refresh:focus-visible,.maintenance-backup-content select:focus-visible{outline:3px solid #83b6fb;outline-offset:2px}
+@media(max-width:600px){.maintenance-backup-hours{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.maintenance-backup-v2{margin-top:20px}.maintenance-backup-title{align-items:flex-start}.maintenance-backup-title h2{font-size:23px}.maintenance-backup-refresh{padding:10px}}
+@media(max-width:360px){.maintenance-backup-days{gap:3px}.maintenance-backup-day{min-height:48px;font-size:10px}.maintenance-backup-day b{font-size:13px}.maintenance-backup-content{padding:13px}.maintenance-backup-hour{padding:9px 5px}}

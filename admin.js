@@ -1,7 +1,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const FILES={overrides:'manual_overrides.json',schedules:'schedules.json',addresses:'addresses.json',streets:'published_street_fallback.json',emergency:'emergency.json'};
-let server='',sessionToken='',sha='',current='',remote=false,canPublish=false,original=null,pushBusy=false,adminRole='owner';
+let server='',sessionToken='',sha='',current='',remote=false,canPublish=false,editableKinds=['overrides'],original=null,pushBusy=false,adminRole='owner';
 function message(s,good){$('result').textContent=s;$('result').style.background=good?'#e5f7ed':'#fff2db';$('result').style.color=good?'#15633e':'#825310'}
 function validate(kind,obj){
  if(!obj||typeof obj!=='object'||Array.isArray(obj))throw Error('Потрібен JSON-об’єкт');
@@ -29,13 +29,20 @@ async function load(){
  const kind=$('kind').value;
  try{
   let contents;
-  if(remote&&canPublish){const r=await api('file?kind='+kind);contents=r.contents;sha=r.sha}
-  else{const r=await fetch('./data/'+FILES[kind]+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Файл недоступний');contents=await r.json();sha=''}
+  if(remote&&canPublish&&editableKinds.includes(kind)){
+   const r=await api('file?kind='+kind);contents=r.contents;sha=r.sha;
+   if(kind==='overrides'&&!contents){
+    const initial=await fetch('./data/manual_overrides.json?t='+Date.now(),{cache:'no-store'});
+    if(!initial.ok)throw Error('Не вдалося завантажити початкові уточнення');
+    contents=await initial.json();sha=null;
+   }
+  }else{const r=await fetch('./data/'+FILES[kind]+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Файл недоступний');contents=await r.json();sha=''}
+
   original=contents;current=kind;$('editor').value=JSON.stringify(contents,null,2);
-  $('publish').disabled=!(remote&&canPublish);
-  $('editMode').textContent=remote&&canPublish?'Публікація GitHub доступна':'Попередній перегляд та експорт';
-  message(remote&&canPublish
-    ?'Дані завантажено. Після перевірки їх можна опублікувати у GitHub.'
+  $('publish').disabled=!(remote&&canPublish&&editableKinds.includes(kind));
+  $('editMode').textContent=remote&&canPublish&&editableKinds.includes(kind)?(kind==='overrides'?'Збереження на Railway':'Публікація GitHub доступна'):'Попередній перегляд та експорт';
+  message(remote&&canPublish&&editableKinds.includes(kind)
+    ?(kind==='overrides'?'Дані завантажено. Можна зберегти ручні уточнення без GitHub-токена.':'Дані завантажено. Після перевірки їх можна опублікувати у GitHub.')
     :'Редагування файлів зараз не підключено. Можна перевіряти та експортувати JSON, але опублікувати його через цю панель не вийде. Для публікації потрібен доступ GitHub у налаштуваннях сервера.',remote&&canPublish);
  }catch(e){message('Не вдалося завантажити: '+e.message,false)}
 }
@@ -52,7 +59,7 @@ async function diagnostics(){
 function signOut(revoke=true){
  const oldToken=sessionToken,oldServer=server;
  if(revoke&&oldToken&&oldServer){fetch(oldServer+'/api/admin/logout',{method:'POST',headers:{authorization:'Bearer '+oldToken,'content-type':'application/json'},body:'{}'}).catch(()=>{})}
- remote=false;canPublish=false;sessionToken='';sha='';adminRole='owner';document.body.dataset.adminRole='';
+ remote=false;canPublish=false;editableKinds=['overrides'];sessionToken='';sha='';adminRole='owner';document.body.dataset.adminRole='';
  $('adminDashboard').hidden=true;$('adminLoginScreen').hidden=false;
  $('connection').textContent='Авторизовано';$('publish').disabled=true;
  $('password').value='';if($('otp'))$('otp').value='';setPushReady(false);
@@ -72,7 +79,7 @@ $('loginForm').onsubmit=async event=>{
    server=url;sessionToken=result.token;adminRole=result.role||'owner';document.body.dataset.adminRole=adminRole;
    // Verify session before revealing protected tools.
    const status=await api('status');
-   remote=true;canPublish=adminRole==='owner'&&!!status.editingEnabled;
+   remote=true;editableKinds=Array.isArray(status.editable)?status.editable:['overrides'];canPublish=adminRole==='owner'&&!!status.editingEnabled;
    $('adminLoginScreen').hidden=true;$('adminDashboard').hidden=false;
    $('connection').textContent='Увійшли · '+({owner:'Власник',editor:'Редактор',operator:'Оператор',viewer:'Перегляд'}[adminRole]||'Адміністратор');$('connection').className='pill ok';
    $('password').value='';setPushReady(adminRole==='owner');
@@ -87,10 +94,10 @@ $('reload').onclick=()=>{if(original)$('editor').value=JSON.stringify(original,n
 $('validate').onclick=()=>{try{const obj=JSON.parse($('editor').value);validate($('kind').value,obj);message('JSON коректний, базові обмеження виконані. Це не підтверджує достовірності графіків.',true)}catch(e){message('Помилка: '+e.message,false)}};
 $('download').onclick=()=>{try{const obj=JSON.parse($('editor').value);validate($('kind').value,obj);const a=document.createElement('a');const url=URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)+'\n'],{type:'application/json'}));a.href=url;a.download=FILES[$('kind').value];a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);message('Файл експортовано. Ви можете перевірити його перед ручним завантаженням на GitHub.',true)}catch(e){message(e.message,false)}};
 $('publish').onclick=async()=>{
- if(!remote||!canPublish)return;
+ if(!remote||!canPublish||!editableKinds.includes($('kind').value))return;
  try{const kind=$('kind').value;const obj=JSON.parse($('editor').value);validate(kind,obj);
-   if(!confirm('Опублікувати '+FILES[kind]+' у вашому GitHub? Цю зміну побачать відвідувачі сайту.'))return;
-   $('publish').disabled=true;const r=await api('file?kind='+kind,{method:'PUT',body:JSON.stringify({sha,contents:obj})});message('Опубліковано. Коміт: '+r.commit+'. Дані на GitHub Pages оновляться після розгортання.',true);await load();
+   if(!confirm(kind==='overrides'?'Зберегти ручні уточнення на Railway? Вони змінять графіки для користувачів.':'Опублікувати '+FILES[kind]+' у вашому GitHub? Цю зміну побачать відвідувачі сайту.'))return;
+   $('publish').disabled=true;const r=await api('file?kind='+kind,{method:'PUT',body:JSON.stringify({sha,contents:obj})});message(kind==='overrides'?'Уточнення збережено в Railway. Оновлений графік уже доступний через API.':'Опубліковано. Коміт: '+r.commit+'. Дані на GitHub Pages оновляться після розгортання.',true);await load();
  }catch(e){message('Публікація не вдалася: '+e.message,false);$('publish').disabled=false}
 };
 (async()=>{try{const r=await fetch('./push-config.json',{cache:'no-store'});if(r.ok){const c=await r.json();if(/^https:\/\/[^\s]+$/.test(c.apiBase||''))$('server').value=new URL(c.apiBase).origin}}catch{ $('loginError').textContent='Не вдалося визначити сервер. Оновіть сторінку.' } })();
@@ -105,7 +112,7 @@ function staging(){
  if($('kind').value!=='overrides')throw Error('Оберіть файл «Ручні уточнення», а потім повторіть дію');
  const o=JSON.parse($('editor').value);validate('overrides',o);return o;
 }
-function staged(o,s){$('editor').value=JSON.stringify(o,null,2);message(s+(canPublish?' Перевірте JSON та опублікуйте зміни через GitHub.':' Це лише чернетка. Публікація через адмінпанель недоступна, але можна експортувати JSON.'),canPublish)}
+function staged(o,s){$('editor').value=JSON.stringify(o,null,2);message(s+(canPublish?' Перевірте JSON і натисніть «Опублікувати» для збереження на Railway.':' Це лише чернетка. Публікація через адмінпанель недоступна, але можна експортувати JSON.'),canPublish)}
 function requiredSource(){const s=$('quickSource').value.trim();if(!/^https:\/\/(?:www\.)?cherkasyoblenergo\.com\//.test(s))throw Error('Вставте перевірене посилання на офіційну публікацію Черкасиобленерго');return s}
 $('findStreet').onclick=async()=>{try{
  const r=await fetch('./data/published_street_fallback.json?t='+Date.now());const j=await r.json();
@@ -154,7 +161,7 @@ function pushResult(text,ok=null){$('pushResult').textContent=text;$('pushResult
 function setPushReady(ready){$('pushAvailability').textContent=ready?'Сервер підключений':'Увійдіть для надсилання';$('pushAvailability').className='pill'+(ready?' ok':'');$('testPush').disabled=!ready;$('refreshPush').disabled=!ready;updatePushDraft()}
 function updatePushDraft(){
  const title=$('pushTitle').value.trim(),body=$('pushBody').value.trim();
- $('pushTitleCount').textContent=$('pushTitle').value.length+' / 85';$('pushBodyCount').textContent=$('pushBody').value.length+' / 280';
+ $('pushTitleCount').textContent=$('pushTitle').value.length+' / 85';$('pushBodyCount').textContent=$('pushBody').value.length+' / 500';
  $('pushPreviewTitle').textContent=title||'Заголовок сповіщення';$('pushPreviewBody').textContent=body||'Тут буде твій текст повідомлення.';
  $('sendPush').disabled=!remote||pushBusy||!title||!body;
 }

@@ -14,7 +14,7 @@ const color=(v,def)=>/^#[0-9a-f]{6}$/i.test(String(v||''))?String(v):def;
 const when=v=>{const s=text(v,35);return !s?'':Number.isFinite(Date.parse(s))?new Date(s).toISOString():''};
 const kinds=['iPhone','iPad','Android','Windows','macOS','Linux','Інше'];
 const defaults={
- enabled:false,rotationSeconds:8,promoEvery:4,showPromo:true,manualSwipe:true,animation:'fade',
+ enabled:false,rotationSeconds:8,promoEvery:4,showPromo:true,pageVisible:true,manualSwipe:true,animation:'fade',
  promoTitle:'Тут може бути ваша реклама',promoText:'Розкажіть про свій бізнес користувачам «Світло Черкаси»',
  contactLabel:'Зв’язатися з нами',pageTitle:'Реклама у Світло Черкаси',
  pageIntro:'Невелике рекламне оголошення на головній сторінці застосунку. Обговорімо умови розміщення.',
@@ -40,7 +40,7 @@ function normalize(raw){
  const packages=Array.isArray(s.packages)?s.packages.slice(0,40):[];
  const campaigns=Array.isArray(s.campaigns)?s.campaigns.slice(0,80):[];
  const normalized={
- enabled:s.enabled===true,rotationSeconds:clamp(s.rotationSeconds,3,60,8),promoEvery:clamp(s.promoEvery,1,20,4),
+ enabled:s.enabled===true,pageVisible:s.pageVisible!==false,rotationSeconds:clamp(s.rotationSeconds,3,60,8),promoEvery:clamp(s.promoEvery,1,20,4),
  showPromo:s.showPromo!==false,manualSwipe:s.manualSwipe!==false,
  animation:['fade','slide','none'].includes(s.animation)?s.animation:'fade',
  promoTitle:text(s.promoTitle||defaults.promoTitle,100),promoText:text(s.promoText||defaults.promoText,240),
@@ -141,7 +141,7 @@ export function createAdsStore({directory,clock=()=>Date.now()}){
   }return {all,today,clicks}}
  function publicState(){
   const now=new Date(clock()).toISOString(),day=now.slice(0,10),weekday=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Kyiv',weekday:'short'}).format(new Date(clock())));
-  return {enabled:state.enabled,rotationSeconds:state.rotationSeconds,promoEvery:state.promoEvery,
+  return {enabled:state.enabled,pageVisible:state.pageVisible,rotationSeconds:state.rotationSeconds,promoEvery:state.promoEvery,
    showPromo:state.showPromo,manualSwipe:state.manualSwipe,animation:state.animation,
    promoTitle:state.promoTitle,promoText:state.promoText,contactLabel:state.contactLabel,
    pageTitle:state.pageTitle,pageIntro:state.pageIntro,pageTerms:state.pageTerms,

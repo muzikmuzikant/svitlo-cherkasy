@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="uk"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
-<meta name="svitlo-version" content="7.9.12"><meta name="theme-color" content="#f6f8fc"><script src="./theme.js"></script><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="svitlo-version" content="7.9.13"><meta name="theme-color" content="#f6f8fc"><script src="./theme.js"></script><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Світло Черкаси"><meta name="description" content="Графіки відключень світла у Черкасах та Черкаському районі за адресою. Перевіряйте підчергу, час відключень та отримуйте сповіщення про зміни.">
 <meta name="robots" content="noindex,follow"><link rel="canonical" href="https://svitlo-cherkasy.pp.ua/">
 <meta property="og:type" content="website"><meta property="og:site_name" content="Світло Черкаси"><meta property="og:title" content="Світло Черкаси | Графік відключень за вашою адресою"><meta property="og:description" content="Графіки відключень світла у Черкасах та Черкаському районі за адресою. Перевіряйте підчергу, час відключень та отримуйте сповіщення про зміни."><meta property="og:image" content="https://svitlo-cherkasy.pp.ua/assets/icon-512-v692.png"><meta property="og:url" content="https://svitlo-cherkasy.pages.dev/">
@@ -20,9 +20,9 @@
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png?v=692">
 <link rel="icon" type="image/png" sizes="192x192" href="./assets/icon-192-v692.png">
 <link rel="icon" type="image/svg+xml" href="./assets/icon.svg">
-<link rel="stylesheet" href="./maintenance-ui.css"><link rel="stylesheet" href="./motion.css"><link rel="stylesheet" href="./social-links.css"><link rel="stylesheet" href="./theme.css"><link rel="stylesheet" href="./all-queues.css"><link rel="stylesheet" href="./inbox-refresh.css"><script defer src="./motion.js"></script><script defer src="./bottom-sheet.js"></script><script defer src="./social-links.js"></script></head>
+<link rel="stylesheet" href="./maintenance-ui.css"><link rel="stylesheet" href="./motion.css"><link rel="stylesheet" href="./social-links.css"><link rel="stylesheet" href="./theme.css"><link rel="stylesheet" href="./all-queues.css"><link rel="stylesheet" href="./inbox-refresh.css"><script defer src="./motion.js"></script><script defer src="./bottom-sheet.js"></script><script defer src="./social-links.js"></script><link rel="stylesheet" href="./micro-motion.css"></head>
 <body data-deployment-channel="beta">
-<div id="stagingBadge" aria-label="Тестова версія Beta 7.9.12" style="position:fixed;z-index:100001;top:calc(env(safe-area-inset-top, 0px) + 7px);right:9px;border-radius:10px;padding:4px 8px;background:#202a45;color:#fff;font:600 10px/1.3 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 8px #0002">BETA</div>
+<div id="stagingBadge" aria-label="Тестова версія Beta 7.9.13" style="position:fixed;z-index:100001;top:calc(env(safe-area-inset-top, 0px) + 7px);right:9px;border-radius:10px;padding:4px 8px;background:#202a45;color:#fff;font:600 10px/1.3 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;letter-spacing:.08em;pointer-events:none;box-shadow:0 2px 8px #0002">BETA</div>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const version = document.querySelector('meta[name="svitlo-version"]')?.content;
@@ -223,7 +223,11 @@ document.addEventListener('DOMContentLoaded', () => {
    <div class="maintenance-brand"><img src="./assets/icon.svg" width="42" height="42" alt=""><div><strong>Світло Черкаси</strong><span>Черкаси та район</span></div></div>
    <div class="maintenance-state"><span class="maintenance-state-dot" aria-hidden="true"></span><span id="maintenanceModeLabel">Технічні роботи</span></div>
   </header>
-  <main class="maintenance-content">
+  <nav class="maintenance-views" aria-label="Екрани під час техробіт">
+   <button type="button" id="maintenanceViewNotice" class="maintenance-view-tab selected" aria-pressed="true">Оголошення</button>
+   <button type="button" id="maintenanceViewSchedule" class="maintenance-view-tab" aria-pressed="false">Переглянути графік</button>
+  </nav>
+  <main class="maintenance-content" id="maintenanceNoticePanel">
    <div class="maintenance-copy">
     <div class="maintenance-kicker"><span class="maintenance-kicker-line" aria-hidden="true"></span> ТЕХНІЧНЕ ОБСЛУГОВУВАННЯ</div>
     <h1 id="maintenanceTitle">Ми покращуємо застосунок</h1>
@@ -236,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
      <div class="maintenance-time-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
      <div class="maintenance-time-text"><span id="maintenanceTimeLabel">Орієнтовне завершення</span><strong id="maintenanceEta">Час поки невідомий</strong></div>
     </div>
-    <div class="maintenance-actions">
+<div class="maintenance-actions">
      <button type="button" id="maintenanceRefresh" class="maintenance-refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg><span>Перевірити доступність</span></button>
      <a class="maintenance-official" href="https://www.cherkasyoblenergo.com/off" target="_blank" rel="noopener noreferrer">Офіційні графіки <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
     </div>
@@ -251,6 +255,31 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="maintenance-art-caption"><span class="maintenance-caption-indicator"></span><span>Світло Черкаси</span><small>Ми працюємо над сервісом</small></div>
    </div>
   </main>
+  <section id="maintenanceBackup" class="maintenance-backup-v2" aria-labelledby="maintenanceBackupTitle" hidden>
+    <div class="maintenance-backup-title"><div><span class="maintenance-backup-eyebrow">ГРАФІК ЕЛЕКТРОПОСТАЧАННЯ</span>
+     <h2 id="maintenanceBackupTitle">Ваш резервний графік</h2>
+     <p>Графіки залишаються доступними під час технічних робіт.</p></div>
+     <button type="button" id="maintenanceBackupRefresh" class="maintenance-backup-refresh">Оновити</button>
+    </div>
+    <div class="maintenance-backup-content">
+     <label for="maintenanceBackupPlace">Оберіть адресу або підчергу</label>
+     <select id="maintenanceBackupPlace" aria-label="Адреса або підчерга"></select>
+     <div id="maintenanceBackupDays" class="maintenance-backup-days" role="group" aria-label="Виберіть день тижня"></div>
+     <div class="maintenance-backup-status" id="maintenanceBackupStatus" data-state="unknown">
+      <span class="maintenance-backup-status-caption" id="maintenanceBackupStateLabel">За плановим графіком</span>
+      <strong id="maintenanceBackupState">Виберіть підчергу</strong>
+      <p id="maintenanceBackupStateHint">Тут будуть години зі світлом та без світла.</p>
+     </div>
+     <div class="maintenance-backup-section-title"><strong>Погодинний графік</strong><small>Кожна година поділена на дві половини</small></div>
+     <div id="maintenanceBackupHours" class="maintenance-backup-hours" aria-label="Часові проміжки за графіком"></div>
+     <div class="maintenance-backup-legend" aria-label="Пояснення кольорів">
+      <span><i class="on"></i> За графіком світло є</span><span><i class="off"></i> Відключення</span><span><i class="unknown"></i> Немає даних</span>
+     </div>
+     <div class="maintenance-backup-periods"><strong>Інтервали відключень</strong><div id="maintenanceBackupIntervals" class="maintenance-backup-interval-list"></div></div>
+     <p id="maintenanceBackupMeta" class="maintenance-backup-meta" role="status"></p>
+     <a href="https://www.cherkasyoblenergo.com/off" target="_blank" rel="noopener noreferrer" id="maintenanceBackupOfficial" class="maintenance-backup-official">Перевірити в Черкасиобленерго ↗</a>
+    </div>
+   </section>
   <footer class="maintenance-bottom">
    <span>Це повідомлення стосується роботи застосунку, а не наявності світла у вашому будинку.</span>
    <a href="https://www.cherkasyoblenergo.com/news" target="_blank" rel="noopener noreferrer">Новини оператора <span aria-hidden="true">↗</span></a>
@@ -306,4 +335,4 @@ document.addEventListener('DOMContentLoaded', () => {
  <p class="beta-consent-detail">Для добровільної статистики використовується випадковий ідентифікатор інсталяції, основна підчерга, населений пункт без вулиці й будинку, тип пристрою й версія. Додатково враховуємо взаємодії з власними повідомленнями без персональних списків прочитання. Відмовитися можна будь-коли. <a href="./privacy.html" target="_blank" rel="noopener">Докладніше</a></p>
  <div class="beta-consent-actions"><button type="button" id="betaConsentAccept">Дозволити аналітику</button><button type="button" id="betaConsentDecline">Ні, дякую</button></div>
  </dialog>
-<script defer src="./all-queues-core.js"></script><script defer src="./all-queues.js"></script><script defer src="./message-format.js"></script><script defer src="./client-errors.js"></script><script defer src="./internal-pages.js"></script><script defer src="./legal-consent.js"></script><script defer src="./beta-ads.js"></script><script defer src="./install.js"></script><script defer src="./site-mode.js"></script></body></html>
+<script defer src="./all-queues-core.js"></script><script defer src="./all-queues.js"></script><script defer src="./message-format.js"></script><script defer src="./client-errors.js"></script><script defer src="./internal-pages.js"></script><script defer src="./legal-consent.js"></script><script defer src="./beta-ads.js"></script><script defer src="./install.js"></script><script defer src="./maintenance-backup.js"></script><script defer src="./site-mode.js"></script><script defer src="./micro-motion.js"></script></body></html>

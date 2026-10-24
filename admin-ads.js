@@ -196,6 +196,7 @@
   for(const [k,l] of [['promoTitle','Заголовок «Ваша реклама»'],['promoText','Опис «Ваша реклама»'],['contactLabel','Текст кнопки']])field(g,l,draft,k,'text');
   const landing=section('Сторінка «Реклама у Світло Черкаси»','Редагуйте зміст і вигляд сторінки для рекламодавців прямо звідси.');
   const landingFields=grid(landing);
+  field(landingFields,'Показувати сторінку «Реклама у Світло Черкаси» у застосунку',draft,'pageVisible','toggle');
   field(landingFields,'Заголовок',draft,'pageTitle');field(landingFields,'Вступ',draft,'pageIntro','long');
   field(landingFields,'Про рекламне місце',draft,'pageAbout','long');
   field(landingFields,'Умови розміщення',draft,'pageTerms','long');

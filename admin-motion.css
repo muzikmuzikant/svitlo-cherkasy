@@ -1,0 +1,50 @@
+/* Beta 7.9.13: admin workstation interaction system.
+ * Animate paint and transform only; data tables never shift during polling. */
+:root{--office-motion:cubic-bezier(.22,.84,.22,1);--office-fast:170ms;--office-soft:265ms}
+#adminDashboard button,#adminLoginScreen button,.admin-nav button,.admin-sidebar button,.admin-topbar button,
+[data-admin-panel] button,.card button,.planner-slot,.office-action,.work-action{
+ -webkit-tap-highlight-color:transparent;
+ transition:color var(--office-fast) ease,background-color var(--office-fast) ease,border-color var(--office-fast) ease,box-shadow var(--office-soft) ease,filter var(--office-fast) ease,transform var(--office-fast) var(--office-motion);
+}
+#adminDashboard button:not(:disabled):active,#adminLoginScreen button:not(:disabled):active,.admin-nav button:not(:disabled):active{
+ transform:translateY(1px) scale(.988);
+}
+#adminDashboard :is(button,input,textarea,select,[role="tab"]):focus-visible,#adminLoginScreen :is(button,input,textarea,select):focus-visible{
+ outline:2px solid #4b91ff;outline-offset:3px;
+}
+#adminDashboard :is(input,textarea,select),#adminLoginScreen :is(input,textarea,select){
+ transition:border-color .22s ease,box-shadow .25s ease,background-color .22s ease;
+}
+#adminDashboard :is(input,textarea,select):focus,#adminLoginScreen :is(input,textarea,select):focus{
+ border-color:#5a97e8;box-shadow:0 0 0 3px #6298e421;
+}
+#adminDashboard [data-admin-panel][hidden],#adminDashboard [data-workspace-panel][hidden]{display:none!important}
+#adminDashboard [data-admin-panel]:not([hidden]),#adminDashboard [data-workspace-panel]:not([hidden]){min-width:0}
+#adminDashboard .micro-enter{animation:adminSectionAppear 280ms var(--office-motion) both}
+#adminDashboard :is(.card,.surface,.panel,.workspace-panel,.work-detail,.admin-block):not([hidden]){
+ transition:border-color .2s ease,background-color .2s ease,box-shadow .25s ease;
+}
+#adminDashboard :is(.pill,.status-badge,.role-badge),#adminLoginScreen .pill{
+ transition:background-color .22s ease,color .22s ease,border-color .22s ease;
+}
+#adminDashboard .planner-slot.is-off{transition:background-color .22s var(--office-motion),color .22s ease,box-shadow .22s ease}
+#adminDashboard .planner-slot:focus-visible{position:relative;z-index:1}
+#adminDashboard :is(.admin-tab,.admin-menu-item,.office-tab,[role="tab"])[aria-selected="true"]{
+ transition:color .18s ease,background-color .2s ease,box-shadow .22s ease;
+}
+#adminDashboard .counter{font-variant-numeric:tabular-nums}
+#adminDashboard :is(.card,.admin-grid,.two,.planner-tools,.flex){min-width:0}
+#adminDashboard :is(.admin-modal,.office-modal,.workspace-modal)[open]{
+ animation:adminModalAppear 240ms cubic-bezier(.2,.85,.22,1) both;
+}
+@keyframes adminSectionAppear{from{opacity:.58;transform:translate3d(0,8px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
+@keyframes adminModalAppear{from{opacity:.5;transform:translate3d(0,9px,0) scale(.988)}to{opacity:1;transform:translate3d(0,0,0) scale(1)}}
+@media(hover:hover) and (pointer:fine){
+ #adminDashboard :is(button,.admin-nav a):not(:disabled):hover{filter:brightness(1.065)}
+ #adminDashboard .card:hover{border-color:var(--line,#bfd0e8)}
+}
+@media(prefers-reduced-motion:reduce){
+ #adminDashboard .micro-enter,#adminDashboard :is(.admin-modal,.office-modal,.workspace-modal)[open]{animation:none!important}
+ #adminDashboard :is(button,input,select,textarea,.card,.pill),#adminLoginScreen :is(button,input,textarea,select){transition:none!important}
+}
+html.feature-off-animations #adminDashboard .micro-enter{animation:none!important}

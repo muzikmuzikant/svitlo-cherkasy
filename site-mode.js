@@ -103,7 +103,7 @@
   }
   const quick=$('homeQuickPlaces');
   if(quick){
-   quick.hidden=disabled.includes('quick-addresses');
+   quick.hidden=disabled.includes('quick-addresses')||quick.children.length===0;
    if(disabled.includes('quick-addresses'))summary.push('швидкі адреси');
   }
   for(const anchor of document.querySelectorAll('a[data-managed-link="feedback"]'))

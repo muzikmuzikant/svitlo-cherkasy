@@ -315,7 +315,9 @@ function renderHome(){
  renderTomorrowPreview();
  renderQuickPlaces();
  updatePushInvite();
- const list=$('placeList');list.replaceChildren();
+ const list=$('placeList');
+ const placeKey=JSON.stringify([date,prefs.primaryId,addresses.map(a=>[a.id,a.queue,a.nickname,a.settlement,a.street,a.house,stateAt(timeline(date,a.queue),m)])]);
+ if(list.dataset.renderKey!==placeKey){list.dataset.renderKey=placeKey;list.replaceChildren();
  for(const item of addresses){
   const b=el('button','place-card');b.type='button';
   const avatar=el('span','place-avatar');avatar.innerHTML=PIN;b.append(avatar);
@@ -326,6 +328,7 @@ function renderHome(){
  }
  if(!addresses.length){const e=el('div','empty-places');e.append(el('strong','','Ще немає збережених місць'),el('span','','Додайте адресу, щоб отримати персональний графік.'));list.append(e)}
  const add=el('button','add-place-card','+  Додати адресу');add.onclick=()=>openAddressSheet();list.append(add);
+ }
 }
 function formatDuration(minutes){
  if(!Number.isFinite(minutes)||minutes<0)return '—';
@@ -354,7 +357,10 @@ function renderTomorrowPreview(){
 }
 function renderQuickPlaces(){
  const host=$('homeQuickPlaces');if(!host)return;
- host.replaceChildren();host.hidden=addresses.length<2; if(host.hidden)return;
+ host.hidden=addresses.length<2;if(host.hidden)return;
+ const key=JSON.stringify([prefs.primaryId,addresses.map(a=>[a.id,a.queue,a.nickname,a.street,a.house,a.favorite])]);
+ if(host.dataset.renderKey===key)return;
+ host.dataset.renderKey=key;host.replaceChildren();
  if(!addresses.length){host.append(el('span','quick-place-empty','Додайте адресу, щоб перемикатися одним дотиком'));return}
  [...addresses].sort((a,b)=>Number(!!b.favorite)-Number(!!a.favorite)).forEach(item=>{
   const button=el('button','quick-place'+(primary()?.id===item.id?' selected':''),(item.favorite?'⭐  ':'')+label(item));
@@ -547,7 +553,9 @@ async function shareSchedule(date,{copy=false}={}){
   }else await openSharePreview(blob,filename,date,info.queue);
  }catch(error){if(error?.name==='AbortError')return;console.warn('Share schedule:',error);flash('Не вдалося поділитися графіком')}
 }
-function renderBar(a){const bar=$('overviewBar');bar.replaceChildren();if(!a){const b=el('span','bar-segment unknown');b.style.flex='1';bar.append(b);return}let start=0,v=a[0];for(let i=1;i<=1440;i++){if(i===1440||a[i]!==v){const seg=el('span','bar-segment '+(v===1?'off':v===0?'on':'unknown'));seg.style.flex=String(i-start);seg.title=`${clock(start)}–${clock(i)} · ${v===1?'відключення':v===0?'світло':'немає даних'}`;bar.append(seg);start=i;v=a[i]}}const line=el('span','bar-now');line.style.left=(nowMinutes()/1440*100)+'%';bar.append(line)}
+function renderBar(a){const bar=$('overviewBar'),key=a?Array.from(a).join(''):'unknown';
+ if(bar.dataset.paintKey===key){const line=bar.querySelector('.bar-now');if(line)line.style.left=(nowMinutes()/1440*100)+'%';return}
+ bar.dataset.paintKey=key;bar.replaceChildren();if(!a){const b=el('span','bar-segment unknown');b.style.flex='1';bar.append(b);return}let start=0,v=a[0];for(let i=1;i<=1440;i++){if(i===1440||a[i]!==v){const seg=el('span','bar-segment '+(v===1?'off':v===0?'on':'unknown'));seg.style.flex=String(i-start);seg.title=`${clock(start)}–${clock(i)} · ${v===1?'відключення':v===0?'світло':'немає даних'}`;bar.append(seg);start=i;v=a[i]}}const line=el('span','bar-now');line.style.left=(nowMinutes()/1440*100)+'%';bar.append(line)}
 // Latest tap wins. Previous WAAPI animations are interrupted at their actual
 // visual position rather than rewinding, and clicks are never rate-limited.
 let tabMotion=null;
@@ -642,19 +650,26 @@ function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Пі�
  $('editActive').hidden=!!previewQueue;
  setText('detailAddress',previewQueue?'Підчерга '+previewQueue+' · тимчасовий перегляд':fullAddress(a));const tToday=timeline(today(),a.queue),st=stateAt(tToday,nowMinutes()),nxt=nextChange(today(),a.queue,nowMinutes());const status=$('detailStatus');status.className='detail-status '+st;status.textContent=statusCopy(st,nxt,a.queue,today()).title;
  const day=daySelected&&stripContains(today(),daySelected)?daySelected:today();daySelected=day;
- const root=$('days');root.replaceChildren();
- // Always show only the seven weekday names. No calendar dates or manual switching.
- for(const d of stripDates()){
-  const b=el('button','day-choice'+(d===day?' selected':'')+(d===today()?' is-today':''),weekdayShort(d));
-  b.type='button';
-  b.setAttribute('aria-pressed',String(d===day));
-  b.setAttribute('aria-label',weekdayFull(d));
-  b.onclick=()=>showDay(d);root.append(b);
+ const root=$('days'),calendarDays=stripDates(),daysKey=calendarDays.join(',');
+ if(root.dataset.renderKey!==daysKey){
+  root.dataset.renderKey=daysKey;root.replaceChildren();
+  for(const d of calendarDays){
+   const b=el('button','day-choice',weekdayShort(d));b.type='button';
+   b.setAttribute('aria-label',weekdayFull(d));b.onclick=()=>showDay(d);root.append(b);
+  }
  }
+ [...root.children].forEach((b,i)=>{
+  const d=calendarDays[i];
+  b.className='day-choice'+(d===day?' selected':'')+(d===today()?' is-today':'');
+  b.setAttribute('aria-pressed',String(d===day));
+ });
  const pub=currentDay(day),t=timeline(day,a.queue);
  const dayStats=stats(t);
  setText('detailDayStat',dayStats?(pub?(dayStats.unknown?'Частина годин уточнюється':'Без світла '+formatDuration(dayStats.off)+' · Зі світлом '+formatDuration(dayStats.on)):''):'Немає даних');
- setText('detailDayLabel',weekdayFull(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:verifiedNoSchedule(day)?'Світло весь день':'Немає підтверджених даних');const grid=$('hourGrid');grid.replaceChildren();
+ setText('detailDayLabel',weekdayFull(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:verifiedNoSchedule(day)?'Світло весь день':'Немає підтверджених даних');const grid=$('hourGrid');
+ const paintKey=JSON.stringify([day,a.queue,document.documentElement.dataset.theme,pub?.verified,pub?.queues?.[a.queue]||null,day===today()?Math.floor(nowMinutes()/60):null,verifiedNoSchedule(day)]);
+ if(grid.dataset.paintKey!==paintKey){
+  grid.dataset.paintKey=paintKey;grid.replaceChildren();
  for(let h=0;h<24;h++){
    let on=0,off=0;
    for(let m=h*60;m<h*60+60;m++){if(t?.[m]===0)on++;if(t?.[m]===1)off++}
@@ -673,6 +688,7 @@ function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Пі�
    c.setAttribute('role','img');
    c.setAttribute('aria-label',clock(h*60)+': '+(type==='unknown'?'немає підтверджених даних':type==='mixed'?`за графіком зі світлом ${on} хвилин, без світла ${off} хвилин`:type==='off'?'за графіком немає світла':'за графіком є світло'));
    c.title=c.getAttribute('aria-label');grid.append(c);
+ }
  }
  const next=nxt;
  setText('nextTime',next?nextChangeLabel(next):st==='on'?'Не заплановано':'Невідомо');

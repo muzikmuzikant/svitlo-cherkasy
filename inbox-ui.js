@@ -150,6 +150,7 @@
    });
    target.append(p);
   }
+  if(lines.length>300)target.append(el('p',lines.slice(300).join('\n'),'inbox-rich-remainder'));
  }
  function open(id){
   const item=rows.find(x=>x.id===id);if(!item)return false;
