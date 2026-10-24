@@ -213,6 +213,7 @@
  function displayNoticeTitle(){
   const notice={title:read('opsNoticeTitle'),icon:read('opsNoticeIcon'),kind:read('opsNoticeKind')};
   const icon=notice.icon||kinds[notice.kind]||'💬';
+  if(!notice.title)return '';
   return /^\p{Extended_Pictographic}/u.test(notice.title)||notice.title.startsWith(icon)?notice.title:(icon+' '+notice.title).trim();
  }
  function previewMessage(){
@@ -439,7 +440,9 @@
   const noticeChanges=scope==='content'?state.announcements:[...latest.announcements];
   const toPush=noticeChanges.filter(x=>x.active&&['push','both'].includes(x.delivery)&&!x.pushSentAt
    &&(!x.scheduledAt||Date.parse(x.scheduledAt)<=Date.now()));
-  if(toPush.length&&scope==='content'&&!confirm('Надіслати Push для '+toPush.length+' повідомлень?'))throw Error('Розсилку не підтверджено');
+  if(toPush.some(n=>n.title.length+(n.icon||kinds[n.kind]||'💬').length+1>85))
+    throw Error('Заголовок для Push занадто довгий. Скоротіть його, враховуючи емодзі.');
+   if(toPush.length&&scope==='content'&&!confirm('Надіслати Push для '+toPush.length+' повідомлень?'))throw Error('Розсилку не підтверджено');
   let next;
   if(scope==='maintenance'){
    const old=latest.maintenance?.enabled===true,newOn=$('opsMaintenance').checked;
