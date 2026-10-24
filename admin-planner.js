@@ -97,9 +97,10 @@
   announce('Отримуємо чинний графік Railway…');
   try{
    const doc=stagedDoc(),manual=manualEntry(doc,d,q);
+   if(manual){if(id===selectionId)applyEntry(manual,'load');return}
    const live=await current();
    if(id!==selectionId)return;
-   const entry=manual||findEntry(live,d,q);
+   const entry=findEntry(live,d,q);
    if(entry){applyEntry(entry,'load')}
    else announce('Для '+d+' підчерги '+q+' підтвердженого графіка немає. Порожня сітка є лише шаблоном, а не підтвердженням безперебійного світла.',true);
   }catch(e){if(id===selectionId)announce(e.message,true)}
