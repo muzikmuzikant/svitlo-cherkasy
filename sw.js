@@ -139,25 +139,59 @@ self.addEventListener('fetch',event=>{
  }catch{return Response.error()}
 })());
 });
+// Include a short hash so long change IDs cannot share the same truncated tag.
+function stablePushTag(value){
+ const text=String(value||'push');let hash=2166136261;
+ for(const ch of text){hash^=ch.charCodeAt(0);hash=Math.imul(hash,16777619)}
+ return text.slice(0,54)+'-'+(hash>>>0).toString(36);
+}
+// A receipt confirms ONLY that showNotification() resolved, not that a user saw
+// an alert. Failure to report must never block the visible notification.
+async function reportPushDisplay(receiptId){
+ if(typeof receiptId!=='string'||!/^[A-Za-z0-9_-]{24}$/.test(receiptId))return;
+ const ctrl=new AbortController(),timeout=setTimeout(()=>ctrl.abort(),3000);
+ try{
+  const response=await fetch('./push-config.json',{cache:'no-store',signal:ctrl.signal});
+  if(!response.ok)return;
+  const config=await response.json(),origin=String(config?.apiBase||'');
+  if(!/^https:\/\/[^\s/]+(?:\/)?$/.test(origin))return;
+  await fetch(origin.replace(/\/$/,'')+'/api/push/receipt',{
+   method:'POST',headers:{'content-type':'application/json'},
+   body:JSON.stringify({receiptId,status:'display-requested'}),signal:ctrl.signal,cache:'no-store'
+  });
+ }catch(error){console.warn('Push display receipt:',error?.message||error)}
+ finally{clearTimeout(timeout)}
+}
 self.addEventListener('push',event=>{
  let msg={title:'💡 Світло Черкаси',body:'Є нове повідомлення про графік.'};
  try{if(event.data)msg=Object.assign(msg,event.data.json())}catch{}
- // iOS requires a visible notification for every push.
+ // Even a push with malformed optional content must show a visible alert on iOS.
  const canonical=typeof msg.notificationId==='string'&&(
   /^notice:[A-Za-z0-9_-]{6,64}$/.test(msg.notificationId)||
   /^(?:day|change|emergency|transition):[A-Za-z0-9_.:+-]{1,145}$/.test(msg.notificationId)
  )?msg.notificationId:null;
- const tag=String(canonical||msg.tag||msg.title).slice(0,70);
- const id=canonical||'push:'+tag;
+ const id=canonical||'push:'+stablePushTag(msg.tag||msg.title);
  const inboxAllowed=msg.inbox!==false;
  const kind=['schedule','emergency','announcement','push'].includes(msg.kind)?msg.kind:(id.startsWith('notice:')?'announcement':'push');
- event.waitUntil(Promise.all([
-  self.registration.showNotification(String(msg.title).slice(0,85),{body:String(msg.body).slice(0,220),icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',tag,data:{url:msg.url||self.registration.scope,inboxId:inboxAllowed?id:null,noticeId:canonical,inbox:inboxAllowed}}),
-  (inboxAllowed?self.SvitloInbox.add({id,title:msg.title,body:msg.body,content:msg.content||'',kind,at:msg.at||new Date().toISOString(),url:msg.url||self.registration.scope}):Promise.resolve())
-   .then(()=>self.clients.matchAll({type:'window',includeUncontrolled:true}))
-   .then(clients=>clients.forEach(client=>client.postMessage({type:'SVITLO_INBOX_UPDATED'})))
-   .catch(error=>console.warn('Inbox save:',error))
- ]));
+ const title=String(msg.title||'Світло Черкаси').slice(0,85);
+ const body=String(msg.body||'Нове повідомлення').slice(0,220);
+ const data={url:msg.url||self.registration.scope,inboxId:inboxAllowed?id:null,noticeId:canonical,inbox:inboxAllowed};
+ const display=Promise.resolve().then(()=>self.registration.showNotification(title,{
+  body,icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',
+  tag:stablePushTag(canonical||msg.tag||msg.title),data
+ })).catch(async error=>{
+  console.warn('Rich Push display failed:',error?.message||error);
+  // Retry without optional assets/tag for platform-specific option failures.
+  await self.registration.showNotification(title,{body,lang:'uk',data});
+ }).then(()=>reportPushDisplay(msg.receiptId));
+ const inbox=(inboxAllowed?self.SvitloInbox.add({
+  id,title:msg.title,body:msg.body,content:msg.content||'',kind,
+  at:msg.at||new Date().toISOString(),url:msg.url||self.registration.scope
+ }):Promise.resolve())
+  .then(()=>self.clients.matchAll({type:'window',includeUncontrolled:true}))
+  .then(clients=>clients.forEach(client=>client.postMessage({type:'SVITLO_INBOX_UPDATED'})))
+  .catch(error=>console.warn('Inbox save:',error?.message||error));
+ event.waitUntil(Promise.all([display,inbox]));
 });
 self.addEventListener('notificationclick',event=>{
  event.notification.close();
