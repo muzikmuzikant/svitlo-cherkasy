@@ -164,6 +164,9 @@ def parse_article(html,url,reference=None):
     # so BeautifulSoup may produce "08 :00" instead of "08:00".
     # Join only numeric clock colons, never merge unrelated table tokens.
     full=re.sub(r'(?<=\d)\s*:\s*(?=\d{2}\b)', ':', full)
+    # Operator CMS may split the leading zero into "0 0:00" or "0 1:00".
+    # Rejoin only zero and a one-digit clock; never merge queue identifiers.
+    full=re.sub(r'(?<!\d)0\s+([0-9]):([0-5]\d)\b', r'0\1:\2', full)
     time_hit=PUB_TS.search(full)
     if time_hit:
         pub=datetime.strptime(' '.join(time_hit.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
@@ -202,6 +205,7 @@ def parse_article(html,url,reference=None):
         container=soup.select_one('article, .article-content, .news-article, main') or soup
         text=container.get_text(' ', strip=True).replace('\xa0',' ').replace('−','-')
         text=re.sub(r'(?<=\d)\s*:\s*(?=\d{2}\b)', ':', text)
+        text=re.sub(r'(?<!\d)0\s+([0-9]):([0-5]\d)\b', r'0\1:\2', text)
         heading_pos=text.lower().find(heading)
         table_text=text[heading_pos+len(heading):] if heading_pos>=0 else text
         if len(set(m.group(1) for m in QUEUE_START.finditer(table_text))) < 3:

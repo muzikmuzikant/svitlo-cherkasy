@@ -1,0 +1,26 @@
+name: Beta CMS Midnight Parser Checks
+on:
+  pull_request:
+    branches: [staging]
+    paths:
+      - 'scripts/update_data.py'
+      - 'tests/test_official_posts_v721.py'
+      - '.github/workflows/beta-cms-midnight.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  parser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install parser test requirements
+        run: python -m pip install -q -r requirements.txt pytest
+      - name: Validate official operator publication and midnight subqueues
+        run: python -m pytest -q tests/test_official_posts_v721.py
+      - name: Confirm parser syntax
+        run: python -m py_compile scripts/update_data.py
