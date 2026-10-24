@@ -318,7 +318,9 @@ function renderHome(){
  renderQuickPlaces();
 
  updatePushInvite();
- const list=$('placeList');list.replaceChildren();
+ const list=$('placeList');
+ const placeKey=JSON.stringify([date,prefs.primaryId,addresses.map(a=>[a.id,a.queue,a.nickname,a.settlement,a.street,a.house,stateAt(timeline(date,a.queue),m)])]);
+ if(list.dataset.renderKey!==placeKey){list.dataset.renderKey=placeKey;list.replaceChildren();
  for(const item of addresses){
   const b=el('button','place-card');b.type='button';
   const avatar=el('span','place-avatar');avatar.innerHTML=PIN;b.append(avatar);
@@ -329,6 +331,7 @@ function renderHome(){
  }
  if(!addresses.length){const e=el('div','empty-places');e.append(el('strong','','Ще немає збережених місць'),el('span','','Додайте адресу, щоб отримати персональний графік.'));list.append(e)}
  const add=el('button','add-place-card','+  Додати адресу');add.onclick=()=>openAddressSheet();list.append(add);
+ }
 }
 function formatDuration(minutes){
  if(!Number.isFinite(minutes)||minutes<0)return '—';
