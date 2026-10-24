@@ -49,6 +49,8 @@
    if(dialog.matches('.share-preview-dialog,.inbox-detail')&&!isMobile())return false;
    const handle=target.closest(handles);
    const content=target.closest('.sheet-inner,.share-preview-scroll,.inbox-detail-content');
+   // Long Inbox messages scroll normally; only the dedicated drag handle dismisses.
+   if(dialog.matches('.inbox-detail')&&!target.closest('.inbox-drag-handle'))return false;
    if(!handle&&!content)return false;
    if(!dialog.contains(handle||content)||target.closest(interactive))return false;
    // Within content, let the inner scroller move normally until it reaches top.
