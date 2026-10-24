@@ -53,6 +53,7 @@ const emergencyCopy=status=>status==='active'?({
  }):null;
 export function noticeDisplayTitle(notice){
  const title=String(notice?.title||'').trim();
+ if(!title)return '';
  const icon=String(notice?.icon||'').trim()||({important:'📣',update:'✨',emergency:'⚠️',schedule:'🗓️'})[notice?.kind]||'💬';
  return /^\p{Extended_Pictographic}/u.test(title)||title.startsWith(icon)?title:(icon+' '+title).trim();
 }
