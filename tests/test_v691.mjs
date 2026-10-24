@@ -12,11 +12,12 @@ test('allows only explicitly selected HTTPS domains',()=>{
  assert.ok(!origins.isAllowed('http://muzikmuzikant.github.io'));
  assert.throws(()=>createOriginPolicy('https://example.com/path'),/without paths/);
 });
-test('feedback and privacy always render a light theme',()=>{
+test('feedback and privacy inherit both system light and dark themes',()=>{
  for(const page of ['feedback.html','privacy.html']){
   const text=fs.readFileSync(path.join(root,page),'utf8');
-  assert.ok(!text.includes('prefers-color-scheme:dark'));
-  assert.ok(text.includes('name="color-scheme" content="light"'));
+  assert.ok(text.includes('name="color-scheme" content="light dark"'),page);
+  assert.ok(text.includes('src="./theme.js"'),page);
+  assert.ok(text.includes('href="./theme.css"'),page);
  }
 });
 test('favicon links and favicon files exist',()=>{
