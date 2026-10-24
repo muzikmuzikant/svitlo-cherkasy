@@ -176,7 +176,9 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    if(url.pathname==='/api/admin/ads'&&req.method==='PUT'){if(role!=='owner'&&!(session.managed&&session.permissions.includes('ads'))){send(res,403,{error:'Недостатньо прав на рекламу'});return true}send(res,200,ads.update(await readJson(req,140000)));return true}
    if(url.pathname==='/api/admin/analytics'&&req.method==='GET'){
      if(!analytics){send(res,503,{error:'Аналітика поки недоступна'});return true}
-     send(res,200,{...analytics.report(),betaPwa:ads.dashboard().pwa,betaAdvertising:{stats:ads.dashboard().stats,daily:ads.dashboard().daily}});return true;
+     const from=url.searchParams.get('from'),to=url.searchParams.get('to');
+      if(Boolean(from)!==Boolean(to)){send(res,400,{error:'Оберіть початкову й кінцеву дати'});return true}
+      send(res,200,{...analytics.report(from&&to?{from,to}:{}),betaPwa:ads.dashboard().pwa,betaAdvertising:{stats:ads.dashboard().stats,daily:ads.dashboard().daily}});return true;
    }
    if(url.pathname==='/api/admin/security'&&req.method==='GET'){
      expireSessions();send(res,200,{role,activeSessions:SESSIONS.size,secondFactorEnabled:!!ADMIN_TOTP_SECRET,
