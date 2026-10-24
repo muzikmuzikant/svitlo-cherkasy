@@ -1,7 +1,7 @@
 name: Push Delivery Regression Checks
 on:
   push:
-    branches: [main]
+    branches: [staging, main]
     paths:
       - 'push-server/**'
       - 'app.js'
@@ -14,6 +14,7 @@ on:
       - 'tests/test_transition_dispatcher.mjs'
       - 'tests/test_transition_inbox.mjs'
       - 'tests/test_push_publication_reliability.mjs'
+      - 'tests/test_push_receipts_beta.mjs'
       - '.github/workflows/push-checks.yml'
   pull_request:
     branches: [staging, main]
@@ -29,6 +30,7 @@ on:
       - 'tests/test_transition_dispatcher.mjs'
       - 'tests/test_transition_inbox.mjs'
       - 'tests/test_push_publication_reliability.mjs'
+      - 'tests/test_push_receipts_beta.mjs'
       - '.github/workflows/push-checks.yml'
   workflow_dispatch:
 permissions:
@@ -42,6 +44,6 @@ jobs:
         with:
           node-version: '22'
       - name: Check server and client syntax
-        run: node --check push-server/server.js && node --check app.js && node --check sw.js
+        run: node --check push-server/server.js && node --check push-server/push-receipts.js && node --check app.js && node --check sw.js
       - name: Run real Push regression checks
-        run: node --test tests/test_share_application_beta.mjs tests/test_push_delivery_health.mjs tests/test_schedule_engine.mjs tests/test_transition_inbox.mjs tests/test_auto_notifications.mjs tests/test_transition_server_dispatch.mjs tests/test_transition_dispatcher.mjs tests/test_push_publication_reliability.mjs
+        run: node --test tests/test_share_application_beta.mjs tests/test_push_delivery_health.mjs tests/test_schedule_engine.mjs tests/test_transition_inbox.mjs tests/test_auto_notifications.mjs tests/test_transition_server_dispatch.mjs tests/test_transition_dispatcher.mjs tests/test_push_publication_reliability.mjs tests/test_push_receipts_beta.mjs
