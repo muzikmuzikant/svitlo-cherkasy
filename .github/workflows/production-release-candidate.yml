@@ -1,0 +1,42 @@
+name: Production Release Candidate Checks
+on:
+  push:
+    branches: [release/7.9.12-production-prep-20261024]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'push-server/ads.js'
+      - 'admin-ads.js'
+      - 'tests/test_production_ads_release.mjs'
+      - 'scripts/release_preflight.py'
+      - 'tests/test_release_preflight.py'
+      - 'release.json'
+      - 'manifest.webmanifest'
+      - 'push-config.json'
+      - 'sw.js'
+      - '.github/workflows/production-release-candidate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check production ad and server syntax
+        run: node --check push-server/ads.js && node --check push-server/admin.js && node --check push-server/server.js && node --check beta-ads.js && node --check admin-ads.js
+      - name: Test owner-controlled ads, legacy migrations and scheduling contracts
+        run: node --test tests/test_production_ads_release.mjs tests/test_beta_monetization.mjs tests/test_schedule_engine.mjs tests/test_transition_server_dispatch.mjs
+      - name: Validate release configurations
+        run: python -m unittest discover -s tests -p test_release_preflight.py -v
+      - name: Build Production-target PWA without deployment
+        run: python scripts/build_pages.py
+      - name: Verify Production identity and cache separation
+        run: python scripts/release_preflight.py --channel production
