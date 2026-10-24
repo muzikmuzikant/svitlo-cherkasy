@@ -555,7 +555,7 @@ const server=http.createServer(async(req,res)=>{
     return null;
    };
    response(res,200,{ok:true,registered:!!rec,queue:rec?.queue||null,
-    preferences:rec?{off:!!rec.preferences?.off,on:!!rec.preferences?.on}:null,
+    preferences:rec?{off:!!rec.preferences?.off,on:!!rec.preferences?.on,changes:!!rec.preferences?.changes,tomorrow:!!rec.preferences?.tomorrow,emergency:!!rec.preferences?.emergency}:null,
     latestAutomatic:rec?.automatic||null,upcoming:rec&&fresh?{
      off:rec.preferences?.off?next(1):null,on:rec.preferences?.on?next(0):null}:null,
     lastPushCheck:lastSuccess,checkError:lastError,scheduleFresh:fresh,
