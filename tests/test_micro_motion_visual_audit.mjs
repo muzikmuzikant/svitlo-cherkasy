@@ -28,13 +28,13 @@ test('public and office microstates support dark and reduced-motion preferences'
 test('all-queues expansion preserves original row nodes, and renders no per-minute duplicates',()=>{
  const js=read('all-queues.js');
  assert.match(js,/function toggleQueue\(queue\)/);
- assert.match(js,/lane\.onclick=\(\)=>toggleQueue\(queue\)/);
+ assert.match(js,/row\.onclick=\(\)=>toggleQueue\(queue\)/);
  assert.match(js,/signature===currentSignature/);
- assert.match(js,/root\.querySelectorAll\('\.all-queues-lane'\)\.length===12/);
- assert.match(js,/row\.after\(detail\)/);
- assert.match(js,/animateDetail/);
+ assert.match(js,/if\(signature===currentSignature&&root\.childElementCount\)return/);
+ assert.match(js,/detailPanel\.append\(intervals\)/);
+ assert.match(js,/function drawDetail\(\)/);
  assert.match(js,/src\(\)\.timeline\(selected,queue\)/);
- assert.doesNotMatch(js,/lane\.onclick=\(\)=>\{[^\n]*render\(\)/);
+ assert.doesNotMatch(js,/row\.onclick=\(\)=>\{[^\n]*render\(\)/);
 });
 test('owned modal dialogs are not intercepted by the general Escape animator',()=>{
  const js=read('motion.js');

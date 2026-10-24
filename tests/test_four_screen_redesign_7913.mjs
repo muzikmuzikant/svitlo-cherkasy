@@ -36,11 +36,11 @@ test('Home and addresses preserve picker, notifications and lookup logic',()=>{
 test('Unfiltered 12-row schedule retains stable full-day timelines and detail interactions',()=>{
  const html=read('index.html'),js=read('all-queues.js');
  assert.doesNotMatch(html,/data-queue-group=/);
- assert.match(js,/for\(const queue of math\.QUEUES\)/);
+ assert.match(js,/for\(let n=1;n<=6;n\+\+\)/);
  assert.match(js,/signature===currentSignature/);
  assert.match(js,/src\(\)\.timeline\(selected,queue\)/);
  assert.match(js,/function toggleQueue\(queue\)/);
- assert.match(js,/toLocaleString\('uk-UA'/);
+ assert.match(js,/all-queues-compare-summary/);
 });
 
 test('Redesigned files are packaged and cached for offline PWA, never production',()=>{

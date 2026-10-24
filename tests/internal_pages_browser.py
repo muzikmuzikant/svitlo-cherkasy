@@ -57,6 +57,7 @@ def main():
             # Open the actual Settings links as an end user would, rather than
             # testing the programmatic helper alone.
             page.locator('.bottom-nav [data-go="settings"]').click()
+            page.locator('#settingsNavHub [data-settings-page="help"]').click()
             for link,target in [
                 ('#settings a[href^="./help.html"]','help.html'),
                 ('#settings a[href^="./feedback.html"]','feedback.html'),

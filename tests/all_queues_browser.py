@@ -45,10 +45,10 @@ def main():
      window.SvitloAllQueues.refresh();
     }""")
     page.locator('.all-queues-lane[data-queue="1.1"]').click()
-    text=page.locator("#allQueuesInspect").inner_text()
+    text=page.locator(".all-queues-detail-panel").inner_text()
     assert "10:30" in text and "11:00" in text,text
     page.locator('.all-queues-lane[data-queue="1.2"]').click()
-    assert "Немає підтверджених даних" in page.locator("#allQueuesInspect").inner_text()
+    assert "не підтверджена" in page.locator(".all-queues-detail-panel").inner_text()
     page.locator("#allQueuesExport").click()
     page.wait_for_function("() => document.querySelector('#sharePreviewDialog')?.open",timeout=10000)
     assert "Усі підчерги" in page.locator("#sharePreviewHeading").inner_text()

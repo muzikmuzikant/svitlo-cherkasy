@@ -81,7 +81,7 @@ def main():
      assert size["count"]==12 and size["width"]<=size["client"]+1,(width,scheme,size)
      page.evaluate("window.__lane=document.querySelector('.all-queues-lane')")
      page.locator(".all-queues-lane").first.click()
-     assert page.locator(".all-queues-row-detail").count()==1,(width,scheme,"expanded row missing")
+     assert page.locator(".all-queues-detail-panel:not([hidden])").count()==1,(width,scheme,"expanded row missing")
      assert page.evaluate("window.__lane===document.querySelector('.all-queues-lane')"),(
        width,scheme,"tapping a row rebuilt all rows")
      page.evaluate("window.SvitloAllQueues.refresh()")
