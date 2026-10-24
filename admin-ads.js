@@ -1,4 +1,4 @@
-/* Beta advertising control center: all edits stay in the isolated staging API. */
+/* Advertising control center. Writes go only to the authenticated API of this app origin. */
 (()=>{'use strict';
  const root=document.getElementById('betaAdsAdmin');
  if(!root)return;
@@ -174,13 +174,13 @@
   if(!report||!draft)return;
   root.replaceChildren();root.className='beta-ads-admin';
   const heading=el('div',undefined,'ad-titlebar');
-  const title=el('div');title.append(el('h3','Центр рекламного керування'),el('p',report.commercialLocked?'Production · Реклама та приймання внесків вимкнені в цій версії':'Beta · Тестове середовище реклами','ad-muted'));
+  const title=el('div');title.append(el('h3','Центр рекламного керування'),el('p',report.commercialLocked?'Реклама недоступна у цьому середовищі':(location.hostname==='svitlo-cherkasy.pp.ua'?'Основний додаток':'Бета')+' · Реклама тільки на головній сторінці','ad-muted'));
   const tools=el('div',undefined,'ad-toolbar');
   button(tools,'Оновити дані',()=>refresh(true));
   // Saving lives in a sticky footer, not in the distant heading.
   const status=el('small',dirty?'Є незбережені зміни':'Налаштування завантажено','ad-muted');status.id='betaAdsSaveStatus';
   heading.append(title,tools);root.append(heading);
-  if(report.commercialLocked){const warning=el('p','Реклама та реквізити для переказів не відображаються користувачам. Налаштування тут є лише чернетками: збереження не активує монетизацію.','ad-muted');warning.setAttribute('role','status');warning.style.padding='14px';warning.style.border='1px solid #dae4f2';warning.style.borderRadius='12px';root.append(warning)}
+  if(report.commercialLocked){const warning=el('p','Показ реклами заблокований для цього середовища. Перевірте налаштування сервера.','ad-muted');warning.setAttribute('role','status');warning.style.padding='14px';warning.style.border='1px solid #dae4f2';warning.style.borderRadius='12px';root.append(warning)}
   analytics();
   const main=section('Загальні параметри каруселі','Реклама відображається лише на головній сторінці. Індивідуальні параметри мають пріоритет над загальними.');
   const g=grid(main);
@@ -282,13 +282,13 @@
   ads.append(templates);
   button(ads,'+ Створити оголошення',()=>{draft.campaigns.unshift({id:uuid(),title:'',description:'',image:'',link:'',button:'Дізнатися більше',enabled:false,background:'#ffffff',foreground:'#142338',start:'',end:'',days:[],weight:1,seconds:8,maxImpressions:0,dailyCap:0,price:0,paid:false,note:''});mark();render()});root.append(ads);
   const bottom=el('div',undefined,'ad-sticky-savebar');
-  const caption=el('span',report.commercialLocked?'Чернетки зберігаються. Публікація та платежі заблоковані.':'Зміни застосовуються до Beta після збереження.');
+  const caption=el('span',report.commercialLocked?'Чернетки збережуться, але показ реклами тут заблокований.':'Реклама показується лише після увімкнення загального перемикача та збереження.');
   const controls=el('div',undefined,'ad-toolbar');
   button(controls,'Скасувати зміни',()=>refresh(true),'secondary');
   const save=button(controls,'Зберегти всі зміни',saveDraft,'primary');save.id='betaAdsSaveButton';
   bottom.append(caption,status,controls);root.append(bottom);
   async function saveDraft(){if(loading)return;loading=true;save.disabled=true;status.textContent='Зберігаємо...';
-    try{const r=await api('PUT',draft);report=r;draft=structuredClone(r.settings);dirty=false;render();const n=document.getElementById('betaAdsSaveStatus');if(n)n.textContent=report.commercialLocked?'Чернетки збережено, публікацію вимкнено':'Зміни збережено у Beta'}
+    try{const r=await api('PUT',draft);report=r;draft=structuredClone(r.settings);dirty=false;render();const n=document.getElementById('betaAdsSaveStatus');if(n)n.textContent=report.commercialLocked?'Чернетки збережено, показ заблокований':'Налаштування реклами збережено'}
     catch(e){status.textContent='Помилка: '+e.message;alert('Не вдалося зберегти: '+e.message)}
     finally{loading=false;save.disabled=false}}
  }
