@@ -57,7 +57,9 @@ if not (DEST/'apple-touch-icon-v692.png').is_file():
 for folder in ('assets','data'):
     shutil.copytree(ROOT/folder,DEST/folder)
 # User-owned public configuration and custom domain must survive the release build.
-optional_files=('push-config.json',) if release.get('channel') == 'beta' else ('push-config.json','CNAME')
+optional_files=('push-config.json',) if release.get('channel') == 'beta' else ('push-config.json','CNAME','google651cc9e5e29fd428.html')
 for optional in optional_files:
+    if optional in ('CNAME','google651cc9e5e29fd428.html') and not (ROOT/optional).is_file():
+        raise FileNotFoundError('Production identity asset missing: '+optional)
     if (ROOT/optional).is_file():shutil.copy2(ROOT/optional,DEST/optional)
 print('Prepared public site with',len(list(DEST.rglob('*'))),'entries.')
