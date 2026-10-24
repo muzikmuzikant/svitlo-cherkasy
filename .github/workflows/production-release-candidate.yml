@@ -34,6 +34,9 @@ jobs:
         run: node --check push-server/ads.js && node --check push-server/admin.js && node --check push-server/server.js && node --check beta-ads.js && node --check admin-ads.js
       - name: Test owner-controlled ads, legacy migrations and scheduling contracts
         run: node --test tests/test_production_ads_release.mjs tests/test_beta_monetization.mjs tests/test_schedule_engine.mjs tests/test_transition_server_dispatch.mjs
+      - name: Test integrated Beta DST, Push, schedules and freshness
+        run: |
+          node --test tests/test_dst_kyiv_2026.mjs tests/test_push_receipts_beta.mjs tests/test_verified_no_schedule_freshness.mjs tests/test_release_fixes_7912.mjs tests/test_schedule_mirror_beta.mjs
       - name: Validate release configurations
         run: python -m unittest discover -s tests -p test_release_preflight.py -v
       - name: Build Production-target PWA without deployment
