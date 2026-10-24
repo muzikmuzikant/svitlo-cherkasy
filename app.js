@@ -237,7 +237,7 @@ function el(tag,cls,text){const n=document.createElement(tag);if(cls)n.className
 function label(a){return a?.nickname?.trim()||[a?.street,a?.house].filter(Boolean).join(', ')||'Додайте адресу'}
 function fullAddress(a){return a?[a.settlement||'Черкаси',[a.street,a.house].filter(Boolean).join(', ')].join(' · '):'Оберіть адресу'}
 function setText(id,text){if($(id).textContent!==String(text))$(id).textContent=String(text)}
-function render(){renderHome();if(active==='detail')renderDetail();if(active==='updates')renderUpdates();if(active==='settings')renderSettings()}
+function render(){renderHome();if(active==='detail')renderDetail();if(active==='updates')renderUpdates();if(active==='settings')renderSettings();window.SvitloAllQueues?.refresh?.()}
 function scheduleQueueChanged(before, after, queue) {
  // Ignore rollovers and re-publications which do not change actual queue intervals.
  if (!queue || !before?.days?.length || !after?.days?.length) return false;
@@ -1288,6 +1288,14 @@ async function enableNotifications(){if(!('Notification' in window)){flash('Це
 // An iOS permission change can happen in system Settings while the PWA is suspended.
 window.addEventListener('focus',()=>{updatePushInvite();checkPushDelivery().catch(console.warn);if(!document.hidden)refreshData().catch(console.warn)});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){updatePushInvite();checkNotifications();checkPushDelivery().catch(console.warn)}});
+// All subqueue charts use the same verified minute timelines as normal schedules.
+window.SvitloAllQueuesSource={
+ dates:stripDates,today,
+ selectedDate:()=>daySelected||today(),
+ timeline,day:currentDay,noSchedule:verifiedNoSchedule,
+ offline:isOfflineMode,lastChecked:()=>data.lastChecked,
+ sharePreview:openSharePreview
+};
 // Event wiring
 // Inbox uses the existing screen and date picker; no external navigation.
 window.addEventListener('svitlo:open-schedule',event=>{
