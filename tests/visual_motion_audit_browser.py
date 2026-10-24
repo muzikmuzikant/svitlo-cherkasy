@@ -71,7 +71,9 @@ def main():
       assert data["scroll"]<=width+3,(width,scheme,tab,"overflow",data)
       assert abs(data["nav"]["bottom"]-nav["bottom"])<4,(width,scheme,tab,"dock moved")
      # A queue expansion must preserve the 12 row elements and reader's scroll context.
-     page.locator("#allQueuesHomeOpen").click()
+     page.locator('.bottom-nav [data-go="detail"]').click()
+     page.wait_for_function("() => !document.querySelector('#detail').hidden",timeout=6000)
+     page.locator("#allQueuesDetailOpen").click()
      page.wait_for_function("() => document.querySelector('#allQueuesDialog')?.open",timeout=6000)
      size=page.evaluate("""() => ({
       count:document.querySelectorAll('.all-queues-lane').length,
