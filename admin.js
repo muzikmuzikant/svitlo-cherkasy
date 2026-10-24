@@ -161,7 +161,7 @@ function pushResult(text,ok=null){$('pushResult').textContent=text;$('pushResult
 function setPushReady(ready){$('pushAvailability').textContent=ready?'Сервер підключений':'Увійдіть для надсилання';$('pushAvailability').className='pill'+(ready?' ok':'');$('testPush').disabled=!ready;$('refreshPush').disabled=!ready;updatePushDraft()}
 function updatePushDraft(){
  const title=$('pushTitle').value.trim(),body=$('pushBody').value.trim();
- $('pushTitleCount').textContent=$('pushTitle').value.length+' / 85';$('pushBodyCount').textContent=$('pushBody').value.length+' / 280';
+ $('pushTitleCount').textContent=$('pushTitle').value.length+' / 85';$('pushBodyCount').textContent=$('pushBody').value.length+' / 500';
  $('pushPreviewTitle').textContent=title||'Заголовок сповіщення';$('pushPreviewBody').textContent=body||'Тут буде твій текст повідомлення.';
  $('sendPush').disabled=!remote||pushBusy||!title||!body;
 }

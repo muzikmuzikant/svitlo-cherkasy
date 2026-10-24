@@ -210,6 +210,8 @@
  };
 
  function previewMessage(){
+  $('opsNoticeBodyCount').textContent=$('opsNoticeBody').value.length+' / 500';
+  $('opsNoticeContentCount').textContent=$('opsNoticeContent').value.length+' / 20 000';
   $('opsEditorPreviewTitle').textContent=read('opsNoticeTitle')||'Заголовок повідомлення';
   $('opsEditorPreviewBody').textContent=read('opsNoticeBody')||'Короткий текст для користувачів';
   $('opsPreviewPushTitle').textContent=read('opsNoticeTitle')||'Назва сповіщення';

@@ -369,7 +369,7 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    }
    if(url.pathname==='/api/admin/app-config'&&req.method==='PUT'){
      if(!siteControls){send(res,503,{error:'Керування застосунком недоступне'});return true}
-     const body=await readJson(req,750000);
+     const body=await readJson(req,1_700_000);
      if(role!=='owner'){
       const old=siteControls.get(),candidate=validateAppConfig(body),current=validateAppConfig(old);
       if(JSON.stringify(candidate.maintenance)!==JSON.stringify(current.maintenance)||
