@@ -145,7 +145,7 @@ async function transitionJob(){
  transitionRunning=true;
  try{
   const now=dayInKyiv(),timestamp=Date.now();
-  const source=preferFreshSchedule(liveSchedule(),lastLoadedSchedule,timestamp);
+  const source=preferFreshSchedule((typeof liveSchedule==='function'?liveSchedule():officialSchedules.schedule()),lastLoadedSchedule,timestamp);
   const schedulesSafe=usableSchedule(source,timestamp);
   const current=verifiedScheduleDay(source,now.date,timestamp);
   const nextDate=shiftDay(now.date,1);
@@ -213,7 +213,7 @@ async function job(){
  running=true;
  try{
   let scheduleIssue=null;
-  const published=liveSchedule();
+  const published=(typeof liveSchedule==='function'?liveSchedule():officialSchedules.schedule());
   let fallback=lastLoadedSchedule;
   // Railway may miss an import. Try the public, independently verified feed
   // instead of allowing a stale local publication to mute every reminder.
@@ -387,7 +387,7 @@ const server=http.createServer(async(req,res)=>{
  if(requestPath==='/api/public/message'&&req.method==='GET'){
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   const id=new URL(req.url,'http://localhost').searchParams.get('id');
-  const message=resolvePublicMessage(id,{schedule:liveSchedule()||lastLoadedSchedule,
+  const message=resolvePublicMessage(id,{schedule:(typeof liveSchedule==='function'?liveSchedule():officialSchedules.schedule())||lastLoadedSchedule,
    announcements:siteControls.publicState().announcements,emergencies:lastLoadedBulletins});
   response(res,message?200:404,message||{error:'Повідомлення більше недоступне'});return;
  }
@@ -398,7 +398,7 @@ const server=http.createServer(async(req,res)=>{
   const live=manualOverrides.snapshot();response(res,live?200:404,live||{error:'No published manual edits'});return;
  }
  if((requestPath==='/api/data/schedules.json'||requestPath==='/api/data/source_review.json')&&req.method==='GET'){
-  const doc=requestPath==='/api/data/source_review.json'?officialSchedules.review():liveSchedule();
+  const doc=requestPath==='/api/data/source_review.json'?officialSchedules.review():(typeof liveSchedule==='function'?liveSchedule():officialSchedules.schedule());
   if(!doc){response(res,503,{error:'Railway schedule snapshot is not yet ready'});return}
   response(res,200,doc);return;
  }
@@ -434,7 +434,7 @@ const server=http.createServer(async(req,res)=>{
     const result={server:{lastPushCheck:lastSuccess,pushCheckError:lastError,pushSubscribers:Object.keys(subscribers).length},sources:{}};
     await Promise.all([['schedules',SCHEDULE_URL],['emergency',new URL('emergency.json',SCHEDULE_URL).href],['review',new URL('source_review.json',SCHEDULE_URL).href]].map(async([name,url])=>{
       try{
-        const data=(name==='schedules'?liveSchedule():name==='review'?officialSchedules.review():null)||await loadJson(url);
+        const data=(name==='schedules'?(typeof liveSchedule==='function'?liveSchedule():officialSchedules.schedule()):name==='review'?officialSchedules.review():null)||await loadJson(url);
         result.sources[name]=name==='schedules'?{lastChecked:data.lastChecked,days:(data.days||[]).map(d=>({date:d.date,verified:d.verified,source:d.source,publishedAt:d.publishedAt})),changes:(data.changes||[]).length,reviewPending:data.reviewPending===true,unresolvedDates:data.unresolvedDates||[]}:
           name==='emergency'?{lastChecked:data.lastChecked,count:(data.events||[]).length,latest:data.events?.[0]?.status||null}:
           {lastChecked:data.lastChecked,rejectedCount:data.rejectedCount||0,warningCount:data.warningCount||0,items:(data.items||[]).slice(0,30)};
@@ -443,7 +443,7 @@ const server=http.createServer(async(req,res)=>{
     const tickets=feedback.list().items;
     result.feedback={total:tickets.length,new:tickets.filter(t=>t.status==='new').length,inProgress:tickets.filter(t=>t.status==='in_progress').length};
     return result;
-  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule(liveSchedule()||lastLoadedSchedule),errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry,addressCorrections,manualOverrides);return}
+  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule((typeof liveSchedule==='function'?liveSchedule():officialSchedules.schedule())||lastLoadedSchedule),errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry,addressCorrections,manualOverrides);return}
  if(req.url?.startsWith('/api/media/')&&req.method==='GET'){
    const id=req.url.slice('/api/media/'.length).split('?')[0],file=mediaStore.read(id);
    if(!file){response(res,404,{error:'Фото не знайдене'});return}
@@ -549,7 +549,7 @@ const server=http.createServer(async(req,res)=>{
    if(!validEndpoint(endpoint))throw Error('Invalid endpoint');
    const rec=subscribers[hash(endpoint)];
    const time=dayInKyiv(),timestamp=Date.now();
-   const source=preferFreshSchedule(liveSchedule(),lastLoadedSchedule,timestamp);
+   const source=preferFreshSchedule((typeof liveSchedule==='function'?liveSchedule():officialSchedules.schedule()),lastLoadedSchedule,timestamp);
    const fresh=usableSchedule(source,timestamp);
    const day=verifiedScheduleDay(source,time.date,timestamp);
    const tomorrowDate=shiftDay(time.date,1);
@@ -601,7 +601,7 @@ const server=http.createServer(async(req,res)=>{
  }catch(e){response(res,e.message?.includes('save failed')?500:400,{error:'Invalid subscription request'})}
 });
 server.listen(Number(PORT),()=>console.log('Push companion listening on port '+PORT));
-const reportSources={feedback,ads,push:manualPush,diagnostics:errorCounts,audit:()=>auditSchedule(liveSchedule()||lastLoadedSchedule)};
+const reportSources={feedback,ads,push:manualPush,diagnostics:errorCounts,audit:()=>auditSchedule((typeof liveSchedule==='function'?liveSchedule():officialSchedules.schedule())||lastLoadedSchedule)};
 function refreshDailyReport(){try{dailyReports.capture(reportSources)}catch(error){console.warn('Daily reports update:',error.message)}}
 setTimeout(refreshDailyReport,15_000).unref?.();
 setInterval(refreshDailyReport,60*60_000).unref?.();

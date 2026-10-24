@@ -6,7 +6,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 const QUEUES=new Set(Array.from({length:6},(_,i)=>[String(i+1)+'.1',String(i+1)+'.2']).flat()));
 const stamp=value=>crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
-const minute=x=>x==='24:00'?1440:typeof x==='string'&&/^(?:[01]\\d|2[0-3]):[0-5]\\d$/.test(x)?Number(x.slice(0,2))*60+Number(x.slice(3)):-1;
+const minute=x=>x==='24:00'?1440:typeof x==='string'&&/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(x)?Number(x.slice(0,2))*60+Number(x.slice(3)):-1;
 const official=x=>typeof x==='string'&&/^https:\/\/(?:www\.)?cherkasyoblenergo\.com\//i.test(x);
 export function createManualOverridesStore({directory,onChanged=()=>{}}){
  const file=path.join(directory,'manual-overrides-live.json');let saved=null;
@@ -18,7 +18,7 @@ export function createManualOverridesStore({directory,onChanged=()=>{}}){
    throw Error('Невірний формат ручних уточнень');
   if(value.schedules.days.length>20)throw Error('Забагато дат в уточненнях');
   for(const d of value.schedules.days){
-   if(!/^20\\d{2}-\\d{2}-\\d{2}$/.test(d.date||'')||!d.verified||!official(d.source))
+   if(!/^20\d{2}-\d{2}-\d{2}$/.test(d.date||'')||!d.verified||!official(d.source))
     throw Error('Потрібні дата й офіційне джерело');
    if(!d.queues||typeof d.queues!=='object')throw Error('Немає підчерг');
    for(const [q,item] of Object.entries(d.queues)){
