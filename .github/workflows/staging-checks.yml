@@ -53,7 +53,8 @@ jobs:
           node --check all-queues-core.js && node --check all-queues.js
           node --test tests/test_all_queues_beta.mjs
           test -f _site/all-queues-core.js && test -f _site/all-queues.js && test -f _site/all-queues.css
-          node --check micro-motion.js && node --check maintenance-backup.js
+          node --check micro-motion.js && node --check maintenance-backup.js && node --check admin-access.js
+          node --test tests/test_admin_account_access_beta.mjs
           node --test tests/test_micro_motion_visual_audit.mjs
           node --test tests/test_beta_7913_parity_motion.mjs tests/test_four_screen_redesign_7913.mjs
           test -f _site/micro-motion.css && test -f _site/admin-motion.css && test -f _site/maintenance-backup.js
