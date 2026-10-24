@@ -49,7 +49,7 @@ test('client and server use stable canonical day notification IDs while change a
  assert.match(pushServer,/notificationId:changeId\(q,change\)/,'genuine schedule revisions can still generate distinct alerts');
  assert.doesNotMatch(pushServer,/\$\{prefix\}:tomorrow:\$\{nextDate\}:\$\{revision\}/);
  const app=read('app.js');
- assert.match(app,/localStorage\.getItem\(PUSH_CONSENT\)==='yes'\|\|localStorage\.getItem\(PUSH_CONSENT\)==='no'/,
+ assert.match(app,/if\(consent==='yes'\|\|consent==='no'\)return;/,
   'a foreground PWA must not generate a second native Push for a subscribed or opted-out user');
  assert.match(app,/`tomorrow:\$\{nextDate\}`/,'daily local fallback must have a stable date-only identity');
  const day={date:'2026-10-17',verified:true,queues:{'6.1':{off:[['19:00','20:00']]}}};
