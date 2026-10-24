@@ -49,6 +49,10 @@ def check(root, expected_channel, require_build=True):
     robots = (root / "robots.txt").read_text(encoding="utf-8")
     globally_blocked = bool(re.search(r"^\s*Disallow:\s*/\s*$", robots, flags=re.I | re.M))
     cname = root / "CNAME"
+    html_source = (root / "index.html").read_text(encoding="utf-8")
+    expected_robots = "noindex,follow" if channel == "beta" else "index,follow"
+    require(re.search(r'<meta\s+name="robots"\s+content="' + expected_robots + r'"', html_source),
+            f"HTML robots meta is not safe for {channel}")
     if channel == "beta":
         require("beta" in pwa_id.lower(), "Beta PWA ID is not isolated")
         require(not cname.exists(), "Beta includes Production CNAME")
