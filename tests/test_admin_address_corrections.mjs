@@ -26,7 +26,7 @@ test('village scope isolated from city and unknown queue/source rejected',()=>{
  const directory=fs.mkdtempSync(path.join(os.tmpdir(),'svitlo-correction-'));
  try{
   const store=createAddressCorrectionStore({directory});
-  assert.throws(()=>store.create({...make(),queue:'7.1'}),/точну адресу/);
+  assert.throws(()=>store.create({...make(),queue:'7.1'}),/Вкажіть вулицю, підчергу/);
   assert.throws(()=>store.create({...make(),source:'https://github.com/example'}),/офіційне/);
   store.create({...make(),settlementKey:'слобода'},'owner');
   assert.throws(()=>store.create({...make(),settlementKey:'слобода'},'owner'),/вже існує/);
