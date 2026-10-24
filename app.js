@@ -314,17 +314,28 @@ function renderHome(){
  // A genuine tomorrow preview, not a guessed network status.
  renderTomorrowPreview();
  renderQuickPlaces();
+ setText('settingsPlacesCount',addresses.length?addresses.length+' '+(addresses.length===1?'адреса':addresses.length<5?'адреси':'адрес')+' · Натисніть, щоб змінити або впорядкувати':'Адрес ще немає. Додайте перше місце.');
  updatePushInvite();
  const list=$('placeList');
  const placeKey=JSON.stringify([date,prefs.primaryId,addresses.map(a=>[a.id,a.queue,a.nickname,a.settlement,a.street,a.house,stateAt(timeline(date,a.queue),m)])]);
  if(list.dataset.renderKey!==placeKey){list.dataset.renderKey=placeKey;list.replaceChildren();
  for(const item of addresses){
+  const row=el('div','place-row'+(primary()?.id===item.id?' is-current':''));
   const b=el('button','place-card');b.type='button';
   const avatar=el('span','place-avatar');avatar.innerHTML=PIN;b.append(avatar);
-  const copy=el('span','place-text');copy.append(el('strong','',label(item)),el('small','',`${item.settlement||'Черкаси'} · ${item.queue?'черга '+item.queue:'черга невідома'}`));b.append(copy);
+  const copy=el('span','place-text');
+  const title=el('span','place-card-title');
+  title.append(el('strong','',label(item)));
+  if(primary()?.id===item.id)title.append(el('span','place-primary-tag','Активна'));
+  copy.append(title,el('small','',`${item.settlement||'Черкаси'} · ${item.queue?'підчерга '+item.queue:'підчерга невідома'}`));
+  b.append(copy);
   const state=stateAt(timeline(date,item.queue),m);
   b.append(el('span','place-status '+state,state==='on'?'Є світло':state==='off'?'Без світла':'—'));
-  b.onclick=()=>{prefs.primaryId=item.id;savePrefs();navigate('detail')};list.append(b);
+  b.setAttribute('aria-label','Відкрити графік: '+label(item));
+  b.onclick=()=>{prefs.primaryId=item.id;savePrefs();navigate('detail')};
+  const edit=el('button','place-edit-action','✎');edit.type='button';edit.title='Редагувати '+label(item);edit.setAttribute('aria-label',edit.title);
+  edit.onclick=()=>openAddressSheet(item);
+  row.append(b,edit);list.append(row);
  }
  if(!addresses.length){const e=el('div','empty-places');e.append(el('strong','','Ще немає збережених місць'),el('span','','Додайте адресу, щоб отримати персональний графік.'));list.append(e)}
  const add=el('button','add-place-card','+  Додати адресу');add.onclick=()=>openAddressSheet();list.append(add);
@@ -918,14 +929,18 @@ function saveAddress(event){
 function deleteAddress(){if(!editId||!confirm('Видалити цю адресу?'))return;addresses=addresses.filter(x=>x.id!==editId);if(prefs.primaryId===editId)prefs.primaryId=addresses[0]?.id||null;saveAddresses();savePrefs();closeSheet($('addressSheet'));navigate('home');flash('Адресу видалено');if(!primary())disableNotifications().catch(console.warn);else updatePushSubscription().catch(console.warn)}
 function movePlace(id,direction){const i=addresses.findIndex(x=>x.id===id);const j=i+direction;if(i<0||j<0||j>=addresses.length)return;[addresses[i],addresses[j]]=[addresses[j],addresses[i]];saveAddresses();openPickerContent();renderHome()}
 function openPickerContent(){const root=$('placesOptions');root.replaceChildren();for(const [i,a] of addresses.entries()){
- const row=el('div','place-option');row.draggable=true;row.dataset.id=a.id;
- const choose=el('button','place-choose');const txt=el('span');txt.append(el('strong','',label(a)),el('small','',fullAddress(a)));choose.append(txt,el('span','',a.id===primary()?.id?'✅':'➡️'));choose.onclick=()=>{prefs.primaryId=a.id;savePrefs();closeSheet($('placesSheet'));render();updatePushSubscription().catch(()=>{})};row.append(choose);
+ const row=el('div','place-option'+(a.id===primary()?.id?' is-current':''));row.draggable=true;row.dataset.id=a.id;
+ const choose=el('button','place-choose');const txt=el('span');txt.append(el('strong','',label(a)),el('small','',fullAddress(a)));choose.append(txt,el('span','place-option-indicator',a.id===primary()?.id?'Поточна':'Обрати'));choose.onclick=()=>{prefs.primaryId=a.id;savePrefs();closeSheet($('placesSheet'));render();updatePushSubscription().catch(()=>{})};row.append(choose);
  const moves=el('span','place-moves');
- const favorite=el('button','move-btn favorite-btn'+(a.favorite?' selected':''),a.favorite?'⭐':'🤍');
+ const favorite=el('button','move-btn favorite-btn'+(a.favorite?' selected':''),a.favorite?'★':'☆');
  favorite.type='button';favorite.title=a.favorite?'Прибрати з улюблених':'Додати до улюблених';
  favorite.setAttribute('aria-label',favorite.title);
  favorite.onclick=()=>{a.favorite=!a.favorite;saveAddresses();openPickerContent();renderHome()};
  moves.append(favorite);
+ const edit=el('button','move-btn place-edit-option','✎');
+ edit.type='button';edit.title='Редагувати адресу';edit.setAttribute('aria-label','Редагувати '+label(a));
+ edit.onclick=()=>{const sheet=$('placesSheet');sheet.addEventListener('close',()=>openAddressSheet(a),{once:true});closeSheet(sheet)};
+ moves.append(edit);
  for(const [n,txtval] of [[-1,'↑'],[1,'↓']]){const b=el('button','move-btn',txtval);b.type='button';b.disabled=n===-1?i===0:i===addresses.length-1;b.setAttribute('aria-label',n<0?'Перемістити вище':'Перемістити нижче');b.onclick=()=>movePlace(a.id,n);moves.append(b)}row.append(moves);
  row.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',a.id);e.dataTransfer.effectAllowed='move'});row.addEventListener('dragover',e=>e.preventDefault());row.addEventListener('drop',e=>{e.preventDefault();const from=e.dataTransfer.getData('text/plain');const at=addresses.findIndex(x=>x.id===from),to=addresses.findIndex(x=>x.id===a.id);if(at<0||to<0||at===to)return;const [m]=addresses.splice(at,1);addresses.splice(to,0,m);saveAddresses();openPickerContent();renderHome()});root.append(row)}}
 function openPicker(){openPickerContent();showSheet($('placesSheet'))}
@@ -1337,7 +1352,7 @@ for(const b of document.querySelectorAll('[data-go]'))b.addEventListener('click'
    if(active==='detail')renderDetail();else navigate('detail');
   };
  }
-$('syncNow').onclick=()=>refreshData(true);$('refreshTop').onclick=()=>refreshData(true);$('refreshDetail').onclick=()=>refreshData(true);$('manualRefresh').onclick=()=>refreshData(true);$('primaryPicker').onclick=()=>addresses.length?openPicker():openAddressSheet();$('addFromHome').onclick=()=>openAddressSheet();$('addFromSettings').onclick=()=>openAddressSheet();$('editActive').onclick=()=>openAddressSheet(primary());$('openDetail').onclick=()=>navigate('detail');
+$('syncNow').onclick=()=>refreshData(true);$('refreshTop').onclick=()=>refreshData(true);$('refreshDetail').onclick=()=>refreshData(true);$('manualRefresh').onclick=()=>refreshData(true);$('primaryPicker').onclick=()=>addresses.length?openPicker():openAddressSheet();$('manageFromHome').onclick=()=>addresses.length?openPicker():openAddressSheet();$('settingsManagePlaces').onclick=()=>addresses.length?openPicker():openAddressSheet();$('addFromHome').onclick=()=>openAddressSheet();$('addFromSettings').onclick=()=>openAddressSheet();$('editActive').onclick=()=>openAddressSheet(primary());$('openDetail').onclick=()=>navigate('detail');
 $('closeSheet').onclick=()=>closeSheet($('addressSheet'));$('closePlaces').onclick=()=>closeSheet($('placesSheet'));$('sheetAddPlace').onclick=()=>{
  const picker=$('placesSheet');
  if(!picker.open){openAddressSheet();return}
