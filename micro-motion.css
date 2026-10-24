@@ -8,10 +8,9 @@
  transition-property:background-color,border-color,color,box-shadow,filter,transform;
  transition-duration:var(--micro-quick),var(--micro-quick),var(--micro-quick),var(--micro-soft),var(--micro-soft),var(--micro-quick);
  transition-timing-function:var(--micro-ease);
- transform:translateZ(0);
- backface-visibility:hidden;
 }
 :is(button,.button,.primary-action,.secondary-action,.quick-place,.planner-slot,.nav-item).micro-pressed:not(:disabled){
+ will-change:transform;
  transform:translate3d(0,1px,0) scale(.985);
  filter:brightness(.98);
 }
