@@ -1,0 +1,174 @@
+/* SVITLO OFFICE: desktop-first administrative workspace.
+ * Inspiration: classic document workflow, not an ASKOD trademark or asset. */
+:root{--office-green:#1eaa77;--office-deep:#147a62;--office-ink:#202b37;--office-border:#e1e7ed;--office-muted:#718094}
+body.svitlo-office{--ink:#1c2c38;--sub:#647586;--line:#e1e7ed;--blue:#168667;background:#f3f5f8;color:var(--office-ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif}
+body.svitlo-office button{transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease,transform .15s ease}
+body.svitlo-office button:active:not(:disabled){transform:scale(.992)}
+body.svitlo-office main{max-width:100%!important;padding:0 28px 60px!important}
+body.svitlo-office main>header{height:49px;padding:0 6px;border-bottom:1px solid var(--office-border);font-size:13px}
+body.svitlo-office main>header .flex svg{width:26px;height:26px}
+body.svitlo-office main>header .flex strong{font-size:13px;font-weight:760}
+body.svitlo-office main>header a{color:#4c6779;font-weight:600;font-size:12px}
+body.svitlo-office #adminDashboard{--office-sidebar:258px;display:grid!important;grid-template-columns:var(--office-sidebar) minmax(0,1fr)!important;grid-auto-rows:min-content!important;column-gap:20px!important;align-items:start!important}
+body.svitlo-office #adminDashboard[hidden]{display:none!important}
+body.svitlo-office #adminDashboard>.auth-head{grid-column:1/-1!important;grid-row:1!important;min-width:0;background:transparent;box-shadow:none;border:0;border-radius:0;padding:18px 2px 12px;margin:0!important}
+body.svitlo-office .auth-head h1{font-size:22px!important;font-weight:760;letter-spacing:-.6px!important;margin:0!important}
+body.svitlo-office .auth-note{font-size:12px!important;margin:5px 0 0!important}
+body.svitlo-office .control-brand{gap:13px}
+body.svitlo-office .control-brand .control-logo{border-radius:12px;background:#e1f4ee!important;color:#098560!important}
+body.svitlo-office .control-kicker{color:var(--office-deep)!important;letter-spacing:.11em;font-size:9px}
+body.svitlo-office .auth-head .control-head-actions{gap:7px}
+body.svitlo-office .auth-head .control-head-actions button{border:1px solid #dce4eb;background:#fff;color:#465a70;padding:9px 14px;min-height:36px;border-radius:8px}
+body.svitlo-office #connection{border-radius:6px;background:#e3f4ed;color:#19815c;font-weight:700}
+body.svitlo-office #controlServerState{font-size:11px}
+body.svitlo-office .office-toolbar{grid-column:1/-1;grid-row:2;display:flex;gap:11px;align-items:center;min-height:63px;padding:10px 13px;margin:0 0 16px;background:#fff;border:1px solid var(--office-border);border-radius:11px;box-shadow:0 2px 10px #22394d08;min-width:0}
+body.svitlo-office .office-toolbar button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:39px;border-radius:8px}
+body.svitlo-office .office-menu-button{border:1px solid #e4e9ef;background:#fff;color:#4e6274;min-width:42px;padding:7px}
+body.svitlo-office .office-crumbs{display:grid;gap:2px;min-width:145px}
+body.svitlo-office .office-crumb-parent{font-size:10px;font-weight:650;color:#8192a1}
+body.svitlo-office .office-current-title{font-size:14px;color:#283b48;overflow-wrap:anywhere}
+body.svitlo-office .office-search-open{flex:1;max-width:475px;margin:0 auto;border:1px solid #dfe6ee;background:#f8fafb;color:#7890a2;min-width:0;text-align:left;justify-content:flex-start;padding:0 12px;font-size:12px}
+body.svitlo-office .office-search-open span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.svitlo-office .office-search-open kbd{font-size:10px;color:#788b9a;border:1px solid #dce4ea;padding:3px 6px;border-radius:5px;background:#fff}
+body.svitlo-office .office-create{border:1px solid var(--office-green);background:var(--office-green);color:white;min-width:115px;font-weight:750;font-size:12px;padding:8px 16px}
+body.svitlo-office .office-create:hover{background:#118765}
+body.svitlo-office .office-top-state{margin-left:auto;white-space:nowrap;display:inline-flex;gap:6px;align-items:center;font-size:11px;color:#16865c;padding:7px 9px;border-radius:6px;background:#edf8f2}
+body.svitlo-office .office-top-state:before{content:'';width:7px;height:7px;border-radius:50%;background:#31b681}
+body.svitlo-office .office-top-state.is-error{background:#fff5e7;color:#a46c20}
+body.svitlo-office .office-top-state.is-error:before{background:#e9a133}
+body.svitlo-office #adminDashboard>.admin-tabs{grid-column:1!important;grid-row:3!important;align-self:start!important;position:sticky!important;top:12px!important;width:100%;max-width:var(--office-sidebar);height:auto;max-height:calc(100dvh - 24px);min-height:50vh;overflow-y:auto!important;overflow-x:hidden!important;margin:0!important;padding:13px 10px 20px!important;display:flex!important;flex-direction:column;flex-wrap:nowrap;gap:3px!important;background:#fff!important;border:1px solid var(--office-border)!important;border-radius:11px!important;box-shadow:0 3px 14px #16304707;scrollbar-width:thin;-webkit-backdrop-filter:none;backdrop-filter:none}
+body.svitlo-office .admin-tabs .control-nav-search{margin:0 3px 9px!important;min-width:0}
+body.svitlo-office .admin-tabs .control-nav-search label{font-size:10px;color:#84909f}
+body.svitlo-office .admin-tabs .control-nav-search input{border-radius:7px;min-height:39px;font-size:12px;background:#f7f9fb}
+body.svitlo-office .control-nav-group{display:flex!important;flex-direction:column!important;gap:3px!important;margin:0 0 8px!important;padding:0!important;border:0!important;width:100%}
+body.svitlo-office .admin-tabs .office-group-toggle{display:flex;align-items:center;text-align:left;width:100%;min-height:28px!important;padding:8px 9px!important;margin:0!important;border:0!important;background:transparent!important;box-shadow:none!important;color:#81909f!important;letter-spacing:.075em;font-size:9px!important;font-weight:800!important;white-space:normal}
+body.svitlo-office .office-group-toggle::after{content:'⌄';margin-left:auto;font-size:13px}
+body.svitlo-office .office-group-toggle[aria-expanded="false"]::after{transform:rotate(-90deg)}
+body.svitlo-office .control-nav-group.office-folded>[data-admin-tab],
+body.svitlo-office .control-nav-group.office-folded>.admin-fav-star{display:none!important}
+body.svitlo-office .admin-tabs .office-nav-link{width:100%;display:flex!important;gap:11px!important;align-items:center;justify-content:flex-start;white-space:normal!important;text-align:left!important;padding:11px 12px!important;margin:0!important;min-height:39px!important;font-size:12px!important;font-weight:680!important;border:1px solid transparent!important;border-radius:8px!important;box-shadow:none!important;background:transparent!important;color:#556577!important}
+body.svitlo-office .office-nav-link svg{color:#8395a3;flex-shrink:0}
+body.svitlo-office .office-nav-link span{line-height:1.2}
+body.svitlo-office .admin-tabs .office-nav-link[aria-pressed="true"]{background:#e5f6ef!important;color:#0b7b55!important;border-color:#caeada!important}
+body.svitlo-office .office-nav-link[aria-pressed="true"] svg{color:#0f9966}
+body.svitlo-office .admin-tabs .office-nav-link:hover:not([aria-pressed="true"]){background:#f4f7f9!important}
+body.svitlo-office .admin-tabs .control-nav-foot{display:grid!important;gap:7px;border-top:1px solid #e7ecf1;padding:13px 8px 0;margin-top:auto;width:100%;color:#8da0ac;font-size:10px}
+body.svitlo-office .control-nav-foot a{font-size:11px;color:#1a916c;text-decoration:none}
+body.svitlo-office #adminDashboard>.office-nav-scrim{display:none}
+body.svitlo-office #adminDashboard>[data-admin-panel]{grid-column:2!important;grid-row:3!important;min-width:0!important;max-width:100%!important;margin:0 0 16px!important}
+body.svitlo-office #adminDashboard>[data-admin-panel][hidden]{display:none!important}
+body.svitlo-office #adminDashboard>.card{border-radius:11px!important;padding:19px 20px!important;box-shadow:0 3px 15px #24394d07;border-color:var(--office-border)}
+body.svitlo-office #adminDashboard .card h2{color:#223545}
+body.svitlo-office #adminDashboard .card input:not([type=checkbox]):not([type=radio]),body.svitlo-office #adminDashboard .card select,body.svitlo-office #adminDashboard .card textarea{border-color:#dce5ed;border-radius:8px!important}
+body.svitlo-office #adminDashboard .card button:not(.danger):not(.office-nav-link):not(.office-group-toggle){border-radius:8px}
+body.svitlo-office .office-desk{margin-bottom:25px;border-bottom:1px solid #e8edf2;padding-bottom:24px}
+body.svitlo-office .office-desk-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+body.svitlo-office .office-overline{font-size:10px;letter-spacing:.12em;font-weight:800;color:#169868;margin-bottom:7px}
+body.svitlo-office .office-desk-title h2{font-size:24px!important;letter-spacing:-.65px;margin:0}
+body.svitlo-office .office-desk-title p{margin:6px 0 0;line-height:1.4}
+body.svitlo-office .office-stat-grid{display:grid;grid-template-columns:repeat(5,minmax(130px,1fr));gap:10px;margin:19px 0 17px}
+body.svitlo-office .office-stat{display:grid!important;grid-template-columns:1fr auto;gap:5px;padding:15px!important;text-align:left!important;min-width:0;border:1px solid #dfe7ed!important;border-radius:10px!important;background:#f9fbfc!important;color:#466073}
+body.svitlo-office .office-stat svg{grid-column:2;grid-row:1;color:#3bb58d}
+body.svitlo-office .office-stat>span{grid-column:1;grid-row:1;color:#647b8d;font-size:11px}
+body.svitlo-office .office-stat strong{grid-column:1/-1;font-size:27px;color:#263e50;line-height:1.12}
+body.svitlo-office .office-stat small{grid-column:1/-1;color:#899ba8;font-size:10px}
+body.svitlo-office .office-stat:hover{border-color:#80cdb0!important;background:#f2fbf6!important}
+body.svitlo-office .office-desk-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:14px}
+body.svitlo-office .office-desk-block{border:1px solid var(--office-border);border-radius:10px;overflow:hidden;background:#fff;min-width:0}
+body.svitlo-office .office-desk-block-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 15px;border-bottom:1px solid #eaf0f4;background:#fbfcfd}
+body.svitlo-office .office-desk-block-head h3{margin:0;font-size:13px;color:#344a59}
+body.svitlo-office .office-desk-block-head button{padding:5px 7px;border:0!important;background:transparent!important;color:#008b5b;font-size:11px;font-weight:720}
+body.svitlo-office .office-work-entry{width:100%;display:grid;grid-template-columns:90px minmax(0,1fr);align-items:center;gap:5px 9px;padding:13px 15px;border:0!important;border-bottom:1px solid #f0f3f5!important;border-radius:0!important;background:white;text-align:left!important}
+body.svitlo-office .office-work-entry:hover{background:#f5fbf8}
+body.svitlo-office .office-work-entry small{font-size:10px;color:#168360}
+body.svitlo-office .office-work-entry strong{font-size:12px;overflow-wrap:anywhere;color:#2b3d4e}
+body.svitlo-office .office-work-entry span{grid-column:2;font-size:10px;color:#8595a2}
+body.svitlo-office .office-ticket-entry{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 15px;border-bottom:1px solid #edf1f5}
+body.svitlo-office .office-ticket-entry>div{display:grid;gap:6px;min-width:0}
+body.svitlo-office .office-ticket-entry small{font-size:10px;color:#168360}
+body.svitlo-office .office-ticket-entry strong{font-size:12px;line-height:1.35;overflow-wrap:anywhere}
+body.svitlo-office .office-ticket-entry button{white-space:nowrap;font-size:10px;padding:8px 10px;border:1px solid #bedfd0;background:#f1faf6;color:#178360}
+body.svitlo-office .office-empty{font-size:12px;color:#8795a2;padding:20px}
+body.svitlo-office .office-desk-footer{font-size:11px;color:#8494a2;margin-top:13px;line-height:1.5}
+body.svitlo-office .office-close-nav{display:none}
+body.svitlo-office.office-nav-collapsed #adminDashboard{--office-sidebar:78px}
+body.svitlo-office.office-nav-collapsed .admin-tabs .office-nav-link{justify-content:center;padding:10px!important}
+body.svitlo-office.office-nav-collapsed .admin-tabs .office-nav-link span,
+body.svitlo-office.office-nav-collapsed .admin-tabs .office-group-toggle,
+body.svitlo-office.office-nav-collapsed .admin-tabs .control-nav-search,
+body.svitlo-office.office-nav-collapsed .admin-tabs .control-nav-foot,
+body.svitlo-office.office-nav-collapsed .admin-tabs .admin-favorites{display:none!important}
+body.svitlo-office.office-nav-collapsed .admin-tabs .control-nav-group{margin-bottom:10px!important;border-bottom:1px solid #e9eef0!important;padding-bottom:8px!important}
+body.svitlo-office .office-modal[hidden]{display:none!important}
+body.svitlo-office .office-modal{position:fixed;inset:0;z-index:10001;display:flex;align-items:flex-start;justify-content:center;padding:clamp(60px,12vh,140px) 16px 20px}
+body.svitlo-office .office-modal-mask{position:absolute;inset:0;background:#1026358c;backdrop-filter:blur(6px)}
+body.svitlo-office .office-modal-panel{position:relative;z-index:1;width:min(590px,100%);max-height:75vh;overflow:hidden;background:white;border:1px solid #d8e2e9;border-radius:15px;box-shadow:0 22px 90px #071a2d4f;display:flex;flex-direction:column}
+body.svitlo-office .office-modal-head{padding:13px 16px;display:flex;gap:11px;align-items:center;border-bottom:1px solid #e6edf1;color:#388e70}
+body.svitlo-office .office-modal-search{border:0;outline:0;flex:1;min-width:0;font-size:14px!important;color:#2a3b4b}
+body.svitlo-office .office-modal-close{border:1px solid #e0e7ec;border-radius:6px;background:#f7fafb;color:#778798;padding:5px 8px;font-size:11px}
+body.svitlo-office .office-modal-list{overflow:auto;padding:8px}
+body.svitlo-office .office-option{width:100%;display:grid;grid-template-columns:20px 1fr auto;align-items:center;text-align:left;gap:12px;padding:12px;border:1px solid transparent;background:transparent;border-radius:8px;color:#304654}
+body.svitlo-office .office-option span{font-size:13px;font-weight:710}
+body.svitlo-office .office-option small{font-size:11px;color:#8793a2;max-width:190px;text-align:right}
+body.svitlo-office .office-option.is-selected,body.svitlo-office .office-option:hover{background:#eff8f4;border-color:#ccebdc;color:#077e57}
+body.svitlo-office .office-modal-help{border-top:1px solid #e7edf1;background:#fcfdfd;padding:11px 18px;font-size:10px;color:#8193a0}
+body.svitlo-office #adminLoginScreen{margin:65px auto 30px;max-width:460px}
+body.svitlo-office #adminLoginScreen .login-symbol{background:#def4ea;color:#168663;border-radius:11px}
+body.svitlo-office #adminLoginScreen h1{font-size:29px;letter-spacing:-1px}
+body.svitlo-office #adminLoginScreen .login-card{border-radius:12px;box-shadow:0 15px 45px #21394e14}
+body.svitlo-office #adminLoginScreen #connect{background:#1da879;border-color:#1da879}
+body.svitlo-office #adminLoginScreen #connect:hover{background:#16865e}
+body.svitlo-office .office-nav-scrim{display:none}
+@media(max-width:1290px){
+ body.svitlo-office .office-stat-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+ body.svitlo-office .office-desk-grid{grid-template-columns:1fr}
+}
+@media(max-width:1050px){
+ body.svitlo-office main{padding:0 13px 45px!important}
+ body.svitlo-office #adminDashboard{display:flex!important;flex-direction:column!important;gap:10px;align-items:stretch!important}
+ body.svitlo-office #adminDashboard>.auth-head{width:100%}
+ body.svitlo-office #adminDashboard>.office-toolbar{width:100%;margin-bottom:0}
+ body.svitlo-office #adminDashboard>.admin-tabs{position:fixed!important;z-index:9997!important;top:0!important;left:0!important;bottom:0!important;margin:0!important;max-height:100dvh!important;min-height:100dvh!important;overflow:auto!important;border-radius:0!important;width:min(320px,90vw)!important;max-width:min(320px,90vw)!important;transform:translateX(-105%);transition:transform .23s ease!important;box-shadow:0 15px 60px #192d3954}
+ body.svitlo-office.office-mobile-nav #adminDashboard>.admin-tabs{transform:translateX(0)}
+ body.svitlo-office .office-close-nav{display:block;align-self:flex-end;padding:8px 12px;border:0;background:#f5f8fa;font-size:20px}
+ body.svitlo-office.office-mobile-nav #adminDashboard>.office-nav-scrim{display:block;position:fixed;z-index:9996;inset:0;background:#0a26396b;border:0;width:100%;height:100%}
+ body.svitlo-office #adminDashboard>[data-admin-panel]:not([hidden]){width:100%;grid-column:auto!important;grid-row:auto!important}
+ body.svitlo-office .office-top-state{display:none}
+}
+@media(max-width:680px){
+ body.svitlo-office #adminDashboard>.auth-head{padding-top:12px!important;gap:9px}
+ body.svitlo-office .auth-head h1{font-size:17px!important}
+ body.svitlo-office .auth-head .control-brand .control-logo{display:none}
+ body.svitlo-office .auth-note,body.svitlo-office .control-kicker{display:none!important}
+ body.svitlo-office .office-toolbar{gap:6px!important;padding:7px!important;min-height:55px}
+ body.svitlo-office .office-crumbs{min-width:0;flex:1}
+ body.svitlo-office .office-search-open{flex:0 0 41px;min-width:41px;padding:0;justify-content:center}
+ body.svitlo-office .office-search-open span,body.svitlo-office .office-search-open kbd{display:none}
+ body.svitlo-office .office-create{min-width:0;padding:7px 10px;font-size:11px}
+ body.svitlo-office .office-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.svitlo-office .office-stat{padding:11px!important}
+ body.svitlo-office .office-stat strong{font-size:23px}
+ body.svitlo-office .office-ticket-entry{align-items:flex-start;flex-wrap:wrap}
+ body.svitlo-office .office-desk-title h2{font-size:20px!important}
+ body.svitlo-office #adminDashboard>.card{padding:15px!important}
+ body.svitlo-office .office-option{grid-template-columns:20px 1fr}
+ body.svitlo-office .office-option small{grid-column:2;text-align:left}
+}
+@media(prefers-reduced-motion:reduce){
+ body.svitlo-office *,body.svitlo-office *:before,body.svitlo-office *:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
+}
+
+/* Registry comment stream, due-date filters and mobile task controls. */
+body.svitlo-office .office-my-only{display:flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid #e1e8eb;border-radius:8px;font-size:11px;font-weight:720;color:#4d6274;white-space:nowrap}
+body.svitlo-office .office-my-only input{height:16px;width:16px}
+body.svitlo-office #workDueFilter{width:auto;min-width:145px}
+body.svitlo-office .office-note{padding:12px 0;border-block:1px solid #e2e9ed;margin:14px 0}
+body.svitlo-office .office-note h4{margin:2px 0 8px;font-size:13px}
+body.svitlo-office .office-note textarea{width:100%;min-height:80px}
+body.svitlo-office .office-note button{margin:10px 8px 6px 0}
+body.svitlo-office .office-note small{display:block;font-size:11px;color:#7f91a0;line-height:1.5}
+body.svitlo-office .office-note-text{display:block;flex-basis:100%;width:100%;white-space:pre-wrap;color:#344b5a;font-size:12px;margin:7px 0 0}
+body.svitlo-office .registry-event{display:flex;flex-wrap:wrap}
+body.svitlo-office .admin-favorites{margin:4px 6px}
+body.svitlo-office .admin-fav-star{display:none!important}
+@media(max-width:680px){body.svitlo-office .registry-toolbar{flex-wrap:wrap!important}body.svitlo-office .registry-toolbar>*{flex:1 1 150px!important}}

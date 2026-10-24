@@ -18,3 +18,13 @@
  @keyframes svitloScreenOut{from{opacity:1;transform:translate3d(0,0,0) scale(1)}to{opacity:0;transform:translate3d(16px,0,0) scale(.992)}}
 }
 @media(prefers-reduced-motion:reduce){#svitloInternalPage,.svitlo-internal-frame,.svitlo-internal-back{animation:none!important;transition:none!important;transform:none!important}}
+
+/* Do not leave a blank iframe on a failed or interrupted PWA navigation. */
+.svitlo-internal-frame[hidden]{display:none!important}
+.svitlo-internal-error[hidden]{display:none!important}
+.svitlo-internal-error{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;text-align:center;padding:28px;background:var(--surface,#fff);color:var(--ink,#233449)}
+.svitlo-internal-error strong{font-size:19px;line-height:1.3;letter-spacing:-.02em}
+.svitlo-internal-error p{font-size:14px;line-height:1.55;max-width:300px;color:var(--muted,#5d7289)}
+.svitlo-internal-error button{border:0;border-radius:12px;padding:13px 23px;min-height:44px;background:#377dff;color:#fff;font:750 14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;touch-action:manipulation}
+:root[data-theme="dark"] .svitlo-internal-error{background:#11151b;color:#f1f4f9}
+:root[data-theme="dark"] .svitlo-internal-error p{color:#b9c7d6}

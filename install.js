@@ -89,9 +89,13 @@
               inboxStarted = true;
               const inboxUi = document.createElement('script');
               inboxUi.src = './inbox-ui.js';
+              const support=document.createElement('script');
+              support.src='./support-inbox.js';
+              inboxUi.onload=()=>document.body.append(support);
               inboxUi.onerror = () => {
                 const panel = document.getElementById('inboxList');
                 if (panel) panel.textContent = 'Не вдалося завантажити повідомлення. Перевірте інтернет і оновіть застосунок.';
+                document.body.append(support);
               };
               document.body.append(inboxUi);
             };
@@ -130,34 +134,46 @@
   copyButton?.addEventListener('click',async()=>{
    try{
     await navigator.clipboard.writeText(location.href);
-    copyButton.textContent='✓ Посилання скопійовано. Відкрийте у Safari або Chrome';
+    copyButton.textContent='✓ Посилання скопійовано. Відкрийте в браузері';
    }catch{
     copyButton.textContent='Скопіюйте адресу сайту зверху: svitlo-cherkasy.pp.ua';
    }
   });
   if (!action || !instructions || !platformLabel) return;
-  const isiOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  const isAndroid = /Android/i.test(navigator.userAgent);
-  let deferredPrompt = null;
+  const isAndroid=/Android/i.test(navigator.userAgent);
+  const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const samsung=/SamsungBrowser\//i.test(navigator.userAgent);
+  const firefox=/Firefox\//i.test(navigator.userAgent);
+  const edge=/EdgA\//i.test(navigator.userAgent);
+  let deferredPrompt=null;
 
-  function stepsHTML() {
-    if (isiOS) return `<strong>На iPhone / iPad:</strong><ol>
-      <li>Відкрийте сайт у <strong>Safari</strong>.</li>
-      <li>Натисніть кнопку <strong>Поділитися</strong> (квадрат зі стрілкою).</li>
-      <li>Оберіть <strong>На початковий екран</strong> → <strong>Додати</strong>.</li>
-      <li>Відкрийте «Світло Черкаси» із нової іконки.</li>
-    </ol><p class="install-note">Відкрили посилання в Telegram? У меню браузера виберіть «Відкрити в Safari». Якщо такого пункту немає, скопіюйте посилання кнопкою нижче та вставте в Safari.</p>`;
-    if (isAndroid) return `<strong>На Android:</strong><ol>
-      <li>Відкрийте сайт у <strong>Google Chrome</strong>.</li>
-      <li>Натисніть меню <strong>⋮</strong> у браузері.</li>
-      <li>Виберіть <strong>Встановити застосунок</strong> або <strong>Додати на головний екран</strong>.</li>
-      <li>Запустіть його через іконку на телефоні.</li>
-    </ol><p class="install-note">Якщо Chrome пропонує встановлення автоматично, використайте основну кнопку вище.</p>`;
-    return `<strong>Як установити:</strong><ol>
-      <li>На iPhone відкрийте цей сайт через Safari → Поділитися → На початковий екран.</li>
-      <li>На Android відкрийте сайт через Chrome → ⋮ → Встановити застосунок.</li>
-      <li>На комп’ютері у Chrome або Edge скористайтеся пунктом «Встановити застосунок» у меню браузера.</li>
+  function stepsHTML(){
+    if(isAndroid){
+      if(samsung)return `<strong>Встановлення на Android (Samsung Internet):</strong><ol>
+       <li>Відкрийте меню браузера Samsung Internet.</li>
+       <li>Оберіть додавання сторінки на <strong>головний екран</strong>.</li>
+       <li>Відкрийте «Світло Черкаси» з нової іконки.</li>
+      </ol><p class="install-note">Якщо потрібного пункту немає, відкрийте посилання у Chrome та натисніть «Встановити».</p>`;
+      if(firefox||edge)return `<strong>Встановлення на Android:</strong><ol>
+       <li>Відкрийте меню браузера.</li>
+       <li>Знайдіть пункт <strong>Встановити</strong> або <strong>Додати на головний екран</strong>.</li>
+       <li>Відкрийте застосунок через створену іконку.</li>
+      </ol><p class="install-note">Якщо такого пункту немає, відкрийте сайт у Google Chrome.</p>`;
+      return `<strong>Встановлення на Android (Google Chrome):</strong><ol>
+       <li>Відкрийте сайт у <strong>Google Chrome</strong>.</li>
+       <li>Натисніть меню <strong>⋮</strong> та оберіть <strong>Встановити застосунок</strong> або <strong>Додати на головний екран</strong>.</li>
+       <li>Відкрийте «Світло Черкаси» через нову іконку.</li>
+      </ol><p class="install-note">Якщо відкрили посилання в Telegram або іншому вбудованому браузері, спочатку оберіть «Відкрити в браузері».</p>`;
+    }
+    if(isIOS)return `<strong>Встановлення на iPhone та iPad:</strong><ol>
+     <li>Відкрийте сайт у <strong>Safari</strong>.</li>
+     <li>Натисніть <strong>Поділитися</strong> та оберіть <strong>На початковий екран</strong>.</li>
+     <li>Натисніть «Додати» та відкрийте застосунок через його іконку.</li>
+    </ol>`;
+    return `<strong>Встановлення вебзастосунку:</strong><ol>
+      <li>Відкрийте сайт у браузері з підтримкою вебзастосунків.</li>
+      <li>Оберіть <strong>Встановити</strong> або <strong>Додати на головний екран</strong> у меню браузера.</li>
+      <li>Запустіть «Світло Черкаси» через створену іконку.</li>
     </ol>`;
   }
   function showInstructions(scroll = false) {
@@ -165,12 +181,8 @@
     instructions.hidden = false;
     if (scroll) instructions.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   }
-  platformLabel.textContent = isiOS ? 'iPhone / iPad · Safari' : isAndroid ? 'Android · Chrome' : 'iPhone, Android або комп’ютер';
-  action.innerHTML = isiOS ? 'Як встановити на iPhone <span aria-hidden="true">→</span>' :
-    isAndroid ? 'Як встановити на Android <span aria-hidden="true">→</span>' :
-      'Як встановити застосунок <span aria-hidden="true">→</span>';
-  // Apple Safari cannot open a native install dialog; showing clear steps is more useful.
-  if (isiOS) showInstructions();
+  platformLabel.textContent=isAndroid?(samsung?'Android · Samsung Internet':firefox?'Android · Firefox':edge?'Android · Edge':'Android · Chrome'):(isIOS?'iPhone / iPad · Safari':'Встановлення PWA');
+  action.innerHTML='Як встановити застосунок <span aria-hidden="true">→</span>';
 
   window.addEventListener('beforeinstallprompt', event => {
     event.preventDefault();

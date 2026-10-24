@@ -23,8 +23,8 @@ const agentHash=req=>crypto.createHash('sha256').update(String(req.headers['user
 function expireSessions(){for(const [token,session] of SESSIONS)if(session.expires<=now()||session.idleUntil<=now())SESSIONS.delete(token)}
 const ADMIN_PASSWORD=process.env.ADMIN_PASSWORD||'';
 const GH_TOKEN=process.env.GITHUB_TOKEN||'';
-const REPO=process.env.GITHUB_REPOSITORY||'';
-const BRANCH=process.env.GITHUB_BRANCH||'main';
+const REPO=process.env.GITHUB_REPOSITORY||(process.env.RAILWAY_ENVIRONMENT_NAME==='staging'?'muzikmuzikant/svitlo-cherkasy':'');
+const BRANCH=process.env.RAILWAY_ENVIRONMENT_NAME==='staging'?'staging':(process.env.GITHUB_BRANCH||'main');
 const origin=process.env.APP_ORIGIN||'';
 function send(res,status,body){const headers={'content-type':'application/json; charset=utf-8','cache-control':'no-store','vary':'Origin','x-content-type-options':'nosniff','referrer-policy':'no-referrer'};if(res._allowedAppOrigin)headers['access-control-allow-origin']=res._allowedAppOrigin;res.writeHead(status,headers);res.end(JSON.stringify(body))}
 function authCompare(received){
@@ -64,7 +64,7 @@ async function github(path,method='GET',payload){
  return data;
 }
 async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
-export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal,auditSchedules,errorCounts,dailyReports){
+export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal,auditSchedules,errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry,addressCorrections){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(!originPolicy.isAllowed(req.headers.origin)){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const url=new URL(req.url,'http://localhost');
@@ -122,7 +122,9 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
  // Every privileged route is checked server-side. Hiding UI controls alone is not security.
  const pathName=url.pathname,method=req.method;
  const custom=session.managed;
- const permission=pathName.startsWith('/api/admin/feedback')?'feedback':
+ const permission=pathName.startsWith('/api/admin/address-corrections')?'schedules':
+  pathName.startsWith('/api/admin/work-items')?'settings':
+  pathName.startsWith('/api/admin/feedback')?'feedback':
   pathName.startsWith('/api/admin/help')?'help':
   pathName.startsWith('/api/admin/ads')?'ads':
   pathName.startsWith('/api/admin/push')?'push':
@@ -133,7 +135,7 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
   :role==='owner'
   ||role==='viewer'&&method==='GET'
   ||role==='operator'&&(
-   method==='GET'&&(/\/api\/admin\/(?:monitor|audit|status|feedback|help|analytics|ads|security)$/.test(pathName)
+   method==='GET'&&(pathName.startsWith('/api/admin/feedback/attachment/')||/\/api\/admin\/(?:monitor|audit|status|feedback|help|analytics|ads|security|work-items)$/.test(pathName)
     ||pathName==='/api/admin/push/status')
    ||method==='PATCH'&&pathName.startsWith('/api/admin/feedback/'))
   ||role==='editor'&&!(pathName==='/api/admin/push/send'
@@ -142,6 +144,69 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    ||(pathName.startsWith('/api/admin/feedback/')&&method==='DELETE'));
  if(!allowed){send(res,403,{error:'Недостатньо прав для цієї дії'});return true}
  try{
+   if(pathName==='/api/admin/address-corrections'&&method==='GET'){
+    send(res,200,addressCorrections.list());return true;
+   }
+   if(pathName==='/api/admin/address-corrections'&&method==='POST'){
+    if(!['owner','editor'].includes(role)){send(res,403,{error:'Потрібні права редактора'});return true}
+    send(res,201,addressCorrections.create(await readJson(req,2300),session.username));return true;
+   }
+   if(pathName.startsWith('/api/admin/address-corrections/')&&['PATCH','DELETE'].includes(method)){
+    const id=decodeURIComponent(pathName.slice('/api/admin/address-corrections/'.length));
+    if(!/^AC-[A-F0-9]{12}$/.test(id)){send(res,400,{error:'Некоректний номер картки'});return true}
+    const body=await readJson(req,2300);
+    if(method==='PATCH'){
+     if(!['owner','editor'].includes(role)){send(res,403,{error:'Потрібні права редактора'});return true}
+     send(res,200,addressCorrections.edit(id,body,session.username,role==='owner'&&!session.managed));return true;
+    }
+    if(role!=='owner'||session.managed){send(res,403,{error:'Видаляти картки може лише власник'});return true}
+    send(res,200,addressCorrections.remove(id,body.expectedRevision));return true;
+   }
+   // Private task registry and safe runtime configuration, persisted on Railway.
+   if(pathName==='/api/admin/work-items'&&method==='GET'){send(res,200,workRegistry.list());return true}
+   if(pathName==='/api/admin/work-items'&&method==='POST'){
+    if(!['owner','editor'].includes(role)){send(res,403,{error:'Дію дозволено редактору або власнику'});return true}
+    send(res,201,workRegistry.create(await readJson(req,4500),session.username));return true
+   }
+   if(/^\/api\/admin\/work-items\/WR-[A-F0-9]{12}\/notes$/.test(pathName)&&method==='POST'){
+    if(!['owner','editor'].includes(role)){send(res,403,{error:'Редагування доручень недоступне'});return true}
+    const id=pathName.split('/')[4];
+    send(res,200,workRegistry.addNote(id,await readJson(req,1400),session.username));return true;
+   }
+   if(pathName.startsWith('/api/admin/work-items/')&&['PATCH','DELETE'].includes(method)){
+    const id=decodeURIComponent(pathName.slice('/api/admin/work-items/'.length));
+    if(!/^WR-[A-F0-9]{12}$/.test(id)){send(res,400,{error:'Некоректний номер картки'});return true}
+    if(method==='PATCH'&&!['owner','editor'].includes(role)){send(res,403,{error:'Недостатньо прав'});return true}
+    if(method==='DELETE'&&(role!=='owner'||session.managed)){send(res,403,{error:'Лише власник може видаляти картки'});return true}
+    const body=await readJson(req,4500);
+    send(res,200,method==='PATCH'?workRegistry.patch(id,body,session.username):workRegistry.remove(id,body.expectedRevision,session.username));
+    return true;
+   }
+   if(pathName==='/api/admin/site-quick-settings'&&method==='GET'){
+    send(res,200,siteControls.get());return true
+   }
+   if(pathName==='/api/admin/site-quick-settings'&&method==='PUT'){
+    if(role!=='owner'||session.managed){send(res,403,{error:'Публікація доступна власнику'});return true}
+    const body=await readJson(req,6500),current=siteControls.get();
+    if(!Object.hasOwn(body,'expectedUpdatedAt')||body.expectedUpdatedAt!==(current.updatedAt??null)){
+     send(res,409,{error:'Налаштування змінилися. Оновіть їх перед збереженням.'});return true
+    }
+    if(!body.banner||!body.links||!body.flags||
+     typeof body.banner!=='object'||typeof body.links!=='object'||typeof body.flags!=='object'){
+     send(res,400,{error:'Неповні налаштування'});return true
+    }
+    const next={...current,site:{...current.site,
+     banner:{...current.site.banner},links:{...current.site.links},flags:{...current.site.flags}}};
+    for(const key of ['enabled','title','body','button','url'])
+     if(Object.hasOwn(body.banner,key))next.site.banner[key]=body.banner[key];
+    for(const key of ['help','feedback','official'])
+     if(Object.hasOwn(body.links,key))next.site.links[key]=body.links[key];
+    for(const key of ['inbox','sharing','help','feedback','copySchedule','addressSearch','pushPrompt','manualRefresh'])
+     if(Object.hasOwn(body.flags,key))next.site.flags[key]=body.flags[key];
+    const saved=siteControls.update(next);
+    extras?.record('site.quick-settings.publish','banner='+saved.site.banner.enabled);
+    send(res,200,saved);return true;
+   }
    if(pathName==='/api/admin/reports'&&method==='GET'){
     send(res,200,dailyReports.list());return true
    }
@@ -149,6 +214,23 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
     send(res,200,errorCounts.report());return true
    }
     if(pathName==='/api/admin/schedule/quality'&&method==='GET'){send(res,200,auditSchedules());return true}
+    if(pathName==='/api/admin/schedule/review'&&method==='GET'){
+     send(res,200,scheduleReview.list(officialSchedules.rawSchedule(),officialSchedules.rawReview()));return true;
+    }
+    if(pathName==='/api/admin/schedule/review/approve'&&method==='POST'){
+     if(role!=='owner'){send(res,403,{error:'Тільки власник може підтверджувати офіційні графіки'});return true}
+     const input=await readJson(req,5000);
+     const result=scheduleReview.approve(input,officialSchedules.rawSchedule(),officialSchedules.rawReview());
+     extras?.record('schedule.review.approve',result.date);
+     send(res,200,{...result,status:officialSchedules.status()});return true;
+    }
+    if(pathName==='/api/admin/schedule/review/approval'&&method==='DELETE'){
+     if(role!=='owner'){send(res,403,{error:'Тільки власник може скасовувати підтвердження'});return true}
+     const input=await readJson(req,350);
+     const result=scheduleReview.revoke(input?.date);
+     extras?.record('schedule.review.revoke',result.date);
+     send(res,200,{...result,status:officialSchedules.status()});return true;
+    }
     if(pathName==='/api/admin/legal'&&method==='GET'){send(res,200,legal.publicState());return true}
    if(pathName==='/api/admin/legal'&&method==='PUT'){
     if(role!=='owner'||session.managed){send(res,403,{error:'Лише власник може публікувати нову редакцію'});return true}
@@ -192,8 +274,14 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
      let removed=0;for(const key of SESSIONS.keys())if(key!==tokenHash){SESSIONS.delete(key);removed++}
      extras?.record('auth.revokeOthers','count='+removed);send(res,200,{ok:true,removed});return true;
    }
-   if(url.pathname==='/api/admin/push/status'&&req.method==='GET'){send(res,200,manualPush.stats());return true}
+   if(url.pathname==='/api/admin/push/status'&&req.method==='GET'){
+      send(res,200,{...manualPush.stats(),automatic:manualPush.automaticStatus?.()||null});return true;
+    }
    if(url.pathname==='/api/admin/push/test'&&req.method==='POST'){const output=await manualPush.test(await readJson(req));extras?.record('push.test','test notification');send(res,200,output);return true}
+   if(url.pathname==='/api/admin/notices/metrics'&&req.method==='GET'){
+     const ids=siteControls.get().announcements.map(x=>x.id);
+     send(res,200,noticeMetrics.report(ids));return true;
+   }
    if(url.pathname==='/api/admin/notices/test'&&req.method==='POST'){
      const result=await manualPush.preview(await readJson(req,1200));
      extras?.record('push.preview','test to current device');send(res,200,result);return true;
@@ -228,11 +316,17 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
     const data=await readJson(req,50000);const result=feedback.setTemplates(data.templates);
     extras?.record('feedback.templates.update');send(res,200,result);return true
    }
+    if(url.pathname.startsWith('/api/admin/feedback/attachment/')&&req.method==='GET'){
+      const tail=url.pathname.slice('/api/admin/feedback/attachment/'.length).split('/');
+      if(tail.length!==2||!/^SC-[A-F0-9]{10}$/.test(tail[0])||
+         !/^[a-f0-9]{36}$/.test(tail[1])){send(res,400,{error:'Некоректне вкладення'});return true}
+      send(res,200,feedback.getAttachment(tail[0],tail[1],null,true));return true;
+    }
     if(url.pathname==='/api/admin/feedback'&&req.method==='GET'){send(res,200,feedback.list());return true}
    if(url.pathname.startsWith('/api/admin/feedback/')&&['PATCH','DELETE'].includes(req.method)){
      const id=decodeURIComponent(url.pathname.slice('/api/admin/feedback/'.length));
      if(!/^SC-[0-9A-F]{10}$/.test(id)){send(res,400,{error:'Неправильний номер звернення'});return true}
-     const result=req.method==='DELETE'?feedback.remove(id):feedback.change(id,await readJson(req,6000));
+     const result=req.method==='DELETE'?feedback.remove(id):feedback.change(id,await readJson(req,6000),session.username||'admin');
      extras?.record('feedback.'+(req.method==='DELETE'?'delete':'update'),id);send(res,200,result);return true;
    }
    if(url.pathname==='/api/admin/monitor'&&req.method==='GET'){send(res,200,await monitor());return true}

@@ -1,0 +1,90 @@
+/* Private support attachments: compact picker and secure viewer. */
+.ticket-attach{display:grid;gap:7px;margin:17px 0 8px;min-width:0}
+.ticket-attach-label{
+ display:inline-flex;align-items:center;justify-content:center;justify-self:start;gap:8px;
+ background:#eff6fd;color:#2c648a;padding:10px 14px;min-height:42px;
+ font-weight:760;font-size:12px;border:1px solid #c9dcea;border-radius:11px;
+ cursor:pointer;transition:background .2s ease,transform .2s ease
+}
+.ticket-attach-label:active{transform:scale(.98)}
+.ticket-file-input{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.ticket-file-input:focus-visible+.ticket-attach-note{outline:2px solid #4b9dc5;outline-offset:2px}
+.ticket-attach-note{font-size:11px;line-height:1.55;color:var(--muted,#73869b);margin:0;max-width:560px}
+.ticket-file-status{min-height:12px;margin:0;color:#54728c;font-size:11px}
+.ticket-file-preview{display:grid;gap:7px;min-width:0}
+.ticket-upload-item{
+ display:flex;align-items:center;gap:10px;padding:9px 10px;min-width:0;
+ background:#f4f8fb;border:1px solid #dbe7f1;border-radius:11px;
+}
+.ticket-upload-item img,.ticket-upload-video{
+ width:48px;height:45px;object-fit:cover;border-radius:7px;flex:0 0 48px;
+ background:#e4edf6;color:#5b7190;display:grid;place-items:center;font-size:23px
+}
+.ticket-upload-name{min-width:0;display:grid;gap:3px;flex:1}
+.ticket-upload-name strong{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ticket-upload-name small{font-size:10px;color:#7790a5}
+.ticket-upload-item button{
+ border:1px solid #d1dce5;border-radius:8px;background:white;color:#7b5160;
+ min-width:35px;min-height:35px;font-size:22px;cursor:pointer
+}
+.ticket-media-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;min-width:0}
+.ticket-media-link{
+ border:1px solid #d2e2ee;background:#eff6fb;color:#35647f;
+ display:inline-flex;gap:7px;align-items:center;padding:9px 11px;
+ border-radius:10px;max-width:100%;min-height:39px;
+ font-size:12px;font-weight:710;cursor:pointer
+}
+.ticket-media-link span:nth-child(2){overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:200px}
+.ticket-media-link small{font-size:10px;opacity:.8;white-space:nowrap}
+.ticket-media-link:hover{background:#e2f0f7}
+.ticket-media-dialog{
+ border:1px solid #c9d5df;border-radius:20px;max-width:min(740px,94vw);width:min(740px,94vw);
+ max-height:min(91dvh,950px);padding:0;background:#fff;color:#263a4d;
+ box-shadow:0 24px 80px #0005;overflow:hidden
+}
+.ticket-media-dialog::backdrop{background:#122031b0;backdrop-filter:blur(5px)}
+.ticket-media-head{
+ display:flex;justify-content:space-between;align-items:center;gap:14px;
+ background:#f4f8fb;padding:13px 18px;border-bottom:1px solid #dce6ef
+}
+.ticket-media-title{min-width:0;overflow-wrap:anywhere;font-size:13px}
+.ticket-media-head button{padding:10px 12px;border-radius:9px;border:1px solid #cfdae5;background:white;color:#2e526a;font-weight:730}
+.ticket-media-content{min-height:130px;max-height:calc(90dvh - 65px);overflow:auto;padding:12px;display:grid;place-items:center;font-size:13px}
+.ticket-media-content :is(img,video){display:block;max-width:100%;max-height:calc(85dvh - 95px);object-fit:contain;border-radius:9px}
+:root[data-theme="dark"] .ticket-attach-label{background:#273e53;color:#c7e6fa;border-color:#405f76}
+:root[data-theme="dark"] .ticket-upload-item{background:#253445;border-color:#44586b}
+:root[data-theme="dark"] .ticket-upload-item button{background:#304255;color:#f2d8dc;border-color:#587082}
+:root[data-theme="dark"] .ticket-media-link{background:#2a4153;border-color:#4f7184;color:#d5eafb}
+:root[data-theme="dark"] .ticket-media-dialog{background:#202b38;border-color:#475c72;color:#e1ebf8}
+:root[data-theme="dark"] .ticket-media-head{background:#26394a;border-color:#45576b}
+:root[data-theme="dark"] .ticket-media-head button{background:#30475b;color:#edf6fb;border-color:#546a7e}
+@media(max-width:560px){
+ .ticket-media-dialog{width:100%;max-width:100vw;max-height:100dvh;height:100dvh;border:0;border-radius:0}
+ .ticket-media-content{max-height:calc(100dvh - 90px)}
+ .ticket-media-content :is(img,video){max-height:calc(100dvh - 120px)}
+ .ticket-attach-label{min-height:43px}
+}
+@media(prefers-reduced-motion:reduce){.ticket-attach-label{transition:none;transform:none!important}}
+
+.ticket-media-download{display:inline-flex;align-items:center;justify-content:center;text-decoration:none!important;border:1px solid #b9d7e8;border-radius:9px;padding:10px 13px;margin:9px 0;background:#e5f2fa;color:#276489;font-size:12px;font-weight:760}
+:root[data-theme="dark"] .ticket-media-download{background:#294c62;border-color:#507d94;color:#d6f0ff}
+
+.ticket-attach[hidden]{display:none!important}
+
+/* Always expose where attachments belong. The old Railway server can be
+   identified and refreshed without pretending a disabled upload succeeded. */
+.ticket-attach.ticket-media-unavailable .ticket-attach-label{
+ opacity:.58;filter:grayscale(.25);cursor:not-allowed
+}
+.ticket-attach.ticket-media-unavailable .ticket-file-status{
+ color:#9b5b22;line-height:1.5;font-weight:650
+}
+.ticket-media-retry{
+ display:inline-flex;align-items:center;justify-content:center;
+ justify-self:start;min-height:34px;padding:6px 9px;border:0;
+ background:transparent;color:#367dbd;font-size:11px;font-weight:740;
+ text-decoration:underline;text-underline-offset:3px;cursor:pointer
+}
+.ticket-media-retry[hidden]{display:none!important}
+:root[data-theme="dark"] .ticket-media-retry{color:#a9ccff}
+:root[data-theme="dark"] .ticket-attach.ticket-media-unavailable .ticket-file-status{color:#edbd89}

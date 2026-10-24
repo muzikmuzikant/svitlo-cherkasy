@@ -1,0 +1,81 @@
+/* Clean optional social directory. Links are configured by the owner on Railway. */
+.svitlo-social-settings{
+ display:flex;flex-direction:column;gap:9px;
+ margin:16px 0 11px;padding:17px 16px;
+ border:1px solid var(--line,#dce4ed);border-radius:17px;
+ background:var(--surface,#fff);color:var(--ink,#23364a);
+ box-shadow:0 5px 18px #132a4c08;min-width:0
+}
+.svitlo-social-footer{
+ display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;
+ margin:18px auto 8px;padding:14px 0 0;
+ border-top:1px solid #ccd8e54d;min-width:0;
+ color:inherit;font:12px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
+}
+.svitlo-social-caption{
+ display:block;font-size:11px;letter-spacing:.015em;
+ color:var(--muted,#718397);font-weight:720
+}
+.svitlo-social-links{display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-width:0}
+.svitlo-social-link{
+ display:inline-flex;gap:7px;align-items:center;justify-content:center;
+ text-decoration:none!important;text-align:center;white-space:nowrap;
+ min-height:35px;padding:7px 11px;
+ border:1px solid var(--line,#dce4ed);
+ border-radius:9px;
+ background:var(--raised,#f3f7fa);color:var(--ink,#244055)!important;
+ font-size:11px;font-weight:690;line-height:1.3;
+ box-shadow:none;max-width:100%;transition:background-color .2s ease,border-color .2s ease,transform .2s ease;
+}
+.svitlo-social-link:hover{background:#e6f3f8;border-color:#b6d8e3;transform:translateY(-1px)}
+.svitlo-social-link:focus-visible{outline:2px solid #398bdb;outline-offset:2px}
+.svitlo-social-icon{
+ display:inline-grid;place-items:center;width:19px;height:19px;flex:0 0 19px;
+ border-radius:6px;background:#e0edfa;color:#2f67ad;
+ font-size:12px;font-weight:900;font-family:Arial,sans-serif
+}
+.svitlo-social-link.social-telegram .svitlo-social-icon{background:#d9f1fb;color:#177da8}
+.svitlo-social-link.social-instagram .svitlo-social-icon{background:#f7e7f3;color:#a34c81}
+.svitlo-social-link.social-facebook .svitlo-social-icon{background:#e4ebff;color:#3866ae}
+.svitlo-social-link.social-youtube .svitlo-social-icon{background:#ffe7e9;color:#cf404b}
+.svitlo-page-footer{
+ max-width:770px;margin:22px auto 0;padding:12px 20px 25px;
+ border-top:1px solid #dbe4ee;color:var(--muted,#728398);
+ text-align:center;font-size:12px
+}
+.svitlo-page-footer .svitlo-social-footer{justify-content:center;border-top:none}
+:root[data-theme="dark"] .svitlo-social-settings{
+ background:var(--surface,#202733);border-color:var(--line,#334354);color:var(--ink,#e6edf7);
+ box-shadow:none
+}
+:root[data-theme="dark"] .svitlo-social-link{
+ background:#263241;border-color:#425365;color:#dae8f6!important;
+}
+:root[data-theme="dark"] .svitlo-social-link:hover{background:#30475e;border-color:#6384a0}
+:root[data-theme="dark"] .svitlo-social-footer{border-top-color:#44536488}
+@media(max-width:390px){
+ .svitlo-social-settings{margin-inline:0;padding:13px}
+ .svitlo-social-links{gap:7px}
+ .svitlo-social-link{padding:8px 9px;min-height:36px}
+}
+@media(prefers-reduced-motion:reduce){
+ .svitlo-social-link{transition:none!important}
+ .svitlo-social-link:hover{transform:none}
+}
+
+/* Existing horizontal legal footers get a separate quiet social row. */
+.install-footer,.support-footer{flex-wrap:wrap}
+.install-footer>.svitlo-social-footer,
+.support-footer>.svitlo-social-footer{
+ flex:1 1 100%;width:100%;margin:0;padding-top:12px;
+ justify-content:flex-start;min-width:0
+}
+.install-footer>.svitlo-social-footer .svitlo-social-caption,
+.support-footer>.svitlo-social-footer .svitlo-social-caption{
+ flex:0 0 auto
+}
+@media(max-width:490px){
+ .install-footer>.svitlo-social-footer,.support-footer>.svitlo-social-footer{
+  align-items:flex-start;flex-direction:column;gap:8px
+ }
+}

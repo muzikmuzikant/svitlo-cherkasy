@@ -1,0 +1,109 @@
+/* Functional work register: quiet by default, clear when action is required.
+   Scope strictly to the PRIVATE admin workspace. No user-facing PWA styles. */
+body.svitlo-office .office-nav-link .office-task-badge{
+ margin-left:auto!important;flex:none;min-width:23px;height:23px;
+ display:inline-flex;align-items:center;justify-content:center;padding:0 6px;
+ border-radius:7px;background:#fff0d7;color:#8e4916;
+ border:1px solid #efd29f;font-size:11px;line-height:1;font-weight:850;
+ font-variant-numeric:tabular-nums
+}
+body.svitlo-office .office-nav-link .office-task-badge[hidden]{display:none!important}
+body.svitlo-office .admin-tabs .office-nav-link.has-task-attention:not([aria-pressed="true"]){
+ color:#765024!important;background:#fff9eb!important
+}
+body.svitlo-office .office-attention{
+ display:grid;gap:12px;min-width:0;margin:14px 0 18px;padding:15px;
+ border:1px solid #d4dfe7;border-left:4px solid #d88d32;
+ border-radius:10px;background:linear-gradient(135deg,#fffdfa,#fafcfe);
+ color:#30485c
+}
+body.svitlo-office .office-attention-head{
+ display:flex;align-items:center;justify-content:space-between;
+ flex-wrap:wrap;gap:6px 14px
+}
+body.svitlo-office .office-attention-head strong{font-size:15px;color:#243f51}
+body.svitlo-office .office-attention-head span{font-size:11px;color:#718393}
+body.svitlo-office .office-attention-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+body.svitlo-office .office-attention-filter{
+ display:flex!important;align-items:center;justify-content:space-between;min-width:0;gap:8px;
+ padding:11px 12px!important;border:1px solid #dbe4eb!important;
+ border-radius:8px!important;background:#fff!important;text-align:left;
+ font-size:12px;color:#4b6171;transition:background .18s ease,border-color .18s ease
+}
+body.svitlo-office .office-attention-filter strong{font-size:22px;font-weight:820;color:#273c4c;font-variant-numeric:tabular-nums}
+body.svitlo-office .office-attention-filter.overdue:not(:disabled) strong{color:#af3a34}
+body.svitlo-office .office-attention-filter.urgent:not(:disabled) strong{color:#a96c10}
+body.svitlo-office .office-attention-filter.review:not(:disabled) strong{color:#26699a}
+body.svitlo-office .office-attention-filter:disabled{opacity:.7}
+body.svitlo-office .office-attention-filter:not(:disabled):hover{background:#f2f7fb!important;border-color:#8dabbf!important}
+body.svitlo-office .office-attention-items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+body.svitlo-office .office-attention-item{
+ display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;
+ padding:10px 12px!important;background:white!important;border:1px solid #dbe3ea!important;
+ border-radius:8px!important;text-align:left;color:#304b5d
+}
+body.svitlo-office .office-attention-item:hover{background:#eff6fa!important}
+body.svitlo-office .office-attention-item strong{font-size:12px;line-height:1.4;overflow-wrap:anywhere}
+body.svitlo-office .office-attention-item span{font-size:11px;color:#8c5d27;overflow-wrap:anywhere}
+body.svitlo-office .office-attention-empty,body.svitlo-office .office-attention.is-unavailable p{
+ margin:0;font-size:12px;line-height:1.5;color:#697f91
+}
+body.svitlo-office .office-attention.is-unavailable{border-left-color:#869db2;background:#f5f8fa}
+body.svitlo-office .office-attention.is-unavailable strong{font-size:13px}
+body.svitlo-office .office-work-entry.is-overdue{
+ border-left:3px solid #c64c42!important;padding-left:12px!important;background:#fff8f7!important
+}
+body.svitlo-office .office-work-entry.is-urgent:not(.is-overdue){
+ border-left:3px solid #ca8c2a!important;padding-left:12px!important
+}
+body.svitlo-office .registry-row.is-overdue{
+ border-left:4px solid #c64c42!important;background:#fff6f4!important
+}
+body.svitlo-office .registry-row.is-urgent:not(.is-overdue){
+ border-left:4px solid #db992f!important;background:#fffaf0!important
+}
+body.svitlo-office .registry-row.is-overdue .registry-priority,
+body.svitlo-office .registry-row.is-urgent .registry-priority{font-weight:800}
+body.svitlo-office .registry-row:focus-visible,.office-attention-item:focus-visible,
+body.svitlo-office .office-attention-filter:focus-visible{
+ outline:2px solid #267d9c;outline-offset:2px
+}
+body.svitlo-office .registry-badges #adminRegisterPending.requires-attention{
+ border-color:#edcba0;color:#91571c;background:#fff3e2;font-weight:820
+}
+body.svitlo-office .work-quick-actions{
+ display:flex;flex-direction:column;gap:8px;min-width:0;margin:13px 0 10px;
+ padding:13px;border-radius:9px;background:#edf5f9;border:1px solid #cadfe9
+}
+body.svitlo-office .work-quick-actions[hidden],body.svitlo-office .work-linked-ticket[hidden]{display:none!important}
+body.svitlo-office .work-quick-label{font-size:12px;color:#315168}
+body.svitlo-office .work-quick-buttons{display:flex;gap:8px;flex-wrap:wrap}
+body.svitlo-office .work-quick-button{
+ padding:10px 13px!important;min-height:40px;
+ border-radius:7px!important;border:1px solid #bad2df!important;
+ background:#fff!important;color:#236082!important;font-size:12px;font-weight:740
+}
+body.svitlo-office .work-quick-button.is-complete{background:#207757!important;border-color:#207757!important;color:#fff!important}
+body.svitlo-office .work-quick-button:not(:disabled):active{transform:scale(.985)}
+body.svitlo-office .work-linked-ticket{
+ align-self:flex-start;max-width:100%;padding:7px 0!important;
+ border:0!important;background:transparent!important;color:#1b6f94!important;
+ font-size:11px;font-weight:700;text-align:left
+}
+body.svitlo-office #workForm{scroll-margin-top:18px}
+body.svitlo-office #workPriorityFilter{min-width:150px}
+@media(max-width:800px){
+ body.svitlo-office .office-attention-items{grid-template-columns:1fr}
+ body.svitlo-office .office-attention-filter{flex-direction:column;align-items:flex-start}
+}
+@media(max-width:430px){
+ body.svitlo-office .office-attention{padding:12px;gap:10px}
+ body.svitlo-office .office-attention-stats{gap:5px}
+ body.svitlo-office .office-attention-filter{padding:8px!important;font-size:10px}
+ body.svitlo-office .office-attention-filter strong{font-size:19px}
+ body.svitlo-office .work-quick-buttons{display:grid;grid-template-columns:minmax(0,1fr)}
+ body.svitlo-office .work-quick-button{width:100%;white-space:normal}
+}
+@media(prefers-reduced-motion:reduce){
+ body.svitlo-office .office-attention-filter,body.svitlo-office .work-quick-button{transition:none!important}
+}

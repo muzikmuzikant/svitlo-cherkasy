@@ -44,9 +44,55 @@ LOCALITY_IN_ROW = re.compile(
     r'(?=\s*[:;]|\s*,\s*(?:вул\.|пров\.|просп\.)|\s+(?:вул\.|пров\.|просп\.))',re.I)
 
 STREET = re.compile(r'(?<!\w)(?P<type>вул(?:иця)?\.?|пров(?:улок|\.)?|просп(?:ект)?\.?|пр-т\.?|прв\.?|б-р\.?|бульвар|узвіз)\s*',re.I)
-STREET_NAME = re.compile(r'^\s*(?P<name>[^\d,;:]{3,85}?)\s*[,;:]?\s*(?=\d{1,4}(?:[/\-]?\d{1,4})?\s*[а-яіїєґa-z]?\b)',re.I)
+STREET_NAME = re.compile(r'^\s*(?P<name>[^,;:]{3,85}?)\s*[,;:]?\s*(?=\d{1,4}(?:[/\-*]?\d{1,4})?\s*[а-яіїєґa-z]?\b)',re.I)
 HOUSE_LIST = re.compile(r'^\s*(?P<houses>\d{1,4}(?:\s*[-/]\s*\d{1,4})?(?:\s*[- ]?\s*[а-яіїєґa-z])?(?:\s*,\s*\d{1,4}(?:\s*[-/]\s*\d{1,4})?(?:\s*[- ]?\s*[а-яіїєґa-z])?)*)',re.I)
 HOUSE = re.compile(r'\d{1,4}(?:\s*[-/]\s*\d{1,4})?(?:\s*[- ]?\s*[а-яіїєґa-z])?',re.I)
+# Strictly tokenize comma-separated houses. A unit ("кв 3") or the weird
+# literal "223*1" found in the 2026 operator PDF does not confirm the whole
+# building. Skip that token but continue reading the remaining valid houses.
+HOUSE_ITEM = re.compile(
+    r'^\s*(?P<number>\d{1,4}(?:\s*[-/]\s*\d{1,4}|\s*/\s*[а-яіїєґa-z])?'
+    r'(?:\s*[- ]?\s*[а-яіїєґa-z])?)\s*'
+    r'(?P<unit>(?:кв\.?|квартира)\s*\d+[а-яіїєґa-z]?)?\s*$',
+    re.I,
+)
+STAR_NUMBER = re.compile(r'^\s*\d{1,4}\s*\*\s*\d{1,4}\s*$')
+# One *final* valid house may be followed by the next company/section label
+# without a separating comma. Do not confuse any unit qualifier with a house.
+HOUSE_AT_PROSE = re.compile(
+    r'^\s*(?P<number>\d{1,4}(?:\s*[-/]\s*\d{1,4}|\s*/\s*[а-яіїєґa-z])?'
+    r'(?:\s*[- ]?\s*[а-яіїєґa-z])?)'
+    r'(?=\s+(?!кв\.?\b|квартира\b|корпус\b|приміщення\b)[^\d\s]|\s*;)',
+    re.I,
+)
+
+def parse_house_numbers(value):
+    """Return only exact, whole-building tokens, without apartment guesses."""
+    result = []
+    value = str(value).lstrip(' \t\r\n,;:')
+    for piece in value.split(','):
+        part = piece.strip()
+        if not part:
+            continue
+        if STAR_NUMBER.fullmatch(part):
+            continue
+        match = HOUSE_ITEM.fullmatch(part)
+        if not match:
+            # The last listed house sometimes directly precedes prose or
+            # a company name. Preserve that exact house, then STOP.
+            prefix = HOUSE_AT_PROSE.match(part)
+            if prefix:
+                number = normalize(prefix.group('number').replace('-', ''))
+                if number:
+                    result.append(number)
+            break
+        if match.group('unit'):
+            continue
+        number = normalize(match.group('number').replace('-', ''))
+        if number:
+            result.append(number)
+    return result
+
 LOG = logging.getLogger('svitlo')
 
 
@@ -107,33 +153,42 @@ def check_schedule_date(day, pub, url):
 
 def parse_article(html,url,reference=None):
     soup=BeautifulSoup(html,'html.parser')
-    def reject(reason):
-        LOG.warning('Schedule parser rejected %s: %s', url, reason)
-        return None
     header=soup.find('h1')
-    if not header:return reject('missing h1')
+    if not header:return None
     heading=header.get_text(' ',strip=True).lower()
-    if 'погодинн' not in heading or 'відключен' not in heading:return reject('h1 is not a blackout heading: '+heading[:110])
+    if 'погодинн' not in heading or 'відключен' not in heading:return None
     date_hit=HEADLINE_DATE.search(heading)
-    if not date_hit:return reject('headline date missing: '+heading[:110])
+    if not date_hit:return None
     full=soup.get_text(' ',strip=True).replace('\xa0',' ').replace('−','-')
     # The operator's CMS wraps parts of a clock in separate HTML spans,
     # so BeautifulSoup may produce "08 :00" instead of "08:00".
     # Join only numeric clock colons, never merge unrelated table tokens.
     full=re.sub(r'(?<=\d)\s*:\s*(?=\d{2}\b)', ':', full)
-    # Operator CMS can split a leading zero into separate text nodes:
-    # '1.2 0 0:00 - 02:00'. Without joining this clock, QUEUE_START misses
-    # 1.2 and mistakenly merges all later subqueues into 1.1.
-    full=re.sub(r'(?<![\w.])([012])\s+([0-9]):([0-5]\d)\b', r'\1\2:\3', full)
     time_hit=PUB_TS.search(full)
-    if not time_hit:return reject('publication timestamp missing')
-    pub=datetime.strptime(' '.join(time_hit.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
+    if time_hit:
+        pub=datetime.strptime(' '.join(time_hit.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
+    else:
+        # CMS editors can change visible date markup while its structured
+        # publication date remains authoritative. Do not infer today's date.
+        raw_time=None
+        for selector,attribute in [('meta[property="article:published_time"]','content'),
+                                   ('meta[itemprop="datePublished"]','content'),
+                                   ('time[datetime]','datetime')]:
+            el=soup.select_one(selector)
+            if el and el.get(attribute):
+                raw_time=el.get(attribute)
+                break
+        try:
+            pub=datetime.fromisoformat(raw_time.replace('Z','+00:00')).astimezone(TZ) if raw_time else None
+        except (ValueError,TypeError):
+            pub=None
+        if pub is None:return None
     year=pub.year
     month=UA_MONTHS[date_hit.group(2).lower()]
     if pub.month==12 and month==1:year+=1
     if pub.month==1 and month==12:year-=1
     try:day=datetime(year,month,int(date_hit.group(1)),tzinfo=TZ).date().isoformat()
-    except ValueError:return reject('invalid headline date')
+    except ValueError:return None
     check_schedule_date(day,pub,url)
     # Operator edits are separate official news posts and sometimes change
     # the wording before the queue table. A fixed introductory phrase must not
@@ -147,27 +202,26 @@ def parse_article(html,url,reference=None):
         container=soup.select_one('article, .article-content, .news-article, main') or soup
         text=container.get_text(' ', strip=True).replace('\xa0',' ').replace('−','-')
         text=re.sub(r'(?<=\d)\s*:\s*(?=\d{2}\b)', ':', text)
-        text=re.sub(r'(?<![\w.])([012])\s+([0-9]):([0-5]\d)\b', r'\1\2:\3', text)
         heading_pos=text.lower().find(heading)
         table_text=text[heading_pos+len(heading):] if heading_pos>=0 else text
         if len(set(m.group(1) for m in QUEUE_START.finditer(table_text))) < 3:
-            return reject('fallback queue count under three; sample='+repr(table_text[:210]))
+            return None
     body=re.split(r'Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|Відключення\s+електроенергії\s+можуть',table_text,maxsplit=1,flags=re.I)[0]
     found=list(QUEUE_START.finditer(body))
-    if not found:return reject('no queue tokens; sample='+repr(body[:210]))
-    if len({x.group(1) for x in found})!=len(found):return reject('duplicate queue tokens: '+repr([x.group(1) for x in found]))
+    if not found:return None
+    if len({x.group(1) for x in found})!=len(found):return None
     queues={}
     for i,m in enumerate(found):
         part=body[m.end():found[i+1].start() if i+1<len(found) else len(body)]
         periods=[]
         for a,am,b,bm in INTERVAL.findall(part):
             start,end=int(a)*60+int(am),int(b)*60+int(bm)
-            if not 0<=start<end<=1440 or periods and periods[-1][1]>start:return reject('invalid or overlapping time intervals for queue '+m.group(1))
+            if not 0<=start<end<=1440 or periods and periods[-1][1]>start:return None
             periods.append((start,end))
         # Explicit 'not disconnected' text means known schedule with no outages.
         explicitly_none=bool(re.search(r'не\s+відключ|без\s+відключ|відключення\s+не\s+передбач',part,re.I))
         if periods or explicitly_none:queues[m.group(1)]=periods
-        else:return reject('missing intervals for queue '+m.group(1)+'; sample='+repr(part[:150]))
+        else:return None
     return {'date':day,'publishedAt':pub.isoformat(timespec='minutes'),'source':url,'queues':queues}
 
 
@@ -211,6 +265,14 @@ def compose(revisions):
                              for r in revs]}
 
 
+def publication_fingerprint(html):
+    """Hash visible article content to invalidate approvals after real edits."""
+    soup=BeautifulSoup(html,'html.parser')
+    node=soup.select_one('article, .article-content, .news-article, main') or soup
+    content=re.sub(r'\s+', ' ',node.get_text(' ',strip=True)).strip()
+    return hashlib.sha256(content.encode('utf-8')).hexdigest()[:24]
+
+
 def parse_news_links(html):
     soup=BeautifulSoup(html,'html.parser');urls=[]
     for a in soup.select('a[href]'):
@@ -235,7 +297,14 @@ def update_schedules(session, now=None):
     official schedules are still safe to publish.
     """
     now = now or datetime.now(TZ)
-    wanted = {(now.date() + timedelta(days=i)).isoformat() for i in (-2, -1, 0, 1, 2, 3)}
+    # Sunday 00:00 Europe/Kyiv expires only previous Mon-Sat schedules.
+    # Keep today's Sunday and the full coming Mon-Sun for weekday labels.
+    monday = now.date() - timedelta(days=now.weekday())
+    is_sunday = now.weekday() == 6
+    cutoff = now.date() if is_sunday else monday
+    wanted = {(monday + timedelta(days=i)).isoformat()
+              for i in range(14 if is_sunday else 9)
+              if monday + timedelta(days=i) >= cutoff}
     dest = DATA / 'schedules.json'
     try:
         old = json.loads(dest.read_text(encoding='utf-8'))
@@ -273,13 +342,16 @@ def update_schedules(session, now=None):
     warnings = []
     for u in urls:
         try:
-            rev = parse_article(fetch(session, u), u)
+            html=fetch(session, u)
+            fingerprint=publication_fingerprint(html)
+            rev = parse_article(html, u)
             if rev and rev['date'] in wanted:
                 grouped[rev['date']].append(rev)
             elif rev is None:
                 warnings.append({'code': 'UNREADABLE_ARTICLE', 'source': u,
                                  'targetDate': advertised_dates.get(u),
-                                 'reason': 'Графік у новині не вдалося розпізнати.'})
+                                 'sourceHash': fingerprint,
+                                 'reason': 'Редаговану офіційну новину не вдалося розпізнати. Перевірте її години вручну; попередній підтверджений графік збережено.'})
                 LOG.warning('Could not parse schedule article %s', u)
         except ScheduleDateConflict as e:
             review.append({'code': 'HEADLINE_DATE_CONFLICT', 'source': e.url,
@@ -292,17 +364,15 @@ def update_schedules(session, now=None):
                              'reason': 'Не вдалося отримати або прочитати публікацію.'})
             LOG.warning('Article error %s: %s', u, e)
 
-    # The operator sometimes exposes a newer/revised news link whose body is
-    # unreadable while the original official full-day article is still live.
-    # Recover from that original article rather than publishing an empty day.
-    # The fallback is ONLY an official dated article; parse_article validates
-    # its headline, publication date, queue numbers and outage time ranges.
+    # A newer operator news URL may be unreadable while its earlier canonical
+    # full-day schedule remains published. Recover only from that same official
+    # article after strict parse_article verification, never invent hours.
     month_slugs = ('sichnya', 'lyutoho', 'bereznya', 'kvitnya', 'travnya',
                    'chervnya', 'lypnya', 'serpnya', 'veresnya', 'zhovtnya',
                    'lystopada', 'hrudnya')
     for target in (now.date(), (now + timedelta(days=1)).date()):
         iso_day = target.isoformat()
-        if grouped.get(iso_day):
+        if grouped.get(iso_day) or iso_day not in wanted:
             continue
         canonical = (f'{BASE}/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-'
                      f'{target.day}-{month_slugs[target.month - 1]}')
@@ -341,13 +411,13 @@ def update_schedules(session, now=None):
         prev = existing.get(day)
         # A newer previously verified edition must not be rolled back if an
         # earlier article is temporarily the only one visible in the news list.
-        if prev and prev.get('publishedAt', '') > latest['publishedAt']:
+        if prev and not prev.get('manualReview') and prev.get('publishedAt', '') > latest['publishedAt']:
             continue
         if prev:
             diffs = [q for q in QUEUE if prev.get('queues', {}).get(q, {}) != latest['queues'].get(q, {})]
             # Same URL and same publication minute may contain different hours!
             # Keep lastChecked heartbeat for no-op checks, but publish a true edit.
-            if not diffs and prev.get('publishedAt') == latest['publishedAt'] and prev.get('source') == latest['source']:
+            if not diffs and prev.get('publishedAt') == latest['publishedAt'] and prev.get('source') == latest['source'] and not prev.get('manualReview'):
                 continue
             if diffs:
                 changed.append({'date': day, 'publishedAt': latest['publishedAt'],
@@ -356,7 +426,9 @@ def update_schedules(session, now=None):
                                 'source': latest['source'], 'queues': diffs})
         existing[day] = latest
 
-    old_changes = old.get('changes', [])
+    old_changes = [x for x in old.get('changes', [])
+                   if isinstance(x, dict) and isinstance(x.get('date'), str)
+                   and x['date'] >= cutoff.isoformat()]
     keys = {(x.get('date'), x.get('revisionId') or x.get('publishedAt')) for x in old_changes}
     for change in changed:
         identity = (change['date'], change['revisionId'])
@@ -429,18 +501,21 @@ def street_entries(text):
     tokens=list(STREET.finditer(text))
     found=[]
     for i,t in enumerate(tokens):
-        chunk=text[t.end():min(t.end()+500,tokens[i+1].start() if i+1<len(tokens) else len(text))]
+        # Do NOT cap at 500 characters: official Oct-2026 Cherkasy PDF page
+        # 18 lists 100+ houses on Narbutivska and Nadpilna after a SINGLE
+        # street marker. The old bound silently discarded later houses.
+        # The NEXT explicit street marker is the safe semantic boundary.
+        chunk=text[t.end():tokens[i+1].start() if i+1<len(tokens) else len(text)]
         match=STREET_NAME.match(chunk)
         if not match:continue
         display=match.group('name').strip(' ,.:-')
-        if len(display)<3 or len(display)>55 or any(c.isdigit() for c in display):continue
-        hm=HOUSE_LIST.match(chunk[match.end():])
-        if not hm:continue
+        if len(display)<3 or len(display)>55 or not re.search(r'[а-яіїєґa-z]',display,re.I):continue
+        houses=parse_house_numbers(chunk[match.end():])
+        if not houses:continue
         kindraw=t.group('type').lower()
         kind='провулок' if kindraw.startswith(('пров','прв')) else 'проспект' if kindraw.startswith(('просп','пр-т')) else 'бульвар' if kindraw.startswith(('б-р','буль')) else 'узвіз' if kindraw.startswith('узв') else 'вулиця'
-        for h in HOUSE.findall(hm.group('houses')):
-            house=normalize(h.replace('-',''))
-            if house:found.append((kind,normalize(display),house,display))
+        for house in houses:
+            found.append((kind,normalize(display),house,display))
     return found
 
 
@@ -460,40 +535,66 @@ def street_house_lists(text):
             name=m.group(1).strip(' ,.:-')
             if not name or len(name)>55:continue
             end=streets[i+1].start() if i+1<len(streets) else min(len(part),m.end()+1200)
-            houses=HOUSE_LIST.match(part[m.end():end])
+            houses=parse_house_numbers(part[m.end():end])
             if not houses:continue
             kind='вулиця'
             clean=normalize(name)
-            if not clean or any(x.isdigit() for x in name):continue
-            for number in HOUSE.findall(houses.group('houses')):
-                h=normalize(number.replace('-',''))
-                if h:found.append((kind,clean,h,name))
+            if not clean or not re.search(r'[а-яіїєґa-z]',name,re.I):continue
+            for house in houses:
+                found.append((kind,clean,house,name))
     return found
 
 
 def street_only_entries(text):
-    """Extract street-level hints (with or without enumerated house numbers).
+    """Extract explicit street names, including comma-delimited continuations.
 
-    PDF rows are inconsistent: ``вул.Соборна, вул.50 років Перемоги,``
-    and ``вул.Лісова вул.Польова`` both occur. Records are suggestions,
-    never evidence that an arbitrary house is in the listed subqueue.
+    Operator PDFs commonly write "вул. Лісова, Польова, Соборна" with only
+    the first street prefixed by "вул.". The previous parser indexed only
+    Лісова, which silently discarded the other two streets in every locality.
+    This extracts *street-level hints* only, never assigns house numbers.
     """
-    found=[]
-    clean=re.sub(r'\s+',' ',text.replace('\u00ad','').replace('\xa0',' '))
-    markers=list(STREET.finditer(clean))
-    for i,marker in enumerate(markers):
-        end=min(len(clean),marker.end()+110,markers[i+1].start() if i+1<len(markers) else len(clean))
-        chunk=clean[marker.end():end]
-        candidate=re.split(r'[,;:\n]',chunk,maxsplit=1)[0].strip(' .–-')
-        # Avoid treating a street + its house number as a new street name.
-        # Leading numbers in names (e.g. "50 років Перемоги") are valid.
-        candidate=re.sub(r'(?<!^)\s+\d{1,4}(?:/\d+)?[а-яіїєґa-z]?$', '', candidate,flags=re.I).strip()
-        if not 3<=len(candidate)<=58:continue
-        if re.search(r'\b(?:ТОВ|ФОП|АТ|КП|ПП|ПРАТ)\b',candidate,re.I):continue
-        kindraw=marker.group('type').lower()
-        kind='провулок' if kindraw.startswith(('пров','прв')) else 'проспект' if kindraw.startswith(('просп','пр-т')) else 'бульвар' if kindraw.startswith(('б-р','буль')) else 'узвіз' if kindraw.startswith('узв') else 'вулиця'
-        if normalize(candidate):found.append((kind,normalize(candidate),candidate))
-    return found
+    found = []
+    clean = re.sub(r'\s+', ' ', text.replace('\u00ad', '').replace('\xa0', ' '))
+    markers = list(STREET.finditer(clean))
+    for i, marker in enumerate(markers):
+        end = min(len(clean),
+                  markers[i + 1].start() if i + 1 < len(markers) else len(clean))
+        chunk = clean[marker.end():end]
+        # Some PDF cells join a street list with company names or a second
+        # locality. Do not mistake those unrelated fragments for streets.
+        chunk = re.split(
+            r'\b(?:ТОВ|ФОП|ПРАТ|ПрАТ|КП|ПП|ВСП|філія|Населення|'
+            r'Приватні\s+підприємства)\b',
+            chunk, maxsplit=1, flags=re.I
+        )[0]
+        kindraw = marker.group('type').lower()
+        kind = ('провулок' if kindraw.startswith(('пров', 'прв')) else
+                'проспект' if kindraw.startswith(('просп', 'пр-т')) else
+                'бульвар' if kindraw.startswith(('б-р', 'буль')) else
+                'узвіз' if kindraw.startswith('узв') else 'вулиця')
+        for part in re.split(r'[,;:]', chunk)[:150]:
+            candidate = part.strip(' .–-')
+            # Only a final isolated number is a house number. Preserve
+            # actual numbered names, e.g. "50 років Перемоги".
+            candidate = re.sub(
+                r'(?<!^)\s+\d{1,4}(?:/\d+)?[а-яіїєґa-z]?$', '',
+                candidate, flags=re.I).strip(' .–-')
+            if not 3 <= len(candidate) <= 58:
+                continue
+            if re.search(r'\b(?:ТОВ|ФОП|АТ|КП|ПП|ПРАТ|будинок|будинки)\b',
+                         candidate, re.I):
+                continue
+            if re.match(r'^\d+\s+(?!років|січня|лютого|березня|квітня|травня|червня|липня|серпня|вересня|жовтня|листопада|грудня)', candidate, re.I):
+                continue
+            # Reject address numbers and ambiguous prose, not geographic
+            # labels. Comma-separated ordinary names stay discoverable.
+            if not re.search(r'[А-ЯІЇЄҐа-яіїєґ]', candidate):
+                continue
+            label = normalize(candidate)
+            if label:
+                found.append((kind, label, candidate))
+    # Deduplicate deterministicly in source order.
+    return list(dict.fromkeys(found))
 
 
 def extract_city_streets(text):return street_entries(text)
@@ -622,6 +723,13 @@ def preserve_street_catalogue(result, previous, historical):
                 if hints:
                     archive_hints.setdefault(street, set()).update(hints)
         if archived:
+            reported = set()
+            for source in sources:
+                if isinstance(source, dict):
+                    reported.update(key for key in source.get('reportedStreetNames', [])
+                                    if isinstance(key, str) and key in archived)
+            if reported:
+                target['reportedStreetNames'] = sorted(reported)
             target['archiveOnlyStreets'] = sorted(archived)
             target['archivedStreetQueues'] = {
                 key: sorted(archive_hints[key]) for key in sorted(archive_hints)
@@ -654,6 +762,112 @@ def preserve_street_catalogue(result, previous, historical):
     return result
 
 
+
+def pdf_source_metadata(raw, expected_queue):
+    """Audit the *actual* PDF, not the HTML link label alone.
+
+    A changed PDF must never be accepted under the wrong subqueue. Filenames
+    vary, therefore prefer the text of the document's first page.
+    """
+    import fitz
+    document = fitz.open(stream=raw, filetype='pdf')
+    try:
+        if not len(document):
+            raise RuntimeError('Empty official PDF')
+        title = document[0].get_text('text', sort=True)[:3500]
+        pages = len(document)
+    finally:
+        closer = getattr(document, 'close', None)
+        if callable(closer):
+            closer()
+    match = re.search(
+        r'(?<!\d)([1-6])\s*черга\s*[,.;:]?\s*'
+        r'(ІІ|І|II|I)\s*підчерга',
+        title, re.I)
+    title_queue = None
+    if match:
+        roman = match.group(2).upper().replace('І', 'I')
+        title_queue = f'{match.group(1)}.{2 if roman == "II" else 1}'
+        if title_queue != expected_queue:
+            raise RuntimeError(
+                f'Official PDF header says {title_queue}, '
+                f'but the website lists it as {expected_queue}')
+    return {'url': None, 'sha256': hashlib.sha256(raw).hexdigest(),
+            'pages': pages, 'verifiedPdfTitleQueue': title_queue}
+
+
+def address_audit(index, sources, previous=None, now=None):
+    """An independent, compact QUALITY report, never a second queue source.
+
+    The report is diagnostics. No unconfirmed streets/houses are added to
+    the public PWA index, and its existence cannot certify grid topology.
+    """
+    previous = previous or {}
+    now = now or datetime.now(TZ)
+    city = index.get('keys', {})
+    locations = {'черкаси': index, **index.get('localities', {})}
+    conflicts = []
+    q_counts = {q: {'houses': 0, 'streetHints': 0} for q in QUEUE}
+    for locality, row in locations.items():
+        for key, values in row.get('keys', {}).items():
+            confirmed = set(values)
+            for queue in confirmed:
+                if queue in q_counts:
+                    q_counts[queue]['houses'] += 1
+            if len(confirmed) > 1:
+                conflicts.append({'locality': locality, 'streetHouse': key,
+                                  'queues': sorted(confirmed)})
+        for values in row.get('streetQueues', {}).values():
+            for queue in set(values):
+                if queue in q_counts:
+                    q_counts[queue]['streetHints'] += 1
+
+    by_locality = {}
+    for locality, row in sorted(locations.items()):
+        by_locality[locality] = {
+            'name': row.get('label', 'Черкаси' if locality == 'черкаси' else locality),
+            'indexedHouses': len(row.get('keys', {})),
+            'operatorStreets': len(row.get('streetQueues', {})),
+            'discoveredStreetNames': len(row.get('streets', {})),
+            'conflictedHouses': sum(1 for e in conflicts if e['locality'] == locality)
+        }
+    oldcity = set(previous.get('keys', {}))
+    cityset = set(city)
+    files = sorted(sources, key=lambda r: (int(r['queue'][0]), r['queue'][2]))
+    if {s['queue'] for s in files} != set(QUEUE):
+        raise RuntimeError('PDF provenance audit lacks one or more subqueues')
+    return {
+        'schemaVersion': 1,
+        'checkedAt': utc_stamp(now),
+        'effectiveSource': BASE + '/perelik-gpv?lang=uk',
+        'expectedPdfCount': 12,
+        'verifiedPdfCount': len(files),
+        'sourceFiles': files,
+        'totals': {
+            'indexedCityHouseKeys': len(city),
+            'indexedDistrictHouseKeys': sum(len(v.get('keys',{}))
+                                            for v in index.get('localities',{}).values()),
+            'conflictedHouseKeys': len(conflicts),
+            'operatorStreetEntries': sum(len(row.get('streetQueues', {}))
+                                         for row in locations.values()),
+            'knownLocalities': len(index.get('localities', {})),
+            'newCityHouseKeysSincePrevious': len(cityset - oldcity),
+            'missingCityHouseKeysSincePrevious': len(oldcity - cityset)
+        },
+        'queues': q_counts,
+        'localities': by_locality,
+        # Previously included numbers are NOT carried as confirmed when the
+        # fresh official PDF parser no longer corroborates them. Review exact
+        # removed keys separately, preserving their old queue for comparison.
+        'removedHouseKeysForReview': [
+            {'key': key, 'previousQueues': sorted(previous['keys'][key])}
+            for key in sorted(oldcity - cityset)[:200]
+        ],
+        # Only samples, not a claim these represent errors: in the official
+        # network the same building can appear on several feeding lines.
+        'multipleQueueExamples': conflicts[:80]
+    }
+
 def update_addresses(session,now=None):
     now=now or datetime.now(TZ)
     html=fetch(session,BASE+'/perelik-gpv?lang=uk')
@@ -661,25 +875,50 @@ def update_addresses(session,now=None):
     if len(urls)!=12:
         raise RuntimeError(f'Only {len(urls)} unambiguously labeled queue PDF links; refusing to guess queue order')
     collected=defaultdict(lambda:defaultdict(set));street_labels=defaultdict(dict);street_q=defaultdict(lambda:defaultdict(set));town_labels={}
-    errors=[]
+    errors=[];source_files=[]
     for queue,url in urls.items():
         try:
             raw=fetch(session,url,True)
             if not raw.startswith(b'%PDF'):raise ValueError('Not a PDF')
+            metadata=pdf_source_metadata(raw,queue)
             sections=extract_sections(raw)
+            # In the current period local Cherkasy EM / city EM are in the
+            # first half of each queue. Do not demand sections in *.2 PDFs,
+            # whose tables contain other branches of the same operator.
+            if queue.endswith('.1') and not sections:
+                raise RuntimeError('Current PDF yielded zero city/district sections')
+            meta={'queue':queue, **metadata,'url':url,
+                  'cityHouseMentions':0,'districtHouseMentions':0,
+                  'cityStreetMentions':0,'districtStreetMentions':0,
+                  'localities':len(sections)}
             for town,content in sections.items():
                 key=clean_locality(town)
-                town_labels.setdefault(key, town.strip())
+                # Old operator PDFs abbreviate these names or retain
+                # obsolete spellings. Keep the same internal key for saved
+                # addresses while displaying the contemporary village name.
+                display_names={'вканівці':'Великі Канівці',
+                               'хрестителево':'Хрестителеве'}
+                town_labels.setdefault(key, display_names.get(key,town.strip()))
                 # Numbered addresses and street-wide listings are distinct:
                 # street-wide listings are NOT proof for a specific house.
-                for kind,street,house,label in street_entries(content)+street_house_lists(content):
+                houses=street_entries(content)+street_house_lists(content)
+                names=street_only_entries(content)
+                which='city' if key == clean_locality('Черкаси') else 'district'
+                meta[which+'HouseMentions']+=len(houses)
+                meta[which+'StreetMentions']+=len(names)
+                meta[which+'SpecialNotationsForReview']=meta.get(which+'SpecialNotationsForReview',0)+len(
+                    re.findall(r'\b\d{1,4}\s*\*\s*\d{1,4}\b|'
+                               r'\b\d{1,4}(?:/\d{1,4})?\s*кв\.?\s*\d+',content,re.I))
+                for kind,street,house,label in houses:
                     if not street or not house:continue
                     collected[key][f'{kind}|{street}|{house}'].add(queue)
                     street_labels[key][f'{kind}|{street}']=f'{kind.capitalize()} {label}'
-                for kind,street,label in street_only_entries(content):
+                for kind,street,label in names:
                     street_q[key][f'{kind}|{street}'].add(queue)
                     street_labels[key].setdefault(f'{kind}|{street}',f'{kind.capitalize()} {label}')
-            LOG.info('%s: %s localities parsed',queue,len(sections))
+            source_files.append(meta)
+            LOG.info('%s: %s localities parsed, %s city house mentions, %s district street hints',
+                     queue,len(sections),meta['cityHouseMentions'],meta['districtStreetMentions'])
         except Exception as e:
             errors.append(f'{queue}: {e}')
 
@@ -715,6 +954,10 @@ def update_addresses(session,now=None):
     LOG.info('Address catalogue: %d current streets and %d archived-only labels',
              sum(len(loc.get('streetQueues', {})) for loc in result['localities'].values()),
              result['stats']['archivedStreetOnly'])
+    # Publish index and its evidence report only after all 12 PDFs were
+    # fetched, validated and passed the existing catastrophic-drop guard.
+    audit=address_audit(result,source_files,previous,now)
+    atomic_write(DATA / 'address_audit.json',audit)
     atomic_write(current_file,result)
     return result
 

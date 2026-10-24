@@ -2,11 +2,12 @@
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
+import {parseTicketMedia,createTicketMedia} from './ticket-media.js';
 
 export const TOPICS=['bug','address','schedule','push','idea','other'];
 export const STATUSES=['new','in_progress','resolved'];
 export const PRIORITIES=['low','normal','high'];
-const KEEP_MS=90*24*3600*1000,MAX_ITEMS=750,MAX_BODY=24000;
+const KEEP_MS=90*24*3600*1000,MAX_ITEMS=750,MAX_BODY=13_000_000;
 function bad(message,statusCode=400){const error=new Error(message);error.statusCode=statusCode;return error}
 const tidy=(value,max)=>String(value??'').trim().slice(0,max+1);
 export function validateFeedback(value,availableTopics=TOPICS){
@@ -46,6 +47,7 @@ export async function readFeedbackBody(req){
 }
 export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
  if(!filePath)throw Error('Feedback store path is required');
+ const privateMedia=createTicketMedia(path.dirname(filePath));
  let categories=[
  {id:'bug',title:'Помилка застосунку',hint:'Опишіть, що саме не працює.',enabled:true,priority:'normal',fields:[]},
  {id:'address',title:'Адреса або підчерга',hint:'Укажіть населений пункт і підчергу, якщо її знаєте.',enabled:true,fields:[]},
@@ -63,6 +65,11 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
  function save(){
   cleanup();fs.mkdirSync(path.dirname(filePath),{recursive:true});
   const tmp=filePath+'.tmp';fs.writeFileSync(tmp,JSON.stringify({items,templates,categories},null,2),{mode:0o600});fs.renameSync(tmp,filePath);
+  const keep=new Set();for(const ticket of items){
+   for(const a of ticket.attachments||[])keep.add(a.id);
+   for(const m of ticket.messages||[])for(const a of m.attachments||[])keep.add(a.id);
+  }
+  privateMedia.prune(keep);
  }
  function find(id){const item=items.find(x=>x.id===id);if(!item)throw bad('Звернення не знайдено.',404);return item}
  function validateToken(item,token){
@@ -89,35 +96,56 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   }
   if(Object.keys(extra).length)data.extra=extra;
   cleanup();if(items.length>=MAX_ITEMS)throw bad('Наразі не можемо прийняти звернення. Спробуйте пізніше.',503);
+  const uploads=parseTicketMedia(value.attachments);
   const token=crypto.randomBytes(24).toString('base64url');
-  const newItem={id:'SC-'+crypto.randomBytes(5).toString('hex').toUpperCase(),...data,status:'new',priority:category?.priority==='high'?'high':'normal',internalNote:'',tags:[],messages:[],accessHash:hash(token),createdAt:new Date(t).toISOString(),updatedAt:new Date(t).toISOString()};
+  const attachments=privateMedia.write(uploads);
+  const newItem={id:'SC-'+crypto.randomBytes(5).toString('hex').toUpperCase(),...data,attachments,status:'new',priority:category?.priority==='high'?'high':'normal',assignedTo:'',dueAt:'',resolution:'',revision:1,activity:[{kind:'created',at:new Date(t).toISOString(),by:'system',label:'Звернення зареєстровано'}],internalNote:'',tags:[],messages:[],accessHash:hash(token),createdAt:new Date(t).toISOString(),updatedAt:new Date(t).toISOString()};
   items.push(newItem);
-  try{save()}catch{items.pop();throw bad('Не вдалося зберегти звернення. Спробуйте пізніше.',503)}
+  try{save()}catch{items.pop();privateMedia.erase(attachments);throw bad('Не вдалося зберегти звернення. Спробуйте пізніше.',503)}
   entry.times.push(t);entry.expire=t+interval;attempts.set(k,entry);
-  return {ok:true,id:newItem.id,token};
+  return {ok:true,id:newItem.id,token,attached:attachments.length};
  }
- function list(){if(cleanup())save();return {items:items.slice().reverse().map(({accessHash,...item})=>item),count:items.length}}
- function change(id,patch){
+ function list(){if(cleanup())save();return {items:items.slice().reverse().map(({accessHash,...item})=>item),count:items.length,capabilities:{routing:true,activity:true,optimisticRevision:true}}}
+ function change(id,patch,actor='admin'){
   const found=find(id),data=typeof patch==='string'?{status:patch}:patch;
   if(!data||typeof data!=='object'||Array.isArray(data))throw bad('Некоректні зміни звернення.');
-  const allow=['status','priority','internalNote','tags','reply'];
+  const allow=['status','priority','internalNote','tags','reply','assignedTo','dueAt','resolution','expectedRevision'];
   if(Object.keys(data).some(k=>!allow.includes(k)))throw bad('Непідтримуване поле звернення.');
-  const update={...found,messages:Array.isArray(found.messages)?found.messages.slice():[]};
-  if('status' in data){if(!STATUSES.includes(data.status))throw bad('Невідомий статус.');update.status=data.status}
-  if('priority' in data){if(!PRIORITIES.includes(data.priority))throw bad('Невідомий пріоритет.');update.priority=data.priority}
-  if('internalNote' in data){const note=tidy(data.internalNote,1600);if(note.length>1600)throw bad('Внутрішня нотатка завелика.');update.internalNote=note}
+  const previousRevision=Number.isSafeInteger(found.revision)?found.revision:1;
+  if('expectedRevision' in data&&data.expectedRevision!==previousRevision)throw bad('Картку вже змінили в іншому сеансі. Оновіть дані перед збереженням.',409);
+  const update={...found,messages:Array.isArray(found.messages)?found.messages.slice():[],activity:Array.isArray(found.activity)?found.activity.slice(-79):[]};
+  const changes=[];
+  const changed=(field,label)=>{if(update[field]!==found[field])changes.push(label)};
+  if('assignedTo' in data){
+    if(typeof data.assignedTo!=='string'||data.assignedTo.length>60)throw bad('Некоректний виконавець');
+    update.assignedTo=data.assignedTo.trim();changed('assignedTo','Призначення виконавця')
+  }
+  if('dueAt' in data){
+    if(data.dueAt!==''&&data.dueAt!==null&&(typeof data.dueAt!=='string'||!/^20\d{2}-\d{2}-\d{2}T/.test(data.dueAt)||!Number.isFinite(Date.parse(data.dueAt))))throw bad('Некоректний контрольний строк');
+    update.dueAt=data.dueAt?new Date(data.dueAt).toISOString():'';changed('dueAt','Контрольний строк')
+  }
+  if('resolution' in data){
+    if(typeof data.resolution!=='string'||data.resolution.length>800)throw bad('Висновок має містити до 800 символів');
+    update.resolution=data.resolution.trim();changed('resolution','Висновок')
+  }
+  if('status' in data){if(!STATUSES.includes(data.status))throw bad('Невідомий статус.');update.status=data.status;changed('status','Зміна статусу');if(found.status!==update.status&&update.status==='resolved')update.resolvedAt=new Date(clock()).toISOString();else if(found.status==='resolved'&&update.status!=='resolved')update.resolvedAt=''}
+  if('priority' in data){if(!PRIORITIES.includes(data.priority))throw bad('Невідомий пріоритет.');update.priority=data.priority;changed('priority','Зміна пріоритету')}
+  if('internalNote' in data){const note=tidy(data.internalNote,1600);if(note.length>1600)throw bad('Внутрішня нотатка завелика.');update.internalNote=note;changed('internalNote','Внутрішня нотатка')}
   if('tags' in data){
   if(!Array.isArray(data.tags)||data.tags.length>12||data.tags.some(tag=>typeof tag!=='string'||tag.trim().length>25))throw bad('Некоректні теги');
-  update.tags=[...new Set(data.tags.map(tag=>tag.trim().toLocaleLowerCase('uk-UA')).filter(Boolean))]
+  update.tags=[...new Set(data.tags.map(tag=>tag.trim().toLocaleLowerCase('uk-UA')).filter(Boolean))];if(JSON.stringify(update.tags)!==JSON.stringify(found.tags||[]))changes.push('Теги')
  }
  if('reply' in data){
    const reply=tidy(data.reply,1600);
    if(reply.length<2||reply.length>1600)throw bad('Відповідь має містити від 2 до 1600 символів.');
    if(update.messages.length>=50)throw bad('Ліміт відповідей у зверненні вичерпано.');
-   update.messages.push({id:crypto.randomBytes(6).toString('hex'),from:'admin',text:reply,at:new Date(clock()).toISOString()});
+   update.messages.push({id:crypto.randomBytes(6).toString('hex'),from:'admin',text:reply,at:new Date(clock()).toISOString()});changes.push('Відповідь користувачу');
    if(!('status' in data)&&update.status==='new')update.status='in_progress';
   }
   update.updatedAt=new Date(clock()).toISOString();
+  update.revision=previousRevision+1;
+  if(changes.length)update.activity.push({kind:'update',at:update.updatedAt,by:typeof actor==='string'?actor.slice(0,40):'admin',label:changes.join(' · ').slice(0,180)});
+  update.activity=update.activity.slice(-80);
   const index=items.indexOf(found);items[index]=update;
   try{save()}catch{items[index]=found;throw bad('Помилка збереження.',503)}
   return {ok:true};
@@ -127,12 +155,13 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   const basic={id:found.id,status:found.status,createdAt:found.createdAt,updatedAt:found.updatedAt};
   if(token===undefined||token===null||token==='')return basic; // Old receipts remain status-only.
   validateToken(found,token);
-  return {...basic,topic:found.topic,subject:found.subject||'',queue:found.queue||'',message:found.message,extra:found.extra||{},messages:(found.messages||[]).filter(x=>x.from==='admin'||x.from==='user').map(({id,from,text,at})=>({id,from,text,at})),rating:found.rating??null,canReply:true};
+  return {...basic,topic:found.topic,subject:found.subject||'',queue:found.queue||'',message:found.message,extra:found.extra||{},attachments:found.attachments||[],messages:(found.messages||[]).filter(x=>x.from==='admin'||x.from==='user').map(({id,from,text,at,attachments})=>({id,from,text,at,attachments:attachments||[]})),rating:found.rating??null,canReply:true};
  }
  function reply(id,token,value,ip){
   const found=find(id);validateToken(found,token);
-  const text=tidy(value,1200);
-  if(text.length<3||text.length>1200)throw bad('Повідомлення має містити від 3 до 1200 символів.');
+  const text=tidy(typeof value==='object'&&value!==null?value.message:value,1200);
+  const uploads=parseTicketMedia(typeof value==='object'&&value!==null?value.attachments:[]);
+  if((text.length<3&&!uploads.length)||text.length>1200)throw bad('Додайте повідомлення або вкладення. Максимум 1200 символів.');
   const messages=Array.isArray(found.messages)?found.messages:[];
   if(messages.length>=50)throw bad('Ліміт повідомлень у зверненні вичерпано.');
   const t=clock(),k=key(id+'|'+ip),interval=15*60*1000;
@@ -140,11 +169,22 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
   const attempt=replyAttempts.get(k)||{times:[],expire:t+interval};
   attempt.times=attempt.times.filter(time=>t-time<interval);
   if(attempt.times.length>=4)throw bad('Забагато відповідей. Спробуйте пізніше.',429);
-  const saved={...found,messages:messages.concat({id:crypto.randomBytes(6).toString('hex'),from:'user',text,at:new Date(t).toISOString()}),status:'in_progress',updatedAt:new Date(t).toISOString()};
+  const attachments=privateMedia.write(uploads);
+  const saved={...found,messages:messages.concat({id:crypto.randomBytes(6).toString('hex'),from:'user',text,attachments,at:new Date(t).toISOString()}),status:'in_progress',updatedAt:new Date(t).toISOString(),
+   revision:(Number.isSafeInteger(found.revision)?found.revision:1)+1,
+   activity:(Array.isArray(found.activity)?found.activity:[]).concat({kind:'reply',at:new Date(t).toISOString(),by:'користувач',label:'Надійшло уточнення'}).slice(-80)};
   const index=items.indexOf(found);items[index]=saved;
-  try{save()}catch{items[index]=found;throw bad('Помилка збереження.',503)}
+  try{save()}catch{items[index]=found;privateMedia.erase(attachments);throw bad('Помилка збереження.',503)}
   attempt.times.push(t);attempt.expire=t+interval;replyAttempts.set(k,attempt);
-  return {ok:true,id};
+  return {ok:true,id,attached:attachments.length};
+ }
+ function getAttachment(ticketId,attachmentId,token,authorized=false){
+  const ticket=find(ticketId);
+  if(!authorized)validateToken(ticket,token);
+  const all=[...(ticket.attachments||[]),...(ticket.messages||[]).flatMap(m=>m.attachments||[])];
+  const meta=all.find(x=>x.id===attachmentId);
+  if(!meta)throw bad('Вкладення не знайдено.',404);
+  return privateMedia.read(meta);
  }
  function rate(id,token,stars){
   const found=find(id);validateToken(found,token);
@@ -190,5 +230,5 @@ export function createFeedbackStore({filePath,clock=()=>Date.now()}={}){
  if(cleanup())save();
  const timer=setInterval(()=>{try{if(cleanup())save()}catch(e){console.warn('Feedback cleanup failed:',e.message)}},24*60*60*1000);
  timer.unref?.();
- return {submit,list,change,remove,getStatus,reply,rate,getTemplates,setTemplates,getCategories,setCategories};
+ return {submit,list,change,remove,getStatus,getAttachment,reply,rate,getTemplates,setTemplates,getCategories,setCategories};
 }
