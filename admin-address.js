@@ -43,12 +43,10 @@
   const towns=[['черкаси',catalogue],...Object.entries(catalogue?.localities||{})];
   for(const [town,idx] of towns){
    if(!idx?.streets)continue;
-   const known=new Set();
    for(const [key,queues] of Object.entries(idx.keys||{})){
     const cut=key.lastIndexOf('|');if(cut<0)continue;
     const street=key.slice(0,cut),house=key.slice(cut+1);
     if(!street||!house||!Array.isArray(queues)||!queues.length)continue;
-    known.add(street);
     addresses.push({town,street,house,queues,streetLabel:idx.streets[street]||street.replace('|',' '),catalog:true});
    }
    for(const [street,name] of Object.entries(idx.streets||{})){
