@@ -15,7 +15,7 @@ function harness({registered=true,queue='1.1',off=true,on=true,checkError=null,u
  const fetch=async(url,options)=>{
   requests.push({url,body:JSON.parse(options.body)});
   return {ok:true,json:async()=>({
-   registered,queue,preferences:{off,on},lastPushCheck:'2026-10-14T10:00:00Z',
+   registered,queue,preferences:{off,on,changes:false,tomorrow:false,emergency:false},lastPushCheck:'2026-10-14T10:00:00Z',
    checkError,upcoming,latestAutomatic:latest})};
  };
  const ctx={Notification,window:{Notification},navigator:{serviceWorker:{ready:Promise.resolve({
