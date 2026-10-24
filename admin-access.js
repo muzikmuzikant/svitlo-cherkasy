@@ -76,8 +76,7 @@
   // Never expose generic recents or cross-module shortcuts from an old user.
   for(const box of dashboard.querySelectorAll('.office-recent-list button')){
    const target=box.dataset.adminTarget;
-   if(target)conceal(box,!allowedTab(target));
-   else conceal(box,true);
+   conceal(box,!target||!allowedTab(target));
   }
   // Ordinary readers can filter/search/refresh. Mutation-projected writing
   // actions disappear from their modules, including late-created ones.
@@ -91,8 +90,8 @@
    }
   }
   // No metrics or ticket contents without the generic dashboard scope.
-  const hasOverviewData=identity.role==='owner'&&!identity.managed||
-   Array.isArray(identity.permissions)?identity.permissions?.includes('view'):legacy[identity.role]?.has('insights');
+  const hasOverviewData=identity.role==='owner'&&!identity.managed ||
+   (Array.isArray(identity.permissions)?identity.permissions.includes('view'):legacy[identity.role]?.has('insights'));
   for(const id of ['opsDashboard','monitorMetrics','monitorMessage','monitorRefresh']){
    const el=$(id);if(el)conceal(el,!hasOverviewData);
   }
