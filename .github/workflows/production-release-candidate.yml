@@ -24,12 +24,27 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Refuse outdated Production snapshot or rebased-away code
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor origin/main HEAD; then
+            echo "::error::Release candidate is behind main. Import newest verified schedule data and rerun checks."
+            exit 1
+          fi
+          if ! git diff --quiet origin/main HEAD -- data/schedules.json data/source_review.json data/emergency.json; then
+            echo "::error::Production verified schedules/review/emergency payloads diverge from main."
+            exit 1
+          fi
       - name: Check production ad and server syntax
         run: node --check push-server/ads.js && node --check push-server/admin.js && node --check push-server/server.js && node --check beta-ads.js && node --check admin-ads.js
       - name: Test owner-controlled ads, legacy migrations and scheduling contracts
