@@ -20,8 +20,8 @@ def main():
     page.locator("#allQueuesHomeOpen").click()
     page.wait_for_function("() => document.querySelector('#allQueuesDialog')?.open",timeout=8000)
     assert page.locator("#allQueuesDays button").count()==7
-    assert page.locator("#allQueuesMatrix .all-queues-cell").count()==12*24
-    assert page.locator("#allQueuesMatrix .all-queues-row-name").count()==12
+    assert page.locator("#allQueuesMatrix .all-queues-lane").count()==12
+    assert page.locator("#allQueuesMatrix .all-queues-lane-name").count()==12
     assert page.locator("#allQueuesNotice").inner_text()
     widths=page.evaluate("""() => ({
       body:document.documentElement.scrollWidth,viewport:innerWidth,
@@ -44,10 +44,10 @@ def main():
      window.SvitloAllQueues.open(day);
      window.SvitloAllQueues.refresh();
     }""")
-    page.locator('.all-queues-cell[data-queue="1.1"][data-hour="10"]').click()
+    page.locator('.all-queues-lane[data-queue="1.1"]').click()
     text=page.locator("#allQueuesInspect").inner_text()
     assert "10:30" in text and "11:00" in text,text
-    page.locator('.all-queues-cell[data-queue="1.2"][data-hour="12"]').click()
+    page.locator('.all-queues-lane[data-queue="1.2"]').click()
     assert "Немає підтверджених даних" in page.locator("#allQueuesInspect").inner_text()
     page.locator("#allQueuesExport").click()
     page.wait_for_function("() => document.querySelector('#sharePreviewDialog')?.open",timeout=10000)
@@ -55,7 +55,7 @@ def main():
     assert page.locator("#sharePreviewImage").get_attribute("src").startswith("blob:")
     assert not errors,errors
     context.close()
-   print("PASS: 12×24 schedule viewer at 320/390/590 px; exact minutes, unknown data, PNG preview",flush=True)
+   print("PASS: 12-row full-day schedule viewer at 320/390/590 px; exact minutes, unknown data, PNG preview",flush=True)
   finally:
    browser.close()
 
