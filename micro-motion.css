@@ -1,0 +1,52 @@
+/* Beta 7.9.13: hardware-friendly micro interactions. No geometry transitions,
+   no global opacity on data refresh and no endless animations. */
+:root{--micro-ease:cubic-bezier(.2,.82,.23,1);--micro-quick:165ms;--micro-soft:260ms}
+:is(button,.button,.primary-action,.secondary-action,.quick-place,.nav-item,[role="tab"],summary,a,.hour-cell,.planner-slot,.inbox-item,.place-card,.setting-line,.ad-subcard){
+ -webkit-tap-highlight-color:transparent;
+}
+:is(button,.button,.primary-action,.secondary-action,.quick-place,.nav-item,[role="tab"],.planner-slot,.inbox-row-more,.all-queues-lane){
+ transition-property:background-color,border-color,color,box-shadow,filter,transform;
+ transition-duration:var(--micro-quick),var(--micro-quick),var(--micro-quick),var(--micro-soft),var(--micro-soft),var(--micro-quick);
+ transition-timing-function:var(--micro-ease);
+ transform:translateZ(0);
+ backface-visibility:hidden;
+}
+:is(button,.button,.primary-action,.secondary-action,.quick-place,.planner-slot,.nav-item).micro-pressed:not(:disabled){
+ transform:translate3d(0,1px,0) scale(.985);
+ filter:brightness(.98);
+}
+:is(.place-card,.setting-line,.all-queues-entry,.inbox-item,.beta-ad,.quick-queue-lookup):not([hidden]){
+ transition:background-color var(--micro-soft) ease,border-color var(--micro-soft) ease,box-shadow var(--micro-soft) ease;
+}
+:is(button,a,input,select,textarea,[role="tab"],summary):focus-visible{
+ outline:2px solid #4889ed;outline-offset:3px;
+ transition:outline-offset 145ms ease;
+}
+:is(input,select,textarea){transition:border-color var(--micro-soft) ease,box-shadow var(--micro-soft) ease,background-color var(--micro-soft) ease}
+:is(input,select,textarea).micro-changed:not(:focus){animation:microControlAck .32s var(--micro-ease)}
+:is([role="switch"],input[type="checkbox"]){transition:filter .22s ease,outline-color .22s ease}
+:is([role="switch"],input[type="checkbox"]).micro-changed{filter:brightness(1.1)}
+:is(.day-choice,.all-queues-day,.inbox-filters button,.settings-tab):is(.selected,.active,[aria-pressed="true"]){transition:background-color .22s var(--micro-ease),border-color .22s var(--micro-ease),color .22s var(--micro-ease),box-shadow .28s var(--micro-ease)}
+:where(.screen,.sheet,.inbox-detail,.share-preview-dialog)[hidden]{display:none!important}
+:where(.screen,.surface,.status-panel,.detail-surface,.inbox-list){min-width:0}
+:where(.status-panel,.overview-card,.home-quick-places,.quick-place,.inbox-toolbar){contain:style}
+:is(.screen-header h1,.hero-heading h1,.status-panel strong,.big-number,.stat-val){font-variant-numeric:tabular-nums}
+.micro-enter{animation:microPanelEnter .27s cubic-bezier(.17,.88,.26,1) both}
+@keyframes microPanelEnter{from{opacity:.5;transform:translate3d(0,7px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
+@keyframes microControlAck{from{box-shadow:0 0 0 0 #448bee55}to{box-shadow:0 0 0 7px #448bee00}}
+/* Readable long-message tails retained without thousands of DOM nodes. */
+.inbox-rich-remainder{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}
+/* Stable visual columns avoid label changes pushing active controls sideways. */
+.inbox-title-bar>div,.screen-header>div{min-width:0}
+.inbox-count,.nav-unread,.stat-val{font-variant-numeric:tabular-nums}
+:root[data-theme="dark"] :is(input,select,textarea).micro-changed:not(:focus){animation:microControlAck .32s var(--micro-ease)}
+@media(hover:hover) and (pointer:fine){
+ :is(button,.button,.primary-action,.secondary-action):not(:disabled):hover{filter:brightness(1.045)}
+ :is(.place-card,.all-queues-lane,.inbox-item):hover{box-shadow:0 5px 17px #315b8721}
+}
+@media(prefers-reduced-motion:reduce){
+ :is(button,.button,.primary-action,.secondary-action,.quick-place,.nav-item,[role="tab"],input,select,textarea,.place-card,.inbox-item,.all-queues-lane){transition:none!important}
+ .micro-enter,.micro-changed{animation:none!important}
+}
+html.feature-off-animations .micro-enter,html.feature-off-animations .micro-changed{animation:none!important}
+html.feature-off-animations :is(button,.button,.primary-action,.secondary-action,.quick-place,.nav-item){transition:none!important}
