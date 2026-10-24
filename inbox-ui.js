@@ -255,8 +255,8 @@
   });
   if(item.kind==='support'&&ticketId(item))add('Відкрити звернення',()=>openTicket(ticketId(item)));
   if(item.kind!=='support'){
-   add('Копіювати текст',()=>navigator.clipboard?.writeText(item.title+'\\n'+item.body)||
-    window.prompt?.('Скопіюйте повідомлення:',item.title+'\\n'+item.body));
+   add('Копіювати текст',()=>navigator.clipboard?.writeText(item.title+'\n'+item.body)||
+    window.prompt?.('Скопіюйте повідомлення:',item.title+'\n'+item.body));
    const link=()=>{const url=new URL('./',location.href);url.searchParams.set('message',item.id);return url.href};
    const copyLink=()=>navigator.clipboard?.writeText(link())||
     window.prompt?.('Скопіюйте посилання:',link());
