@@ -250,12 +250,12 @@
     if(houses.length && !house && options.length===1)
       return {...base,status:'needhouse',reason:'needs-house'};
     if(houses.length && house && options.length===1)
-      return {...base,status:'nohouse',reason:'house-unlisted'};
+      return {...base,status:'possible',reason:'house-unlisted'};
     if(options.length>1){
       return {...base,status:'possible',reason:houses.length?(house?'house-unlisted':'needs-house'):'no-house-index'};
     }
     if(houses.length&&!streetOnly.length)
-      return {...base,status:house?'nohouse':'needhouse'};
+      return {...base,status:house?'possible':'needhouse',reason:house?'house-unlisted':'needs-house'};
     return {...base,status:'nohouse',reason:house?'house-unlisted':'no-address-data'};
   }
 
