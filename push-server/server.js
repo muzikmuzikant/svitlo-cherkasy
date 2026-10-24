@@ -30,7 +30,7 @@ import {originPolicy} from './origins.js';
 import webpush from 'web-push';
 import {adminRouter} from './admin.js';
 import {createManualPush} from './manual-push.js';
-import {transitionCopy,tomorrowCopy,changeCopy,emergencyCopy,firstPublishedAt,dayId,changeId,isLatestRevision,emergencyId} from './notification-copy.js';
+import {transitionCopy,tomorrowCopy,changeCopy,emergencyCopy,firstPublishedAt,dayId,changeId,isLatestRevision,emergencyId,noticeDisplayTitle} from './notification-copy.js';
 import {QUEUES,timeline,dueTransition,latestOfficialEvent,freshEvent,freshSchedule,dueTransitionAcrossDays,usableSchedule,verifiedScheduleDay,preferFreshSchedule,kyivWallInstants} from './schedule-engine.js';
 
 const {VAPID_PUBLIC_KEY,PUSH_PRIVATE_KEY,PUSH_CONTACT,APP_ORIGIN,SCHEDULE_URL,DATA_FILE='./subscribers.json',PORT='8080'}=process.env;
@@ -276,7 +276,7 @@ async function job(){
   // Scheduled admin messages share a stable ID between Push and the public inbox.
   for(const notice of siteControls.duePush().slice(0,6)){
    try{
-    const result=await manualPush.broadcast({title:notice.title,body:notice.body,queue:notice.queue,
+    const result=await manualPush.broadcast({title:noticeDisplayTitle(notice),body:notice.body,queue:notice.queue,
       notificationId:'notice:'+notice.id,inbox:notice.delivery!=='push',settlement:notice.settlement||'',confirmSend:true});
     if(result.accepted>0)siteControls.markPushed(notice.id);
    }catch(e){console.warn('Scheduled notice Push:',e.message)}

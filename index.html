@@ -152,8 +152,8 @@ document.addEventListener('DOMContentLoaded', () => {
   <button type="button" class="selected" data-inbox-filter="all" aria-pressed="true">Усі</button>
   <button type="button" data-inbox-filter="unread" aria-pressed="false">Нові</button>
   <button type="button" data-inbox-filter="schedule" aria-pressed="false">Графіки</button>
-  <button type="button" data-inbox-filter="important" aria-pressed="false">Важливе</button>
- </div></div><div class="inbox-actions-bar"><button class="inbox-mark" id="inboxMarkAll" type="button"><span aria-hidden="true">✓</span><span>Прочитати всі</span></button><span class="inbox-unread-note" id="inboxUnreadNote" role="status" aria-live="polite"></span></div>
+  <button type="button" data-inbox-filter="important" aria-pressed="false">Важливе</button><button type="button" data-inbox-filter="support" aria-pressed="false">Підтримка</button>
+ </div></div><div class="inbox-smart-bar"><label class="inbox-search-label"><span aria-hidden="true">⌕</span><input id="inboxSearch" type="search" maxlength="90" autocomplete="off" placeholder="Знайти повідомлення" aria-label="Пошук повідомлень"></label><select id="inboxSort" aria-label="Сортування повідомлень"><option value="smart">Спочатку важливе</option><option value="new">Найновіші</option><option value="unread">Непрочитані</option></select></div><div id="inboxOverview" class="inbox-overview" role="status"></div><div class="inbox-actions-bar"><button class="inbox-mark" id="inboxMarkAll" type="button"><span aria-hidden="true">✓</span><span>Прочитати всі</span></button><span class="inbox-unread-note" id="inboxUnreadNote" role="status" aria-live="polite"></span></div>
  <div id="inboxList" class="inbox-list" aria-live="polite"><div class="inbox-empty">Завантажуємо повідомлення…</div></div>
  
  <details class="inbox-history"><summary>Історія офіційних графіків <span aria-hidden="true">⌄</span></summary>
@@ -250,4 +250,4 @@ document.addEventListener('DOMContentLoaded', () => {
  <p class="beta-consent-detail">Для добровільної статистики використовується випадковий ідентифікатор інсталяції, основна підчерга, населений пункт без вулиці й будинку, тип пристрою й версія. Додатково враховуємо взаємодії з власними повідомленнями без персональних списків прочитання. Відмовитися можна будь-коли. <a href="./privacy.html" target="_blank" rel="noopener">Докладніше</a></p>
  <div class="beta-consent-actions"><button type="button" id="betaConsentAccept">Дозволити аналітику</button><button type="button" id="betaConsentDecline">Ні, дякую</button></div>
  </dialog>
-<script defer src="./client-errors.js"></script><script defer src="./internal-pages.js"></script><script defer src="./legal-consent.js"></script><script defer src="./beta-ads.js"></script><script defer src="./install.js"></script><script defer src="./site-mode.js"></script></body></html>
+<script defer src="./message-format.js"></script><script defer src="./client-errors.js"></script><script defer src="./internal-pages.js"></script><script defer src="./legal-consent.js"></script><script defer src="./beta-ads.js"></script><script defer src="./install.js"></script><script defer src="./site-mode.js"></script></body></html>

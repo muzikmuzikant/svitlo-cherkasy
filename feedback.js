@@ -29,7 +29,9 @@ function renderExtraFields(){
  const cat=selectedCategory();if(!cat)return;
  for(const field of cat.fields||[]){
   const wrap=document.createElement('label');wrap.className='extra-ticket-field';
-  const label=document.createElement('span');label.textContent=field.label+(field.required?' *':'');wrap.append(label);
+  const label=document.createElement('span');label.textContent=field.label;
+   if(field.required){const star=document.createElement('span');star.className='extra-ticket-required';star.textContent=' *';star.setAttribute('aria-hidden','true');label.append(star)}
+   wrap.append(label);
   const inp=field.type==='select'?document.createElement('select'):document.createElement('input');
   inp.dataset.key=field.id;inp.dataset.type=field.type;
   if(field.type==='select'){inp.append(new Option('Оберіть варіант',''));for(const option of field.options||[])inp.append(new Option(option,option))}

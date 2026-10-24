@@ -3,6 +3,7 @@
  */
 import crypto from 'node:crypto';
 import {originPolicy} from './origins.js';
+import {noticeDisplayTitle} from './notification-copy.js';
 import {validateAppConfig} from './app-config.js';
 import {verifyTotp} from './auth-security.js';
 const PATHS={
@@ -347,7 +348,7 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
      if(entry.scheduledAt&&Date.parse(entry.scheduledAt)>Date.now())throw Error('Повідомлення заплановане на майбутнє');
      if(entry.pushSentAt)throw Error('Push для цього повідомлення вже надсилався');
      if(input.confirmSend!==true)throw Error('Підтвердіть масове надсилання');
-     const outcome=await manualPush.broadcast({title:entry.title,body:entry.body,queue:entry.queue,
+     const outcome=await manualPush.broadcast({title:noticeDisplayTitle(entry),body:entry.body,queue:entry.queue,
        notificationId:'notice:'+entry.id,inbox:entry.delivery!=='push',settlement:entry.settlement||'',confirmSend:true});
      if(outcome.accepted>0)siteControls.markPushed(entry.id);
      extras?.record('push.notice',entry.id);send(res,200,outcome);return true;

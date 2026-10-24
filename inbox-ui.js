@@ -32,7 +32,7 @@
   linkedNoticeIds.add(id);
   try{localStorage.setItem(LINKED_NOTICE_IDS,JSON.stringify([...linkedNoticeIds].slice(-30)))}catch{}
  }
- let selected='all',rows=[],notices=window.SvitloPublicConfig?.announcements||[],busy=false,lastSync=0,activeDetail=null,noticeFeedConfirmed=window.SvitloPublicConfig?.serverVerified===true,needsResync=false;
+ let selected='all',searchTerm='',sortMode='smart',rows=[],notices=window.SvitloPublicConfig?.announcements||[],busy=false,lastSync=0,activeDetail=null,noticeFeedConfirmed=window.SvitloPublicConfig?.serverVerified===true,needsResync=false;
  // Only voluntary opt-in PWA installations count toward custom notice engagement.
  // "Read" is an approximation: detail stayed in the foreground for two seconds.
  let metricApi='',readTimer=null,seenObserver=null;
@@ -129,6 +129,7 @@
   const next=afterDetailClose;afterDetailClose=null;if(next)next();
  });
  function rich(target,raw){
+  if(window.SvitloMessageFormat?.render)return window.SvitloMessageFormat.render(target,raw);
   const text=String(raw||'');target.replaceChildren();
   for(const line of text.split('\n').slice(0,100)){
    const txt=line.trim();
@@ -192,9 +193,25 @@
   mark.title=unread?'Позначити прочитаними всі '+unread+' повідомлень':'Усі повідомлення прочитано';
   const count=$('inboxUnreadNote');
   if(count)count.textContent=unread?'Непрочитаних: '+unread:'Усі повідомлення прочитано';
-  const visible=rows.filter(x=>selected==='all'||selected==='unread'&&!x.read||selected==='schedule'&&x.kind==='schedule'||selected==='important'&&['emergency','announcement','support'].includes(x.kind));
-  const root=$('inboxList');root.replaceChildren();
-  if(!visible.length){const empty=el('div','Тут поки тихо ✨','inbox-empty');empty.append(el('p',selected==='unread'?'Нових повідомлень немає.':'Важливі оновлення з’являться тут.'));root.append(empty)}
+  const visible=rows.filter(x=>selected==='all'||selected==='unread'&&!x.read||
+   selected==='schedule'&&x.kind==='schedule'||selected==='support'&&x.kind==='support'||
+   selected==='important'&&(x.kind==='emergency'||x.priority==='important'||x.priority==='urgent'||x.pinned))
+   .filter(x=>!searchTerm||(x.title+' '+x.body+' '+x.content.slice(0,700)).toLocaleLowerCase('uk-UA').includes(searchTerm))
+   .sort((a,b)=>Number(!!b.pinned)-Number(!!a.pinned)||
+     (sortMode==='unread'?Number(!b.read)-Number(!a.read):0)||
+     (sortMode==='smart'?Number(b.priority==='urgent')-Number(a.priority==='urgent')||
+       Number(!b.read)-Number(!a.read):0)||
+     String(b.at).localeCompare(String(a.at)));
+  const overview=$('inboxOverview');
+   if(overview){
+    const urgent=rows.filter(x=>!x.read&&(x.priority==='urgent'||x.kind==='emergency')).length;
+    const pinned=rows.filter(x=>x.pinned).length;
+    overview.replaceChildren();
+    const stat=(value,label)=>{const pill=el('span','','inbox-stat');pill.append(el('strong',String(value)),document.createTextNode(' '+label));overview.append(pill)};
+    stat(rows.length,'усього');stat(unread,'нових');if(urgent)stat(urgent,'термінових');if(pinned)stat(pinned,'закріплених');
+   }
+   const root=$('inboxList');root.replaceChildren();
+  if(!visible.length){const empty=el('div',searchTerm?'Нічого не знайдено':'Повідомлень поки немає','inbox-empty');empty.append(el('p',searchTerm?'Спробуйте інші слова або скиньте фільтр.':selected==='unread'?'Усі повідомлення прочитано.':'Коли з’являться новини, вони будуть тут.'));root.append(empty)}
   const grouped=new Map();
   const groupKey=item=>{
    if(item.kind!=='schedule'||item.pinned)return '';
@@ -334,7 +351,7 @@
    for(const a of notices){
     const linked=linkedNoticeIds.has('notice:'+a.id);
     if(a.active!==true||(!targeted(a)&&!linked)||(a.queue&&a.queue!=='all'&&a.queue!==queue&&!linked)||a.scheduledAt&&Date.parse(a.scheduledAt)>now||a.expiresAt&&Date.parse(a.expiresAt)<=now)continue;
-    incoming.push({id:'notice:'+a.id,kind:'announcement',title:(a.icon||({important:'📣',update:'✨',emergency:'⚠️',schedule:'🗓️'})[a.kind]||'💬')+' '+a.title,
+    incoming.push({id:'notice:'+a.id,kind:'announcement',title:(copy.noticeDisplayTitle?copy.noticeDisplayTitle(a):((a.icon||'📣')+' '+a.title)),icon:a.icon,
      body:a.body,content:a.content,images:a.images,at:a.publishedAt,updatedAt:a.updatedAt,pinned:a.pinned,priority:a.priority,authoritative:true});
    }
    if(incoming.length){
@@ -403,6 +420,9 @@
   if(target)sync().then(()=>open(target)).catch(console.warn);
  }
  document.querySelectorAll('[data-inbox-filter]').forEach(b=>b.addEventListener('click',()=>{selected=b.dataset.inboxFilter;refresh().catch(console.warn)}));
+ let searchTimer=null;
+ $('inboxSearch')?.addEventListener('input',event=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>{searchTerm=event.target.value.trim().toLocaleLowerCase('uk-UA');refresh().catch(console.warn)},130)});
+ $('inboxSort')?.addEventListener('change',event=>{sortMode=event.target.value;refresh().catch(console.warn)});
  $('inboxMarkAll').onclick=async()=>{
   const button=$('inboxMarkAll');
   const unread=rows.filter(x=>!x.read).map(x=>x.id);
