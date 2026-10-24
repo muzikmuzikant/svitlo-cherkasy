@@ -43,3 +43,5 @@ jobs:
         run: python tests/full_beta_customer_audit.py
       - name: Click through schedules, sharing, inbox, Help and support forms in both themes
         run: python tests/deep_beta_customer_journeys.py
+      - name: Verify stable geometry, controls and all-queue motion across viewports
+        run: python tests/visual_motion_audit_browser.py
