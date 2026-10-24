@@ -90,6 +90,8 @@ const deliveryStats={
  lastAttempt:null,lastAccepted:null,lastFailure:null,
  lastCycle:null,totalAcceptedSinceBoot:0,totalFailedSinceBoot:0
 };
+// Only aggregate delivery diagnostics, never device endpoints, are exposed to the admin.
+manualPush.automaticStatus=()=>({delivery:deliveryStats,browserDisplay:pushReceipts.snapshot()});
 const pendingPushKeys=new Set();
 async function send(rec,message,key,options={}){
  if(sent[key]||pendingPushKeys.has(key))return 'already-sent';
