@@ -185,16 +185,11 @@ document.addEventListener('DOMContentLoaded', () => {
   <div id="updateList" class="update-list"></div><a class="external-row" href="https://www.cherkasyoblenergo.com/news" target="_blank" rel="noopener">Новини оператора ↗</a>
  </details>
 </section>
-<section id="settings" class="screen" hidden>
-<div class="screen-header no-back settings-hero"><div><div class="settings-eyebrow">ВАШ ПРОСТІР</div><h1>Налаштування</h1><p>Усе важливе для роботи застосунку в одному місці</p></div><span class="settings-hero-symbol" aria-hidden="true">⚙</span></div>
-<nav class="settings-quick-nav" aria-label="Швидкий перехід до налаштувань">
-<button type="button" data-settings-jump="settingsPlacesPanel">Мої місця</button><button type="button" data-settings-jump="settingsPushBlock">Сповіщення</button><button type="button" data-settings-jump="settingsAppearance">Оформлення</button><button type="button" data-settings-jump="settingsSupportBlock">Допомога</button>
-</nav>
-<section class="settings-places-section" id="settingsPlacesPanel" aria-labelledby="settingsPlacesTitle">
-<div class="settings-group-heading"><div><span>01 / ОСОБИСТЕ</span><h2 id="settingsPlacesTitle">Мої місця</h2></div></div>
-<div class="settings-places-card surface"><span class="settings-places-mark" aria-hidden="true">⌖</span><div class="settings-places-copy"><strong>Ваші збережені адреси</strong><p id="settingsPlacesCount">Завантажуємо список…</p></div><button type="button" id="settingsManagePlaces" class="settings-places-manage">Керувати <span aria-hidden="true">›</span></button></div>
-</section>
-<div class="settings-group-heading" id="settingsAppearance"><div><span>02 / ЗАСТОСУНОК</span><h2>Оформлення</h2></div></div><div class="surface settings-card appearance-card"><fieldset class="appearance-control"><legend>Тема застосунку</legend><div class="appearance-options"><label class="appearance-choice"><input type="radio" name="appearanceTheme" value="light"><span><span class="appearance-icon" aria-hidden="true">☀</span><b>Світла</b><small>Завжди світла</small></span></label><label class="appearance-choice"><input type="radio" name="appearanceTheme" value="dark"><span><span class="appearance-icon" aria-hidden="true">☾</span><b>Темна</b><small>Завжди темна</small></span></label><label class="appearance-choice"><input type="radio" name="appearanceTheme" value="system"><span><span class="appearance-icon" aria-hidden="true">◐</span><b>Як на телефоні</b><small>Автоматично</small></span></label></div></fieldset><p id="appearanceSummary" class="appearance-summary" role="status" aria-live="polite">Тема автоматично підлаштовується під ваш телефон.</p></div><div class="settings-push-controls" id="settingsPushBlock"><div class="settings-group-heading"><div><span>03 / ПОВІДОМЛЕННЯ</span><h2>Сповіщення</h2></div></div>
+<section id="settings" class="screen" hidden><div class="screen-header no-back"><div><h1>Опції</h1><p>Підлаштуйте під себе</p></div></div><div id="settingsPlacesPanel" class="surface settings-card" aria-label="Мої місця">
+ <div class="setting-line"><div><strong>Мої місця</strong><p id="settingsPlacesCount">Завантажуємо список…</p></div>
+ <button type="button" id="settingsManagePlaces" class="setting-action settings-simple-manage">Керувати ›</button></div>
+ </div>
+ <h2 class="subsection-title" id="settingsAppearance">Оформлення</h2><div class="surface settings-card appearance-card"><fieldset class="appearance-control"><legend>Тема застосунку</legend><div class="appearance-options"><label class="appearance-choice"><input type="radio" name="appearanceTheme" value="light"><span><span class="appearance-icon" aria-hidden="true">☀</span><b>Світла</b><small>Завжди світла</small></span></label><label class="appearance-choice"><input type="radio" name="appearanceTheme" value="dark"><span><span class="appearance-icon" aria-hidden="true">☾</span><b>Темна</b><small>Завжди темна</small></span></label><label class="appearance-choice"><input type="radio" name="appearanceTheme" value="system"><span><span class="appearance-icon" aria-hidden="true">◐</span><b>Як на телефоні</b><small>Автоматично</small></span></label></div></fieldset><p id="appearanceSummary" class="appearance-summary" role="status" aria-live="polite">Тема автоматично підлаштовується під ваш телефон.</p></div><div class="settings-push-controls" id="settingsPushBlock"><h2 class="subsection-title">Сповіщення</h2>
 <div class="surface push-master-card">
  <div class="push-master-line">
   <div class="push-master-copy"><strong>Push-сповіщення <span id="pushHeadline" class="push-state-label" role="status">Перевіряємо…</span></strong>
@@ -204,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
  
 </div>
 <div class="surface settings-card push-categories" id="pushCategorySettings"><div class="setting-line"><div><strong>Перед відключенням</strong><p>Нагадувати за 30 хв</p></div><label class="switch"><input type="checkbox" id="notifyOff"><span></span></label></div><div class="setting-line"><div><strong>Перед поверненням світла</strong><p>За 15 хв до планового відновлення</p></div><label class="switch"><input type="checkbox" id="notifyOn"><span></span></label></div><div class="setting-line"><div><strong>Зміни графіка</strong><p>Коли розклад оновлюється</p></div><label class="switch"><input type="checkbox" id="notifyChanges"><span></span></label></div><div class="setting-line"><div><strong>Екстрені / аварійні відключення</strong><p>Офіційні повідомлення оператора; не підтверджують стан конкретного будинку</p></div><label class="switch"><input type="checkbox" id="notifyEmergency"><span></span></label></div><div class="setting-line"><div><strong>Завтра</strong><p>Огляд після публікації</p></div><label class="switch"><input type="checkbox" id="notifyTomorrow"><span></span></label></div></div></div>
- <div class="settings-group-heading" id="settingsPrivacyBlock"><div><span>04 / ВАШІ ДАНІ</span><h2>Приватність і аналітика</h2></div></div>
+ <h2 class="subsection-title" id="settingsPrivacyBlock">Приватність і аналітика</h2>
  <div class="surface settings-card" id="analyticsSettings">
   <div class="setting-line"><div><strong>Допомагати покращувати застосунок</strong>
    <p>Добровільна статистика встановлень, пристроїв і технічних помилок. Вибір зберігається після оновлень.</p></div>
@@ -217,9 +212,9 @@ document.addEventListener('DOMContentLoaded', () => {
   <p id="betaAnalyticsState" class="analytics-consent-status" role="status">Перевіряємо ваш вибір…</p>
   <a class="setting-action" href="./privacy.html">Про дані та відкликання згоди <span>›</span></a>
  </div>
- <div class="settings-group-heading" id="settingsOfflineBlock"><div><span>05 / ДОСТУПНІСТЬ</span><h2>Офлайн-дані</h2></div></div>
+ <h2 class="subsection-title" id="settingsOfflineBlock">Офлайн-дані</h2>
  <div class="surface settings-card offline-data-card"><div class="setting-line"><div><strong>Збережені графіки</strong><p id="offlineDataState">Перевіряємо збережені графіки…</p></div></div><div class="setting-line"><div><strong>Автоматичне збереження</strong><p>Під час підключення до інтернету графіки оновлюються без додаткових дій. У режимі офлайн доступні останні завантажені дані.</p></div></div></div>
- <div class="settings-group-heading" id="settingsSupportBlock"><div><span>06 / КОРИСНЕ</span><h2>Допомога та застосунок</h2></div></div><div class="surface settings-card">
+ <h2 class="subsection-title" id="settingsSupportBlock">Про застосунок і підтримка</h2><div class="surface settings-card">
 <button class="setting-action" id="addFromSettings">Додати адресу <span>›</span></button><button class="setting-action" id="manualRefresh">Оновити графіки зараз <span>›</span></button><button class="setting-action" id="checkAppUpdate">Перевірити оновлення застосунку <span>↻</span></button><a class="setting-action" href="./help.html?from=settings">Центр допомоги · Запитання та відповіді <span>›</span></a><a class="setting-action" href="./feedback.html?from=settings">Зв’язок із нами · Повідомити про помилку <span>›</span></a><a class="setting-action" href="./support-project.html">Підтримати проєкт <span>♡</span></a><a class="setting-action" href="./advertising.html">Реклама у Світло Черкаси <span>›</span></a><a class="setting-action" href="https://www.cherkasyoblenergo.com/off" target="_blank" rel="noopener">Знайти чергу на сайті оператора <span>↗</span></a><button type="button" class="setting-action" id="shareApp">Поділитися застосунком <span aria-hidden="true">↗</span></button></div><nav id="svitloSocialSettings" class="svitlo-social-settings" aria-label="Наші соцмережі" hidden></nav><p class="settings-foot">Світло Черкаси <span id="appVersion">v7.9.12</span> · Неофіційний інформаційний сервіс. <a href="./feedback.html?from=settings">Зв’язок із нами</a> · <a href="./privacy.html" target="_blank" rel="noopener">Конфіденційність</a> · <a href="./about.html" target="_blank" rel="noopener">Джерела</a></p></section>
 </main>
 </div>
@@ -308,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
  <div class="all-queues-scroll">
   <nav id="allQueuesDays" class="all-queues-days" aria-label="Оберіть день"></nav>
   <div class="all-queues-date-block"><h3 id="allQueuesDate">Сьогодні</h3><p id="allQueuesNotice">Завантажуємо підтверджений графік…</p></div>
-  <div class="all-queues-filter-section"><div class="all-queues-filter-head"><strong>Підчерги</strong><span id="allQueuesFilterStatus">Показано всі 12</span></div><nav id="allQueuesGroupFilters" class="all-queues-group-filters" aria-label="Фільтр груп підчерг"><button type="button" data-queue-group="all" aria-pressed="true">Усі</button><button type="button" data-queue-group="1" aria-pressed="false">1</button><button type="button" data-queue-group="2" aria-pressed="false">2</button><button type="button" data-queue-group="3" aria-pressed="false">3</button><button type="button" data-queue-group="4" aria-pressed="false">4</button><button type="button" data-queue-group="5" aria-pressed="false">5</button><button type="button" data-queue-group="6" aria-pressed="false">6</button></nav></div><div class="all-queues-chart">
+  <div class="all-queues-chart">
    <div class="all-queues-matrix" id="allQueuesMatrix" role="group" aria-label="Похвилинний графік 12 підчерг за 24 години"></div>
    <div class="all-queues-end" id="allQueues24Label">24:00</div>
   </div>
@@ -317,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
    <span><i class="all-queues-swatch is-off"></i> Відключення</span>
    <span><i class="all-queues-swatch is-unknown"></i> Невідомо</span>
   </div>
-  <p id="allQueuesInspect" class="all-queues-inspect" role="status" aria-live="polite">Натисніть на підчергу, щоб побачити точні години відключень.</p>
+  <p id="allQueuesInspect" class="all-queues-inspect" role="status" aria-live="polite">Натисніть на годину, щоб побачити її точний інтервал.</p>
   <p class="all-queues-disclaimer">Тільки планові відключення за даними оператора. Реальна наявність електроенергії може відрізнятися.</p>
   <a id="allQueuesSource" class="all-queues-source" href="https://www.cherkasyoblenergo.com/news" target="_blank" rel="noopener noreferrer">Офіційне джерело ↗</a>
  </div>
