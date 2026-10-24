@@ -59,3 +59,95 @@ html.feature-off-animations :is(button,.button,.primary-action,.secondary-action
 #home .beta-ad .beta-ad-controls{min-height:28px}
 #home .bar-now{transition:left 30s linear}
 @media(prefers-reduced-motion:reduce){#home .bar-now{transition:none!important}}
+
+/* 7.9.13 polish: feedback for tiny native interactions, never animated layout. */
+:root{--micro-long:325ms;--micro-focus:#448bef;--micro-hover-shadow:0 4px 14px #2c5b8b16}
+:is(#home,#detail,#updates,#settings,.svitlo-help-page,.svitlo-feedback-page,.svitlo-about-page,.svitlo-privacy-page,.svitlo-terms-page,.svitlo-advertising-page,.svitlo-support-project-page,.svitlo-ad-detail-page) :is(button,a,summary,[role="button"],[role="tab"]){
+ -webkit-tap-highlight-color:transparent;
+}
+:where(.viewport,.layout,.wrapper,.shell) :is(.icon-btn,.back-btn,.setting-action,.inbox-search-toggle,.inbox-row-more,.sheet-close,.share-preview-close,.all-queues-close){
+ transition:color 170ms ease,background-color 170ms ease,border-color 170ms ease,box-shadow 240ms var(--micro-ease),filter 170ms ease;
+}
+:where(.viewport,.layout,.wrapper,.shell) :is(.icon-btn,.back-btn,.inbox-row-more,.sheet-close,.share-preview-close,.all-queues-close):not(:disabled):active{
+ filter:brightness(.94);
+}
+:where(.viewport,.layout,.wrapper,.shell) :is(.inbox-filters button,.all-queues-day,.day-choice,.nav-item,.calendar-shortcuts button,[role="tab"]){
+ transition:color 190ms var(--micro-ease),background-color 210ms var(--micro-ease),border-color 190ms ease,box-shadow 240ms var(--micro-ease);
+}
+:where(.viewport,.layout,.wrapper,.shell) :is(.inbox-filters button,.day-choice,.nav-item,.all-queues-day):focus-visible{
+ outline:2px solid var(--micro-focus);outline-offset:2px;
+}
+:is(.inbox-filter-count,.inbox-count,.beta-ad-counter,.nav-unread,.stat-val,.planner-summary,.dayline,.maintenance-backup-status,.all-queues-interval,.all-queues-lane-caption,.timer-value){
+ font-variant-numeric:tabular-nums;
+}
+:is(.inbox-filters,.all-queues-days,.quick-queue-lookup,.home-quick-places,.beta-ad-controls,.planner-tools,.inbox-toolbar){
+ min-width:0;
+}
+:where(#home,#detail,#updates,#settings) :is(.surface,.status-panel,.overview-card,.tomorrow-card,.inbox-item,.setting-line,.place-card,.quick-queue-lookup,.all-queues-entry){
+ transition:background-color 220ms ease,border-color 220ms ease,box-shadow 260ms var(--micro-ease);
+}
+:where(#home,#detail,#updates,#settings) :is(.surface,.status-panel,.overview-card,.tomorrow-card,.inbox-item,.setting-line,.place-card,.quick-queue-lookup) > :is(h2,h3,strong,small,p,span){
+ min-width:0;
+}
+:where(#home,#detail,#updates,#settings) :is(.inbox-item,.setting-line,.place-card,.tomorrow-card,.all-queues-entry):focus-within{
+ border-color:var(--micro-focus);
+}
+:is(input,textarea,select):not([type="hidden"]):not([type="checkbox"]):focus{
+ border-color:var(--micro-focus);
+}
+:where(.viewport,.layout,.wrapper,.shell) :is(input,textarea,select):not([type="checkbox"]):focus-visible{
+ box-shadow:0 0 0 3px #488bef28;
+}
+:where(.viewport,.layout,.wrapper,.shell) :is(input[type="checkbox"],input[type="radio"],[role="switch"]){
+ accent-color:#377cee;
+ transition:filter 190ms ease,box-shadow 220ms ease;
+}
+:where(.viewport,.layout,.wrapper,.shell) :is(input[type="checkbox"],input[type="radio"],[role="switch"]).micro-changed{
+ filter:brightness(1.1);
+}
+:where(.viewport,.layout,.wrapper,.shell) :is(.inbox-search-toggle svg,.setting-action svg,.icon-btn svg,.picker-btn svg,.back-btn svg,.all-queues-entry-arrow,.inline-link svg,.nav-item svg){
+ transition:color 180ms ease,opacity 180ms ease,transform 225ms var(--micro-ease);
+}
+:where(.viewport,.layout,.wrapper,.shell) :is(.setting-action,.inline-link,.all-queues-entry):active svg{
+ transform:translate3d(2px,0,0);
+}
+:where(.viewport,.layout,.wrapper,.shell) :is(.inbox-search-toggle,.icon-btn,.back-btn):active svg{
+ transform:scale(.94);
+}
+:where(.viewport,.layout,.wrapper,.shell) :is(.nav-item.active,.nav-item[aria-current="page"]) svg{
+ transform:translate3d(0,-1px,0);
+}
+:where(.viewport,.layout,.wrapper,.shell) :is(details>summary)::marker{color:#6685ac}
+:where(.viewport,.layout,.wrapper,.shell) :is(details>summary):focus-visible{
+ border-radius:9px;outline-offset:3px;
+}
+:where(.viewport,.layout,.wrapper,.shell) :is(.toast,.push-state,[role="status"],[role="alert"]){
+ overflow-wrap:anywhere;
+}
+/* The 12-row viewer changes only its expanded row, preserving scroll and focus. */
+.all-queues-row-detail{animation:none!important;transform:none;min-width:0;will-change:auto}
+.all-queues-lane{contain:style;min-width:0}
+.all-queues-lane-track{transform:translateZ(0)}
+.all-queues-lane.is-selected .all-queues-lane-arrow{transform:rotate(90deg)}
+.all-queues-scroll{overflow-anchor:none}
+/* Reader scroll and sheet drag are separate gestures: no nested scale on drag handles. */
+:is(.sheet-handle,.inbox-drag-handle,.share-preview-grabber){transform:none!important}
+:is(.inbox-detail-content,.share-preview-scroll,.all-queues-scroll){-webkit-overflow-scrolling:touch}
+:where(.viewport,.layout,.wrapper,.shell) :is(.badge,.pill,.inbox-unread-dot,.status-dot,.beta-ad-counter){
+ transition:background-color 190ms ease,color 190ms ease,box-shadow 220ms ease,opacity 190ms ease;
+}
+@media(hover:hover) and (pointer:fine){
+ :where(.viewport,.layout,.wrapper,.shell) :is(.inbox-row-more,.icon-btn,.back-btn,.setting-action,.inbox-search-toggle):hover{
+  background-color:color-mix(in srgb,currentColor 6%,transparent);
+ }
+ :where(.viewport,.layout,.wrapper,.shell) :is(.all-queues-lane,.day-choice,.inbox-filters button,.all-queues-day):hover{
+  filter:brightness(1.025);
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ :where(.viewport,.layout,.wrapper,.shell) :is(.day-choice,.inbox-filters button,.icon-btn,.back-btn,.setting-action,.inbox-row-more,.all-queues-lane,.nav-item,.all-queues-day,.sheet-close) svg,
+ :where(.viewport,.layout,.wrapper,.shell) :is(input,textarea,select,[role="switch"],.status-dot,.inbox-unread-dot){
+  transition:none!important;
+ }
+}
+html.feature-off-animations :where(.viewport,.layout,.wrapper,.shell) :is(button,a,summary,svg,input,select,textarea){transition:none!important}
