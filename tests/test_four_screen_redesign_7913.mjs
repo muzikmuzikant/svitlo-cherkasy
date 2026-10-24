@@ -3,58 +3,45 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const read=file=>fs.readFileSync(new URL('../'+file,import.meta.url),'utf8');
 
-test('Compact Options preserve settings, consent, saved places and Push contracts',()=>{
+test('Original Settings layout is restored with every live preference and support entry',()=>{
  const html=read('index.html');
- for(const id of ['settings','settingsPlacesPanel','settingsManagePlaces','settingsPlacesCount',
-                  'settingsAppearance','settingsPushBlock','settingsPrivacyBlock','settingsOfflineBlock',
-                  'settingsSupportBlock','pushMaster','notifyOff','notifyOn','betaAnalyticsConsent',
-                  'manualRefresh','checkAppUpdate','shareApp','appearanceSummary']){
-  assert.ok(html.includes('id="'+id+'"'),'Missing element '+id);
- }
- assert.match(html,/<h1>Опції<\/h1>/);
- assert.doesNotMatch(html,/class="settings-quick-nav"/);
- assert.equal((html.match(/id="settingsManagePlaces"/g)||[]).length,1);
-});
-
-test('Home and addresses preserve picker, notifications and lookup logic',()=>{
- const html=read('index.html'),app=read('app.js');
- for(const id of ['primaryPicker','heroStatus','overviewBar','homeDashboardIntro','homeDashboardDate',
-                  'homeQuickPlaces','placeList','manageFromHome','addFromHome',
-                  'placesSheet','placesOptions','addressSheet','settlement','street','house','queueOverride',
-                  'manualQueue','saveAddress']){
+ for(const id of ['settings','pushMaster','notifyOff','notifyOn','notifyChanges',
+  'notifyEmergency','notifyTomorrow','betaAnalyticsConsent','manualRefresh',
+  'checkAppUpdate','addFromSettings','shareApp','appearanceSummary','offlineDataState'])
   assert.ok(html.includes('id="'+id+'"'),id);
- }
- for(const fragment of ['place-edit-action','place-edit-option','settingsManagePlaces','manageFromHome',
-                        "openAddressSheet(item)","openPicker()","updatePushSubscription()",
-                        "setText('settingsPlacesCount'","setText('homeDashboardDate'"]){
-  assert.ok(app.includes(fragment),fragment);
- }
- assert.match(app,/row\.append\(b,edit\);list\.append\(row\)/);
- assert.match(app,/sheet\.addEventListener\('close',\(\)=>openAddressSheet\(a\),\{once:true\}\)/);
+ assert.match(html,/<h1>Опції<\/h1>/);
+ assert.doesNotMatch(html,/id="settingsPlacesPanel"|id="settingsNavHub"|settings-quick-nav/);
+ assert.doesNotMatch(html,/src="\.\/ux-rebuild\.js"|href="\.\/ux-rebuild\.css"/);
 });
 
-test('Unfiltered 12-row schedule retains stable full-day timelines and detail interactions',()=>{
+test('Original Home hierarchy and place cards are restored without changing schedule logic',()=>{
+ const html=read('index.html'),app=read('app.js');
+ for(const id of ['homeIntro','primaryPicker','heroStatus','overviewBar','hoursOn',
+  'hoursOff','tomorrowCard','placeList','addFromHome','betaAd','pushInvite',
+  'homeQuickPlaces'])assert.ok(html.includes('id="'+id+'"'),id);
+ assert.doesNotMatch(html,/id="homeDashboardIntro"|id="homeWeekDays"/);
+ assert.match(app,/copy\.append\(el\('strong','',label\(item\)\)/);
+ assert.match(app,/list\.dataset\.renderKey!==placeKey/);
+ assert.doesNotMatch(app,/setText\('settingsPlacesCount'|setText\('homeDashboardDate'/);
+ assert.match(app,/updatePushSubscription\(\)/);
+});
+
+test('Twelve-subqueue grouped and comparison instrument remains available from graph details',()=>{
  const html=read('index.html'),js=read('all-queues.js');
- assert.doesNotMatch(html,/data-queue-group=/);
- assert.match(js,/for\(let n=1;n<=6;n\+\+\)/);
- assert.match(js,/signature===currentSignature/);
- assert.match(js,/src\(\)\.timeline\(selected,queue\)/);
- assert.match(js,/function toggleQueue\(queue\)/);
- assert.match(js,/all-queues-compare-summary/);
+ for(const id of ['allQueuesDetailOpen','allQueuesDialog','allQueuesMatrix','allQueuesDays'])
+  assert.ok(html.includes('id="'+id+'"'),id);
+ for(const key of ["'groups'","'compare'",'compareSummary','all-queues-group-card',
+  'function toggleQueue(queue)','src().timeline(selected,queue)'])
+  assert.ok(js.includes(key),key);
 });
 
-test('Redesigned files are packaged and cached for offline PWA, never production',()=>{
- const html=read('index.html'),sw=read('sw.js'),build=read('scripts/build_pages.py');
- for(const asset of ['redesign-7913.css','redesign-7913.js']){
-  assert.match(html,new RegExp(asset.replace('.','\\.')));
-  assert.ok(sw.includes('"./'+asset+'"'),'uncached '+asset);
-  assert.ok(build.includes("'"+asset+"'"),'missing _site '+asset);
- }
- assert.match(sw,/svitlo-cherkasy-shell-v7\.9\.13-beta-rights-v1/);
- assert.match(html,/data-deployment-channel="beta"/);
- const css=read('redesign-7913.css');
+test('Only address picker retains Beta visual overrides and shell cache refreshes',()=>{
+ const html=read('index.html'),css=read('redesign-7913.css'),sw=read('sw.js');
+ assert.match(html,/redesign-7913\.css/);
+ assert.doesNotMatch(html,/redesign-7913\.js|ux-rebuild\.js|ux-rebuild\.css/);
+ assert.match(css,/\.redesigned-places-sheet/);
  assert.match(css,/:root\[data-theme="dark"\]/);
- assert.match(css,/prefers-reduced-motion:reduce/);
- assert.doesNotMatch(css,/transition\s*:\s*all\b/);
- assert.match(css,/\[hidden\]/);
+ assert.doesNotMatch(css,/#home|#settings/);
+ assert.match(sw,/svitlo-cherkasy-shell-v7\.9\.13-beta-ui-rollback-v2/);
+ assert.match(html,/data-deployment-channel="beta"/);
 });
