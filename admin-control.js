@@ -440,7 +440,7 @@
   const noticeChanges=scope==='content'?state.announcements:[...latest.announcements];
   const toPush=noticeChanges.filter(x=>x.active&&['push','both'].includes(x.delivery)&&!x.pushSentAt
    &&(!x.scheduledAt||Date.parse(x.scheduledAt)<=Date.now()));
-  if(toPush.some(n=>n.title.length+(n.icon||kinds[n.kind]||'💬').length+1>85))
+  if(toPush.some(n=>{const icon=n.icon||kinds[n.kind]||'💬';const title=n.title||'';return (/^\p{Extended_Pictographic}/u.test(title)||title.startsWith(icon)?title:icon+' '+title).length>85}))
     throw Error('Заголовок для Push занадто довгий. Скоротіть його, враховуючи емодзі.');
    if(toPush.length&&scope==='content'&&!confirm('Надіслати Push для '+toPush.length+' повідомлень?'))throw Error('Розсилку не підтверджено');
   let next;
