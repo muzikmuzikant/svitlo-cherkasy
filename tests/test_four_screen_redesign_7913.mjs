@@ -3,18 +3,17 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const read=file=>fs.readFileSync(new URL('../'+file,import.meta.url),'utf8');
 
-test('Settings hub uses the original working controls and clear grouping',()=>{
+test('Compact Options preserve settings, consent, saved places and Push contracts',()=>{
  const html=read('index.html');
  for(const id of ['settings','settingsPlacesPanel','settingsManagePlaces','settingsPlacesCount',
                   'settingsAppearance','settingsPushBlock','settingsPrivacyBlock','settingsOfflineBlock',
                   'settingsSupportBlock','pushMaster','notifyOff','notifyOn','betaAnalyticsConsent',
                   'manualRefresh','checkAppUpdate','shareApp','appearanceSummary']){
-  assert.match(html,new RegExp('id="'+id+'"'),'Missing element '+id);
+  assert.ok(html.includes('id="'+id+'"'),'Missing element '+id);
  }
+ assert.match(html,/<h1>Опції<\/h1>/);
+ assert.doesNotMatch(html,/class="settings-quick-nav"/);
  assert.equal((html.match(/id="settingsManagePlaces"/g)||[]).length,1);
- assert.match(html,/data-settings-jump="settingsPlacesPanel"/);
- assert.match(read('redesign-7913.js'),/scrollIntoView/);
- assert.match(read('redesign-7913.js'),/feature-off-animations/);
 });
 
 test('Home and addresses preserve picker, notifications and lookup logic',()=>{
@@ -34,16 +33,13 @@ test('Home and addresses preserve picker, notifications and lookup logic',()=>{
  assert.match(app,/sheet\.addEventListener\('close',\(\)=>openAddressSheet\(a\),\{once:true\}\)/);
 });
 
-test('All-subqueue group filter keeps the original 12 timelines and all-visible comparison',()=>{
+test('Unfiltered 12-row schedule retains stable full-day timelines and detail interactions',()=>{
  const html=read('index.html'),js=read('all-queues.js');
- for(const val of ['all','1','2','3','4','5','6'])
-  assert.ok(html.includes('data-queue-group="'+val+'"'),'Missing filter '+val);
+ assert.doesNotMatch(html,/data-queue-group=/);
  assert.match(js,/for\(const queue of math\.QUEUES\)/);
- assert.match(js,/groupFilter==='all'/);
- assert.match(js,/node\.hidden=groupFilter!==/);
- assert.match(js,/applyGroupFilter\(\)/);
- assert.match(js,/currentSignature/);
+ assert.match(js,/signature===currentSignature/);
  assert.match(js,/src\(\)\.timeline\(selected,queue\)/);
+ assert.match(js,/function toggleQueue\(queue\)/);
  assert.match(js,/toLocaleString\('uk-UA'/);
 });
 
