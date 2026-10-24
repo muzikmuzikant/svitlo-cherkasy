@@ -171,6 +171,7 @@
     foreground:read('opsPlannedForeground'),accent:read('opsPlannedAccent')},disabledModules};
  }
  function renderFormatted(target,text){
+  if(window.SvitloMessageFormat?.render)return window.SvitloMessageFormat.render(target,text);
   target.replaceChildren();
   for(const line of String(text||'').split('\n').slice(0,70)){
    const trimmed=line.trim(),heading=/^#{1,3}\s+/.test(trimmed),bullet=/^[-*]\s+/.test(trimmed);
