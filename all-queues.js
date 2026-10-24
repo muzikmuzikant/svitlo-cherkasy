@@ -24,14 +24,17 @@
    palette[p.state]+' '+(p.end/60*100).toFixed(3)+'%'
   ]).join(',')+')';
  }
- function inspect(queue,hour){
+ const totalOff=parts=>parts.filter(p=>p.state===1).reduce((n,p)=>n+p.end-p.start,0);
+ const intervalText=parts=>parts.filter(p=>p.state===1).map(p=>math.time(p.start)+'–'+math.time(p.end));
+ function inspect(queue){
   if(!src())return;
-  selectedCell={queue,hour};
-  const parts=math.hourSegments(src().timeline(selected,queue),hour);
-  status.textContent='Підчерга '+queue+' · '+math.describe(parts,hour);
-  for(const element of root.querySelectorAll('.all-queues-cell.is-selected'))
-   element.classList.remove('is-selected');
-  root.querySelector('[data-queue="'+queue+'"][data-hour="'+hour+'"]')?.classList.add('is-selected');
+  selectedCell={queue};
+  for(const node of root.querySelectorAll('.all-queues-lane.is-selected'))node.classList.remove('is-selected');
+  root.querySelector('[data-queue="'+queue+'"]')?.classList.add('is-selected');
+  const parts=math.allDaySegments(src().timeline(selected,queue));
+  const off=intervalText(parts);
+  status.textContent='Підчерга '+queue+' · '+(parts.some(p=>p.state===-1)?'Частина дня без підтверджених даних. ':'')+
+   (off.length?'Відключення: '+off.join(', '):parts.every(p=>p.state===0)?'За графіком світло весь день':'Підтверджених відключень немає');
  }
  function render(){
   if(!src()||!dialog.open)return;
@@ -48,41 +51,50 @@
   }
   const day=src().day(selected),confirmed=src().noSchedule(selected),offline=src().offline();
   const source=day?.source||'https://www.cherkasyoblenergo.com/news';
-  if(sourceLink){
-   sourceLink.href=/^https:\/\/(?:www\.)?cherkasyoblenergo\.com\//.test(source)?source:'https://www.cherkasyoblenergo.com/news';
-  }
+  if(sourceLink)sourceLink.href=/^https:\/\/(?:www\.)?cherkasyoblenergo\.com\//.test(source)?source:'https://www.cherkasyoblenergo.com/news';
   notice.textContent=offline?
    'Офлайн: збережені дані могли змінитися. Перевірено: '+(src().lastChecked()||'невідомо'):
    day?'Офіційний графік · '+(day.publishedAt?'опубліковано '+new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Kyiv'}).format(new Date(day.publishedAt)):'публікацію підтверджено'):
-   confirmed?'Планових відключень за опублікованим графіком немає.':
-   'Немає підтвердженого графіка для цього дня. Комірки позначено як невідомі.';
+   confirmed?'За опублікованим графіком планових відключень немає.':
+   'Немає підтвердженого графіка. Невідомі години позначено сірим.';
   root.replaceChildren();
-  const axis=e('span','all-queues-axis-label','Черга');root.append(axis);
-  for(let hour=0;hour<24;hour++){
-   const tick=e('span','all-queues-hour-label',hour%3===0?String(hour).padStart(2,'0'):'');
-   tick.setAttribute('aria-hidden','true');root.append(tick);
-  }
+  const axis=e('div','all-queues-time-scale');
+  for(const t of ['00:00','06:00','12:00','18:00','24:00'])axis.append(e('span','',t));
+  root.append(axis);
   for(const queue of math.QUEUES){
-   const caption=e('strong','all-queues-row-name',queue);
-   caption.setAttribute('aria-label','Підчерга '+queue);
-   root.append(caption);
-   const line=src().timeline(selected,queue);
-   for(let hour=0;hour<24;hour++){
-    const segments=math.hourSegments(line,hour);
-    const cell=e('button','all-queues-cell'+(selectedCell?.queue===queue&&selectedCell.hour===hour?' is-selected':''));
-    cell.type='button';
-    cell.dataset.queue=queue;cell.dataset.hour=String(hour);
-    cell.style.background=gradient(segments);
-    const desc=math.describe(segments,hour);
-    cell.title='Підчерга '+queue+' · '+desc;
-    cell.setAttribute('aria-label',cell.title);
-    cell.onclick=()=>inspect(queue,hour);
-    root.append(cell);
+   const parts=math.allDaySegments(src().timeline(selected,queue));
+   const off=intervalText(parts),unknown=parts.some(p=>p.state===-1);
+   const lane=e('button','all-queues-lane'+(selectedCell?.queue===queue?' is-selected':''));lane.type='button';lane.dataset.queue=queue;
+   lane.setAttribute('aria-expanded',String(selectedCell?.queue===queue));
+   const name=e('span','all-queues-lane-name',queue);
+   const content=e('span','all-queues-lane-content');
+   const bar=e('span','all-queues-lane-track');
+   for(const p of parts){
+    const segment=e('span','all-queues-lane-segment state-'+(p.state===0?'on':p.state===1?'off':'unknown'));
+    segment.style.width=((p.end-p.start)/1440*100).toFixed(5)+'%';
+    bar.append(segment);
+   }
+   const line=e('span','all-queues-lane-caption',off.length?
+     off.slice(0,3).join('  ·  ')+(off.length>3?'  ·  ще '+(off.length-3):''):
+     unknown?'Години не підтверджені':'Світло весь день');
+   content.append(bar,line);
+   const arrow=e('span','all-queues-lane-arrow','›');arrow.setAttribute('aria-hidden','true');
+   lane.append(name,content,arrow);
+   lane.setAttribute('aria-label','Підчерга '+queue+'. '+(off.length?'Відключення: '+off.join(', '):unknown?'Години не підтверджені':'Світло весь день')+'. Натисніть для деталей');
+   lane.onclick=()=>{selectedCell?.queue===queue?selectedCell=null:selectedCell={queue};render()};
+   root.append(lane);
+   if(selectedCell?.queue===queue){
+    const detail=e('div','all-queues-row-detail');
+    detail.append(e('strong','','Підчерга '+queue+' · без світла '+(totalOff(parts)/60).toLocaleString('uk-UA',{maximumFractionDigits:1})+' год'));
+    if(off.length)for(const interval of off)detail.append(e('span','all-queues-interval',interval));
+    else detail.append(e('span','all-queues-interval',unknown?'Не всі години підтверджені':'Відключень не заплановано'));
+    if(unknown)detail.append(e('p','','Сірі проміжки не є підтвердженням наявності світла.'));
+    root.append(detail);
    }
   }
-  const key=$('allQueues24Label');if(key)key.textContent='24:00';
-  if(selectedCell)inspect(selectedCell.queue,selectedCell.hour);
-  else status.textContent='Натисніть на годину будь-якої підчерги, щоб побачити точний інтервал.';
+  const key=$('allQueues24Label');if(key)key.hidden=true;
+  if(selectedCell)inspect(selectedCell.queue);
+  else status.textContent='Натисніть на будь-яку підчергу, щоб розгорнути точні години відключень.';
  }
  let afterClose=null;
  function dismiss(next){
