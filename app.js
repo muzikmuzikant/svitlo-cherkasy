@@ -553,7 +553,9 @@ async function shareSchedule(date,{copy=false}={}){
   }else await openSharePreview(blob,filename,date,info.queue);
  }catch(error){if(error?.name==='AbortError')return;console.warn('Share schedule:',error);flash('Не вдалося поділитися графіком')}
 }
-function renderBar(a){const bar=$('overviewBar');bar.replaceChildren();if(!a){const b=el('span','bar-segment unknown');b.style.flex='1';bar.append(b);return}let start=0,v=a[0];for(let i=1;i<=1440;i++){if(i===1440||a[i]!==v){const seg=el('span','bar-segment '+(v===1?'off':v===0?'on':'unknown'));seg.style.flex=String(i-start);seg.title=`${clock(start)}–${clock(i)} · ${v===1?'відключення':v===0?'світло':'немає даних'}`;bar.append(seg);start=i;v=a[i]}}const line=el('span','bar-now');line.style.left=(nowMinutes()/1440*100)+'%';bar.append(line)}
+function renderBar(a){const bar=$('overviewBar'),key=a?Array.from(a).join(''):'unknown';
+ if(bar.dataset.paintKey===key){const line=bar.querySelector('.bar-now');if(line)line.style.left=(nowMinutes()/1440*100)+'%';return}
+ bar.dataset.paintKey=key;bar.replaceChildren();if(!a){const b=el('span','bar-segment unknown');b.style.flex='1';bar.append(b);return}let start=0,v=a[0];for(let i=1;i<=1440;i++){if(i===1440||a[i]!==v){const seg=el('span','bar-segment '+(v===1?'off':v===0?'on':'unknown'));seg.style.flex=String(i-start);seg.title=`${clock(start)}–${clock(i)} · ${v===1?'відключення':v===0?'світло':'немає даних'}`;bar.append(seg);start=i;v=a[i]}}const line=el('span','bar-now');line.style.left=(nowMinutes()/1440*100)+'%';bar.append(line)}
 // Latest tap wins. Previous WAAPI animations are interrupted at their actual
 // visual position rather than rewinding, and clicks are never rate-limited.
 let tabMotion=null;
