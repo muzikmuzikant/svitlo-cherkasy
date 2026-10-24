@@ -50,7 +50,11 @@ test('PWA prefers live Railway schedules with static/offline fallback',()=>{
  assert.match(app,/source:'pages-fallback'/);
  assert.match(app,/source:'device'/);
  assert.match(app,/nextStamp>=currentStamp/);
- assert.match(read('push-server/server.js'),/officialSchedules\.schedule\(\)\|\|await loadJson\(SCHEDULE_URL\)/);
+ const server=read('push-server/server.js');
+ assert.match(server,/const published=officialSchedules\.schedule\(\)/);
+ assert.match(server,/if\(!usableSchedule\(published\)\)/);
+ assert.match(server,/fallback=fetched/);
+ assert.match(server,/preferFreshSchedule\(published,fallback,timestamp\)/);
 });
 test('worker uses established official importer and fails before publishing if source fails',()=>{
  const py=read('scripts/railway_schedule_cron.py');
@@ -77,7 +81,7 @@ test('backend does not expose subscriber secrets or internal upload endpoint to 
 test('Railway live GET endpoints accept cache-busting query parameters from installed PWA',()=>{
  const backend=read('push-server/server.js');
  const app=read('app.js');
- assert.match(app,/u\.searchParams\.set\('t',String\(Date\.now\(\)\)\)/);
+ assert.match(app,/url\.searchParams\.set\('t',String\(Date\.now\(\)\)\)/);
  assert.match(backend,/const requestPath=new URL\(req\.url,'http:\/\/localhost'\)\.pathname/);
  assert.match(backend,/requestPath==='\/api\/data\/schedules\.json'/);
  assert.match(backend,/requestPath==='\/api\/data\/source_review\.json'/);
