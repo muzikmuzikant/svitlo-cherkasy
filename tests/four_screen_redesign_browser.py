@@ -38,9 +38,8 @@ def main():
      page.wait_for_function("() => !document.getElementById('settings').hidden")
      assert page.locator('#settingsPlacesPanel').is_visible()
      assert '2 адреси' in page.locator('#settingsPlacesCount').inner_text()
-     assert page.locator('#settings .settings-quick-nav button').count()==4
-     page.locator('[data-settings-jump="settingsAppearance"]').click()
-     assert page.locator('[data-settings-jump="settingsAppearance"]').get_attribute('class')=='is-current'
+     assert page.locator('#settings .settings-quick-nav button').count()==0
+     assert page.locator('#settings').get_by_role('heading',name='Опції').count()==1
      page.locator('#settingsManagePlaces').click()
      page.wait_for_function("() => document.querySelector('#placesSheet')?.open",timeout=6000)
      assert page.locator('#placesOptions .place-option').count()==2
@@ -54,12 +53,7 @@ def main():
      page.wait_for_function("() => !document.getElementById('home').hidden")
      page.locator('#allQueuesHomeOpen').click()
      page.wait_for_function("() => document.querySelector('#allQueuesDialog')?.open",timeout=6000)
-     assert page.locator('#allQueuesGroupFilters button').count()==7
-     assert page.locator('#allQueuesMatrix .all-queues-lane:visible').count()==12
-     page.locator('[data-queue-group="4"]').click()
-     assert page.locator('#allQueuesMatrix .all-queues-lane:visible').count()==2
-     assert 'Група 4' in page.locator('#allQueuesFilterStatus').inner_text()
-     page.locator('[data-queue-group="all"]').click()
+     assert page.locator('#allQueuesGroupFilters button').count()==0
      assert page.locator('#allQueuesMatrix .all-queues-lane:visible').count()==12
      page.locator('.all-queues-lane[data-queue="1.1"]').click()
      assert page.locator('.all-queues-row-detail').count()==1
@@ -71,12 +65,12 @@ def main():
      overflow=page.evaluate('document.documentElement.scrollWidth-innerWidth')
      assert overflow<=3,(width,scheme,'horizontal overflow',overflow)
      if scheme=='dark':
-      bg=page.locator('#settingsPlacesPanel .settings-places-card').evaluate(
+      bg=page.locator('#settingsPlacesPanel').evaluate(
         '(el)=>getComputedStyle(el).backgroundColor')
       assert bg not in ('rgb(255, 255, 255)','white'),(width,bg)
      assert not errors,(width,scheme,errors)
      context.close()
-   print('PASS: Settings, saved addresses, all-queues filters and Home at 320/390/590px in light/dark mode')
+   print('PASS: compact Options, saved addresses, unfiltered 12-row queue viewer and Home at 320/390/590px light/dark')
   finally:
    browser.close()
 
