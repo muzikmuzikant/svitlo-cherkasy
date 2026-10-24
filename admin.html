@@ -367,7 +367,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
    <div class="headline"><div><h2>Візуальний редактор</h2><p class="hint" id="opsEditorStatus">Оберіть повідомлення або створіть нове</p></div><div class="flex"><button type="button" id="opsDuplicateNotice" class="secondary">Копія</button><button type="button" id="opsDeleteNotice" class="danger">Видалити</button></div></div>
    <div class="field"><label for="opsTemplate">Швидкий шаблон</label><select id="opsTemplate"><option value="">Без шаблону</option><option value="schedule">🗓️ Оновлення графіка</option><option value="emergency">⚠️ Важливе повідомлення</option><option value="maintenance">🛠️ Технічні роботи</option><option value="update">✨ Нова версія застосунку</option></select></div>
    <div class="field"><label for="opsNoticeTitle">Заголовок</label><input id="opsNoticeTitle" maxlength="90" placeholder="Наприклад, ⚡ Оновили графік"></div>
-   <div class="field"><label for="opsNoticeBody">Короткий текст для Push та картки</label><textarea id="opsNoticeBody" rows="2" maxlength="280" placeholder="Найголовніше одним-двома реченнями"></textarea></div>
+   <div class="field"><label for="opsNoticeBody">Короткий текст для Push та картки</label><textarea id="opsNoticeBody" rows="2" maxlength="500" placeholder="Найголовніше одним-двома реченнями"></textarea></div>
    <div class="field"><label for="opsNoticeContent">Повний текст повідомлення</label>
     <div class="ops-text-toolbar" role="toolbar" aria-label="Форматування тексту">
       <button type="button" data-ops-format="bold" aria-label="Жирний текст"><strong>Ж</strong></button>
@@ -380,7 +380,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
        <button type="button" data-ops-format="divider" aria-label="Розділювач">─</button>
       <button type="button" data-ops-format="link" aria-label="Посилання"><span>↗</span></button>
     </div>
-    <textarea id="opsNoticeContent" rows="9" maxlength="6000" placeholder="Докладно опишіть, що сталося, і що робити користувачеві..."></textarea>
+    <textarea id="opsNoticeContent" rows="9" maxlength="20000" placeholder="Докладно опишіть, що сталося, і що робити користувачеві..."></textarea>
    </div>
    <div class="two">
     <div class="field"><label for="opsNoticeKind">Категорія</label><select id="opsNoticeKind"><option value="info">💬 Інформація</option><option value="important">📣 Важливе</option><option value="schedule">🗓️ Графіки</option><option value="emergency">⚠️ Екстрене</option><option value="update">✨ Оновлення</option></select></div>

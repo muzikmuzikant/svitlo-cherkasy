@@ -73,7 +73,7 @@
    else if(node.classList.contains('message-space'))result.push('');
    else result.push(serializeInline(node).trim());
   }
-  return result.join('\n').slice(0,6000);
+  return result.join('\n').slice(0,20000);
  }
  let mode='visual',inSync=false;
  function switchMode(next){
