@@ -104,7 +104,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
   <div id="corrList" class="corr-list"></div></div>
  <div class="corr-form"><h3 id="corrHeading">Нова картка</h3><small class="hint" id="corrRevision"></small>
   <p class="corr-info">Номер будинку необов’язковий. Якщо залишити поле порожнім, уточнення стосується вулиці. Для вулиць із розподілом за будинками точні підчерги збережуться без змін. Перед публікацією звірте дані з офіційним джерелом.</p>
-  <form id="corrForm">
+  <div id="corrForm" data-admin-editor-group role="group" aria-label="Редактор адресних уточнень">
   <div class="two"><div class="field"><label for="corrTown">Населений пункт</label><select id="corrTown"><option value="черкаси">Черкаси</option></select></div>
   <div class="field"><label for="corrStreet">Вулиця з офіційного каталогу</label><select id="corrStreet" required><option value="">Оберіть вулицю</option></select></div></div>
   <div class="two"><div class="field"><label for="corrHouse">Номер будинку (необов’язково)</label><input id="corrHouse" maxlength="20" placeholder="Уся вулиця або 30, 160/1"><small class="hint">Порожнє поле: уточнення для вулиці, без зміни підтверджених будинків.</small></div>
@@ -116,8 +116,8 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
   <div class="field"><label for="corrComment">Службова примітка</label><textarea id="corrComment" maxlength="600" rows="3" placeholder="Деталі звірки"></textarea></div>
   <label class="corr-check" id="corrPublishRow" hidden><input type="checkbox" id="corrPublish"> Опублікувати уточнення для користувачів за цією адресою</label>
   <label class="corr-check" id="corrProofRow" hidden><input type="checkbox" id="corrProof"> Я перевірив підчергу вулиці або конкретного будинку за офіційним джерелом</label>
-  <div class="corr-actions"><button id="corrSave" type="submit">Зберегти</button><button id="corrDelete" type="button" class="danger" hidden>Видалити</button></div>
-  </form></div></div><p id="corrMessage" role="status" class="registry-status"></p>
+  <div class="corr-actions"><button id="corrSave" type="button" data-admin-save-action>Зберегти</button><button id="corrDelete" type="button" class="danger" hidden>Видалити</button></div>
+  </div></div></div><p id="corrMessage" role="status" class="registry-status"></p>
 </section>
 <section class="card admin-register" data-admin-panel="registry" hidden>
  <div class="registry-lead"><div><div class="panel-eyebrow">ДІЛОВОДСТВО / ЕЛЕКТРОННА КАРТОТЕКА</div><h2>Картотека робіт та доручень</h2>
@@ -128,7 +128,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  <select id="adminRegisterFilter" aria-label="Фільтр статусу"><option value="">Усі статуси</option><option value="new">Нові</option><option value="in_progress">У роботі</option><option value="review">На перевірці</option><option value="done">Виконані</option><option value="cancelled">Скасовані</option></select></div>
  <div class="registry-layout"><div class="registry-list"><div class="registry-head"><span>Номер</span><span>Предмет</span><span>Категорія</span><span>Статус</span><span>Пріоритет</span></div><div id="adminRegisterList"></div></div>
  <div class="registry-editor"><h3 id="workEditTitle">Нова картка</h3><small id="workRevision">Ще не зареєстровано</small>
- <form id="workForm">
+ <div id="workForm" data-admin-editor-group role="group" aria-label="Редактор доручень">
   <div class="field"><label for="workTitle">Предмет доручення</label><input id="workTitle" maxlength="120" minlength="4" required placeholder="Уточнити підчергу"></div>
   <div class="field"><label for="workDetails">Зміст / резолюція</label><textarea id="workDetails" maxlength="1800" rows="4" placeholder="Що перевірити, як зафіксувати результат"></textarea></div>
   <div class="two"><div class="field"><label for="workKind">Категорія</label><select id="workKind"><option value="feedback">Звернення</option><option value="addresses">Адреси та підчерги</option><option value="schedules">Графіки</option><option value="content">Публікації</option><option value="system">Система</option><option value="design">Оформлення</option><option value="other">Інше</option></select></div>
@@ -137,15 +137,15 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
   <div class="field"><label for="workDueDate">Контрольний термін</label><input id="workDueDate" type="date"></div></div>
   <div class="two"><div class="field"><label for="workAssignee">Відповідальний</label><input id="workAssignee" maxlength="50"></div>
   <div class="field"><label for="workReference">Номер звернення / посилання</label><input id="workReference" maxlength="100"></div></div>
-  <div class="registry-actions"><button id="workSave" type="submit">Зберегти картку</button><button id="workRemove" type="button" class="danger" hidden>Видалити</button></div>
- </form><h4>Хід виконання</h4><div id="workEvents" class="registry-events" aria-live="polite"></div></div></div>
+  <div class="registry-actions"><button id="workSave" type="button" data-admin-save-action>Зберегти картку</button><button id="workRemove" type="button" class="danger" hidden>Видалити</button></div>
+ </div><h4>Хід виконання</h4><div id="workEvents" class="registry-events" aria-live="polite"></div></div></div>
  <p class="registry-status" id="adminRegisterMessage" role="status"></p>
 </section>
 <section class="card admin-live" data-admin-panel="live" hidden>
  <div class="registry-lead"><div><div class="panel-eyebrow">ОНЛАЙН-КОНФІГУРАЦІЯ / RAILWAY</div><h2>Оперативне керування застосунком</h2>
  <p>Публікація без GitHub: банер, посилання та увімкнення модулів. Зміни застосовуються з сервера, з історією версій і захистом від перезапису.</p></div>
  <button id="liveReload" type="button" class="secondary">Оновити з сервера</button></div>
- <p id="liveRevision" class="hint"></p><form id="liveConfigForm"><div class="live-config-grid">
+ <p id="liveRevision" class="hint"></p><div id="liveConfigForm" data-admin-editor-group role="group" aria-label="Редактор оперативних налаштувань"><div class="live-config-grid">
  <div class="live-card"><h3>Головний інформаційний банер</h3>
   <label class="live-toggle"><input type="checkbox" id="liveBannerEnabled"> Показувати користувачам</label>
   <div class="field"><label for="liveBannerTitle">Заголовок</label><input id="liveBannerTitle" maxlength="90"></div>
@@ -167,8 +167,8 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
    <label class="live-toggle"><input type="checkbox" id="liveFlagManualRefresh"> Ручне оновлення</label>
   </div><h3>Попередній перегляд</h3>
   <div id="livePreview" class="live-preview" hidden><strong id="livePreviewTitle"></strong><p id="livePreviewBody"></p></div></div></div>
-  <div class="flex"><button type="submit" id="liveSave">Опублікувати зміни</button><span class="hint">Потрібні права власника</span></div>
- </form><p id="liveConfigMessage" class="registry-status" role="status"></p>
+  <div class="flex"><button type="button" id="liveSave" data-admin-save-action>Опублікувати зміни</button><span class="hint">Потрібні права власника</span></div>
+ </div><p id="liveConfigMessage" class="registry-status" role="status"></p>
 </section>
 <section class="card" data-admin-panel="overview">
  <div class="headline"><h2>Огляд роботи сервісу</h2><button type="button" class="secondary" id="monitorRefresh">Оновити</button></div>
