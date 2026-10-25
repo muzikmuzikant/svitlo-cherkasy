@@ -1,30 +1,20 @@
 {
   "schemaVersion": 3,
-  "lastChecked": "2026-10-25T18:09:17+02:00",
+  "lastChecked": "2026-10-25T20:58:39+02:00",
   "reviewPending": false,
   "unresolvedDates": [],
-  "confirmedNoScheduleDates": [
-    "2026-10-26"
-  ],
+  "confirmedNoScheduleDates": [],
   "source": "https://www.cherkasyoblenergo.com/news",
   "days": [
     {
       "date": "2026-10-25",
-      "publishedAt": "2026-10-24T19:59+03:00",
-      "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-25-zhovtnya?lang=uk",
+      "publishedAt": "2026-10-25T20:52+02:00",
+      "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-26-zhovtnya?lang=uk",
       "verified": true,
       "queues": {
         "1.1": {
           "knownFrom": "00:00",
           "off": [
-            [
-              "07:00",
-              "09:00"
-            ],
-            [
-              "15:00",
-              "17:00"
-            ],
             [
               "21:00",
               "22:00"
@@ -35,10 +25,6 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "15:00",
-              "17:00"
-            ],
-            [
               "22:00",
               "24:00"
             ]
@@ -48,14 +34,6 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "07:00",
-              "09:00"
-            ],
-            [
-              "15:00",
-              "17:00"
-            ],
-            [
               "21:00",
               "22:00"
             ]
@@ -63,27 +41,14 @@
         },
         "2.2": {
           "knownFrom": "00:00",
-          "off": [
-            [
-              "09:00",
-              "11:00"
-            ],
-            [
-              "17:00",
-              "19:00"
-            ]
-          ]
+          "off": []
         },
         "3.1": {
           "knownFrom": "00:00",
           "off": [
             [
-              "13:00",
-              "15:00"
-            ],
-            [
               "19:00",
-              "21:00"
+              "22:00"
             ]
           ]
         },
@@ -91,22 +56,14 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "13:00",
-              "15:00"
-            ],
-            [
               "19:00",
-              "21:00"
+              "22:00"
             ]
           ]
         },
         "4.1": {
           "knownFrom": "00:00",
           "off": [
-            [
-              "13:00",
-              "15:00"
-            ],
             [
               "19:00",
               "21:00"
@@ -117,10 +74,6 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "09:00",
-              "11:00"
-            ],
-            [
               "19:00",
               "21:00"
             ]
@@ -130,14 +83,6 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "09:00",
-              "11:00"
-            ],
-            [
-              "16:00",
-              "17:00"
-            ],
-            [
               "22:00",
               "24:00"
             ]
@@ -145,47 +90,25 @@
         },
         "5.2": {
           "knownFrom": "00:00",
-          "off": [
-            [
-              "11:00",
-              "13:00"
-            ],
-            [
-              "17:00",
-              "19:00"
-            ]
-          ]
+          "off": []
         },
         "6.1": {
           "knownFrom": "00:00",
-          "off": [
-            [
-              "11:00",
-              "13:00"
-            ],
-            [
-              "17:00",
-              "19:00"
-            ]
-          ]
+          "off": []
         },
         "6.2": {
           "knownFrom": "00:00",
-          "off": [
-            [
-              "11:00",
-              "13:00"
-            ],
-            [
-              "17:00",
-              "19:00"
-            ]
-          ]
+          "off": []
         }
       },
-      "revisions": 1,
-      "planFingerprint": "37bee535cc16f9ce1a03",
-      "noScheduledOutages": [],
+      "revisions": 2,
+      "planFingerprint": "17569c63ba4c047aac00",
+      "noScheduledOutages": [
+        "2.2",
+        "5.2",
+        "6.1",
+        "6.2"
+      ],
       "publications": [
         {
           "publishedAt": "2026-10-24T19:59+03:00",
@@ -204,9 +127,268 @@
             "6.1",
             "6.2"
           ]
+        },
+        {
+          "publishedAt": "2026-10-25T20:52+02:00",
+          "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-26-zhovtnya?lang=uk",
+          "queues": [
+            "1.1",
+            "1.2",
+            "2.1",
+            "3.1",
+            "3.2",
+            "4.1",
+            "4.2",
+            "5.1"
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-10-26",
+      "publishedAt": "2026-10-25T20:28+02:00",
+      "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-26-zhovtnya?lang=uk",
+      "verified": true,
+      "queues": {
+        "1.1": {
+          "knownFrom": "00:00",
+          "off": [
+            [
+              "08:00",
+              "10:00"
+            ],
+            [
+              "14:00",
+              "16:00"
+            ],
+            [
+              "20:00",
+              "21:00"
+            ]
+          ]
+        },
+        "1.2": {
+          "knownFrom": "00:00",
+          "off": [
+            [
+              "08:00",
+              "10:00"
+            ],
+            [
+              "14:00",
+              "16:00"
+            ],
+            [
+              "20:00",
+              "21:00"
+            ]
+          ]
+        },
+        "2.1": {
+          "knownFrom": "00:00",
+          "off": [
+            [
+              "08:00",
+              "10:00"
+            ],
+            [
+              "14:00",
+              "16:00"
+            ],
+            [
+              "20:00",
+              "22:00"
+            ]
+          ]
+        },
+        "2.2": {
+          "knownFrom": "00:00",
+          "off": [
+            [
+              "08:00",
+              "10:00"
+            ],
+            [
+              "14:00",
+              "16:00"
+            ],
+            [
+              "20:00",
+              "22:00"
+            ]
+          ]
+        },
+        "3.1": {
+          "knownFrom": "00:00",
+          "off": [
+            [
+              "06:00",
+              "08:00"
+            ],
+            [
+              "12:00",
+              "14:00"
+            ],
+            [
+              "18:00",
+              "20:00"
+            ]
+          ]
+        },
+        "3.2": {
+          "knownFrom": "00:00",
+          "off": [
+            [
+              "12:00",
+              "14:00"
+            ],
+            [
+              "18:00",
+              "20:00"
+            ]
+          ]
+        },
+        "4.1": {
+          "knownFrom": "00:00",
+          "off": [
+            [
+              "10:00",
+              "12:00"
+            ],
+            [
+              "16:00",
+              "18:00"
+            ],
+            [
+              "22:00",
+              "24:00"
+            ]
+          ]
+        },
+        "4.2": {
+          "knownFrom": "00:00",
+          "off": [
+            [
+              "10:00",
+              "12:00"
+            ],
+            [
+              "16:00",
+              "18:00"
+            ],
+            [
+              "22:00",
+              "24:00"
+            ]
+          ]
+        },
+        "5.1": {
+          "knownFrom": "00:00",
+          "off": [
+            [
+              "10:00",
+              "12:00"
+            ],
+            [
+              "16:00",
+              "18:00"
+            ]
+          ]
+        },
+        "5.2": {
+          "knownFrom": "00:00",
+          "off": [
+            [
+              "10:00",
+              "12:00"
+            ],
+            [
+              "16:00",
+              "18:00"
+            ]
+          ]
+        },
+        "6.1": {
+          "knownFrom": "00:00",
+          "off": [
+            [
+              "06:00",
+              "08:00"
+            ],
+            [
+              "12:00",
+              "14:00"
+            ],
+            [
+              "18:00",
+              "20:00"
+            ]
+          ]
+        },
+        "6.2": {
+          "knownFrom": "00:00",
+          "off": [
+            [
+              "06:00",
+              "08:00"
+            ],
+            [
+              "12:00",
+              "14:00"
+            ],
+            [
+              "18:00",
+              "20:00"
+            ]
+          ]
+        }
+      },
+      "revisions": 1,
+      "planFingerprint": "e91cbfa35d4300554da2",
+      "noScheduledOutages": [],
+      "publications": [
+        {
+          "publishedAt": "2026-10-25T20:28+02:00",
+          "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-26-zhovtnya?lang=uk",
+          "queues": [
+            "1.1",
+            "1.2",
+            "2.1",
+            "2.2",
+            "3.1",
+            "3.2",
+            "4.1",
+            "4.2",
+            "5.1",
+            "5.2",
+            "6.1",
+            "6.2"
+          ]
         }
       ]
     }
   ],
-  "changes": []
+  "changes": [
+    {
+      "date": "2026-10-25",
+      "publishedAt": "2026-10-25T20:52+02:00",
+      "detectedAt": "2026-10-25T20:58:39+02:00",
+      "revisionId": "17569c63ba4c047aac00",
+      "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-26-zhovtnya?lang=uk",
+      "queues": [
+        "1.1",
+        "1.2",
+        "2.1",
+        "2.2",
+        "3.1",
+        "3.2",
+        "4.1",
+        "4.2",
+        "5.1",
+        "5.2",
+        "6.1",
+        "6.2"
+      ]
+    }
+  ]
 }
