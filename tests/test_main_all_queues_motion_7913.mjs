@@ -53,7 +53,8 @@ test('motion stays accessible and not tied to remote schedule polling',()=>{
  assert.match(js,/feature-off-motionFeedback/);
  assert.match(js,/feature-off-motionInputs/);
  assert.match(js,/lastInteraction>1200/);
- for(const key of motion)assert.ok(css.includes('feature-off-'+key));
+ const graphCss=read('all-queues.css');
+ for(const key of motion)assert.ok((css+graphCss).includes('feature-off-'+key),key+' missing opt-out CSS');
  assert.match(css,/prefers-reduced-motion:reduce/);
  const sw=read('sw.js');
  assert.match(sw,/graph-motion-3/);
