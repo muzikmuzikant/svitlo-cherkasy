@@ -165,3 +165,107 @@ html.feature-off-panelMotion :is(.micro-enter,.micro-panel-in){animation:none!im
 html.feature-off-selectionMotion :is(.all-queues-mode,.all-queues-day,[role="tab"],[aria-pressed]){transition:none!important}
 @keyframes microAccordionReveal{from{opacity:.55;transform:translate3d(0,-5px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
 @media(prefers-reduced-motion:reduce){details[open]>summary+*{animation:none!important}}
+
+
+/* Expanded 7.9.13 motion coverage, measured and interaction-driven.
+   No transitions on layout geometry or periodic schedule/network refresh. */
+:root{--sv-ui-timing:cubic-bezier(.2,.82,.23,1);--sv-ui-fast:175ms;--sv-ui-medium:270ms}
+html:not(.feature-off-animations):not(.feature-off-microMotion)
+ :is(.all-queues-close,.all-queues-export,.all-queues-mode,.all-queues-day,
+     .all-queues-detail-close,.all-queues-group-select,.all-queues-compare-field,
+     .setting-line,.setting-action,.place-card,.quick-place,.inbox-item,
+     .inbox-row-more,.inbox-search-toggle,.nav-item,.day-choice,.sheet-close,
+     .share-preview-close,.share-preview-save,.share-preview-share,
+     .share-preview-copy,.back-btn,.icon-btn,.feature-toggle,.ops-toggle,
+     .office-work-entry,.feedback-action,.filter-chip,.support-category-card,
+     .bottom-sheet-action,[data-admin-tab],.admin-search-result){
+ transition:background-color var(--sv-ui-fast) ease,
+ border-color var(--sv-ui-fast) ease,color var(--sv-ui-fast) ease,
+ box-shadow var(--sv-ui-medium) ease,filter var(--sv-ui-fast) ease,
+ transform var(--sv-ui-medium) var(--sv-ui-timing);
+}
+html:not(.feature-off-animations):not(.feature-off-microMotion)
+ :is(.setting-line,.setting-action,.place-card,.quick-place,.inbox-item,
+     .nav-item,.sheet-close,.share-preview-close,.filter-chip,.ops-toggle,
+     .support-category-card,.admin-search-result,.all-queues-group-select).micro-pressed{
+ transform:translate3d(0,1px,0) scale(.987);
+ filter:brightness(.985);
+}
+html:not(.feature-off-animations):not(.feature-off-motionIcons)
+ :is(.nav-item,.setting-action,.quick-place,.icon-btn,.back-btn,.sheet-close,
+     .inbox-search-toggle,.inbox-row-more,.all-queues-close,.all-queues-entry,
+     .share-preview-close,.setting-line,.feedback-action,.feature-toggle) :is(svg,.lucide,.chevron){
+ transform-origin:center;transition:transform .28s var(--sv-ui-timing),opacity .18s ease,filter .2s ease;
+}
+html:not(.feature-off-animations):not(.feature-off-motionIcons)
+ :is(.nav-item,.setting-action,.icon-btn,.back-btn,.sheet-close,.inbox-search-toggle,
+     .inbox-row-more,.all-queues-close,.share-preview-close,.setting-line).micro-pressed :is(svg,.lucide,.chevron){
+ transform:scale(.88);
+}
+html:not(.feature-off-animations):not(.feature-off-motionIcons)
+ :is(.nav-item,.setting-line,.all-queues-entry,.quick-place,.inbox-filter)
+ :is(svg,.lucide,.chevron){transition:transform .28s var(--sv-ui-timing),color .2s ease}
+html:not(.feature-off-animations):not(.feature-off-motionIcons)
+ :is(.nav-item.active,.nav-item[aria-selected="true"],.setting-line[aria-expanded="true"],.all-queues-entry[aria-expanded="true"])
+ :is(.chevron,.setting-chevron,.all-queues-entry-arrow){transform:translateX(2px)}
+html:not(.feature-off-animations):not(.feature-off-motionInputs)
+ :is(.viewport,main,.admin-dashboard,.ops-workspace) :is(input:not([type="hidden"]),select,textarea){
+ transition:border-color .22s ease,box-shadow .28s var(--sv-ui-timing),
+ background-color .22s ease,color .2s ease,filter .2s ease;
+}
+html:not(.feature-off-animations):not(.feature-off-motionInputs)
+ :is(.viewport,main,.admin-dashboard,.ops-workspace) :is(input,select,textarea):focus-visible{
+ border-color:#508cf0;box-shadow:0 0 0 3px #498cf02b;
+}
+html:not(.feature-off-animations):not(.feature-off-motionInputs)
+ :is(input[type="checkbox"],input[type="radio"],[role="switch"]):not(:disabled){
+ transition:filter .2s ease,box-shadow .25s ease,outline-color .2s ease;
+}
+html:not(.feature-off-animations):not(.feature-off-motionInputs)
+ :is(input[type="checkbox"],input[type="radio"],[role="switch"]).micro-changed{
+ animation:svInputCommitted .26s var(--sv-ui-timing) both;
+}
+@keyframes svInputCommitted{
+ 0%{filter:brightness(1);transform:scale(1)}
+ 46%{filter:brightness(1.09);transform:scale(1.065)}
+ 100%{filter:brightness(1);transform:scale(1)}
+}
+html:not(.feature-off-animations):not(.feature-off-motionFeedback)
+ :is(.micro-status-ack,[role="status"].micro-status-ack,[role="alert"].micro-status-ack){
+ animation:svStatusAck .31s var(--sv-ui-timing) both;
+}
+@keyframes svStatusAck{0%{opacity:.68;filter:brightness(1.12)}100%{opacity:1;filter:brightness(1)}}
+html:not(.feature-off-animations):not(.feature-off-motionLists)
+ :is(.all-queues-detail-panel:not([hidden]),.inbox-filter-popover:not([hidden]),
+     .settings-subpage.is-active,.share-preview-actions:not([hidden])){
+ transition:opacity .26s ease,background-color .26s ease,border-color .26s ease,
+ box-shadow .3s ease;
+}
+html:not(.feature-off-animations):not(.feature-off-selectionMotion)
+ :is(.all-queues-mode,.all-queues-day,.day-choice,.nav-item,.filter-chip,
+     .inbox-filters button,.quick-queue-lookup button,.settings-tab,
+     [data-admin-tab],[role="tab"],[role="radio"]){
+ transition:background-color .22s ease,border-color .22s ease,
+ color .22s ease,box-shadow .28s var(--sv-ui-timing),
+ transform .19s var(--sv-ui-timing);
+}
+html:not(.feature-off-animations):not(.feature-off-selectionMotion)
+ :is(.all-queues-mode,.all-queues-day,.day-choice,.nav-item,.filter-chip,
+     .inbox-filters button,.settings-tab,[data-admin-tab]):active{
+ transform:scale(.972);
+}
+html.svitlo-pointer-input :is(button,a,[role="button"],[role="tab"]):focus-visible{
+ outline:none;box-shadow:none;
+}
+html.svitlo-pointer-input #allQueuesDialog :is(.all-queues-lane,.all-queues-close,.all-queues-mode,.all-queues-day):focus-visible{
+ outline:0;box-shadow:none;
+}
+:root[data-theme="dark"] html:not(.feature-off-animations):not(.feature-off-motionInputs) :is(input,select,textarea):focus-visible{box-shadow:0 0 0 3px #90b9ff40}
+@media(prefers-reduced-motion:reduce){
+ :is(.micro-status-ack,.micro-changed){animation:none!important}
+ :is(.nav-item,.setting-line,.setting-action,.quick-place,.all-queues-mode,
+ .all-queues-day,.inbox-item,.inbox-row-more,.feature-toggle,.place-card,
+ input,select,textarea,svg){transition:none!important}
+}
+html:is(.feature-off-animations,.feature-off-motionInputs) :is(input[type="checkbox"],input[type="radio"],[role="switch"]).micro-changed{animation:none!important}
+html:is(.feature-off-animations,.feature-off-motionFeedback) .micro-status-ack{animation:none!important}
