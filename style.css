@@ -311,6 +311,8 @@ html.feature-off-offlineStatus #offlineChip{display:none!important}
 html.feature-off-scheduleSource #sourceStamp,html.feature-off-scheduleSource #detailUpdated{display:none!important}
 html.feature-off-manualRefresh #syncNow,html.feature-off-manualRefresh #refreshDetail,html.feature-off-manualRefresh #manualRefresh{display:none!important}
 html.feature-off-animations *,html.feature-off-animations *::before,html.feature-off-animations *::after{transition-duration:0ms!important;animation-duration:0ms!important}
+html.feature-off-allQueues #allQueuesDetailOpen{display:none!important}
+html.feature-off-allQueuesExport #allQueuesDialog .all-queues-footer,html.feature-off-sharing #allQueuesDialog .all-queues-footer{display:none!important}
 @media(max-width:420px){.push-invite{padding:16px;gap:12px}.push-invite-art{width:51px;height:51px;border-radius:16px}.push-invite-bell{font-size:25px}.share-preview-head{padding:19px 17px 14px}.share-preview-actions{padding:16px}}
 @media(prefers-reduced-motion:reduce){.push-invite-art{transform:none}}
 

@@ -12,6 +12,8 @@
  const reduced=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)').matches||
   document.documentElement.classList.contains('feature-off-animations');
  const src=()=>window.SvitloAllQueuesSource;
+ const enabled=key=>!document.documentElement.classList.contains('feature-off-'+key);
+ const nowFraction=()=>{const bits=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date());const n=key=>Number(bits.find(b=>b.type===key)?.value||0);return (n('hour')*60+n('minute'))/1440*100};
  const e=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node};
  const dateString=date=>new Intl.DateTimeFormat('uk-UA',{timeZone:'UTC',day:'numeric',month:'long',weekday:'long'}).format(new Date(date+'T12:00:00Z'));
  const weekday=date=>['Нд','Пн','Вт','Ср','Чт','Пт','Сб'][new Date(date+'T12:00:00Z').getUTCDay()];
@@ -37,19 +39,23 @@
  let mode='all',group=1,compare=['1.1','2.1'];
  const partsFor=queue=>math.allDaySegments(src().timeline(selected,queue));
  function drawModes(){
+  if(mode==='groups'&&!enabled('allQueuesGroups'))mode='all';
+  if(mode==='compare'&&!enabled('allQueuesCompare'))mode='all';
   modes.replaceChildren();controls.replaceChildren();
-  for(const [key,title] of [['all','Усі'],['groups','Групи'],['compare','Порівняння']]){
-   const b=e('button','all-queues-mode'+(mode===key?' active':''),title);b.type='button';
-   b.setAttribute('aria-pressed',String(mode===key));
-   b.onclick=()=>{mode=key;selectedCell=null;currentSignature='';render()};modes.append(b);
+  for(const [key,title,feature] of [['all','Усі 12',null],['groups','За групами','allQueuesGroups'],['compare','Порівняння','allQueuesCompare']]){
+   if(feature&&!enabled(feature))continue;
+   const b=e('button','all-queues-mode'+(mode===key?' active':''),title);
+   b.type='button';b.setAttribute('aria-pressed',String(mode===key));
+   b.onclick=()=>{if(mode===key)return;mode=key;selectedCell=null;currentSignature='';render()};
+   modes.append(b);
   }
   if(mode==='groups'){
-   const picker=e('div','all-queues-group-chooser');
-   for(let n=1;n<=6;n++){
-    const b=e('button','all-queues-group-pick'+(group===n?' active':''),'Група '+n);b.type='button';
-    b.setAttribute('aria-pressed',String(group===n));
-    b.onclick=()=>{group=n;selectedCell=null;currentSignature='';render()};picker.append(b);
-   }controls.append(picker);
+   const picker=e('label','all-queues-group-select');picker.append(e('span','','Переглянути'));
+   const select=e('select');select.setAttribute('aria-label','Група відключень');
+   for(let n=1;n<=6;n++)select.append(new Option('Група '+n,String(n)));
+   select.value=String(group);
+   select.onchange=()=>{group=Number(select.value);selectedCell=null;currentSignature='';render()};
+   picker.append(select);controls.append(picker);
   }
   if(mode==='compare'){
    const picker=e('div','all-queues-compare-chooser');
@@ -58,17 +64,15 @@
     const select=e('select');select.setAttribute('aria-label',n?'Друга підчерга':'Перша підчерга');
     for(const q of math.QUEUES)select.append(new Option('Підчерга '+q,q));
     select.value=compare[n];
-    select.onchange=()=>{
-     if(select.value===compare[1-n])compare[1-n]=compare[n];
-     compare[n]=select.value;selectedCell=null;currentSignature='';render();
-    };field.append(select);picker.append(field);
+    select.onchange=()=>{if(select.value===compare[1-n])compare[1-n]=compare[n];compare[n]=select.value;selectedCell=null;currentSignature='';render()};
+    field.append(select);picker.append(field);
    }controls.append(picker);
   }
  }
  function drawDetail(){
   detailPanel.replaceChildren();
   if(!selectedCell){
-   detailPanel.hidden=true;status.textContent='Оберіть підчергу, щоб побачити точні години відключень.';return;
+   detailPanel.hidden=true;status.textContent='Торкніться підчерги для перегляду точних годин.';return;
   }
   const q=selectedCell.queue,parts=partsFor(q),off=intervalText(parts),unknown=parts.some(p=>p.state===-1);
   const head=e('div','all-queues-detail-heading');head.append(e('strong','','Підчерга '+q));
@@ -77,10 +81,13 @@
   const intervals=e('div','all-queues-intervals');
   if(off.length)for(const span of off)intervals.append(e('span','all-queues-interval',span));
   else intervals.append(e('span','all-queues-interval',unknown?'Уточнюється':'Світло весь день'));
-  detailPanel.append(intervals);detailPanel.hidden=false;
+  detailPanel.append(intervals);
+  root.querySelector('.all-queues-lane[data-queue="'+q+'"]')?.after(detailPanel);
+  detailPanel.hidden=false;
   status.textContent='Точні інтервали підчерги '+q+' відкрито нижче графіка.';
  }
  function toggleQueue(queue){
+  if(!enabled('allQueuesDetails'))return;
   selectedCell=selectedCell?.queue===queue?null:{queue};
   for(const lane of root.querySelectorAll('.all-queues-lane')){
    const active=lane.dataset.queue===selectedCell?.queue;lane.classList.toggle('is-selected',active);
@@ -88,13 +95,12 @@
   }drawDetail();
  }
  function axis(){
-  const a=e('div','all-queues-time-scale');
+  const a=e('div','all-queues-time-scale');a.setAttribute('aria-label','Шкала від 00:00 до 24:00');
   for(const h of ['00:00','06:00','12:00','18:00','24:00'])a.append(e('span','',h));
   return a;
  }
  function lane(queue){
-  const parts=math.allDaySegments(src().timeline(selected,queue));
-  const off=intervalText(parts),unknown=parts.some(p=>p.state===-1);
+  const parts=math.allDaySegments(src().timeline(selected,queue)),off=intervalText(parts),unknown=parts.some(p=>p.state===-1);
   const row=e('button','all-queues-lane'+(selectedCell?.queue===queue?' is-selected':''));row.type='button';row.dataset.queue=queue;
   row.setAttribute('aria-expanded',String(selectedCell?.queue===queue));
   const name=e('span','all-queues-lane-name',queue),content=e('span','all-queues-lane-content'),track=e('span','all-queues-lane-track');
@@ -102,15 +108,22 @@
    const seg=e('span','all-queues-lane-segment state-'+(p.state===0?'on':p.state===1?'off':'unknown'));
    seg.style.width=((p.end-p.start)/1440*100).toFixed(5)+'%';track.append(seg);
   }
-  const times=e('span','all-queues-lane-caption',off.length?off.join(' · '):unknown?'Частина годин не підтверджена':'Світло весь день');
-  content.append(track,times);row.append(name,content);
-  row.setAttribute('aria-label','Підчерга '+queue+'. '+(off.length?'Відключення: '+off.join(', '):unknown?'Невідомі години':'Світло весь день')+'. Відкрити деталі');
-  row.onclick=()=>toggleQueue(queue);return row;
+  if(enabled('allQueuesNowMarker')&&selected===src().today()){
+   track.classList.add('has-now-marker');track.style.setProperty('--now-left',nowFraction().toFixed(3)+'%');
+  }
+  content.append(track);
+  if(enabled('allQueuesRowIntervals'))content.append(e('span','all-queues-lane-caption',off.length?off.join(' · '):unknown?'Є непідтверджені години':'Світло весь день'));
+  const meta=e('span','all-queues-lane-meta',unknown?'Уточн.':totalOff(parts)?duration(totalOff(parts)):'0 год');
+  row.append(name,content,meta);
+  row.setAttribute('aria-label','Підчерга '+queue+'. '+(off.length?'Відключення: '+off.join(', '):unknown?'Невідомі години':'Світло весь день')+(enabled('allQueuesDetails')?'. Відкрити деталі':''));
+  row.disabled=!enabled('allQueuesDetails');
+  if(!row.disabled)row.onclick=()=>toggleQueue(queue);
+  return row;
  }
  function groupCard(n){
-  const card=e('section','all-queues-group-card'),h=e('button','all-queues-group-title','Група '+n);h.type='button';
-  h.onclick=()=>{mode='groups';group=n;selectedCell=null;currentSignature='';render()};
-  card.append(h,axis(),lane(n+'.1'),lane(n+'.2'));return card;
+  const card=e('section','all-queues-group-card'),heading=e('h3','all-queues-group-heading');
+  heading.append(e('span','all-queues-group-number',String(n)),e('span','','Група '+n));
+  card.append(heading,lane(n+'.1'),lane(n+'.2'));return card;
  }
  function compareSummary(){
   const card=e('div','all-queues-compare-summary'),a=src().timeline(selected,compare[0]),b=src().timeline(selected,compare[1]);
@@ -146,10 +159,12 @@
    day?'Офіційний графік · '+(day.publishedAt?'опубліковано '+new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Kyiv'}).format(new Date(day.publishedAt)):'публікацію підтверджено'):
    confirmed?'За опублікованим графіком планових відключень немає.':'Немає підтвердженого графіка. Невідомі години позначено сірим.';
   drawModes();
-  const signature=selected+'|'+mode+'|'+group+'|'+compare.join('/')+'|'+math.QUEUES.map(q=>JSON.stringify(math.allDaySegments(src().timeline(selected,q)))).join('|');
+  if(!enabled('allQueuesDetails'))selectedCell=null;
+  const signature=selected+'|'+['allQueuesDetails','allQueuesRowIntervals','allQueuesNowMarker'].map(key=>enabled(key)).join('/')+'|'+mode+'|'+group+'|'+compare.join('/')+'|'+math.QUEUES.map(q=>JSON.stringify(math.allDaySegments(src().timeline(selected,q)))).join('|');
   if(signature===currentSignature&&root.childElementCount)return;
   currentSignature=signature;root.replaceChildren();
   if(mode==='all'||mode==='groups'){
+   root.append(axis());
    for(let n=1;n<=6;n++)if(mode==='all'||n===group)root.append(groupCard(n));
   }else{
    const card=e('section','all-queues-group-card all-queues-compare-card');
@@ -176,7 +191,7 @@
  closeButton.onclick=()=>dismiss();
  window.SvitloSheetMotion?.bind(dialog,()=>dismiss());
  function open(date){
-  if(!src())return;
+  if(!src()||!enabled('allQueues'))return;
   const dates=src().dates();
   selected=math.safeDate(date)&&dates.includes(date)?date:src().today();
   selectedCell=null;currentSignature='';
@@ -252,5 +267,6 @@
  for(const id of ['allQueuesHomeOpen','allQueuesDetailOpen']){
   $(id)?.addEventListener('click',()=>open(id==='allQueuesDetailOpen'?src()?.selectedDate():src()?.today()));
  }
+ window.addEventListener('svitlo:public-config',()=>{currentSignature='';if(dialog.open){if(!enabled('allQueues'))dismiss();else if(!closing)render()}});
  window.SvitloAllQueues={open,refresh:()=>{if(dialog.open&&!closing)render()},model:math};
 })();

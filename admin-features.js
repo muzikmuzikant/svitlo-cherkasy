@@ -5,6 +5,21 @@
  const root=document.getElementById('featuresGrid');if(!root)return;
  const $=id=>document.getElementById(id);
  const groups=[
+ ['Усі підчерги',[
+  ['allQueues','Загальний графік 12 підчерг','Відкривати загальний графік зі сторінки розкладу.'],
+  ['allQueuesGroups','Фільтр за групами','Окремий перегляд однієї з шести груп.'],
+  ['allQueuesCompare','Порівняння підчерг','Зіставляти дві підчерги на одній шкалі.'],
+  ['allQueuesDetails','Деталі підчерги','Точні години після натискання на рядок.'],
+  ['allQueuesRowIntervals','Інтервали в рядках','Показувати всі години під кожною шкалою. За замовчуванням вимкнено.'],
+  ['allQueuesNowMarker','Позначка поточного часу','Поточна година на графіку за сьогодні.'],
+  ['allQueuesExport','Експорт PNG','Кнопка збереження й поширення графіка.']
+ ]],
+ ['Анімації та відгук інтерфейсу',[
+  ['animations','Усі анімації','Загальний перемикач анімацій.'],
+  ['microMotion','Мікроанімації натискань','Реакція кнопок, карток, посилань і перемикачів.'],
+  ['panelMotion','Анімації розкриття','Плавна поява деталей і додаткових секцій.'],
+  ['selectionMotion','Анімації вибору','Переходи між днями, сегментами й рядками.']
+ ]],
  ['Головна та графік',[
   ['tomorrowPreview','Картка «Завтра»','Показувати прогноз на наступний день.'],
   ['quickAddresses','Швидке перемикання адрес','Перемикання адрес одним натисканням на головній.'],
@@ -34,7 +49,6 @@
   ['feedback','Зв’язок із підтримкою','Форма звернення користувачів.'],
   ['addressSearch','Пошук нової адреси','Кнопки додавання та пошуку адрес.'],
   ['offlineStatus','Офлайн-індикатор','Показувати збережений стан без інтернету.'],
-  ['animations','Плавні анімації','Переходи та ефекти інтерфейсу.'],
   ["quickQueueLookup","Швидкий перегляд підчерги","Перегляд без збереження адреси."],
   ["nextChangeCard","Найближча зміна","Картка наступної планової зміни."],
   ["dayShortcuts","Сьогодні та завтра","Кнопки швидкої зміни дня."],
@@ -63,7 +77,7 @@
     const card=make('label','feature-toggle');
     const body=make('span','feature-toggle-copy');
     body.append(make('strong','',title),make('small','',desc));
-    const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.name=key;checkbox.checked=true;
+    const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.name=key;checkbox.checked=key!=='allQueuesRowIntervals';
     checkbox.addEventListener('change',()=>{dirty=true;count();status('Є незбережені зміни. Натисніть «Зберегти функції».')});
     card.append(body,checkbox);grid.append(card);controls.set(key,{checkbox,card,title,desc});
    }
@@ -77,7 +91,7 @@
  }
  function assign(cfg){
   const flags=cfg?.site?.flags||{};
-  controls.forEach(({checkbox},key)=>{checkbox.checked=flags[key]!==false});
+  controls.forEach(({checkbox},key)=>{checkbox.checked=key==='allQueuesRowIntervals'?flags[key]===true:flags[key]!==false});
   for(const [id,value] of [
    ['opsFlagInbox',flags.inbox!==false],['opsFlagSharing',flags.sharing!==false],['opsFlagHelp',flags.help!==false]
   ])if($(id))$(id).checked=value;
