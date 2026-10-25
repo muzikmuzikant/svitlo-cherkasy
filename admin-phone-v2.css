@@ -1,0 +1,128 @@
+/* Svitlo Office mobile mode, loaded AFTER workstation and sidebar fixes. */
+.phone-quick,.phone-drawer-head,.phone-drawer-foot{display:none}
+@media(max-width:760px){
+ body.svitlo-office{background:#f3f6f9!important;overflow-x:clip}
+ body.svitlo-office main{width:100%!important;max-width:100%!important;margin:0!important;padding:0 12px calc(110px + env(safe-area-inset-bottom,0px))!important;overflow:visible!important}
+ body.svitlo-office main>header,body.svitlo-office #adminDashboard>.auth-head{display:none!important}
+ body.svitlo-office #adminDashboard:not([hidden]){display:flex!important;flex-direction:column!important;gap:10px!important;width:100%!important;min-width:0!important}
+ body.svitlo-office #adminDashboard>.office-toolbar{
+ position:sticky!important;top:0!important;z-index:930!important;display:flex!important;
+ flex-wrap:nowrap!important;align-items:center!important;gap:8px!important;
+ width:calc(100% + 24px)!important;max-width:none!important;margin:0 -12px 8px!important;
+ padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 9px!important;
+ min-height:64px!important;background:#fffffffa!important;
+ border:0!important;border-bottom:1px solid #dbe4eb!important;border-radius:0!important;
+ box-shadow:0 4px 15px #142d4310!important}
+ body.svitlo-office .office-toolbar :is(.office-menu-button,.office-search-open,.office-create){
+ display:inline-flex!important;align-items:center;justify-content:center;flex:0 0 44px!important;
+ width:44px!important;min-width:44px!important;max-width:44px!important;height:44px!important;
+ min-height:44px!important;margin:0!important;padding:8px!important;border-radius:12px!important}
+ body.svitlo-office .office-toolbar .office-create{background:#147758!important;border-color:#147758!important}
+ body.svitlo-office .office-toolbar :is(.office-create,.office-search-open)>span,
+ body.svitlo-office .office-toolbar .office-search-open kbd,
+ body.svitlo-office .office-toolbar .office-crumb-parent,
+ body.svitlo-office .office-toolbar .office-top-state{display:none!important}
+ body.svitlo-office .office-toolbar .office-crumbs{display:flex!important;align-items:center;flex:1 1 0!important;min-width:0!important;max-width:none!important;margin:0!important}
+ body.svitlo-office .office-toolbar .office-current-title{
+ font-size:clamp(15px,4vw,19px)!important;font-weight:800!important;line-height:1.3!important;
+ min-width:0;color:#1e3848!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ body.svitlo-office #adminDashboard>[data-admin-panel]:not([hidden]){
+ width:100%!important;max-width:100%!important;min-width:0!important;margin:0 0 4px!important;
+ border-radius:15px!important;padding:14px!important;box-shadow:0 2px 16px #1d40540b!important}
+ body.svitlo-office #adminDashboard>[data-admin-panel] :is(.two,.three,.registry-layout,.ops-edit-layout,.ops-editor-columns,.office-desk-grid,.live-config-grid){grid-template-columns:minmax(0,1fr)!important}
+ body.svitlo-office #adminDashboard>[data-admin-panel] :is(.field,input,select,textarea){min-width:0;max-width:100%;box-sizing:border-box}
+ body.svitlo-office #adminDashboard>[data-admin-panel] :is(input:not([type=checkbox]):not([type=radio]),select,textarea){font-size:16px!important;min-height:44px!important}
+ body.svitlo-office #adminDashboard>[data-admin-panel] button:not(.desk-back){min-height:44px}
+ body.svitlo-office .office-context-actions{width:100%;display:flex;flex-wrap:wrap;gap:8px}
+ body.svitlo-office .office-context-actions button{flex:1 1 125px}
+ body.svitlo-office :is(.registry-list,.control-table-wrap,.analytics-table-wrap){max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+ body.svitlo-office .office-stat-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px}
+ body.svitlo-office .office-stat{min-width:0!important;padding:13px!important}
+ body.svitlo-office .office-stat strong{font-size:23px!important}
+ body.svitlo-office .desk-hub-links{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ body.svitlo-office .phone-quick{display:block;margin:0 0 15px;padding:0 0 15px;border-bottom:1px solid #e3ebf0}
+ body.svitlo-office .phone-quick-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}
+ body.svitlo-office .phone-quick-head small{font-size:10px;color:#168264;font-weight:800;letter-spacing:.09em;text-transform:uppercase}
+ body.svitlo-office .phone-quick-head h2{margin:4px 0 0!important;font-size:21px!important;letter-spacing:-.4px}
+ body.svitlo-office .phone-quick-search{display:grid;place-items:center;min-width:44px;width:44px;height:44px;padding:10px!important;background:#e6f4ed!important;color:#167356!important;border:1px solid #d7e8de!important;border-radius:12px!important}
+ body.svitlo-office .phone-quick-search svg{width:22px;height:22px}
+ body.svitlo-office .phone-quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ body.svitlo-office .phone-quick-item{
+ display:flex;align-items:flex-start;gap:10px;text-align:left!important;min-height:91px!important;
+ width:100%;padding:13px 10px!important;background:white!important;color:#233e51!important;
+ border:1px solid #dde8ed!important;border-radius:14px!important;box-shadow:0 2px 8px #1c4c4510!important}
+ body.svitlo-office .phone-quick-item[hidden]{display:none!important}
+ body.svitlo-office .phone-quick-item:active{transform:scale(.984);background:#eef8f1!important}
+ body.svitlo-office .phone-quick-icon{flex:0 0 34px;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:#e6f4ed;color:#15785b}
+ body.svitlo-office .phone-quick-icon svg{width:20px;height:20px}
+ body.svitlo-office .phone-quick-label{display:grid;gap:5px;flex:1;min-width:0}
+ body.svitlo-office .phone-quick-label strong{font-size:12px;line-height:1.35;font-weight:800;overflow-wrap:anywhere}
+ body.svitlo-office .phone-quick-label small{font-size:10px;line-height:1.35;color:#698093;overflow-wrap:anywhere}
+ body.svitlo-office .office-mobile-dock{
+ position:fixed!important;inset:auto 0 0 0!important;z-index:9600!important;display:grid!important;
+ grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:2px!important;
+ padding:7px max(8px,env(safe-area-inset-right,0px)) calc(7px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))!important;
+ background:#fffffffa!important;border-top:1px solid #dce6ed!important;box-shadow:0 -5px 20px #2b405212!important}
+ body.svitlo-office .office-mobile-dock[hidden],
+ body.svitlo-office.phone-keyboard .office-mobile-dock,
+ body.svitlo-office.office-mobile-nav .office-mobile-dock,
+ body.svitlo-office.desk-ticket-open .office-mobile-dock{display:none!important}
+ body.svitlo-office .office-mobile-dock button{
+ display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px!important;
+ min-height:58px!important;padding:8px 2px!important;font-size:10px!important;line-height:1.1!important;
+ font-weight:750;color:#748596!important;background:transparent!important;border-radius:12px!important}
+ body.svitlo-office .office-mobile-dock button[hidden]{display:none!important}
+ body.svitlo-office .office-mobile-dock button[aria-current="page"]{background:#e8f5ee!important;color:#117352!important}
+ body.svitlo-office .office-mobile-tab-icon{height:23px;display:grid;place-items:center}
+ body.svitlo-office .office-mobile-tab-icon svg{width:23px;height:23px}
+ body.svitlo-office #adminDashboard > nav.admin-tabs{
+ position:fixed!important;inset:0 auto 0 0!important;top:0!important;z-index:9997!important;
+ width:min(350px,89vw)!important;max-width:min(350px,89vw)!important;height:100dvh!important;
+ max-height:100dvh!important;min-height:100dvh!important;display:block!important;
+ margin:0!important;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px calc(env(safe-area-inset-bottom,0px) + 20px)!important;
+ overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior-y:contain;
+ background:#182e42!important;border:0!important;border-radius:0 18px 18px 0!important;
+ transform:translate3d(-105%,0,0)!important;transition:transform 250ms cubic-bezier(.2,.86,.25,1)!important;
+ box-shadow:12px 0 40px #09243c55!important;pointer-events:none}
+ body.svitlo-office.office-mobile-nav #adminDashboard > nav.admin-tabs{transform:translate3d(0,0,0)!important;pointer-events:auto}
+ body.svitlo-office #adminDashboard > nav.admin-tabs > .office-close-nav{display:none!important}
+ body.svitlo-office .phone-drawer-head{display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:-10px;z-index:2;background:#182e42;padding:8px 4px 14px;margin:-4px 0 12px;border-bottom:1px solid #395367}
+ body.svitlo-office .phone-drawer-title{display:grid;gap:2px;color:white}
+ body.svitlo-office .phone-drawer-title small{font-size:9px;color:#66cbaa;font-weight:800;letter-spacing:.12em}
+ body.svitlo-office .phone-drawer-title strong{font-size:22px;line-height:1.2}
+ body.svitlo-office .phone-drawer-title span{font-size:11px;color:#9eb5c5}
+ body.svitlo-office .phone-drawer-close{min-width:44px;min-height:44px;display:grid;place-items:center;padding:10px;background:#2c475d;color:white;border:0;border-radius:12px}
+ body.svitlo-office .phone-drawer-close svg{width:21px;height:21px}
+ body.svitlo-office #adminDashboard > nav.admin-tabs > .control-nav-search{position:sticky;top:70px;z-index:1;background:#182e42;margin:0 0 9px!important;padding:0 0 10px!important}
+ body.svitlo-office #adminDashboard > nav.admin-tabs .control-nav-search input{width:100%;min-height:44px;border-radius:12px!important;font-size:16px!important}
+ body.svitlo-office #adminDashboard > nav.admin-tabs > .control-nav-group{display:block!important;position:relative!important;height:auto!important;min-height:0!important;overflow:visible!important;padding:6px 3px 10px!important;margin-bottom:9px!important;border-bottom:1px solid #2d4559}
+ body.svitlo-office #adminDashboard > nav.admin-tabs > .control-nav-group > button{display:flex!important;align-items:center!important;min-height:46px!important;width:100%!important;max-width:100%!important;margin:2px 0!important;padding:11px 12px!important;line-height:1.35!important;white-space:normal!important}
+ body.svitlo-office #adminDashboard > nav.admin-tabs > .control-nav-group > button[hidden],
+ body.svitlo-office #adminDashboard > nav.admin-tabs > .control-nav-group.office-folded > [data-admin-tab]{display:none!important}
+ body.svitlo-office #adminDashboard > nav.admin-tabs .control-nav-group .office-group-toggle{min-height:38px!important;color:#afc4d2!important;font-size:11px!important;font-weight:800!important}
+ body.svitlo-office .phone-drawer-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:16px;padding:15px 4px 7px;border-top:1px solid #3d5568;color:#a9bbca}
+ body.svitlo-office .phone-drawer-exit{min-height:44px!important;background:transparent!important;border:1px solid #70545e!important;color:#f5d8da!important;border-radius:10px!important;padding:8px 11px!important;font-size:12px!important}
+ body.svitlo-office.office-mobile-nav #adminDashboard > .office-nav-scrim{position:fixed!important;inset:0!important;z-index:9996!important;display:block!important;background:#1025389c!important}
+ body.svitlo-office .office-modal{padding:0!important;align-items:flex-end!important}
+ body.svitlo-office .office-modal-panel{width:100%!important;max-width:100%!important;max-height:88dvh!important;border-radius:22px 22px 0 0!important;padding-bottom:env(safe-area-inset-bottom,0px)!important;animation:phoneModalIn 220ms cubic-bezier(.2,.83,.23,1) both}
+ body.svitlo-office .office-modal-head input{min-width:0!important;font-size:16px!important}
+ body.svitlo-office #adminLoginScreen{margin:0 auto!important;padding:calc(env(safe-area-inset-top,0px) + 38px) 0 30px!important}
+ body.svitlo-office #adminLoginScreen .login-card{padding:21px 17px!important;border-radius:16px!important}
+ body.svitlo-office #adminLoginScreen :is(input,button){font-size:16px}
+ body.svitlo-office #adminLoginScreen #connect{min-height:50px}
+}
+@media(max-width:360px){
+ body.svitlo-office .phone-quick-item{padding:11px 9px!important;gap:7px}
+ body.svitlo-office .phone-quick-icon{width:28px;height:28px;flex-basis:28px}
+ body.svitlo-office .phone-quick-label strong{font-size:11px}
+ body.svitlo-office .office-mobile-dock button{font-size:9px!important}
+}
+@keyframes phoneModalIn{from{opacity:.75;transform:translate3d(0,24px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
+@media(max-width:760px) and (orientation:landscape){
+ body.svitlo-office #adminDashboard>.office-toolbar{padding-top:7px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ body.svitlo-office #adminDashboard > nav.admin-tabs,
+ body.svitlo-office .office-modal-panel,
+ body.svitlo-office .phone-quick-item{animation:none!important;transition:none!important}
+}
