@@ -25,7 +25,9 @@ def main():
     assert page.locator('.office-mobile-dock svg').count()>=5,width
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),width
     page.locator('[data-mobile-tab="feedback"]').click()
-    page.wait_for_function("""() => document.querySelector('[data-admin-tab="feedback"]')?.getAttribute('aria-pressed')==='true'""",timeout=5000)
+    # This is a layout-only synthetic projection, not an authenticated session.
+    # The production click handler must keep tabs closed until Railway validates login.
+    assert page.locator('[data-admin-tab="overview"]').get_attribute('aria-pressed')=='true',width
     page.locator('[data-mobile-tab="menu"]').click()
     page.wait_for_function("""() => document.body.classList.contains('office-mobile-nav')""",timeout=3000)
     page.locator('.phone-menu-drawer').wait_for(state='visible',timeout=3000)
