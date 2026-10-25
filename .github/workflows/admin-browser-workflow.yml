@@ -20,6 +20,7 @@ on:
       - 'admin.html'
       - 'push-server/work-registry.js'
       - 'tests/admin_office_browser.py'
+      - 'tests/admin_account_access_browser.py'
       - 'tests/test_admin_work_focus_beta.mjs'
       - 'scripts/build_pages.py'
       - '.github/workflows/admin-browser-workflow.yml'
