@@ -156,7 +156,9 @@ def main():
         page.set_viewport_size({"width":390,"height":844})
         page.locator(".office-menu-button").click()
         assert page.evaluate("document.body.classList.contains('office-mobile-nav')")
-        page.locator('[data-admin-tab="feedback"]').click()
+        page.locator('.phone-menu-drawer').wait_for(state='visible',timeout=3000)
+        assert page.locator('nav.admin-tabs').is_hidden()
+        page.locator('[data-phone-section="feedback"]').click()
         assert not page.evaluate("document.body.classList.contains('office-mobile-nav')")
         page.wait_for_function("document.querySelectorAll('#ticketsList .desk-ticket-row').length===1",timeout=6000)
         assert page.locator("#ticketDetail .desk-detail-tabs button").count()==4
@@ -202,6 +204,11 @@ def main():
                     f"{width}px: workspace clipped in {name}: {result}")
                 audit.append((width,name))
         assert len(audit)==48
+        page.locator('[data-admin-tab="overview"]').evaluate('(element)=>element.click()')
+        page.wait_for_timeout(380)
+        panel_motion=page.evaluate("getComputedStyle(document.querySelector('#adminDashboard > [data-admin-panel=overview]')).animationName")
+        assert panel_motion=='none', 'Admin panel has overlapping CSS animation: '+panel_motion
+        assert page.evaluate('!!window.SvitloMicroMotion')
         assert not errors, "Browser runtime exceptions: "+"; ".join(errors)
         print("Svitlo Office browser passed: workflow, linked tickets, mobile and 24-tab visual sweep.")
         context.close();browser.close()

@@ -16,18 +16,36 @@
   pinned.replaceChildren();
   if(!favorites.length)return;
   pinned.append(node('div','ОБРАНЕ','admin-favorites-kicker'));
-  for(const id of favorites){const t=tabFor(id);if(!t)continue;
+  for(const id of favorites){const t=tabFor(id);if(!t||t.hidden||window.SvitloAdminAccess?.canTab(id)===false)continue;
    const b=node('button',name(t));b.type='button';b.onclick=()=>open(id);pinned.append(b)}
  };
- const icons=node('div',undefined,'admin-favorite-edit');
- for(const tab of tabs){
-  const id=tab.dataset.adminTab;if(!id)continue;
-  const toggle=node('button',favorites.includes(id)?'📌':'📍','admin-fav-star');
-  toggle.type='button';toggle.title='Закріпити розділ «'+name(tab)+'»';
-  toggle.setAttribute('aria-label',toggle.title);
-  toggle.onclick=e=>{e.preventDefault();e.stopPropagation();favorites=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];toggle.textContent=favorites.includes(id)?'📌':'📍';store();renderFavorites()};
-  tab.insertAdjacentElement('afterend',toggle);
+ // Favorite controls belong in their own layout, never inserted as negative-margin
+ // siblings of nav buttons. The old per-row pin buttons caused 31px overlaps.
+ const manager=node('details',undefined,'admin-favorite-manager');
+ const managerLabel=node('summary','Налаштувати обране');
+ const managerContent=node('div',undefined,'admin-favorite-options');
+ manager.append(managerLabel,managerContent);
+ pinned.after(manager);
+ function renderManager(){
+  managerContent.replaceChildren();
+  let count=0;
+  for(const tab of tabs){
+   const id=tab.dataset.adminTab;
+   if(!id||tab.hidden||window.SvitloAdminAccess?.canTab(id)===false)continue;
+   count++;
+   const line=node('label',undefined,'admin-favorite-option');
+   const check=node('input');check.type='checkbox';check.checked=favorites.includes(id);
+   check.setAttribute('aria-label','Додати до обраного: '+name(tab));
+   check.addEventListener('change',()=>{
+    favorites=check.checked?[...new Set([...favorites,id])]:favorites.filter(x=>x!==id);
+    store();renderFavorites();
+   });
+   line.append(check,node('span',name(tab)));managerContent.append(line);
+  }
+  manager.hidden=!count;
  }
+ document.addEventListener('svitlo:admin-ready',()=>{renderFavorites();renderManager()});
+ document.addEventListener('svitlo:admin-logout',()=>{pinned.replaceChildren();managerContent.replaceChildren();manager.hidden=true});
  function searchable(){
   const found=[];
   for(const panel of panels){
@@ -57,5 +75,5 @@
  });
  document.addEventListener('click',event=>{if(!nav.contains(event.target))results.hidden=true});
  input.addEventListener('keydown',e=>{if(e.key==='Escape'){input.value='';results.hidden=true}});
- renderFavorites();
+ renderFavorites();renderManager();
 })();

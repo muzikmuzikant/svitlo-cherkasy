@@ -1,0 +1,17 @@
+{
+  "id": "/admin-app/",
+  "name": "Світло Черкаси | Адмін",
+  "short_name": "Світло Адмін",
+  "description": "Захищена панель керування сервісом Світло Черкаси.",
+  "lang": "uk",
+  "dir": "ltr",
+  "start_url": "/admin-app/",
+  "scope": "/admin-app/",
+  "display": "standalone",
+  "background_color": "#f6f8fc",
+  "theme_color": "#f6f8fc",
+  "icons": [
+    {"src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}

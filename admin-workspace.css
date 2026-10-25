@@ -1,1 +1,27 @@
-.control-nav-search{position:relative}.admin-search-results{position:absolute;left:0;top:100%;width:min(340px,80vw);max-height:50vh;overflow:auto;z-index:45;border-radius:14px;padding:8px;background:white;box-shadow:0 16px 55px #0d2b5250;border:1px solid #dfe8f4}.admin-search-results[hidden]{display:none}.admin-search-result{display:grid;gap:4px;width:100%;text-align:left;border:0;padding:12px;background:transparent;color:#213957;border-radius:9px;cursor:pointer}.admin-search-result:hover{background:#eff5ff}.admin-search-result strong{font-size:12px;line-height:1.4}.admin-search-result small{color:#7d8ca3;font-size:11px}.admin-favorites{display:grid;gap:3px;padding:9px 4px}.admin-favorites:empty{display:none}.admin-favorites-kicker{letter-spacing:.1em;font-size:10px;color:#8797ae;font-weight:800;padding:8px}.admin-favorites>button{width:100%;text-align:left;background:#f0f6ff;color:#2b5ca5;border:0;border-radius:9px;padding:11px;cursor:pointer;font-size:12px;font-weight:700}.admin-fav-star{display:inline-block;vertical-align:middle;margin:-4px 3px -4px -38px;padding:5px;color:#a4b3ca;background:transparent;border:0;cursor:pointer;position:relative;z-index:2;font-size:16px;float:right;opacity:.8}.admin-fav-star:hover{color:#e5ad32}.admin-tabs .admin-fav-star{margin:0 0 -33px auto;display:block;width:36px;height:31px;float:none;transform:translateY(-33px)}@media(max-width:720px){.admin-search-results{position:fixed;left:12px;top:85px;width:calc(100vw - 24px);max-height:65dvh}.admin-tabs .admin-fav-star{width:38px}}
+.control-nav-search{position:relative}.admin-search-results{position:absolute;left:0;top:100%;width:min(340px,80vw);max-height:50vh;overflow:auto;z-index:45;border-radius:14px;padding:8px;background:white;box-shadow:0 16px 55px #0d2b5250;border:1px solid #dfe8f4}.admin-search-results[hidden]{display:none}.admin-search-result{display:grid;gap:4px;width:100%;text-align:left;border:0;padding:12px;background:transparent;color:#213957;border-radius:9px;cursor:pointer}.admin-search-result:hover{background:#eff5ff}.admin-search-result strong{font-size:12px;line-height:1.4}.admin-search-result small{color:#7d8ca3;font-size:11px}.admin-favorites{display:grid;gap:3px;padding:9px 4px}.admin-favorites:empty{display:none}.admin-favorites-kicker{letter-spacing:.1em;font-size:10px;color:#8797ae;font-weight:800;padding:8px}.admin-favorites>button{width:100%;text-align:left;background:#f0f6ff;color:#2b5ca5;border:0;border-radius:9px;padding:11px;cursor:pointer;font-size:12px;font-weight:700}
+/* Favorites are a separate collapsed section, never floating over nav rows. */
+body.svitlo-office #adminDashboard>.admin-tabs>.admin-favorite-manager{
+ display:block;flex:0 0 auto!important;min-height:0!important;position:relative;
+ margin:1px 8px 13px;padding:0;border:1px solid #365267;border-radius:11px;
+ background:#213a4f;color:#d2e6ef;overflow:visible;
+}
+body.svitlo-office #adminDashboard>.admin-tabs>.admin-favorite-manager[hidden]{display:none!important}
+body.svitlo-office .admin-favorite-manager>summary{
+ display:flex;align-items:center;min-height:42px;padding:10px 13px;
+ cursor:pointer;font-size:11px;font-weight:760;color:#d3e5ef;
+ list-style:initial
+}
+body.svitlo-office .admin-favorite-options{
+ max-height:245px;overflow:auto;overscroll-behavior:contain;
+ border-top:1px solid #375366;padding:5px 8px 9px
+}
+body.svitlo-office .admin-favorite-option{
+ display:flex;align-items:center;gap:9px;min-height:42px;line-height:1.3;
+ cursor:pointer;padding:7px 5px;color:#d2e2ec;font-size:12px;font-weight:550
+}
+body.svitlo-office .admin-favorite-option input{
+ width:18px;height:18px;min-width:18px;accent-color:#2eaf82
+}
+@media(max-width:760px){
+ body.svitlo-office #adminDashboard>.admin-tabs>.admin-favorite-manager{display:none!important}
+}
