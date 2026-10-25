@@ -25,7 +25,7 @@ test('all feature switches have real runtime effects and can be searched, saved 
   'help','feedback','addressSearch','pushPrompt','pushSettings','tomorrowPreview',
   'quickAddresses','homePlaces','dailyStats','overviewTimeline','statusCountdown',
   'weekNavigation','dayStats','scheduleLegend','offlineStatus','scheduleSource',
-  'manualRefresh','homeQuickActions','animations','quickQueueLookup','nextChangeCard','dayShortcuts','detailSourceLink','hourlyLabels','inboxMarkAll','inboxClearRead','appUpdateCheck','editAddressFromGraph','syncStatus','settingsFooter','tomorrowOpenShortcut','scheduleOpenShortcut','allQueues','allQueuesGroups','allQueuesCompare','allQueuesDetails','allQueuesRowIntervals','allQueuesNowMarker','allQueuesExport','allQueuesCompact','allQueuesTotals','allQueuesGroupLabels','allQueuesAxis','microMotion','panelMotion','selectionMotion','motionIcons','motionInputs','motionFeedback','motionLists'];
+  'manualRefresh','homeQuickActions','animations','quickQueueLookup','nextChangeCard','dayShortcuts','detailSourceLink','hourlyLabels','inboxMarkAll','inboxClearRead','appUpdateCheck','editAddressFromGraph','syncStatus','settingsFooter','tomorrowOpenShortcut','scheduleOpenShortcut','allQueues','allQueuesGroups','allQueuesCompare','allQueuesDetails','allQueuesRowIntervals','allQueuesNowMarker','allQueuesExport','allQueuesSheetMotion','allQueuesCompact','allQueuesTotals','allQueuesGroupLabels','allQueuesAxis','microMotion','panelMotion','selectionMotion','motionIcons','motionInputs','motionFeedback','motionLists'];
  assert.equal(Object.keys(defaults).length,expected.length);
  for(const key of expected){
   assert.ok(key in defaults,'Config must validate '+key);
