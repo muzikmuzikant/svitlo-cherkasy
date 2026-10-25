@@ -151,3 +151,17 @@ html.feature-off-animations :is(button,.button,.primary-action,.secondary-action
  }
 }
 html.feature-off-animations :where(.viewport,.layout,.wrapper,.shell) :is(button,a,summary,svg,input,select,textarea){transition:none!important}
+
+/* Shared motion coverage without reanimating live schedule polling. */
+:root{--touch-feedback-ease:cubic-bezier(.22,.86,.25,1)}
+html:not(.feature-off-animations):not(.feature-off-microMotion) :is(.setting-line,.place-card,.inbox-item,.feature-toggle,.all-queues-lane,.quick-queue-lookup,.office-work-entry).micro-pressed{transform:translate3d(0,1px,0) scale(.992);filter:brightness(.985);transition:transform .2s var(--touch-feedback-ease),filter .2s ease}
+html:not(.feature-off-animations):not(.feature-off-selectionMotion) :is([role="tab"],[role="radio"],[aria-pressed],.all-queues-mode,.all-queues-day,.inbox-filters button,.calendar-shortcuts button,.filter-chip,.segmented-option,.feature-toggle){transition:background-color .22s ease,border-color .22s ease,color .2s ease,box-shadow .25s ease,transform .2s var(--touch-feedback-ease)}
+html:not(.feature-off-animations):not(.feature-off-selectionMotion) :is(.all-queues-mode,.all-queues-day,.filter-chip,[role="tab"]):active{transform:scale(.965)}
+html:not(.feature-off-animations):not(.feature-off-panelMotion) details[open]>summary+*{animation:microAccordionReveal .27s var(--touch-feedback-ease) both}
+html:not(.feature-off-animations):not(.feature-off-panelMotion) :is(.feature-group,.ops-workspace[data-admin-panel]:not([hidden]),.inbox-filter-popover,.settings-subpage.is-active){transition:background-color .25s ease,border-color .25s ease,box-shadow .25s ease}
+html:not(.feature-off-animations):not(.feature-off-microMotion) :is(.feature-toggle,.setting-line,.place-card,.inbox-item,.office-work-entry):focus-within{transition:background-color .2s ease,box-shadow .25s ease,border-color .2s ease}
+html.feature-off-microMotion .micro-pressed{transform:none!important;filter:none!important}
+html.feature-off-panelMotion :is(.micro-enter,.micro-panel-in){animation:none!important}
+html.feature-off-selectionMotion :is(.all-queues-mode,.all-queues-day,[role="tab"],[aria-pressed]){transition:none!important}
+@keyframes microAccordionReveal{from{opacity:.55;transform:translate3d(0,-5px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
+@media(prefers-reduced-motion:reduce){details[open]>summary+*{animation:none!important}}

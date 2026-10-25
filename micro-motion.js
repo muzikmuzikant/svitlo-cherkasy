@@ -4,6 +4,8 @@
  const root=document.documentElement,doc=document;
  const reduce=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches===true||
   root.classList.contains('feature-off-animations');
+ const microEnabled=()=>!reduce()&&!root.classList.contains('feature-off-microMotion');
+ const panelEnabled=()=>!reduce()&&!root.classList.contains('feature-off-panelMotion');
  const PRESS='button:not(:disabled),a[href],[role="button"],[role="tab"],summary,.place-card,.quick-place,.setting-line,.all-queues-lane';
  const control='input,select,textarea,[role="switch"],[role="checkbox"],[role="radio"]';
  const live='[role="status"],[role="alert"],.toast,.snackbar,.push-state';
@@ -17,7 +19,7 @@
   const old=timers.get(el);if(old){clearTimeout(old);timers.delete(el)}
  }
  function press(el){
-  if(reduce()||!el?.isConnected||el.closest('[hidden],[inert]')||el.matches(':disabled'))return;
+  if(!microEnabled()||!el?.isConnected||el.closest('[hidden],[inert]')||el.matches(':disabled'))return;
   lastInteraction=performance.now();
   el.classList.add('micro-pressed');pressed.add(el);
   const old=timers.get(el);if(old)clearTimeout(old);
@@ -28,17 +30,17 @@
   const el=event.target.closest?.(PRESS);if(el)press(el);
  },{passive:true});
  const clearPress=()=>{for(const el of [...pressed])release(el)};
- // A gesture ends even when the pointer is released outside the original control.
- for(const type of ['pointerup','pointercancel','dragstart','blur'])
-  window.addEventListener(type,clearPress,{passive:true});
+ // Keep the pressed state visible briefly even on a very quick tap.
+ window.addEventListener('pointerup',()=>setTimeout(clearPress,95),{passive:true});
+ for(const type of ['pointercancel','dragstart','blur'])window.addEventListener(type,clearPress,{passive:true});
  doc.addEventListener('keydown',event=>{
-  if(event.repeat||!['Enter',' '].includes(event.key)||reduce())return;
+  if(event.repeat||!['Enter',' '].includes(event.key)||!microEnabled())return;
   const el=event.target.closest?.('button,[role="button"],[role="tab"],summary');
   if(el)press(el);
  });
  doc.addEventListener('keyup',clearPress);
  function acknowledge(el){
-  if(reduce())return;
+  if(!microEnabled())return;
   const token=String(Number(el.dataset.microChangeToken||0)+1);
   el.dataset.microChangeToken=token;
   el.classList.add('micro-changed');
@@ -63,7 +65,7 @@
    }else if(target.matches?.(live))messages.add(target);
   }
   for(const panel of adminPanels){
-   if(panel.hidden||!panel.getClientRects().length)continue;
+   if(!panelEnabled()||panel.hidden||!panel.getClientRects().length)continue;
    const now=performance.now();
    if(now-(lastShown.get(panel)||0)<100)return;
    lastShown.set(panel,now);
@@ -79,7 +81,7 @@
    if(!value||value===messageState.get(element)||!element.isConnected||!element.getClientRects().length)continue;
    messageState.set(element,value);
    // Remote polling and countdowns must update instantly, never blink on their own.
-   if(performance.now()-lastInteraction>1200)continue;
+   if(!microEnabled()||performance.now()-lastInteraction>1200)continue;
    element.animate([{opacity:.72},{opacity:1}],{duration:190,easing:'ease-out'});
   }
  });

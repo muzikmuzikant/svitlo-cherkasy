@@ -42,8 +42,8 @@
   applyPalette();
   document.documentElement.dataset.siteDensity=appearance.density==='compact'?'compact':'comfortable';
   document.documentElement.dataset.siteRounded=appearance.rounded===false?'false':'true';
-  const featureKeys=["inbox","inboxFilters","inboxHistory","sharing","sharePreview","copySchedule","help","feedback","addressSearch","pushPrompt","pushSettings","tomorrowPreview","quickAddresses","homePlaces","dailyStats","overviewTimeline","statusCountdown","weekNavigation","dayStats","scheduleLegend","offlineStatus","scheduleSource","manualRefresh","homeQuickActions","animations","quickQueueLookup","nextChangeCard","dayShortcuts","detailSourceLink","hourlyLabels","inboxMarkAll","inboxClearRead","appUpdateCheck","editAddressFromGraph","syncStatus","settingsFooter","tomorrowOpenShortcut","scheduleOpenShortcut"];
-  for(const key of featureKeys)document.documentElement.classList.toggle('feature-off-'+key,flags[key]===false);
+  const featureKeys=["inbox","inboxFilters","inboxHistory","sharing","sharePreview","copySchedule","help","feedback","addressSearch","pushPrompt","pushSettings","tomorrowPreview","quickAddresses","homePlaces","dailyStats","overviewTimeline","statusCountdown","weekNavigation","dayStats","scheduleLegend","offlineStatus","scheduleSource","manualRefresh","homeQuickActions","animations","quickQueueLookup","nextChangeCard","dayShortcuts","detailSourceLink","hourlyLabels","inboxMarkAll","inboxClearRead","appUpdateCheck","editAddressFromGraph","syncStatus","settingsFooter","tomorrowOpenShortcut","scheduleOpenShortcut","allQueues","allQueuesGroups","allQueuesCompare","allQueuesDetails","allQueuesRowIntervals","allQueuesNowMarker","allQueuesExport","microMotion","panelMotion","selectionMotion"];
+  for(const key of featureKeys)document.documentElement.classList.toggle('feature-off-'+key,key==='allQueuesRowIntervals'?flags[key]!==true:flags[key]===false);
   document.documentElement.dataset.featureConfigLoaded='true';
   const hideInbox=flags.inbox===false,hideShare=flags.sharing===false,hideHelp=flags.help===false;
   document.querySelectorAll('[data-go="updates"]').forEach(button=>{button.hidden=hideInbox});
