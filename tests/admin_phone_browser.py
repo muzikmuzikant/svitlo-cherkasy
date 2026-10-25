@@ -24,6 +24,23 @@ def main():
     assert page.locator('.phone-quick').is_visible(),width
     assert page.locator('.office-mobile-dock svg').count()>=5,width
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),width
+    # Sticky editor save/cancel bars must sit above the fixed bottom dock.
+    savebars=page.evaluate("""() => [
+      ['operations','.ops-bottom'],
+      ['features','.ops-panel-footer'],
+      ['maintenance','.ops-panel-footer'],
+      ['design','.control-panel-actions']
+    ].map(([panel,selector])=>{
+      const el=document.querySelector('[data-admin-panel="'+panel+'"] '+selector);
+      if(!el)return {panel,found:false};
+      const style=getComputedStyle(el);
+      return {panel,found:true,position:style.position,bottom:style.bottom,zIndex:style.zIndex};
+    })""")
+    assert all(x['found'] for x in savebars),(width,savebars)
+    for bar in savebars:
+      assert bar['position']=='sticky',(width,bar)
+      assert bar['bottom']=='84px',(width,bar)
+      assert int(bar['zIndex'])>=9500,(width,bar)
     page.locator('[data-mobile-tab="feedback"]').click()
     # This is a layout-only synthetic projection, not an authenticated session.
     # The production click handler must keep tabs closed until Railway validates login.

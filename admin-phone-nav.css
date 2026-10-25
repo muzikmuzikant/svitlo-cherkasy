@@ -147,3 +147,17 @@ body.svitlo-office .office-pwa-open:hover{background:#105b43}
   box-sizing:border-box!important;min-width:0!important;max-width:100%!important
  }
 }
+
+
+/* Keep sticky save/cancel controls above the fixed five-tab dock in Office PWA.
+   The dock is intentionally not raised over controls: editors must remain usable. */
+@media(max-width:760px){
+ body.svitlo-office [data-admin-panel="operations"] .ops-bottom,
+ body.svitlo-office [data-admin-panel="features"] .ops-panel-footer,
+ body.svitlo-office [data-admin-panel="maintenance"] .ops-panel-footer,
+ body.svitlo-office [data-admin-panel="design"] .control-panel-actions{
+  bottom:calc(84px + env(safe-area-inset-bottom,0px))!important;
+  z-index:9500!important;
+  scroll-margin-bottom:calc(104px + env(safe-area-inset-bottom,0px))!important;
+ }
+}
