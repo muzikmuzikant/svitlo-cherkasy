@@ -56,8 +56,19 @@ def main():
             for tab in ("security","push","operations","media","ads","registry","corrections",
                         "insights","planner","sources","live","features","design","maintenance"):
                 assert page.locator('[data-admin-tab="'+tab+'"]').is_hidden(),tab
+            # On phones the old desktop sidebar is deliberately hidden.
+            # Source tabs still hold authoritative privileges and event handlers.
+            assert page.locator("nav.admin-tabs").is_hidden()
             for tab in ("overview","feedback"):
-                assert page.locator('[data-admin-tab="'+tab+'"]').is_visible(),tab
+                assert page.locator('[data-admin-tab="'+tab+'"]').get_attribute('hidden') is None,tab
+            page.locator('.office-menu-button').click()
+            page.locator('.phone-menu-drawer').wait_for(state="visible",timeout=3000)
+            for tab in ("overview","feedback"):
+                assert page.locator('[data-phone-section="'+tab+'"]').get_attribute('hidden') is None,tab
+            for tab in ("security","push","operations","media","ads","registry","planner"):
+                assert page.locator('[data-phone-section="'+tab+'"]').get_attribute('hidden') is not None,tab
+            page.locator('.phone-menu-close').click()
+            page.wait_for_function("() => !document.body.classList.contains('office-mobile-nav')",timeout=3000)
             assert page.locator("#monitorMetrics").is_hidden()
             assert page.locator(".desk-hub-link[data-admin-target=feedback]").is_visible()
             assert page.locator(".desk-hub-link[data-admin-target=ads]").is_hidden()

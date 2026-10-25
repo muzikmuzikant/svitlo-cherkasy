@@ -25,9 +25,9 @@ def main():
     assert page.locator('.office-mobile-dock svg').count()>=5,width
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),width
     page.locator('[data-mobile-tab="feedback"]').click()
-    assert page.locator('[data-admin-tab="feedback"]').get_attribute('aria-pressed')=='true',width
+    page.wait_for_function("""() => document.querySelector('[data-admin-tab="feedback"]')?.getAttribute('aria-pressed')==='true'""",timeout=5000)
     page.locator('[data-mobile-tab="menu"]').click()
-    assert page.locator('body').evaluate("e=>e.classList.contains('office-mobile-nav')"),width
+    page.wait_for_function("""() => document.body.classList.contains('office-mobile-nav')""",timeout=3000)
     page.locator('.phone-menu-drawer').wait_for(state='visible',timeout=3000)
     assert page.locator('nav.admin-tabs').is_hidden(),width
     page.locator('.phone-menu-toggle').last.click()
@@ -46,7 +46,7 @@ def main():
     assert checks['visible']>=4,(width,checks)
     assert not checks['overlaps'],(width,checks)
     page.locator('.phone-menu-close').click()
-    assert not page.locator('body').evaluate("e=>e.classList.contains('office-mobile-nav')"),width
+    page.wait_for_function("""() => !document.body.classList.contains('office-mobile-nav')""",timeout=3000)
     print('PASS phone PWA',width)
     context.close()
   finally:browser.close()
