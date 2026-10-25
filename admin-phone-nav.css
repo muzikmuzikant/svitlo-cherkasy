@@ -1,3 +1,10 @@
+/* Owner-facing Office PWA link in «Функції». No public feature flag needed. */
+body.svitlo-office .office-pwa-entry{margin:12px 0 18px;padding:17px 18px;border:1px solid #d8e5e6;border-radius:13px;background:#f6fbf9}
+body.svitlo-office .office-pwa-entry-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+body.svitlo-office .office-pwa-entry .feature-toggle-copy{display:grid;gap:5px;min-width:180px;flex:1}
+body.svitlo-office .office-pwa-entry .feature-toggle-copy small{display:block;font-size:12px;color:#5b7680}
+body.svitlo-office .office-pwa-open{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 15px;border-radius:11px;background:#176c51;color:white;text-decoration:none;font-size:13px;font-weight:750}
+body.svitlo-office .office-pwa-open:hover{background:#105b43}
 /* Only phones get their own navigation DOM.
    Desktop sidebar remains unchanged, phone nav never inherits legacy group CSS. */
 .phone-menu-overlay,.phone-menu-drawer{display:none}

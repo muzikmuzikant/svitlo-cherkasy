@@ -139,21 +139,6 @@
   finally{busy=false;$('featuresSave').disabled=false}
  }
  draw();
- // Admin Office is a separately installable PWA, not a public feature flag.
- // Keep its entry in «Функції» without storing a fake switch in Railway config.
- const pwaSection=make('section','feature-group admin-pwa-feature');
- pwaSection.append(make('h3','feature-group-heading','Адмінський PWA'));
- const pwaCard=make('div','feature-toggle');
- pwaCard.style.cssText='display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px';
- const pwaText=make('span','feature-toggle-copy');
- pwaText.append(make('strong','','Окремий застосунок для адміністрації'),
-  make('small','','Власна іконка, окреме встановлення, ті самі дані й права доступу.'));
- const pwaLink=make('a','','Відкрити адмінський PWA');
- pwaLink.href='/admin-app/';
- pwaLink.style.cssText='display:inline-flex;align-items:center;justify-content:center;text-decoration:none;background:#347dff;color:#fff;border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700';
- pwaCard.append(pwaText,pwaLink);
- pwaSection.append(pwaCard,make('p','hint','iPhone: Safari → Поділитися → На початковий екран. Android: меню браузера → Встановити застосунок.'));
- root.before(pwaSection);
  $('featuresSearch').addEventListener('input',()=>{
   const q=$('featuresSearch').value.trim().toLocaleLowerCase('uk-UA');
   controls.forEach(({card,title,desc},key)=>{card.hidden=!!q&&!(title+' '+desc+' '+key).toLocaleLowerCase('uk-UA').includes(q)});

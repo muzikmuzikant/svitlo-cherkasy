@@ -48,8 +48,9 @@ test('Production shares Office code with browser; does not change the customer P
   assert.doesNotMatch(publicPage,new RegExp(file.replaceAll('.','\\.')));
  }
  assert.match(admin,/admin-form-safety-v2\.js/);
- assert.match(read('admin-features.js'),/Адмінський PWA/);
- assert.match(read('admin-features.js'),/pwaLink.href='\/admin-app\/'/);
+ assert.match(admin,/Адмінський PWA/);
+ assert.match(admin,/href="\/admin-app\/" class="office-pwa-open"/);
+ assert.doesNotMatch(read('admin-features.js'),/adminPwa|pwaLink/);
 });
 test('Phone menus preserve role enforcement and cannot store secrets',()=>{
  const nav=read('admin-phone-nav.js'),phone=read('admin-phone-v2.js');
