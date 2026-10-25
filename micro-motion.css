@@ -260,7 +260,7 @@ html.svitlo-pointer-input :is(button,a,[role="button"],[role="tab"]):focus-visib
 html.svitlo-pointer-input #allQueuesDialog :is(.all-queues-lane,.all-queues-close,.all-queues-mode,.all-queues-day):focus-visible{
  outline:0;box-shadow:none;
 }
-:root[data-theme="dark"] html:not(.feature-off-animations):not(.feature-off-motionInputs) :is(input,select,textarea):focus-visible{box-shadow:0 0 0 3px #90b9ff40}
+:root[data-theme="dark"]:not(.feature-off-animations):not(.feature-off-motionInputs) :is(input,select,textarea):focus-visible{box-shadow:0 0 0 3px #90b9ff40}
 @media(prefers-reduced-motion:reduce){
  :is(.micro-status-ack,.micro-changed){animation:none!important}
  :is(.nav-item,.setting-line,.setting-action,.quick-place,.all-queues-mode,
