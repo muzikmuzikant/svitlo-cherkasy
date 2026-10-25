@@ -32,5 +32,5 @@ test('Motion is accessible, opt-out capable, and shell cache is renewed',()=>{
  for(const f of ['microMotion','panelMotion','selectionMotion'])assert.match(css,new RegExp("feature-off-"+f));
  assert.match(js,/prefers-reduced-motion: reduce/);
  assert.match(graph,/@media\(prefers-reduced-motion:reduce\)/);
- assert.match(sw,/production-motion|main-graph-motion/);
+ assert.match(sw,/production-graph-motion/);
 });

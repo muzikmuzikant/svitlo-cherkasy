@@ -18,20 +18,21 @@ test('all admin workspaces are separate destinations, not buried in notification
  assert.match(read('admin-control.css'),/max-width:1680px!important/);
 });
 
-test('25 feature switches have real runtime effects and can be searched, saved and restored',()=>{
+test('all feature switches have real runtime effects and can be searched, saved and restored',()=>{
  const admin=read('admin-features.js'),runtime=read('site-mode.js'),css=read('style.css');
  const defaults=validateAppConfig({maintenance:{title:'Технічні роботи',message:'Ми тимчасово оновлюємо сервіс'},announcements:[]}).site.flags;
  const expected=['inbox','inboxFilters','inboxHistory','sharing','sharePreview','copySchedule',
   'help','feedback','addressSearch','pushPrompt','pushSettings','tomorrowPreview',
   'quickAddresses','homePlaces','dailyStats','overviewTimeline','statusCountdown',
   'weekNavigation','dayStats','scheduleLegend','offlineStatus','scheduleSource',
-  'manualRefresh','homeQuickActions','animations','quickQueueLookup','nextChangeCard','dayShortcuts','detailSourceLink','hourlyLabels','inboxMarkAll','inboxClearRead','appUpdateCheck','editAddressFromGraph','syncStatus','settingsFooter','tomorrowOpenShortcut','scheduleOpenShortcut'];
- assert.equal(Object.keys(defaults).length,38);
+  'manualRefresh','homeQuickActions','animations','quickQueueLookup','nextChangeCard','dayShortcuts','detailSourceLink','hourlyLabels','inboxMarkAll','inboxClearRead','appUpdateCheck','editAddressFromGraph','syncStatus','settingsFooter','tomorrowOpenShortcut','scheduleOpenShortcut','allQueues','allQueuesGroups','allQueuesCompare','allQueuesDetails','allQueuesRowIntervals','allQueuesNowMarker','allQueuesExport','microMotion','panelMotion','selectionMotion'];
+ assert.equal(Object.keys(defaults).length,expected.length);
  for(const key of expected){
   assert.ok(key in defaults,'Config must validate '+key);
   assert.match(admin,new RegExp("['\\x22]"+key+"['\\x22]"),'Admin switch '+key);
   assert.ok(runtime.includes(key),'Live site runtime '+key);
-  assert.ok(css.includes('feature-off-'+key)||read('app.js').includes('feature-off-'+key),'Runtime behavior for toggle '+key);
+  const consumers=[css,read('app.js'),read('all-queues.js'),read('all-queues.css'),read('micro-motion.js'),read('micro-motion.css')];
+  assert.ok(consumers.some(source=>source.includes('feature-off-'+key)||source.includes("enabled('"+key+"')")),'Runtime behavior for toggle '+key);
  }
  assert.match(admin,/api\('app-config'\)/);
  assert.match(admin,/method:'PUT'/);
