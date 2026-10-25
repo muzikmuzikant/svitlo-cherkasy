@@ -46,10 +46,14 @@ def check_forms(page):
         const originalSubmitters=[...form.querySelectorAll('[data-admin-save-action]')];
         if(!originalSubmitters.length)throw Error('Missing safe button '+id);
         if(form.autocomplete!=='off')throw Error('Unexpected autocomplete '+id);
+        // The admin is intentionally not logged in during isolated UI tests:
+        // private API logic disables editors. Enable only local DOM controls.
+        for(const input of form.querySelectorAll('input,select,textarea,button'))input.disabled=false;
         for(const input of form.querySelectorAll('[required]')){
           if(input instanceof HTMLSelectElement){
-            const option=[...input.options].find(x=>x.value&&!x.disabled);
-            if(option)input.value=option.value;
+            let option=[...input.options].find(x=>x.value&&!x.disabled);
+            if(!option){option=new Option('Тестова вулиця','test-street');input.add(option);}
+            input.value=option.value;
           }else if(input.type==='url')input.value='https://example.com/check';
           else input.value='Valid test document';
         }
