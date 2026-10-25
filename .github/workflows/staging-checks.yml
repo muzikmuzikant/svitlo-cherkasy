@@ -32,6 +32,10 @@ jobs:
           assert isinstance(push.get('publicKey',''),str)
           PY
       - run: python scripts/build_pages.py
+      - name: Verify separate Office PWA packaging
+        run: |
+          node --check _site/admin-app/sw.js && node --check _site/admin-app/register.js
+          node --test tests/test_admin_pwa_beta.mjs
       - name: Check staged site output
         run: |
           python - <<'PY'

@@ -6,6 +6,7 @@ import shutil
 import json
 import re
 import hashlib
+from build_admin_icons import build_icons
 
 ROOT=Path(__file__).resolve().parent.parent
 DEST=ROOT/'_site'
@@ -56,6 +57,36 @@ if not (DEST/'apple-touch-icon-v692.png').is_file():
     raise FileNotFoundError('Missing apple-touch-icon-v692.png in published site')
 for folder in ('assets','data'):
     shutil.copytree(ROOT/folder,DEST/folder)
+# The Office PWA has its own URL identity and service worker scope, while all
+# existing admin scripts/styles remain a single shared source of truth.
+office_dest=DEST/'admin-app'
+shutil.copytree(ROOT/'admin-app',office_dest)
+build_icons(office_dest)
+office_manifest_path=office_dest/'manifest.webmanifest'
+office_manifest=json.loads(office_manifest_path.read_text(encoding='utf-8'))
+office_manifest['name']='Світло Черкаси | Адмін'+(' Beta' if release.get('channel')=='beta' else '')
+office_manifest_path.write_text(json.dumps(office_manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+admin_html=(DEST/'admin.html').read_text(encoding='utf-8')
+# <base> keeps every existing ./admin-*.js, stylesheet, page link and API
+# config URL pointing at the published site root when Office opens in /admin-app/.
+admin_html=admin_html.replace('<head>','<head><base href="/">',1)
+admin_html=admin_html.replace('rel="manifest" href="./manifest.webmanifest?v=6.9.2"',
+                              'rel="manifest" href="/admin-app/manifest.webmanifest"',1)
+admin_html=admin_html.replace('rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-v692.png"',
+                              'rel="apple-touch-icon" sizes="180x180" href="/admin-app/icon-180.png"',1)
+admin_html=re.sub(r'<link rel="icon"[^>]*>', '', admin_html)
+admin_html=admin_html.replace('<title>Svitlo Office · Світло Черкаси</title>',
+                              '<title>Світло Черкаси | Адмін</title>',1)
+admin_html=admin_html.replace('<head><base href="/">',
+    '<head><base href="/"><meta name="apple-mobile-web-app-capable" content="yes">'
+    '<meta name="apple-mobile-web-app-status-bar-style" content="default">'
+    '<meta name="apple-mobile-web-app-title" content="Світло Адмін">'
+    '<meta name="application-name" content="Світло Адмін">'
+    '<meta name="admin-pwa" content="true">'
+    '<link rel="icon" type="image/svg+xml" href="/admin-app/icon.svg">'
+    '<link rel="icon" type="image/png" sizes="192x192" href="/admin-app/icon-192.png">',1)
+admin_html=admin_html.replace('</head>','<script defer src="/admin-app/register.js"></script></head>',1)
+(office_dest/'index.html').write_text(admin_html,encoding='utf-8')
 # User-owned public configuration and custom domain must survive the release build.
 optional_files=('push-config.json',) if release.get('channel') == 'beta' else ('push-config.json','CNAME')
 for optional in optional_files:
