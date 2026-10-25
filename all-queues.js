@@ -187,16 +187,32 @@
   drawDetail();
   if(shouldAnimate){void root.offsetWidth;root.classList.add('aq-user-switch');}
  }
- let afterClose=null;
+ // Closing remains in the top layer until its visible exit transition ends.
+ // A watchdog is only a safety fallback for interrupted CSS animations.
+ const sheetMotionOff=()=>reduced()||!enabled('allQueuesSheetMotion')||!enabled('panelMotion');
+ const SHEET_EXIT_MS=360;
+ let afterClose=null,closeSequence=0;
+ function finishClose(sequence){
+  if(!closing||sequence!==closeSequence)return;
+  if(dialog.open)dialog.close();
+ }
  function dismiss(next){
   if(typeof next==='function')afterClose=next;
   if(!dialog.open||closing)return;
-  if(reduced()){dialog.close();return}
-  closing=true;dialog.classList.add('is-leaving');
-  timer=setTimeout(()=>{timer=null;if(dialog.open)dialog.close()},230);
+  if(sheetMotionOff()){dialog.close();return}
+  closing=true;
+  const sequence=++closeSequence;
+  dialog.classList.add('is-leaving');
+  clearTimeout(timer);
+  timer=setTimeout(()=>finishClose(sequence),SHEET_EXIT_MS+120);
  }
+ dialog.addEventListener('animationend',event=>{
+  if(event.target===dialog&&event.animationName==='allQueuesSheetLeave'&&closing)
+   finishClose(closeSequence);
+ });
  dialog.addEventListener('close',()=>{
-  clearTimeout(timer);timer=null;closing=false;dialog.classList.remove('is-leaving');
+  ++closeSequence;clearTimeout(timer);timer=null;closing=false;
+  dialog.classList.remove('is-leaving');
   const next=afterClose;afterClose=null;if(next)next();
  });
  dialog.addEventListener('cancel',event=>{event.preventDefault();dismiss()});
@@ -208,6 +224,10 @@
   const dates=src().dates();
   selected=math.safeDate(date)&&dates.includes(date)?date:src().today();
   selectedCell=null;currentSignature='';currentDaysSignature='';currentModesSignature='';animateSwitch=false;
+  if(dialog.open&&closing){
+   ++closeSequence;clearTimeout(timer);timer=null;closing=false;
+   dialog.classList.remove('is-leaving');afterClose=null;
+  }
   if(!dialog.open)try{dialog.showModal()}catch(error){console.warn('All queues:',error);return}
   render();
  }
