@@ -1,0 +1,32 @@
+/* Sidebar flow hotfix: loaded LAST to neutralize legacy flex and grid overrides. */
+body.svitlo-office #adminDashboard > nav.admin-tabs{
+ display:block!important;box-sizing:border-box!important;
+ overflow-y:auto!important;overflow-x:hidden!important;
+ overscroll-behavior-y:contain;scroll-padding-block:10px;
+}
+body.svitlo-office #adminDashboard > nav.admin-tabs > .control-nav-group{
+ position:relative!important;display:block!important;box-sizing:border-box!important;
+ width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;
+ overflow:visible!important;padding:2px 3px 5px!important;margin:0 0 12px!important;
+}
+body.svitlo-office #adminDashboard > nav.admin-tabs > .control-nav-group[hidden]{display:none!important}
+body.svitlo-office #adminDashboard > nav.admin-tabs > .control-nav-group > button{
+ position:relative!important;float:none!important;display:flex!important;align-items:center!important;
+ box-sizing:border-box!important;width:100%!important;max-width:100%!important;
+ height:auto!important;min-height:40px!important;margin:2px 0!important;flex:none!important;
+ white-space:normal!important;line-height:1.4!important;
+}
+body.svitlo-office #adminDashboard > nav.admin-tabs > .control-nav-group > .office-group-toggle{
+ min-height:34px!important;margin:0 0 4px!important;
+}
+body.svitlo-office #adminDashboard > nav.admin-tabs > .control-nav-group > button[hidden],
+body.svitlo-office #adminDashboard > nav.admin-tabs > .control-nav-group.office-folded > [data-admin-tab]{display:none!important}
+body.svitlo-office #adminDashboard > nav.admin-tabs > .control-nav-group > .office-nav-link > svg{flex:0 0 17px!important}
+body.svitlo-office #adminDashboard > nav.admin-tabs > .control-nav-group > .office-nav-link > span{
+ display:block;flex:1 1 auto!important;min-width:0!important;
+ overflow-wrap:anywhere!important;line-height:1.35!important;
+}
+body.svitlo-office #adminDashboard > nav.admin-tabs > .control-nav-foot{
+ position:relative!important;display:grid!important;height:auto!important;margin:6px 0 0!important;
+}
+@media(max-width:1050px){body.svitlo-office #adminDashboard > nav.admin-tabs{max-height:100dvh!important}}

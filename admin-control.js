@@ -11,6 +11,19 @@
  const fromLocal=value=>value?new Date(value).toISOString():null;
  const local=value=>{if(!value)return '';const d=new Date(value);return Number.isFinite(d.getTime())?new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16):''};
  const now=()=>new Date().toISOString();
+ // datetime-local is a wall clock without a zone. Read and write Kyiv time
+ // even when the administrator's browser is set to a different region.
+ const kyivFormatter=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+ const kyivLocal=value=>{const t=Date.parse(value||'');return Number.isFinite(t)?kyivFormatter.format(new Date(t)).replace(' ','T'):''};
+ function fromKyivLocal(value){
+  if(!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$/.test(value))throw Error('Вкажіть правильну дату й час');
+  const utc=Date.parse(value+':00Z');
+  for(const hourOffset of [2,3]){
+   const iso=new Date(utc-hourOffset*3600000).toISOString();
+   if(kyivLocal(iso)===value)return iso;
+  }
+  throw Error('Цей час не існує в Києві через зміну годинника');
+ }
  const id=()=>('n_'+(crypto.randomUUID?.()||Math.random().toString(36).slice(2)).replaceAll('-',''));
  const target=()=>state?.announcements?.find(n=>n.id===selectedId);
  function status(message,error=false){$('opsMessageStatus').textContent=message;$('opsMessageStatus').className='push-state'+(error?' error':' good')}
@@ -79,6 +92,7 @@
   options('opsNoticeQueue',n?.queue||'all');options('opsNoticeDelivery',n?.delivery||'inbox');options('opsNoticeSettlement',n?.settlement||'');
   options('opsNoticeSchedule',local(n?.scheduledAt));options('opsNoticeExpires',local(n?.expiresAt));
   check('opsNoticeActive',n?.active);check('opsNoticePinned',n?.pinned);
+  options('opsNoticePublishedAt',kyivLocal(n?.publishedAt));$('opsNoticePublishedAt').disabled=!n?.active;
   photos=[...(n?.images||[])];drawPhotos();previewMessage();renderNoticeMetrics();
   document.dispatchEvent(new CustomEvent('svitlo:cms-loaded'));
  }
@@ -361,7 +375,15 @@
   try{await saveConfig({silent:true});status('Повідомлення видалено на сервері. Воно зникне у «Вхідних» під час синхронізації.')}
   catch(e){state=previous;selectedId=deleted;fill();drawList();status('Видалення НЕ виконано: '+e.message,true)}
  };
- $('opsNoticeSearch').oninput=drawList;
+ $('opsNoticePublishedAt').addEventListener('change',()=>{
+   const n=target();if(!n||!n.active)return;
+   try{
+    n.publishedAt=fromKyivLocal($('opsNoticePublishedAt').value);
+    n.updatedAt=now();
+    status('Час публікації виправлено в редакторі. Натисніть «Зберегти», щоб опублікувати зміну.');
+   }catch(e){status(e.message,true);options('opsNoticePublishedAt',kyivLocal(n.publishedAt))}
+  });
+  $('opsNoticeSearch').oninput=drawList;
  $('opsNoticeStatusFilter').onchange=drawList;
  $('opsNoticeSort').onchange=drawList;
  $('opsNoticesExport').onclick=()=>{
