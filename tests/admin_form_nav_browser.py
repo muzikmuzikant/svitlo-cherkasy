@@ -45,7 +45,10 @@ def check_forms(page):
         if(!form)throw Error('Missing admin form '+id);
         const originalSubmitters=[...form.querySelectorAll('[data-admin-save-action]')];
         if(!originalSubmitters.length)throw Error('Missing safe button '+id);
-        if(form.autocomplete!=='off')throw Error('Unexpected autocomplete '+id);
+        if(form.tagName!=='DIV'||!form.matches('[data-admin-editor-group]'))
+           throw Error('Native address form remains: '+id);
+         if([...form.querySelectorAll('input,select,textarea')].some(x=>!['password','hidden'].includes(x.type)&&x.autocomplete!=='off'))
+           throw Error('Address autofill is enabled in '+id);
         // The admin is intentionally not logged in during isolated UI tests:
         // private API logic disables editors. Enable only local DOM controls.
         for(const input of form.querySelectorAll('input,select,textarea,button'))input.disabled=false;
@@ -63,9 +66,10 @@ def check_forms(page):
         },true);
         button.click();
         result.push({id,buttonType:button.type,submitEvents:native,
-          submitted:form.reportValidity(),nativeSubmit:native.includes(true)});
+          submitted:[...form.querySelectorAll('input,select,textarea')].every(x=>x.checkValidity()),nativeSubmit:native.includes(true)});
       }
       const login=document.getElementById('loginForm');
+       if(document.querySelectorAll('form').length!==1||!(login instanceof HTMLFormElement))throw Error('Only login should remain a native form');
       return {result,loginAutocomplete:{
         user:login.querySelector('#adminUsername').autocomplete,
         password:login.querySelector('#password').autocomplete}};
@@ -108,7 +112,7 @@ def main():
                         assert result['buttonType']=='button',result
                         assert result['submitEvents']==[False],result
                         assert result['submitted'] and not result['nativeSubmit'],result
-                    print('PASS: save buttons use synthetic events; native Chrome address-saving cannot trigger')
+                    print('PASS: editor saves avoid native HTML address-form submission')
                     print('PASS: login continues to support browser password manager')
                 print('PASS: navigation has no overlap at',width,'px')
                 ctx.close()
