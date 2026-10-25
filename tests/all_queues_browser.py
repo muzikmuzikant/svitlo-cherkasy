@@ -9,6 +9,8 @@ def main():
    for width in [320,390,590]:
     context=browser.new_context(viewport={"width":width,"height":844},service_workers="block")
     context.add_init_script("""Object.defineProperty(navigator,'standalone',{configurable:true,get:()=>true});
+      localStorage.setItem('svitlo-addresses-v6',JSON.stringify([{id:'queue-test',settlement:'Черкаси',street:'Тестова',house:'1',queue:'1.1',favorite:false}]));
+      localStorage.setItem('svitlo-prefs-v6',JSON.stringify({primaryId:'queue-test'}));
       localStorage.setItem('svitlo-beta-analytics-opt-in','no');
       localStorage.setItem('svitlo-beta-analytics-choice','declined');""")
     context.route("https://**/*",lambda route:route.abort())
