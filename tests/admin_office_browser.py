@@ -156,7 +156,9 @@ def main():
         page.set_viewport_size({"width":390,"height":844})
         page.locator(".office-menu-button").click()
         assert page.evaluate("document.body.classList.contains('office-mobile-nav')")
-        page.locator('[data-admin-tab="feedback"]').click()
+        assert page.locator('.phone-menu-drawer').is_visible()
+        assert page.locator('nav.admin-tabs').is_hidden()
+        page.locator('[data-phone-section="feedback"]').click()
         assert not page.evaluate("document.body.classList.contains('office-mobile-nav')")
         page.wait_for_function("document.querySelectorAll('#ticketsList .desk-ticket-row').length===1",timeout=6000)
         assert page.locator("#ticketDetail .desk-detail-tabs button").count()==4
