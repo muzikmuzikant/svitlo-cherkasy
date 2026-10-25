@@ -122,7 +122,7 @@
  }
  function groupCard(n){
   const card=e('section','all-queues-group-card'),heading=e('h3','all-queues-group-heading');
-  heading.append(e('span','all-queues-group-number',String(n)),e('span','','Група '+n));
+  heading.append(e('span','all-queues-group-number',String(n)),e('span','','Підчерги '+n+'.1 і '+n+'.2'));
   card.append(heading,lane(n+'.1'),lane(n+'.2'));return card;
  }
  function compareSummary(){

@@ -144,7 +144,7 @@ html.feature-off-animations .all-queues-dialog,html.feature-off-animations .all-
 #allQueuesDialog .all-queues-date-block p{margin-top:0;font-size:11px}
 #allQueuesDialog .all-queues-chart{background:transparent;border:0;border-radius:0;padding:0;overflow:visible}
 #allQueuesDialog .all-queues-matrix{gap:0}
-#allQueuesDialog .all-queues-time-scale{margin:0 57px 4px 48px;display:flex;justify-content:space-between;position:sticky;top:0;z-index:3;padding:9px 0 6px;background:var(--aq-paper);color:var(--aq-muted);font-size:10px;font-weight:760}
+#allQueuesDialog .all-queues-time-scale{margin:0 74px 4px 56px;display:flex;justify-content:space-between;position:sticky;top:0;z-index:3;padding:9px 0 6px;background:var(--aq-paper);color:var(--aq-muted);font-size:10px;font-weight:760}
 #allQueuesDialog .all-queues-group-card{border:1px solid var(--aq-edge);border-radius:15px;padding:8px 9px 9px;margin:4px 0 7px;background:var(--aq-paper);box-shadow:0 3px 14px #244b7b0a;min-width:0;animation:allQueuesContentEnter .3s cubic-bezier(.22,.85,.25,1) both}
 #allQueuesDialog .all-queues-group-heading{display:flex;align-items:center;gap:8px;color:var(--aq-ink);font-size:12px;letter-spacing:-.1px;margin:0;padding:3px 3px 7px;font-weight:780}
 #allQueuesDialog .all-queues-group-number{width:21px;height:21px;border-radius:7px;display:grid;place-items:center;background:#e7f0ff;color:#3673cf;font-size:11px;font-variant-numeric:tabular-nums}
@@ -186,6 +186,10 @@ html.feature-off-animations .all-queues-dialog,html.feature-off-animations .all-
 :root[data-theme="dark"] #allQueuesDialog .all-queues-interval{background:#324b66;color:#eef5ff}
 html.feature-off-panelMotion #allQueuesDialog .all-queues-group-card,html.feature-off-panelMotion #allQueuesDialog .all-queues-detail-panel,html.feature-off-panelMotion #allQueuesDialog .all-queues-mode-controls{animation:none!important}
 html.feature-off-selectionMotion #allQueuesDialog :is(.all-queues-mode,.all-queues-day,.all-queues-lane){transition:none!important}
-@media(max-width:370px){#allQueuesDialog .all-queues-lane{grid-template-columns:31px minmax(0,1fr) 43px;gap:5px;padding-inline:3px}#allQueuesDialog .all-queues-time-scale{margin-left:43px;margin-right:49px;font-size:9px}#allQueuesDialog .all-queues-group-card{padding:7px 6px}}
+@media(max-width:370px){#allQueuesDialog .all-queues-lane{grid-template-columns:31px minmax(0,1fr) 43px;gap:5px;padding-inline:3px}#allQueuesDialog .all-queues-time-scale{margin-left:47px;margin-right:59px;font-size:9px}#allQueuesDialog .all-queues-group-card{padding:7px 6px}}
 @media(prefers-reduced-motion:reduce){#allQueuesDialog .all-queues-group-card,#allQueuesDialog .all-queues-detail-panel,#allQueuesDialog .all-queues-mode-controls{animation:none!important}#allQueuesDialog .all-queues-mode,#allQueuesDialog .all-queues-group-select select{transition:none!important}}
 html.feature-off-animations #allQueuesDialog :is(.all-queues-group-card,.all-queues-detail-panel,.all-queues-mode-controls){animation:none!important}
+
+/* Separate offsets when the axis sits inside a comparison card. */
+#allQueuesDialog .all-queues-compare-card .all-queues-time-scale{margin-left:46px;margin-right:64px;position:relative}
+@media(max-width:370px){#allQueuesDialog .all-queues-compare-card .all-queues-time-scale{margin-left:40px;margin-right:52px}}
