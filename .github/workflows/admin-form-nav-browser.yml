@@ -6,10 +6,13 @@ on:
       - 'admin.html'
       - 'admin-form-safety.js'
       - 'admin-office.css'
+      - 'admin-phone-v2.js'
+      - 'admin-phone-v2.css'
       - 'admin-workstation-v3.css'
       - 'scripts/build_pages.py'
       - 'sw.js'
       - 'tests/admin_form_nav_browser.py'
+      - 'tests/admin_phone_browser.py'
       - '.github/workflows/admin-form-nav-browser.yml'
   workflow_dispatch:
 permissions:
@@ -31,3 +34,5 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Test Admin address-autofill prevention and sidebar at desktop tablet mobile widths
         run: python tests/admin_form_nav_browser.py
+      - name: Check phone PWA in Chromium
+        run: python tests/admin_phone_browser.py
