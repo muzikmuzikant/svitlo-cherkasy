@@ -5,7 +5,7 @@ import {validateAppConfig} from '../push-server/app-config.js';
 const read=path=>fs.readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 const layout=['allQueuesCompact','allQueuesTotals','allQueuesGroupLabels','allQueuesAxis'];
-const motion=['motionIcons','motionInputs','motionFeedback','motionLists'];
+const motion=['motionIcons','motionInputs','motionFeedback','motionLists','allQueuesSheetMotion'];
 
 test('every added public feature is editable and persisted by Features in Railway',()=>{
  const admin=read('admin-features.js'),publicClient=read('site-mode.js');
