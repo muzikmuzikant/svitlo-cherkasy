@@ -64,7 +64,12 @@ def main():
      page.locator('.all-queues-mode').filter(has_text='Порівняння').click()
      assert page.locator('#allQueuesMatrix .all-queues-lane').count()==2
      assert page.locator('.all-queues-compare-field select').count()==2
-     assert page.locator('.all-queues-compare-stat').count()==3
+     stats=page.locator('.all-queues-compare-stat').count()
+     if stats==0:
+      # An unpublished day must not fabricate comparison statistics.
+      assert 'Для порівняння потрібні підтверджені графіки' in page.locator('.all-queues-compare-summary').inner_text()
+     else:
+      assert stats==3
      page.locator('#allQueuesClose').click()
      page.wait_for_function("() => !document.querySelector('#allQueuesDialog').open",timeout=6000)
      overflow=page.evaluate('document.documentElement.scrollWidth-innerWidth')
