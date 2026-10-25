@@ -53,3 +53,13 @@ test('Mobile menu is independent of the old overlapping sidebar',()=>{
  assert.match(css,/\.phone-menu-items\[hidden\]\{display:none!important\}/);
  assert.match(css,/\.phone-menu-list\{[\s\S]*?overflow-y:auto/);
 });
+
+test('Favorites no longer overlap the desktop or phone sidebar',()=>{
+ const js=read('admin-workspace.js'),css=read('admin-workspace.css');
+ assert.doesNotMatch(js,/tab\.insertAdjacentElement\('afterend',toggle\)/);
+ assert.doesNotMatch(js,/admin-fav-star/);
+ assert.doesNotMatch(css,/margin:0 0 -33px/);
+ assert.match(js,/admin-favorite-manager/);
+ assert.match(js,/window\.SvitloAdminAccess\?\.canTab\(id\)/);
+ assert.match(css,/flex:0 0 auto!important/);
+});
