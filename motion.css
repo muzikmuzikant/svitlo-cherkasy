@@ -23,17 +23,17 @@
  .svitlo-motion-ready [data-admin-panel]:not([hidden]):not(.motion-panel-no-animate){
   animation:svitloAdminEnter .27s var(--svitlo-ease-out) both;
  }
- .svitlo-motion-ready dialog[open]:not(.inbox-detail):not(.share-preview-dialog):not(.sheet):not(.svitlo-motion-closing){
+ .svitlo-motion-ready dialog[open]:not(.inbox-detail):not(.share-preview-dialog):not(.sheet):not(.all-queues-dialog):not(.svitlo-motion-closing){
   animation:svitloDialogEnter .36s var(--svitlo-ease-out) both;
  }
- .svitlo-motion-ready dialog[open]:not(.share-preview-dialog):not(.sheet):not(.svitlo-motion-closing)::backdrop{
+ .svitlo-motion-ready dialog[open]:not(.share-preview-dialog):not(.sheet):not(.all-queues-dialog):not(.svitlo-motion-closing)::backdrop{
   animation:svitloBackdropEnter .26s ease-out both;
  }
- .svitlo-motion-ready dialog[open].svitlo-motion-closing:not(.inbox-detail):not(.share-preview-dialog):not(.sheet){
+ .svitlo-motion-ready dialog[open].svitlo-motion-closing:not(.inbox-detail):not(.share-preview-dialog):not(.sheet):not(.all-queues-dialog){
   animation:svitloDialogExit .21s var(--svitlo-ease-in) both;
   pointer-events:none;
  }
- .svitlo-motion-ready dialog[open].svitlo-motion-closing:not(.share-preview-dialog):not(.sheet)::backdrop{
+ .svitlo-motion-ready dialog[open].svitlo-motion-closing:not(.share-preview-dialog):not(.sheet):not(.all-queues-dialog)::backdrop{
   animation:svitloBackdropExit .21s ease-in both;
  }
  @keyframes svitloElementAppear{from{opacity:0;transform:translate3d(0,13px,0) scale(.989)}to{opacity:1;transform:translate3d(0,0,0) scale(1)}}
