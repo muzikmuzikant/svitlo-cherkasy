@@ -16,7 +16,7 @@
  const kyivFormatter=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
  const kyivLocal=value=>{const t=Date.parse(value||'');return Number.isFinite(t)?kyivFormatter.format(new Date(t)).replace(' ','T'):''};
  function fromKyivLocal(value){
-  if(!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$/.test(value))throw Error('Вкажіть правильну дату й час');
+  if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))throw Error('Вкажіть правильну дату й час');
   const utc=Date.parse(value+':00Z');
   for(const hourOffset of [2,3]){
    const iso=new Date(utc-hourOffset*3600000).toISOString();
