@@ -156,7 +156,7 @@ def main():
         page.set_viewport_size({"width":390,"height":844})
         page.locator(".office-menu-button").click()
         assert page.evaluate("document.body.classList.contains('office-mobile-nav')")
-        assert page.locator('.phone-menu-drawer').is_visible()
+        page.locator('.phone-menu-drawer').wait_for(state='visible',timeout=3000)
         assert page.locator('nav.admin-tabs').is_hidden()
         page.locator('[data-phone-section="feedback"]').click()
         assert not page.evaluate("document.body.classList.contains('office-mobile-nav')")

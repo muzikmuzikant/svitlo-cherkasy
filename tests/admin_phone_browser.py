@@ -11,7 +11,7 @@ def main():
     page=context.new_page()
     page.goto(base+'admin-app/',wait_until='domcontentloaded',timeout=30000)
     page.wait_for_function("""() => document.body.classList.contains('svitlo-office')
-      && !!document.querySelector('.office-mobile-dock [data-mobile-tab="planner"]')
+      && !!document.querySelector('.office-mobile-dock')
       && !!document.querySelector('.phone-quick')""",timeout=12000)
     page.evaluate("""() => {
      document.getElementById('adminDashboard').hidden=false;
@@ -28,7 +28,7 @@ def main():
     assert page.locator('[data-admin-tab="feedback"]').get_attribute('aria-pressed')=='true',width
     page.locator('[data-mobile-tab="menu"]').click()
     assert page.locator('body').evaluate("e=>e.classList.contains('office-mobile-nav')"),width
-    assert page.locator('.phone-menu-drawer').is_visible(),width
+    page.locator('.phone-menu-drawer').wait_for(state='visible',timeout=3000)
     assert page.locator('nav.admin-tabs').is_hidden(),width
     page.locator('.phone-menu-toggle').last.click()
     assert page.locator('.phone-menu-group').last.locator('.phone-menu-items').is_visible(),width

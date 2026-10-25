@@ -128,3 +128,15 @@
   transition:none!important;animation:none!important
  }
 }
+
+/* A decorative glow used by the desktop login extends 110px outside its
+   container and caused horizontal scrolling on 320px iPhones. */
+@media(max-width:760px){
+ body.svitlo-office #adminLoginScreen::before{display:none!important}
+ body.svitlo-office main{box-sizing:border-box!important;min-width:0!important}
+ body.svitlo-office #adminLoginScreen,
+ body.svitlo-office #adminLoginScreen .login-card,
+ body.svitlo-office #adminLoginScreen .login-password-field{
+  box-sizing:border-box!important;min-width:0!important;max-width:100%!important
+ }
+}
