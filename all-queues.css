@@ -50,14 +50,51 @@
 .all-queues-export{width:100%;display:flex;justify-content:center;align-items:center;gap:10px;min-height:48px;border:0;border-radius:15px;background:#337bec;color:#fff;font-weight:800;font-size:13px;box-shadow:0 5px 14px #3071ce23}
 .all-queues-export svg{height:20px;width:20px}
 .all-queues-export:disabled{opacity:.55}
-.all-queues-dialog[open]:not(.is-leaving){animation:allQueuesEnter .32s cubic-bezier(.22,1,.36,1) both}
-.all-queues-dialog[open]:not(.is-leaving)::backdrop{animation:allQueuesBackdropEnter .3s ease both}
-.all-queues-dialog[open].is-leaving{animation:allQueuesLeave .23s cubic-bezier(.4,0,.8,1) both;pointer-events:none}
-.all-queues-dialog[open].is-leaving::backdrop{animation:allQueuesBackdropLeave .23s ease both}
-@keyframes allQueuesEnter{from{opacity:.2;transform:translateY(26px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes allQueuesLeave{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(20px) scale(.98)}}
+/* This dialog has its own motion lifecycle; generic modal keyframes must NOT win.
+   On iPhone the entire viewport slides in/out, not merely 20px. */
+#allQueuesDialog{
+ --aq-enter-distance:38px;
+ --aq-exit-distance:34px;
+ --aq-enter-scale:.975;
+ --aq-exit-scale:.985;
+}
+html:not(.feature-off-animations):not(.feature-off-panelMotion):not(.feature-off-allQueuesSheetMotion) #allQueuesDialog[open]:not(.is-leaving):not(.svitlo-sheet-gesture):not(.svitlo-sheet-snapping):not(.svitlo-sheet-settled){
+ animation:allQueuesSheetEnter .48s cubic-bezier(.22,1,.36,1) both;
+}
+html:not(.feature-off-animations):not(.feature-off-panelMotion):not(.feature-off-allQueuesSheetMotion) #allQueuesDialog[open]:not(.is-leaving)::backdrop{
+ animation:allQueuesBackdropEnter .42s ease-out both;
+}
+html:not(.feature-off-animations):not(.feature-off-panelMotion):not(.feature-off-allQueuesSheetMotion) #allQueuesDialog[open].is-leaving{
+ animation:allQueuesSheetLeave .36s cubic-bezier(.48,0,.74,.32) both;
+ pointer-events:none;
+}
+html:not(.feature-off-animations):not(.feature-off-panelMotion):not(.feature-off-allQueuesSheetMotion) #allQueuesDialog[open].is-leaving::backdrop{
+ animation:allQueuesBackdropLeave .36s ease-in both;
+}
+@keyframes allQueuesSheetEnter{
+ from{opacity:.72;transform:translate3d(0,var(--aq-enter-distance),0) scale(var(--aq-enter-scale))}
+ to{opacity:1;transform:translate3d(0,0,0) scale(1)}
+}
+@keyframes allQueuesSheetLeave{
+ from{opacity:1;transform:translate3d(0,0,0) scale(1)}
+ to{opacity:.92;transform:translate3d(0,var(--aq-exit-distance),0) scale(var(--aq-exit-scale))}
+}
 @keyframes allQueuesBackdropEnter{from{opacity:0}to{opacity:1}}
 @keyframes allQueuesBackdropLeave{from{opacity:1}to{opacity:0}}
+@media(max-width:600px){
+ #allQueuesDialog{
+  --aq-enter-distance:102%;
+  --aq-exit-distance:104%;
+  --aq-enter-scale:1;
+  --aq-exit-scale:1;
+  transform-origin:bottom center;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ #allQueuesDialog[open],#allQueuesDialog[open]::backdrop{animation:none!important;transition:none!important}
+}
+html:is(.feature-off-animations,.feature-off-panelMotion,.feature-off-allQueuesSheetMotion) #allQueuesDialog[open],
+html:is(.feature-off-animations,.feature-off-panelMotion,.feature-off-allQueuesSheetMotion) #allQueuesDialog[open]::backdrop{animation:none!important;transition:none!important}
 @media(max-width:600px){
  .all-queues-dialog{inset:0;margin:0;width:100%;max-width:100%;height:100dvh;max-height:100dvh;border-radius:0;padding-top:env(safe-area-inset-top);padding-bottom:0}
  .all-queues-handle{display:block;width:37px;height:5px;margin:9px auto 0;border-radius:99px;background:#dce3ef;flex:0 0 5px}
