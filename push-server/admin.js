@@ -3,6 +3,7 @@
  */
 import crypto from 'node:crypto';
 import {originPolicy} from './origins.js';
+import {noticeDisplayTitle} from './notification-copy.js';
 import {validateAppConfig} from './app-config.js';
 import {verifyTotp} from './auth-security.js';
 const PATHS={
@@ -122,26 +123,37 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
  // Every privileged route is checked server-side. Hiding UI controls alone is not security.
  const pathName=url.pathname,method=req.method;
  const custom=session.managed;
+ // A scoped user needs the specific module right for reads AND writes.
  const permission=pathName.startsWith('/api/admin/address-corrections')?'schedules':
+  pathName.startsWith('/api/admin/schedule')||pathName.startsWith('/api/admin/file')?'schedules':
   pathName.startsWith('/api/admin/work-items')?'settings':
   pathName.startsWith('/api/admin/feedback')?'feedback':
   pathName.startsWith('/api/admin/help')?'help':
   pathName.startsWith('/api/admin/ads')?'ads':
   pathName.startsWith('/api/admin/push')?'push':
-  pathName.startsWith('/api/admin/notices')?'notices':
-  pathName.startsWith('/api/admin/file')||pathName.startsWith('/api/admin/schedule')?'schedules':
-  pathName.startsWith('/api/admin/media')?'media':'settings';
- const allowed=custom?(method==='GET'?(pathName==='/api/admin/status'||pathName==='/api/admin/security'||session.permissions.includes('view')||session.permissions.includes(permission)):session.permissions.includes(permission))
+  pathName.startsWith('/api/admin/notices')||pathName.startsWith('/api/admin/app-config')?'notices':
+  pathName.startsWith('/api/admin/media')?'media':
+  /\/(?:analytics|monitor|audit|reports|diagnostics)$/.test(pathName)?'view':
+  pathName.startsWith('/api/admin/security')||pathName.startsWith('/api/admin/users')?'owner':
+  'settings';
+ const privileged=permission==='owner';
+ const canWrite=role==='editor'||role==='owner'||
+  role==='operator'&&permission==='feedback'&&method==='PATCH'&&pathName.startsWith('/api/admin/feedback/');
+ const allowed=custom?
+  (pathName==='/api/admin/status'||(!privileged&&session.permissions.includes(permission)&&
+   (method==='GET'||canWrite)&&
+   (pathName!=='/api/admin/notices/send'||session.permissions.includes('push'))&&
+   !(method==='DELETE'&&pathName.startsWith('/api/admin/feedback/'))))
   :role==='owner'
-  ||role==='viewer'&&method==='GET'
-  ||role==='operator'&&(
-   method==='GET'&&(pathName.startsWith('/api/admin/feedback/attachment/')||/\/api\/admin\/(?:monitor|audit|status|feedback|help|analytics|ads|security|work-items)$/.test(pathName)
-    ||pathName==='/api/admin/push/status')
-   ||method==='PATCH'&&pathName.startsWith('/api/admin/feedback/'))
-  ||role==='editor'&&!(pathName==='/api/admin/push/send'
-   ||pathName==='/api/admin/notices/send'||pathName==='/api/admin/push/test'
-   ||(pathName==='/api/admin/file'&&method!=='GET')
-   ||(pathName.startsWith('/api/admin/feedback/')&&method==='DELETE'));
+   ||role==='viewer'&&method==='GET'&&!privileged
+   ||role==='operator'&&(
+    method==='GET'&&(pathName.startsWith('/api/admin/feedback/attachment/')||/\/api\/admin\/(?:monitor|audit|status|feedback|help|analytics|ads|work-items)$/.test(pathName)
+     ||pathName==='/api/admin/push/status')
+    ||method==='PATCH'&&pathName.startsWith('/api/admin/feedback/'))
+   ||role==='editor'&&!privileged&&!(pathName==='/api/admin/push/send'
+    ||pathName==='/api/admin/notices/send'||pathName==='/api/admin/push/test'
+    ||(pathName==='/api/admin/file'&&method!=='GET')
+    ||(pathName.startsWith('/api/admin/feedback/')&&method==='DELETE'));
  if(!allowed){send(res,403,{error:'Недостатньо прав для цієї дії'});return true}
  try{
    if(pathName==='/api/admin/address-corrections'&&method==='GET'){
@@ -347,7 +359,7 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
      if(entry.scheduledAt&&Date.parse(entry.scheduledAt)>Date.now())throw Error('Повідомлення заплановане на майбутнє');
      if(entry.pushSentAt)throw Error('Push для цього повідомлення вже надсилався');
      if(input.confirmSend!==true)throw Error('Підтвердіть масове надсилання');
-     const outcome=await manualPush.broadcast({title:entry.title,body:entry.body,queue:entry.queue,
+     const outcome=await manualPush.broadcast({title:noticeDisplayTitle(entry),body:entry.body,queue:entry.queue,
        notificationId:'notice:'+entry.id,inbox:entry.delivery!=='push',settlement:entry.settlement||'',confirmSend:true});
      if(outcome.accepted>0)siteControls.markPushed(entry.id);
      extras?.record('push.notice',entry.id);send(res,200,outcome);return true;
@@ -386,7 +398,10 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    if(url.pathname==='/api/admin/help'&&req.method==='PUT'){const result=extras.updateHelp(await readJson(req,70000));send(res,200,result);return true}
    const ghReady=!!GH_TOKEN&&repoValid();
    if(url.pathname==='/api/admin/status'&&req.method==='GET'){
-     send(res,200,{ok:true,repository:ghReady?REPO:null,branch:BRANCH,editingEnabled:true,
+     send(res,200,{ok:true,username:session.username,role,permissions:session.permissions,
+      managed:session.managed,expiresAt:new Date(session.expires).toISOString(),
+      idleUntil:new Date(session.idleUntil).toISOString(),
+      repository:ghReady?REPO:null,branch:BRANCH,editingEnabled:true,
       editable:ghReady?Object.keys(PATHS):['overrides'],storage:'railway',publicOrigin:origin});return true;
    }
    // These edits are persisted in the already attached /data volume. No GitHub token.

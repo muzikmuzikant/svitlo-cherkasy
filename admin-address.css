@@ -14,3 +14,10 @@
 .corr-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:17px}
 .corr-info{border:1px solid #f2ddbd;background:#fff9ec;color:#7f5d23;padding:12px;border-radius:9px;font-size:12px;line-height:1.55}
 @media(max-width:870px){.corr-layout{grid-template-columns:1fr}.corr-list{max-height:260px}.admin-corrections{padding:14px!important}}
+
+/* Address catalog: compact, searchable, mobile-friendly without rendering thousands of rows. */
+.registry-toolbar:has(#corrBrowseTown){display:grid;grid-template-columns:minmax(130px,1fr) minmax(140px,1.4fr) minmax(125px,.8fr);gap:9px;align-items:center}
+.registry-toolbar #corrBrowseTown,.registry-toolbar #corrFilter,.registry-toolbar #corrSearch{min-width:0;width:100%;height:43px;border-radius:11px;border:1px solid #dbe5f2;background:#fff;padding:8px 11px;font-size:12px;color:#314b6e}
+.corr-list{scrollbar-width:thin}.corr-row{transition:background .2s,border-color .2s,transform .2s}.corr-row:active{transform:scale(.99)}
+.corr-more{width:100%;border:1px dashed #a9c7f0;border-radius:11px;background:#edf5ff;padding:13px;color:#2366bc;font-weight:760}
+@media(max-width:720px){.registry-toolbar:has(#corrBrowseTown){grid-template-columns:1fr 1fr}.registry-toolbar #corrSearch{grid-column:1/-1;grid-row:2}.corr-list{max-height:360px}}

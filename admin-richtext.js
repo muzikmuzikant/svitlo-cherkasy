@@ -29,6 +29,7 @@
   }
  }
  function parseMarkdown(text){
+  if(window.SvitloMessageFormat?.render)return window.SvitloMessageFormat.render(visual,text);
   visual.replaceChildren();
   let list=null;
   for(const line of String(text||'').split('\n').slice(0,150)){
@@ -53,6 +54,8 @@
   const inner=Array.from(node.childNodes).map(serializeInline).join('');
   if(name==='BR')return '\n';
   if(name==='STRONG'||name==='B')return '**'+inner+'**';
+  if(name==='EM'||name==='I')return '*'+inner+'*';
+  if(name==='CODE')return '`'+inner.replace(/`/g,'')+'`';
   if(name==='A'){const href=allowedLink(node.getAttribute('href')||'');return href?'['+inner+']('+href+')':inner}
   return inner;
  }
@@ -63,11 +66,14 @@
    if(node.nodeType!==1)continue;
    const tag=node.tagName.toUpperCase();
    if(tag==='UL'||tag==='OL'){
-    for(const li of node.children)result.push('- '+serializeInline(li).replace(/\n/g,' ').trim());
+    for(const [index,li] of Array.from(node.children).entries())result.push((tag==='OL'?(index+1)+'. ':'- ')+serializeInline(li).replace(/\n/g,' ').trim());
    }else if(['H1','H2','H3'].includes(tag))result.push('## '+serializeInline(node).trim());
+   else if(tag==='BLOCKQUOTE')result.push('> '+serializeInline(node).trim());
+   else if(tag==='HR')result.push('---');
+   else if(node.classList.contains('message-space'))result.push('');
    else result.push(serializeInline(node).trim());
   }
-  return result.join('\n').slice(0,6000);
+  return result.join('\n').slice(0,20000);
  }
  let mode='visual',inSync=false;
  function switchMode(next){
@@ -101,8 +107,15 @@
    visual.focus();
    const kind=button.dataset.opsFormat;
    if(kind==='bold')document.execCommand('bold');
+   if(kind==='italic')document.execCommand('italic');
    if(kind==='heading')document.execCommand('formatBlock',false,'h3');
    if(kind==='bullet')document.execCommand('insertUnorderedList');
+   if(kind==='numbered')document.execCommand('insertOrderedList');
+   if(kind==='quote')document.execCommand('formatBlock',false,'blockquote');
+   if(kind==='code'){
+    const selection=window.getSelection();if(selection?.rangeCount){const range=selection.getRangeAt(0),code=document.createElement('code');code.textContent=selection.toString()||'код';range.deleteContents();range.insertNode(code);range.setStartAfter(code);range.collapse(true);selection.removeAllRanges();selection.addRange(range)}
+   }
+   if(kind==='divider')document.execCommand('insertHorizontalRule');
    if(kind==='link'){
     const href=allowedLink(prompt('HTTPS-посилання:')||'');
     if(!href)return;

@@ -11,21 +11,23 @@
  const navCount=$('controlNavigationCount');if(navCount)navCount.textContent=featureButtons.length+' розділів';
  function status(text,bad=false){const el=$('controlServerState');el.textContent=text;el.classList.toggle('is-error',bad)}
  function tabName(tab){const btn=featureButtons.find(b=>b.dataset.adminTab===tab);return btn?.innerText?.trim()||btn?.textContent?.trim()||tab}
- function locate(tab){if(!ensure())return;const btn=featureButtons.find(x=>x.dataset.adminTab===tab);if(!btn)return;btn.click();try{sessionStorage.setItem('svitlo-admin-last-tab',tab)}catch{}
+ function locate(tab){if(!ensure()||window.SvitloAdminAccess?.canTab(tab)===false)return;const btn=featureButtons.find(x=>x.dataset.adminTab===tab);if(!btn)return;btn.click();try{sessionStorage.setItem('svitlo-admin-last-tab',tab)}catch{}
   if(window.matchMedia('(max-width:979px)').matches)document.querySelector('[data-admin-panel="'+tab+'"]')?.scrollIntoView({behavior:'smooth',block:'start'});
  }
  function navSearch(){
   const query=$('controlSearch').value.toLocaleLowerCase('uk-UA').trim();let count=0;
   for(const button of featureButtons){
    const label=button.textContent.toLocaleLowerCase('uk-UA');
-   button.hidden=!!query&&!label.includes(query);
+   button.hidden=window.SvitloAdminAccess?.canTab(button.dataset.adminTab)===false||!!query&&!label.includes(query);
    if(!button.hidden)count++;
   }
   document.querySelectorAll('.control-nav-group').forEach(group=>{
    group.hidden=![...group.querySelectorAll('[data-admin-tab]')].some(x=>!x.hidden);
   });
-  navCount.textContent=query?count+' знайдено':featureButtons.length+' розділів';
+  const label=query?count+' знайдено':count+' доступних розділів';
+  if(navCount.textContent!==label)navCount.textContent=label;
  }
+ document.addEventListener('svitlo:admin-ready',navSearch);
  $('controlSearch').addEventListener('input',navSearch);
  $('controlSearch').addEventListener('keydown',e=>{
   if(e.key==='Enter'){const result=featureButtons.find(x=>!x.hidden);if(result){e.preventDefault();locate(result.dataset.adminTab);$('controlSearch').blur()}}

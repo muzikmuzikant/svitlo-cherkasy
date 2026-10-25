@@ -46,7 +46,7 @@
   data:[['validate','Перевірити дані']],
   audit:[['auditRefresh','Оновити журнал']]
  };
- const open=id=>navigation.querySelector('[data-admin-tab="'+id+'"]')?.click();
+ const open=id=>{if(window.SvitloAdminAccess?.canTab(id)===false)return;navigation.querySelector('[data-admin-tab="'+id+'"]')?.click()};
  const contextByTab=new Map();
  for(const [id,first] of Object.entries(Object.groupBy?Object.groupBy(panels,p=>p.dataset.adminPanel):panels.reduce((o,p)=>{(o[p.dataset.adminPanel]||=[]).push(p);return o},{}))){
   const host=first[0];if(!host)continue;
@@ -134,7 +134,7 @@
   recentList.replaceChildren();
   if(!history.length){recentList.append(node('span','Відкрийте розділ','office-recent-empty'));return}
   for(const id of history){
-   const button=node('button',names[id]||id);button.type='button';
+   const button=node('button',names[id]||id);button.type='button';button.dataset.adminTarget=id;
    button.onclick=()=>{recent.open=false;open(id)};recentList.append(button);
   }
  }

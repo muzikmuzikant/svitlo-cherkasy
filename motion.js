@@ -59,7 +59,7 @@
    dialog.close();
    if(typeof callback==='function')callback();
   };
-  if(reduced()||dialog.matches('.sheet,.share-preview-dialog')){dialog.close();callback?.();return}
+  if(reduced()||dialog.matches('.sheet,.share-preview-dialog,.all-queues-dialog,.inbox-actions-sheet')){dialog.close();callback?.();return}
   if(closingDialogs.has(dialog))return;
   closingDialogs.set(dialog,finish);
   dialog.classList.add('svitlo-motion-closing');
@@ -67,7 +67,7 @@
  }
  // Escape closes new consent dialogs smoothly. Existing sheet/share-preview close logic is left intact.
  document.addEventListener('cancel',event=>{
-  if(!event.target?.matches?.('dialog:not(.sheet):not(.share-preview-dialog)')||reduced())return;
+  if(!event.target?.matches?.('dialog:not(.sheet):not(.share-preview-dialog):not(.all-queues-dialog):not(.inbox-actions-sheet):not(.inbox-detail)')||reduced())return;
   event.preventDefault();
   closeDialog(event.target);
  },true);

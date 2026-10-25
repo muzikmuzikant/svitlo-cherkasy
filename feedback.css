@@ -145,3 +145,6 @@ label{display:block;margin:19px 0 9px;font-size:12px;font-weight:780;color:#344d
 }
 .support-import #lookupForm>*{grid-column:1!important;min-width:0}
 #viewTickets.is-reading .support-import{display:none!important}
+
+/* New required fields configured in the admin must match built-in required marks. */
+.extra-ticket-required{color:#dc354f!important;font-weight:900!important}

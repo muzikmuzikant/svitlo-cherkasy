@@ -171,6 +171,7 @@
     foreground:read('opsPlannedForeground'),accent:read('opsPlannedAccent')},disabledModules};
  }
  function renderFormatted(target,text){
+  if(window.SvitloMessageFormat?.render)return window.SvitloMessageFormat.render(target,text);
   target.replaceChildren();
   for(const line of String(text||'').split('\n').slice(0,70)){
    const trimmed=line.trim(),heading=/^#{1,3}\s+/.test(trimmed),bullet=/^[-*]\s+/.test(trimmed);
@@ -188,7 +189,7 @@
  const fullPreview=document.createElement('dialog');fullPreview.className='ops-full-message-preview';
  fullPreview.id='opsFullMessagePreview';document.body.append(fullPreview);
  $('opsPreviewFull').onclick=()=>{
-  const title=document.createElement('h2');title.textContent=read('opsNoticeTitle')||'Нове повідомлення';
+  const title=document.createElement('h2');title.textContent=displayNoticeTitle()||'Нове повідомлення';
   const body=document.createElement('p');body.textContent=read('opsNoticeBody');
   const rich=document.createElement('div');renderFormatted(rich,read('opsNoticeContent'));
   const images=document.createElement('div');images.className='ops-preview-images';
@@ -198,7 +199,7 @@
   fullPreview.replaceChildren(close,title,body,images,rich);fullPreview.showModal();
  };
  $('opsTestNotice').onclick=async()=>{
-  const title=read('opsNoticeTitle'),body=read('opsNoticeBody');
+  const title=displayNoticeTitle(),body=read('opsNoticeBody');
   if(!title||!body)return status('Заповніть заголовок і короткий текст для тесту.',true);
   try{
    if(!('serviceWorker'in navigator))throw Error('Потрібен встановлений застосунок із Push');
@@ -209,12 +210,16 @@
   }catch(e){status('Тест Push: '+e.message,true)}
  };
 
+ function displayNoticeTitle(){
+  const notice={title:read('opsNoticeTitle'),icon:read('opsNoticeIcon'),kind:read('opsNoticeKind')};
+  const icon=notice.icon||kinds[notice.kind]||'💬';
+  if(!notice.title)return '';
+  return /^\p{Extended_Pictographic}/u.test(notice.title)||notice.title.startsWith(icon)?notice.title:(icon+' '+notice.title).trim();
+ }
  function previewMessage(){
-  $('opsNoticeBodyCount').textContent=$('opsNoticeBody').value.length+' / 500';
-  $('opsNoticeContentCount').textContent=$('opsNoticeContent').value.length+' / 20 000';
-  $('opsEditorPreviewTitle').textContent=read('opsNoticeTitle')||'Заголовок повідомлення';
+  $('opsEditorPreviewTitle').textContent=displayNoticeTitle()||'Заголовок повідомлення';
   $('opsEditorPreviewBody').textContent=read('opsNoticeBody')||'Короткий текст для користувачів';
-  $('opsPreviewPushTitle').textContent=read('opsNoticeTitle')||'Назва сповіщення';
+  $('opsPreviewPushTitle').textContent=displayNoticeTitle()||'Назва сповіщення';
   $('opsPreviewPushBody').textContent=read('opsNoticeBody')||'Текст Push';
   renderFormatted($('opsRichContentPreview'),read('opsNoticeContent'));
  }
@@ -435,7 +440,9 @@
   const noticeChanges=scope==='content'?state.announcements:[...latest.announcements];
   const toPush=noticeChanges.filter(x=>x.active&&['push','both'].includes(x.delivery)&&!x.pushSentAt
    &&(!x.scheduledAt||Date.parse(x.scheduledAt)<=Date.now()));
-  if(toPush.length&&scope==='content'&&!confirm('Надіслати Push для '+toPush.length+' повідомлень?'))throw Error('Розсилку не підтверджено');
+  if(toPush.some(n=>{const icon=n.icon||kinds[n.kind]||'💬';const title=n.title||'';return (/^\p{Extended_Pictographic}/u.test(title)||title.startsWith(icon)?title:icon+' '+title).length>85}))
+    throw Error('Заголовок для Push занадто довгий. Скоротіть його, враховуючи емодзі.');
+   if(toPush.length&&scope==='content'&&!confirm('Надіслати Push для '+toPush.length+' повідомлень?'))throw Error('Розсилку не підтверджено');
   let next;
   if(scope==='maintenance'){
    const old=latest.maintenance?.enabled===true,newOn=$('opsMaintenance').checked;

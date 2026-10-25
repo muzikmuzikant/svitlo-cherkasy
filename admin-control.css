@@ -723,3 +723,11 @@ main{max-width:1840px!important;padding-inline:clamp(16px,2.5vw,46px)}
 .ops-notice-metrics>.hint{font-size:11px;line-height:1.65;margin:14px 0 0}
 @media(max-width:680px){.ops-notice-metrics{padding:14px}.ops-notice-metrics-head{flex-wrap:wrap}.ops-notice-metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:360px){.ops-notice-metrics-grid{grid-template-columns:1fr}}
+
+/* Structured notification content: quote, ordered list, divider and inline code. */
+.ops-visual-editor blockquote,.ops-rich-preview blockquote{margin:12px 0;padding:11px 13px;border-left:3px solid #5791e9;border-radius:0 10px 10px 0;background:#f0f6ff;color:#375475}
+.ops-visual-editor code,.ops-rich-preview code{border-radius:5px;background:#eaf1fd;padding:2px 5px;font-size:.94em}
+.ops-visual-editor hr,.ops-rich-preview hr{border:0;height:1px;background:#d8e5f5;margin:18px 0}
+.ops-rich-preview ul,.ops-rich-preview ol{padding-left:22px;margin:9px 0}.ops-rich-preview li{font-size:12px;line-height:1.55;margin:5px 0;color:#506989}
+.ops-visual-editor .message-space,.ops-rich-preview .message-space{height:8px}
+.ops-text-toolbar{flex-wrap:wrap}

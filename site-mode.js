@@ -138,7 +138,6 @@
    try{maintenanceFocus.focus({preventScroll:true})}catch{}
   }
   maintenanceFocus=null;
-  window.SvitloMaintenanceBackup?.setActive(false);
  }
  function setMaintenanceVisible(visible){
   if(visible){
@@ -147,7 +146,6 @@
    if(overlay.hidden){
     maintenanceFocus=document.activeElement;
     overlay.hidden=false;
-    window.SvitloMaintenanceBackup?.setActive(true);
     document.body.classList.add('svitlo-maintenance-active');
     // Announce the screen without scrolling the page behind it.
     $('maintenanceRefresh')?.focus({preventScroll:true});
@@ -295,7 +293,7 @@
    }
    const response=await fetch(apiBase+'/api/app-config',{cache:'no-store',signal:AbortSignal.timeout(9000)});
    if(!response.ok)throw Error('Public config HTTP '+response.status);
-   const data=await response.json();lastConfig=data;display(data);connectLive();updatePlannedCountdown();window.SvitloMaintenanceBackup?.configure(apiBase);
+   const data=await response.json();lastConfig=data;display(data);connectLive();updatePlannedCountdown();
    success=true;
    if(manual&&status)status.textContent=!timed(data.maintenance)||data.maintenance?.mode==='limited'?'Доступ до застосунку відновлюється.':'Роботи ще тривають. Перевірка успішна.';
   }catch(e){

@@ -1,0 +1,55 @@
+/* Beta 7.9.13: private account identity, scoped navigation, stable session check. */
+.admin-auth-checking #adminLoginScreen{visibility:hidden}
+.admin-auth-checking::after{
+ content:"Перевіряємо захищений сеанс…";position:fixed;inset:0;display:grid;place-items:center;
+ padding:24px;box-sizing:border-box;background:#f4f7fd;color:#47617c;font-size:14px;font-weight:700;z-index:100;
+}
+body.svitlo-office .office-identity{
+ display:flex;align-items:center;gap:10px;min-width:0;max-width:310px;padding:8px 12px;
+ border:1px solid #d8e6f5;background:#f6f9fe;border-radius:13px;
+}
+body.svitlo-office .office-identity-avatar{
+ display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:11px;
+ background:#e3edff;color:#3466ae;font-size:12px;font-weight:850;letter-spacing:.03em;
+}
+body.svitlo-office .office-identity-text{display:grid;gap:2px;min-width:0}
+body.svitlo-office .office-identity-text strong{
+ font-size:13px;line-height:1.1;color:#263c5b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+body.svitlo-office .office-identity-text small{font-size:11px;color:#667f9c}
+body.svitlo-office .office-my-account{
+ display:flex;align-items:center;gap:16px;box-sizing:border-box;padding:16px 18px;margin:12px 0 18px;
+ background:linear-gradient(120deg,#f2f7ff,#fff);border:1px solid #d9e6fa;border-radius:16px;
+}
+body.svitlo-office .office-my-account-icon{
+ display:grid;place-items:center;flex:0 0 43px;width:43px;height:43px;
+ border-radius:13px;background:#e4edff;color:#326bd0;font-size:22px;
+}
+body.svitlo-office .office-my-account>div:last-child{display:grid;gap:3px;min-width:0}
+body.svitlo-office .office-my-account-label{
+ color:#6b81a0;font-size:10px;font-weight:800;letter-spacing:.075em;
+}
+body.svitlo-office .office-my-account-name{
+ font-size:18px;line-height:1.2;overflow-wrap:anywhere;color:#26476d;
+}
+body.svitlo-office .office-my-account-role{margin:0;font-size:12px;color:#597797}
+body.svitlo-office .office-my-account-rights{
+ color:#7b8ca1;font-size:11px;line-height:1.5;overflow-wrap:anywhere;
+}
+body.svitlo-office .admin-tabs [data-admin-tab][hidden],
+body.svitlo-office .control-nav-group[hidden],
+body.svitlo-office [data-admin-target][hidden],
+body.svitlo-office [data-ops-jump][hidden],
+body.svitlo-office .office-recent-list button[hidden] {display:none!important}
+body.svitlo-office .admin-tabs .control-nav-group:has([data-admin-tab]:not([hidden])){min-height:0}
+body.svitlo-office .office-readonly-note{font-size:11px;color:#6b82a2}
+@media(max-width:780px){
+ body.svitlo-office .control-head-actions{flex-wrap:wrap;gap:7px}
+ body.svitlo-office .office-identity{max-width:100%;flex:1 1 200px}
+ body.svitlo-office .office-my-account{padding:13px 14px;gap:11px}
+ body.svitlo-office .office-identity-avatar{width:32px;height:32px}
+}
+@media(max-width:390px){body.svitlo-office .office-identity{flex-basis:100%}}
+@media(prefers-reduced-motion:reduce){
+ body.svitlo-office .office-identity,body.svitlo-office .office-my-account{animation:none!important;transition:none!important}
+}

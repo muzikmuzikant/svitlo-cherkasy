@@ -89,7 +89,7 @@ test('production PWA keeps its identity and disables Beta schedule mirror by def
  const index=repoFile('index.html'),release=JSON.parse(repoFile('release.json'));
  const push=JSON.parse(repoFile('push-config.json'));
  const server=repoFile('push-server/server.js'),source=repoFile('push-server/ads.js');
- assert.equal(release.version,'7.9.12');
+ assert.equal(release.version,'7.9.13');
  assert.equal(release.channel,'production');
  assert.match(index,/data-deployment-channel="production"/);
  assert.doesNotMatch(index,/id="stagingBadge"/);
