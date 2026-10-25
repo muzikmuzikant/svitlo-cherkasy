@@ -32,6 +32,9 @@ export function selectRecipients(subscribers, { queue = 'all', target = 'all', e
 
 export function createManualPush({ subscribers, webpush, appUrl, hash, save, onBroadcast=()=>{} }) {
   const history = new Map();
+  // HTTP publication and scheduled worker share one dispatch per notice ID.
+  // Persisted pushSentAt prevents repeat after a restart.
+  const inFlightNotices=new Map(),completedNotices=new Map();
   const requireCooldown = (action, max, windowMs) => {
     const now = Date.now();
     const recent = (history.get(action) || []).filter(t => now - t < windowMs);
@@ -103,12 +106,24 @@ export function createManualPush({ subscribers, webpush, appUrl, hash, save, onB
     async broadcast(payload) {
       const msg = cleanMessage(payload);
       if (payload.confirmSend !== true) throw Error('Потрібне підтвердження розсилки');
-      const recipients = selectRecipients(subscribers, { queue: msg.queue,settlement:msg.settlement });
-      if (!recipients.length) return { ok: false, attempted: 0, accepted: 0, failed: 0, expired: 0, error: 'Немає підписаних пристроїв для вибраної підчерги.' };
-      requireCooldown('broadcast', 6, 60 * 60_000);
-      const result=await deliver(recipients,msg);
-      if(msg.notificationId)onBroadcast(msg.notificationId,result);
-      return result;
+      const key=msg.notificationId;
+      if(key&&completedNotices.has(key))return {...completedNotices.get(key),deduplicated:true};
+      if(key&&inFlightNotices.has(key))return {...await inFlightNotices.get(key),deduplicated:true};
+      const task=(async()=>{
+        const recipients = selectRecipients(subscribers, { queue: msg.queue,settlement:msg.settlement });
+        if (!recipients.length) return { ok: false, attempted: 0, accepted: 0, failed: 0, expired: 0, error: 'Немає підписаних пристроїв для вибраної підчерги.' };
+        requireCooldown('broadcast', 6, 60 * 60_000);
+        const result=await deliver(recipients,msg);
+        if(key)onBroadcast(key,result);
+        if(key&&result.accepted>0){
+          completedNotices.set(key,result);
+          if(completedNotices.size>100)completedNotices.delete(completedNotices.keys().next().value);
+        }
+        return result;
+      })();
+      if(key)inFlightNotices.set(key,task);
+      try{return await task}
+      finally{if(key&&inFlightNotices.get(key)===task)inFlightNotices.delete(key)}
     }
   };
 }

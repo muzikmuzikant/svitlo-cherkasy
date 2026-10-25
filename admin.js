@@ -267,8 +267,12 @@ $('testPush').onclick=async()=>{
  if(target==='all'&&!confirm('Надіслати тестове повідомлення на ВСІ підписані пристрої?'))return;
  let endpoint='';
  if(target==='mine'){
+   if(location.pathname.startsWith('/admin-app/')){
+    pushResult('«Світло Адмін» має окремий Service Worker і не володіє користувацькою Push-підпискою. Для тесту на власний телефон відкрийте «Світло Черкаси». Масові Push відправляються через Railway.',false);
+    return;
+   }
    try{endpoint=await currentDeviceEndpoint()||''}catch{}
-   if(!endpoint){pushResult('На цьому браузері не знайдено Push-підписку. Відкрийте адмінпанель із встановленого iPhone PWA або оберіть «Усім підписаним пристроям».',false);return}
+   if(!endpoint){pushResult('Цей браузер не має користувацької Push-підписки. Для тесту на власний телефон перевірте Push у PWA «Світло Черкаси».',false);return}
  }
  pushBusy=true;$('testPush').disabled=true;
  try{const result=await api('push/test',{method:'POST',body:JSON.stringify({target,endpoint,confirmAll:target==='all'})});pushResult(deliverySummary(result),result.ok);await refreshPushStatus()}

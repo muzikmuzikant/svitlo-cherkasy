@@ -216,6 +216,7 @@
   const title=displayNoticeTitle(),body=read('opsNoticeBody');
   if(!title||!body)return status('Заповніть заголовок і короткий текст для тесту.',true);
   try{
+   if(location.pathname.startsWith('/admin-app/'))throw Error('«Світло Адмін» має окремий Service Worker без користувацької Push-підписки. Тест на власний пристрій виконується з PWA «Світло Черкаси». Масові Push від адмінки надсилає Railway.');
    if(!('serviceWorker'in navigator))throw Error('Потрібен встановлений застосунок із Push');
    const subscription=await (await navigator.serviceWorker.ready).pushManager.getSubscription();
    if(!subscription?.endpoint)throw Error('На цьому пристрої немає активної Push-підписки');
@@ -412,7 +413,11 @@
    capture();previewMessage();drawList();
    if(['opsNoticeActive','opsNoticePinned'].includes(id)){
     clearTimeout(autoSaveTimer);
-    // Publication/visibility changes must not silently remain in local memory.
+    // A new Push must not go live before explicit owner confirmation.
+    if(state?.announcements?.some(n=>n.active&&!n.pushSentAt&&['both','push'].includes(n.delivery))){
+     status('Push підготовлено. Натисніть «Зберегти», щоб підтвердити надсилання.');
+     return;
+    }
     autoSaveTimer=setTimeout(()=>saveConfig({silent:true}).catch(()=>{}),150);
    }
   });
@@ -464,7 +469,7 @@
    &&(!x.scheduledAt||Date.parse(x.scheduledAt)<=Date.now()));
   if(toPush.some(n=>{const icon=n.icon||kinds[n.kind]||'💬';const title=n.title||'';return (/^\p{Extended_Pictographic}/u.test(title)||title.startsWith(icon)?title:icon+' '+title).length>85}))
     throw Error('Заголовок для Push занадто довгий. Скоротіть його, враховуючи емодзі.');
-   if(toPush.length&&scope==='content'&&!confirm('Надіслати Push для '+toPush.length+' повідомлень?'))throw Error('Розсилку не підтверджено');
+   if(toPush.length&&scope==='content'&&!silent&&!confirm('Надіслати Push для '+toPush.length+' повідомлень?'))throw Error('Розсилку не підтверджено');
   let next;
   if(scope==='maintenance'){
    const old=latest.maintenance?.enabled===true,newOn=$('opsMaintenance').checked;
@@ -481,6 +486,31 @@
    state=saved;serverState=structuredClone(saved);
    fillMaintenance(saved.maintenance);fillSite(saved.site);fill();drawList();previewMaintenance();
    status(silent?'Зміни збережено на сервері.':'Збережено. Зміни опубліковані.');
+   // Inbox publication does not mean that Push was sent. Explicitly dispatch
+   // each confirmed announcement through authenticated Railway after saving.
+   if(scope==='content'&&!silent&&toPush.length){
+    let accepted=0,attempted=0;const failures=[];
+    for(const n of toPush){
+     try{
+      const delivered=await api('notices/send',{method:'POST',body:JSON.stringify({id:n.id,confirmSend:true})});
+      accepted+=Number(delivered.accepted)||0;
+      attempted+=Number(delivered.attempted)||0;
+      if(!delivered.ok)failures.push(n.title+': '+(delivered.error||'жодного Push не прийнято'));
+     }catch(error){
+      // Never retry blindly after an uncertain provider/network response.
+      failures.push(n.title+': '+error.message);
+     }
+    }
+    try{
+     const latestConfig=await api('app-config');
+     state=latestConfig;serverState=structuredClone(latestConfig);
+     fill();drawList();refreshNoticeMetrics().catch(console.warn);
+    }catch(error){failures.push('Не вдалося оновити стан розсилки: '+error.message)}
+    if(failures.length)
+     status('Повідомлення збережено. Push прийнято '+accepted+' із '+attempted+' спроб. Не підтверджено: '+failures.join('; ')+'. Перевірте статус перед повторною спробою.',true);
+    else
+     status('Повідомлення збережено. Push прийнято провайдерами: '+accepted+' із '+attempted+' спроб. Це не підтверджує показ на екрані.');
+   }
    refreshHistory().catch(console.warn);
    try{const channel=new BroadcastChannel('svitlo-content-v1');
     channel.postMessage({type:'REFRESH_APP_CONFIG',at:Date.now()});channel.close()}catch{}
