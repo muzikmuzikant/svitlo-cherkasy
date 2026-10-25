@@ -23,7 +23,7 @@ test('Office saves do not pretend that an Inbox post was pushed',()=>{
 });
 test('One confirmed save calls the private dispatcher then refreshes pushSentAt',async()=>{
  const src=read('admin-control.js');
- const start=src.indexOf('// Saving an Inbox post is NOT a Push delivery.');
+ const start=src.indexOf('// Inbox publication does not mean that Push was sent.');
  const end=src.indexOf('refreshHistory().catch(console.warn);',start);
  assert.ok(start>=0&&end>start);
  const text=src.slice(start,end);
@@ -49,7 +49,7 @@ test('One confirmed save calls the private dispatcher then refreshes pushSentAt'
 });
 test('Zero accepted Push does not get a success state',async()=>{
  const src=read('admin-control.js');
- const start=src.indexOf('// Saving an Inbox post is NOT a Push delivery.');
+ const start=src.indexOf('// Inbox publication does not mean that Push was sent.');
  const end=src.indexOf('refreshHistory().catch(console.warn);',start);
  const messages=[];
  const context={
