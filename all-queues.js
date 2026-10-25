@@ -211,6 +211,9 @@
    finishClose(closeSequence);
  });
  dialog.addEventListener('close',()=>{
+  // The native 'close' event may arrive after a rapid new showModal().
+  // Never let an old close event wipe the next opening session.
+  if(dialog.open)return;
   ++closeSequence;clearTimeout(timer);timer=null;closing=false;
   dialog.classList.remove('is-leaving');
   const next=afterClose;afterClose=null;if(next)next();
@@ -224,7 +227,9 @@
   const dates=src().dates();
   selected=math.safeDate(date)&&dates.includes(date)?date:src().today();
   selectedCell=null;currentSignature='';currentDaysSignature='';currentModesSignature='';animateSwitch=false;
-  if(dialog.open&&closing){
+  if(closing||dialog.classList.contains('is-leaving')){
+   // A closed native dialog may still be waiting to dispatch its 'close'
+   // event. Reset state BEFORE the next showModal, never after.
    ++closeSequence;clearTimeout(timer);timer=null;closing=false;
    dialog.classList.remove('is-leaving');afterClose=null;
   }
