@@ -17,7 +17,11 @@ def main():
     page.on("pageerror",lambda error:errors.append(str(error)))
     page.goto(base,wait_until="domcontentloaded",timeout=30000)
     ready(page)
-    page.locator("#allQueuesHomeOpen").click()
+    # Restored Home has no all-queues shortcut; the viewer opens from Graph.
+    assert page.locator("#allQueuesHomeOpen").count()==0
+    page.locator('.bottom-nav [data-go="detail"]').click()
+    page.wait_for_function("() => !document.querySelector('#detail').hidden",timeout=8000)
+    page.locator("#allQueuesDetailOpen").click()
     page.wait_for_function("() => document.querySelector('#allQueuesDialog')?.open",timeout=8000)
     assert page.locator("#allQueuesDays button").count()==7
     assert page.locator("#allQueuesMatrix .all-queues-lane").count()==12
