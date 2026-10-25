@@ -18,7 +18,7 @@
  const dateString=date=>new Intl.DateTimeFormat('uk-UA',{timeZone:'UTC',day:'numeric',month:'long',weekday:'long'}).format(new Date(date+'T12:00:00Z'));
  const weekday=date=>['Нд','Пн','Вт','Ср','Чт','Пт','Сб'][new Date(date+'T12:00:00Z').getUTCDay()];
  let selected='',closing=false,timer=null,selectedCell=null,busy=false;
- let currentSignature='',expandedToken=0;
+ let currentSignature='',currentDaysSignature='',currentModesSignature='',animateSwitch=false,expandedToken=0;
  function gradient(parts){
   if(parts.length===1&&parts[0].state===-1)
    return 'repeating-linear-gradient(135deg,#dce4ef,#dce4ef 3px,#eff3f8 3px,#eff3f8 6px)';
@@ -42,11 +42,11 @@
   if(mode==='groups'&&!enabled('allQueuesGroups'))mode='all';
   if(mode==='compare'&&!enabled('allQueuesCompare'))mode='all';
   modes.replaceChildren();controls.replaceChildren();
-  for(const [key,title,feature] of [['all','Усі 12',null],['groups','За групами','allQueuesGroups'],['compare','Порівняння','allQueuesCompare']]){
+  for(const [key,title,feature] of [['all','Усі',null],['groups','Групи','allQueuesGroups'],['compare','Порівняти','allQueuesCompare']]){
    if(feature&&!enabled(feature))continue;
    const b=e('button','all-queues-mode'+(mode===key?' active':''),title);
    b.type='button';b.setAttribute('aria-pressed',String(mode===key));
-   b.onclick=()=>{if(mode===key)return;mode=key;selectedCell=null;currentSignature='';render()};
+   b.onclick=()=>{if(mode===key)return;mode=key;selectedCell=null;currentSignature='';animateSwitch=true;render()};
    modes.append(b);
   }
   if(mode==='groups'){
@@ -54,7 +54,7 @@
    const select=e('select');select.setAttribute('aria-label','Група відключень');
    for(let n=1;n<=6;n++)select.append(new Option('Група '+n,String(n)));
    select.value=String(group);
-   select.onchange=()=>{group=Number(select.value);selectedCell=null;currentSignature='';render()};
+   select.onchange=()=>{group=Number(select.value);selectedCell=null;currentSignature='';animateSwitch=true;render()};
    picker.append(select);controls.append(picker);
   }
   if(mode==='compare'){
@@ -64,7 +64,7 @@
     const select=e('select');select.setAttribute('aria-label',n?'Друга підчерга':'Перша підчерга');
     for(const q of math.QUEUES)select.append(new Option('Підчерга '+q,q));
     select.value=compare[n];
-    select.onchange=()=>{if(select.value===compare[1-n])compare[1-n]=compare[n];compare[n]=select.value;selectedCell=null;currentSignature='';render()};
+    select.onchange=()=>{if(select.value===compare[1-n])compare[1-n]=compare[n];compare[n]=select.value;selectedCell=null;currentSignature='';animateSwitch=true;render()};
     field.append(select);picker.append(field);
    }controls.append(picker);
   }
@@ -101,7 +101,7 @@
  }
  function lane(queue){
   const parts=math.allDaySegments(src().timeline(selected,queue)),off=intervalText(parts),unknown=parts.some(p=>p.state===-1);
-  const row=e('button','all-queues-lane'+(selectedCell?.queue===queue?' is-selected':''));row.type='button';row.dataset.queue=queue;
+  const row=e('button','all-queues-lane'+(selectedCell?.queue===queue?' is-selected':'')+(enabled('allQueuesTotals')?'':' no-totals'));row.type='button';row.dataset.queue=queue;
   row.setAttribute('aria-expanded',String(selectedCell?.queue===queue));
   const name=e('span','all-queues-lane-name',queue),content=e('span','all-queues-lane-content'),track=e('span','all-queues-lane-track');
   for(const p of parts){
@@ -114,7 +114,7 @@
   content.append(track);
   if(enabled('allQueuesRowIntervals'))content.append(e('span','all-queues-lane-caption',off.length?off.join(' · '):unknown?'Є непідтверджені години':'Світло весь день'));
   const meta=e('span','all-queues-lane-meta',unknown?'Уточн.':totalOff(parts)?duration(totalOff(parts)):'0 год');
-  row.append(name,content,meta);
+  row.append(name,content);if(enabled('allQueuesTotals'))row.append(meta);
   row.setAttribute('aria-label','Підчерга '+queue+'. '+(off.length?'Відключення: '+off.join(', '):unknown?'Невідомі години':'Світло весь день')+(enabled('allQueuesDetails')?'. Відкрити деталі':''));
   row.disabled=!enabled('allQueuesDetails');
   if(!row.disabled)row.onclick=()=>toggleQueue(queue);
@@ -122,7 +122,7 @@
  }
  function groupCard(n){
   const card=e('section','all-queues-group-card'),heading=e('h3','all-queues-group-heading');
-  heading.append(e('span','all-queues-group-number',String(n)),e('span','','Підчерги '+n+'.1 і '+n+'.2'));
+  heading.append(e('span','all-queues-group-label','Група '+n),e('span','all-queues-group-range',n+'.1 · '+n+'.2'));
   card.append(heading,lane(n+'.1'),lane(n+'.2'));return card;
  }
  function compareSummary(){
@@ -145,11 +145,16 @@
   if(!src()||!dialog.open)return;
   const dates=src().dates();
   if(!dates.includes(selected))selected=dates.includes(src().today())?src().today():dates[0];
-  label.textContent=dateString(selected);dayRow.replaceChildren();
-  for(const date of dates){
-   const b=e('button','all-queues-day'+(date===selected?' active':''),weekday(date));
-   b.type='button';b.setAttribute('aria-label',dateString(date));b.setAttribute('aria-pressed',String(date===selected));
-   b.onclick=()=>{selected=date;selectedCell=null;currentSignature='';render()};dayRow.append(b);
+  label.textContent=dateString(selected);
+  const daysSignature=dates.join(',')+'|'+selected;
+  if(currentDaysSignature!==daysSignature){
+   currentDaysSignature=daysSignature;
+   dayRow.replaceChildren();
+   for(const date of dates){
+    const b=e('button','all-queues-day'+(date===selected?' active':''),weekday(date));
+    b.type='button';b.setAttribute('aria-label',dateString(date));b.setAttribute('aria-pressed',String(date===selected));
+    b.onclick=()=>{if(selected===date)return;selected=date;selectedCell=null;currentSignature='';animateSwitch=true;render()};dayRow.append(b);
+   }
   }
   const day=src().day(selected),confirmed=src().noSchedule(selected),offline=src().offline();
   const source=day?.source||'https://www.cherkasyoblenergo.com/news';
@@ -158,21 +163,29 @@
    'Офлайн: збережені дані могли змінитися. Перевірено: '+(src().lastChecked()||'невідомо'):
    day?'Офіційний графік · '+(day.publishedAt?'опубліковано '+new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Kyiv'}).format(new Date(day.publishedAt)):'публікацію підтверджено'):
    confirmed?'За опублікованим графіком планових відключень немає.':'Немає підтвердженого графіка. Невідомі години позначено сірим.';
-  drawModes();
+  const modeSignature=mode+'|'+group+'|'+compare.join('/')+'|'+['allQueuesGroups','allQueuesCompare'].map(key=>enabled(key)).join('/');
+  if(currentModesSignature!==modeSignature){drawModes();currentModesSignature=modeSignature;}
   if(!enabled('allQueuesDetails'))selectedCell=null;
-  const signature=selected+'|'+['allQueuesDetails','allQueuesRowIntervals','allQueuesNowMarker'].map(key=>enabled(key)).join('/')+'|'+mode+'|'+group+'|'+compare.join('/')+'|'+math.QUEUES.map(q=>JSON.stringify(math.allDaySegments(src().timeline(selected,q)))).join('|');
-  if(signature===currentSignature&&root.childElementCount)return;
-  currentSignature=signature;root.replaceChildren();
+  const signature=selected+'|'+['allQueuesDetails','allQueuesRowIntervals','allQueuesNowMarker','allQueuesCompact','allQueuesTotals','allQueuesGroupLabels','allQueuesAxis'].map(key=>enabled(key)).join('/')+'|'+mode+'|'+group+'|'+compare.join('/')+'|'+math.QUEUES.map(q=>JSON.stringify(math.allDaySegments(src().timeline(selected,q)))).join('|');
+  if(signature===currentSignature&&root.childElementCount){
+   root.querySelectorAll('.has-now-marker').forEach(track=>track.style.setProperty('--now-left',nowFraction().toFixed(3)+'%'));
+   return;
+  }
+  const shouldAnimate=animateSwitch&&!reduced()&&enabled('motionLists');animateSwitch=false;
+  currentSignature=signature;root.classList.remove('aq-user-switch');root.replaceChildren();
   if(mode==='all'||mode==='groups'){
-   root.append(axis());
+   if(enabled('allQueuesAxis'))root.append(axis());
    for(let n=1;n<=6;n++)if(mode==='all'||n===group)root.append(groupCard(n));
   }else{
    const card=e('section','all-queues-group-card all-queues-compare-card');
-   card.append(e('h3','all-queues-compare-title','Дві підчерги на спільній шкалі'),axis(),lane(compare[0]),lane(compare[1]));
+   card.append(e('h3','all-queues-compare-title','Порівняння підчерг'));
+   if(enabled('allQueuesAxis'))card.append(axis());
+   card.append(lane(compare[0]),lane(compare[1]));
    root.append(card,compareSummary());
   }
   const key=$('allQueues24Label');if(key)key.hidden=true;
   drawDetail();
+  if(shouldAnimate){void root.offsetWidth;root.classList.add('aq-user-switch');}
  }
  let afterClose=null;
  function dismiss(next){
@@ -194,7 +207,7 @@
   if(!src()||!enabled('allQueues'))return;
   const dates=src().dates();
   selected=math.safeDate(date)&&dates.includes(date)?date:src().today();
-  selectedCell=null;currentSignature='';
+  selectedCell=null;currentSignature='';currentDaysSignature='';currentModesSignature='';animateSwitch=false;
   if(!dialog.open)try{dialog.showModal()}catch(error){console.warn('All queues:',error);return}
   render();
  }
