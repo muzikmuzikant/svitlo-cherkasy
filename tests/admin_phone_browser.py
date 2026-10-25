@@ -28,7 +28,24 @@ def main():
     assert page.locator('[data-admin-tab="feedback"]').get_attribute('aria-pressed')=='true',width
     page.locator('[data-mobile-tab="menu"]').click()
     assert page.locator('body').evaluate("e=>e.classList.contains('office-mobile-nav')"),width
-    page.locator('.phone-drawer-close').click()
+    assert page.locator('.phone-menu-drawer').is_visible(),width
+    assert page.locator('nav.admin-tabs').is_hidden(),width
+    page.locator('.phone-menu-toggle').last.click()
+    assert page.locator('.phone-menu-group').last.locator('.phone-menu-items').is_visible(),width
+    checks=page.evaluate("""() => {
+     const visible=[...document.querySelectorAll('.phone-menu-link')]
+      .filter(e=>e.getClientRects().length>0&&getComputedStyle(e).visibility==='visible');
+     const collisions=[];
+     for(let i=1;i<visible.length;i++){
+       if(visible[i-1].parentElement!==visible[i].parentElement)continue;
+       if(visible[i].getBoundingClientRect().top<visible[i-1].getBoundingClientRect().bottom-1)
+        collisions.push([visible[i-1].textContent,visible[i].textContent]);
+     }
+     return {visible:visible.length,overlaps:collisions};
+    }""")
+    assert checks['visible']>=4,(width,checks)
+    assert not checks['overlaps'],(width,checks)
+    page.locator('.phone-menu-close').click()
     assert not page.locator('body').evaluate("e=>e.classList.contains('office-mobile-nav')"),width
     print('PASS phone PWA',width)
     context.close()

@@ -34,7 +34,7 @@ jobs:
       - run: python scripts/build_pages.py
       - name: Verify separate Office PWA packaging
         run: |
-          node --check _site/admin-app/sw.js && node --check _site/admin-app/register.js && node --check admin-phone-v2.js
+          node --check _site/admin-app/sw.js && node --check _site/admin-app/register.js && node --check admin-phone-v2.js && node --check admin-phone-nav.js
           node --test tests/test_admin_pwa_beta.mjs tests/test_admin_phone_v2_beta.mjs
       - name: Check staged site output
         run: |

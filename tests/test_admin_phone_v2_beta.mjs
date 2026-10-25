@@ -31,3 +31,25 @@ test('Phone layout stays below iOS safe area and preserves native inputs',()=>{
  'prefers-reduced-motion:reduce','.phone-quick-item[hidden]','office-mobile-dock button[hidden]'])
   assert.ok(s.includes(rule),rule);
 });
+
+test('Mobile menu is independent of the old overlapping sidebar',()=>{
+ const js=read('admin-phone-nav.js'),css=read('admin-phone-nav.css');
+ const html=read('admin.html'),build=read('scripts/build_pages.py'),sw=read('sw.js');
+ assert.ok(html.indexOf('admin-phone-v2.css')<html.indexOf('admin-phone-nav.css'));
+ assert.ok(html.indexOf('admin-phone-v2.js')<html.indexOf('admin-phone-nav.js'));
+ for(const file of ['admin-phone-nav.js','admin-phone-nav.css']){
+  assert.ok(build.includes("'"+file+"'"));
+  assert.ok(sw.includes('"./'+file+'"'));
+  assert.ok(read('_site/admin-app/index.html').includes(file));
+ }
+ for(const string of ['phone-menu-drawer','phone-menu-group','aria-expanded','aria-hidden',
+    'source.querySelector', 'phone-menu-input','sourceTab','touchend','canTab','inert']){
+  // Inspect the public module to avoid silently reintroducing desktop nav.
+  if(string==='sourceTab')continue;
+  assert.ok(js.includes(string),string);
+ }
+ assert.match(css,/#adminDashboard > nav\.admin-tabs,[\s\S]*?display:none!important/);
+ assert.match(css,/\.phone-menu-link\[aria-current="page"\]/);
+ assert.match(css,/\.phone-menu-items\[hidden\]\{display:none!important\}/);
+ assert.match(css,/\.phone-menu-list\{[\s\S]*?overflow-y:auto/);
+});
