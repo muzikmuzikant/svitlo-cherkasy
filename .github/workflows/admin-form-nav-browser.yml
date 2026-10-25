@@ -1,0 +1,33 @@
+name: Admin save and sidebar browser QA
+on:
+  push:
+    branches: [main, staging]
+    paths:
+      - 'admin.html'
+      - 'admin-form-safety.js'
+      - 'admin-office.css'
+      - 'admin-workstation-v3.css'
+      - 'scripts/build_pages.py'
+      - 'sw.js'
+      - 'tests/admin_form_nav_browser.py'
+      - '.github/workflows/admin-form-nav-browser.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  admin-ui:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build isolated PWA without deploying
+        run: python scripts/build_pages.py
+      - name: Install Chromium for real layout and submit testing
+        run: |
+          python -m pip install -q playwright==1.56.0
+          python -m playwright install --with-deps chromium
+      - name: Test Admin address-autofill prevention and sidebar at desktop tablet mobile widths
+        run: python tests/admin_form_nav_browser.py
