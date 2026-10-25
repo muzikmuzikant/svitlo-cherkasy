@@ -157,7 +157,19 @@ export function createAppConfig({directory,record=()=>{}}){
    return {schemaVersion:1,updatedAt:state.updatedAt,maintenance:{...m},site:state.site||defaultSite(),announcements};
   };
  const update=value=>{
-  const next=validateAppConfig(value),previous=copy(),changed=JSON.stringify({...previous,updatedAt:null})!==JSON.stringify({...next,updatedAt:null});
+  const next=validateAppConfig(value),previous=copy();
+  // On first publication (or republishing a draft), use server publication
+  // time, not the time the draft was created. Scheduled notices use start time.
+  const existing=new Map(previous.announcements.map(n=>[n.id,n]));
+  const publishedNow=new Date().toISOString();
+  for(const notice of next.announcements){
+   if(notice.active===true&&existing.get(notice.id)?.active!==true){
+    notice.publishedAt=notice.scheduledAt&&Date.parse(notice.scheduledAt)>Date.now()
+     ?notice.scheduledAt:publishedNow;
+    notice.updatedAt=publishedNow;
+   }
+  }
+  const changed=JSON.stringify({...previous,updatedAt:null})!==JSON.stringify({...next,updatedAt:null});
   // Two saves in the same millisecond still need distinct revision tokens.
   if(Date.parse(next.updatedAt)<=Date.parse(previous.updatedAt))
    next.updatedAt=new Date(Date.parse(previous.updatedAt)+1).toISOString();
