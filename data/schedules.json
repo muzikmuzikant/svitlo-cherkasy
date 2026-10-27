@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "lastChecked": "2026-10-27T09:41:57+02:00",
+  "lastChecked": "2026-10-27T15:34:22+02:00",
   "reviewPending": false,
   "unresolvedDates": [],
   "confirmedNoScheduleDates": [
@@ -176,21 +176,13 @@
     },
     {
       "date": "2026-10-27",
-      "publishedAt": "2026-10-26T20:37+02:00",
-      "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-27-zhovtnya?lang=uk",
+      "publishedAt": "2026-10-27T14:00+02:00",
+      "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-27-zhovtnya-1?lang=uk",
       "verified": true,
       "queues": {
         "1.1": {
           "knownFrom": "00:00",
           "off": [
-            [
-              "06:00",
-              "08:00"
-            ],
-            [
-              "12:00",
-              "14:00"
-            ],
             [
               "18:00",
               "20:00"
@@ -201,14 +193,6 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "06:00",
-              "08:00"
-            ],
-            [
-              "12:00",
-              "14:00"
-            ],
-            [
               "18:00",
               "20:00"
             ]
@@ -217,14 +201,6 @@
         "2.1": {
           "knownFrom": "00:00",
           "off": [
-            [
-              "06:00",
-              "08:00"
-            ],
-            [
-              "10:00",
-              "12:00"
-            ],
             [
               "14:00",
               "16:00"
@@ -238,10 +214,6 @@
         "2.2": {
           "knownFrom": "00:00",
           "off": [
-            [
-              "10:00",
-              "12:00"
-            ],
             [
               "14:00",
               "16:00"
@@ -260,10 +232,6 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "10:00",
-              "12:00"
-            ],
-            [
               "14:00",
               "16:00"
             ],
@@ -276,10 +244,6 @@
         "3.2": {
           "knownFrom": "00:00",
           "off": [
-            [
-              "10:00",
-              "12:00"
-            ],
             [
               "14:00",
               "16:00"
@@ -294,10 +258,6 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "10:00",
-              "12:00"
-            ],
-            [
               "14:00",
               "16:00"
             ],
@@ -310,10 +270,6 @@
         "4.2": {
           "knownFrom": "00:00",
           "off": [
-            [
-              "12:00",
-              "14:00"
-            ],
             [
               "16:00",
               "18:00"
@@ -328,20 +284,12 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "08:00",
-              "10:00"
-            ],
-            [
-              "12:00",
-              "14:00"
-            ],
-            [
               "16:00",
               "18:00"
             ],
             [
               "20:00",
-              "21:00"
+              "22:00"
             ]
           ]
         },
@@ -349,30 +297,18 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "08:00",
-              "10:00"
-            ],
-            [
-              "12:00",
-              "14:00"
-            ],
-            [
               "16:00",
               "18:00"
             ],
             [
               "20:00",
-              "21:00"
+              "22:00"
             ]
           ]
         },
         "6.1": {
           "knownFrom": "00:00",
           "off": [
-            [
-              "08:00",
-              "10:00"
-            ],
             [
               "16:00",
               "18:00"
@@ -387,10 +323,6 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "08:00",
-              "10:00"
-            ],
-            [
               "16:00",
               "18:00"
             ],
@@ -401,13 +333,49 @@
           ]
         }
       },
-      "revisions": 1,
-      "planFingerprint": "e80ff9d394617834fe6b",
+      "revisions": 3,
+      "planFingerprint": "ff81a5e59b1551743aee",
       "noScheduledOutages": [],
       "publications": [
         {
           "publishedAt": "2026-10-26T20:37+02:00",
           "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-27-zhovtnya?lang=uk",
+          "queues": [
+            "1.1",
+            "1.2",
+            "2.1",
+            "2.2",
+            "3.1",
+            "3.2",
+            "4.1",
+            "4.2",
+            "5.1",
+            "5.2",
+            "6.1",
+            "6.2"
+          ]
+        },
+        {
+          "publishedAt": "2026-10-27T10:00+02:00",
+          "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-27-zhovtnya?lang=uk",
+          "queues": [
+            "1.1",
+            "1.2",
+            "2.1",
+            "2.2",
+            "3.1",
+            "3.2",
+            "4.1",
+            "4.2",
+            "5.1",
+            "5.2",
+            "6.1",
+            "6.2"
+          ]
+        },
+        {
+          "publishedAt": "2026-10-27T14:00+02:00",
+          "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-27-zhovtnya-1?lang=uk",
           "queues": [
             "1.1",
             "1.2",
@@ -453,6 +421,27 @@
       "detectedAt": "2026-10-26T21:28:09+02:00",
       "revisionId": "f19ea76c3e250b62a4c7",
       "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-26-zhovtnya-2?lang=uk",
+      "queues": [
+        "1.1",
+        "1.2",
+        "2.1",
+        "2.2",
+        "3.1",
+        "3.2",
+        "4.1",
+        "4.2",
+        "5.1",
+        "5.2",
+        "6.1",
+        "6.2"
+      ]
+    },
+    {
+      "date": "2026-10-27",
+      "publishedAt": "2026-10-27T14:00+02:00",
+      "detectedAt": "2026-10-27T15:34:22+02:00",
+      "revisionId": "ff81a5e59b1551743aee",
+      "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-27-zhovtnya-1?lang=uk",
       "queues": [
         "1.1",
         "1.2",
