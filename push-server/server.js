@@ -7,6 +7,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import {createFeedbackStore,readFeedbackBody} from './feedback-store.js';
 import {createSupportTicketNotifier} from './support-ticket-notifier.js';
+import {createAdminPushStore} from './admin-push-store.js';
 import {createAdminExtras} from './admin-extras.js';
 import {createAnalyticsStore} from './analytics.js';
 import {createAdsStore} from './ads.js';
@@ -52,6 +53,7 @@ function save(){
 }
 const feedback=createFeedbackStore({filePath:process.env.FEEDBACK_FILE||path.join(path.dirname(DATA_FILE),'feedback.json')});
 const supportTicketNotifier=createSupportTicketNotifier();
+const adminPush=createAdminPushStore({directory:path.dirname(DATA_FILE),webpush,publicKey:VAPID_PUBLIC_KEY,privateKey:PUSH_PRIVATE_KEY,contact:PUSH_CONTACT});
 const extras=createAdminExtras({directory:path.dirname(DATA_FILE)});
 const workRegistry=createWorkRegistry({directory:path.dirname(DATA_FILE),record:extras.record});
 const addressCorrections=createAddressCorrectionStore({directory:path.dirname(DATA_FILE),record:extras.record});
@@ -443,7 +445,7 @@ const server=http.createServer(async(req,res)=>{
     const tickets=feedback.list().items;
     result.feedback={total:tickets.length,new:tickets.filter(t=>t.status==='new').length,inProgress:tickets.filter(t=>t.status==='in_progress').length};
     return result;
-  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule((typeof liveSchedule==='function'?liveSchedule():officialSchedules.schedule())||lastLoadedSchedule),errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry,addressCorrections,manualOverrides);return}
+  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule((typeof liveSchedule==='function'?liveSchedule():officialSchedules.schedule())||lastLoadedSchedule),errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry,addressCorrections,manualOverrides,adminPush);return}
  if(req.url?.startsWith('/api/media/')&&req.method==='GET'){
    const id=req.url.slice('/api/media/'.length).split('?')[0],file=mediaStore.read(id);
    if(!file){response(res,404,{error:'Фото не знайдене'});return}
@@ -523,6 +525,7 @@ const server=http.createServer(async(req,res)=>{
    response(res,201,saved);
    // Best effort: network delivery may fail without affecting the submitted case.
    void supportTicketNotifier.notify({id:saved.id,topic:data.topic}).catch(()=>{});
+    void adminPush.notify({id:saved.id,topic:data.topic}).catch(error=>console.warn('[admin-push] new-ticket delivery failed:',error.message));
   }catch(e){response(res,e.statusCode||500,{error:e.statusCode?e.message:'Не вдалося зберегти звернення.'})}
   return;
  }
