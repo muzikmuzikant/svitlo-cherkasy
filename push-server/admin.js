@@ -65,7 +65,7 @@ async function github(path,method='GET',payload){
  return data;
 }
 async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
-export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal,auditSchedules,errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry,addressCorrections,manualOverrides){
+export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal,auditSchedules,errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry,addressCorrections,manualOverrides,adminPush){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(!originPolicy.isAllowed(req.headers.origin)){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const url=new URL(req.url,'http://localhost');
@@ -156,6 +156,17 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
     ||(pathName.startsWith('/api/admin/feedback/')&&method==='DELETE'));
  if(!allowed){send(res,403,{error:'Недостатньо прав для цієї дії'});return true}
  try{
+   if(pathName==='/api/admin/push-subscription'&&method==='GET'){
+    send(res,200,{publicKey:adminPush?.publicKey||'',subscribedCount:adminPush?.count?.()||0});return true;
+   }
+   if(pathName==='/api/admin/push-subscription'&&method==='POST'){
+    if(!adminPush){send(res,503,{error:'Push для адмінки не налаштовано'});return true}
+    send(res,201,adminPush.subscribe((await readJson(req,6000)).subscription,session.username));return true;
+   }
+   if(pathName==='/api/admin/push-subscription'&&method==='DELETE'){
+    if(!adminPush){send(res,503,{error:'Push для адмінки не налаштовано'});return true}
+    send(res,200,adminPush.unsubscribe((await readJson(req,2000)).endpoint));return true;
+   }
    if(pathName==='/api/admin/address-corrections'&&method==='GET'){
     send(res,200,addressCorrections.list());return true;
    }
