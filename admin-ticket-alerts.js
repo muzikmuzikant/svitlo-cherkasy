@@ -131,6 +131,19 @@
   title.textContent='Нові звернення';
   subtitle.textContent='Увійдіть, щоб переглянути вхідні.';
  });
- document.addEventListener('svitlo:admin-ready',()=>{known=null;updatePermission()});
+ async function restorePush(){
+  if(!active()||permission()!=='granted'||!('serviceWorker' in navigator)||!('PushManager' in window))return;
+  try{
+   const registration=await navigator.serviceWorker.getRegistration('./');
+   const subscription=await registration?.pushManager?.getSubscription();
+   if(!subscription)return;
+   const api=window.svitloAdminApi;
+   if(typeof api!=='function')return;
+   await api('push-subscription',{method:'POST',body:JSON.stringify({subscription:subscription.toJSON()})});
+   pushEnabled=true;updatePermission();
+   subtitle.textContent='Фонові push-сповіщення підключено на цьому пристрої.';
+  }catch(error){console.warn('Admin push restore failed:',error?.message||error)}
+ }
+ document.addEventListener('svitlo:admin-ready',()=>{known=null;updatePermission();void restorePush()});
  updatePermission();
 })();
