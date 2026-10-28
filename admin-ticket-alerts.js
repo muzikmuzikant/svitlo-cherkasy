@@ -30,13 +30,14 @@
  actions.append(browserBtn,browse);
  line.append(info,actions);
  panel.querySelector('.headline')?.after(line);
- let known=null,toastTimer=null;
+ let known=null,toastTimer=null,pushEnabled=false;
  const active=()=>!dashboard.hidden&&!!document.body.dataset.adminRole;
  const permission=()=>{
   if(!('Notification' in window))return 'unavailable';
   return window.Notification.permission;
  };
  const updatePermission=()=>{
+  if(pushEnabled){browserBtn.hidden=false;browserBtn.textContent='Push увімкнено ✓';browserBtn.title='Фонові push-сповіщення підключено на цьому пристрої';browserBtn.disabled=true;return}
   const state=permission();
   browserBtn.hidden=state==='unavailable'||state==='denied';
   browserBtn.textContent=state==='granted'?'Увімкнути push на цьому пристрої':'Увімкнути push-сповіщення';
@@ -66,12 +67,13 @@
     applicationServerKey:Uint8Array.from(atob(cfg.publicKey.replace(/-/g,'+').replace(/_/g,'/')),ch=>ch.charCodeAt(0))
    });
    await api('push-subscription',{method:'POST',body:JSON.stringify({subscription:subscription.toJSON()})});
+   pushEnabled=true;
    browserBtn.textContent='Push увімкнено ✓';
    subtitle.textContent='Цей пристрій отримуватиме фонові push про нові звернення.';
   }catch(error){
    subtitle.textContent=error.message||'Не вдалося підключити push. Спробуйте ще раз.';
    browserBtn.textContent='Повторити підключення push';
-  }finally{browserBtn.disabled=false;updatePermission();if(previous==='Сповіщення браузера'&&permission()==='default')browserBtn.textContent='Увімкнути push-сповіщення'}
+  }finally{updatePermission();if(!pushEnabled){browserBtn.disabled=false;if(previous==='Сповіщення браузера'&&permission()==='default')browserBtn.textContent='Увімкнути push-сповіщення'}}
  };
  const view=()=>{
   nav.click();
