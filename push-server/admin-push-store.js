@@ -24,7 +24,7 @@ export function createAdminPushStore({directory,webpush,publicKey,privateKey,con
    if(entries[id]){delete entries[id];persist()}return {ok:true,subscribed:false};
   },
   async notify(ticket){
-   const payload=JSON.stringify({title:'Світло Черкаси · нове звернення',body:'Надійшло нове звернення до служби підтримки. Відкрийте «Світло Адмін».',tag:'svitlo-admin-ticket-'+String(ticket?.id||Date.now()),url:'./admin.html'});
+   const payload=JSON.stringify({title:'Світло Черкаси · нове звернення',body:'Надійшло нове звернення до служби підтримки. Відкрийте «Світло Адмін».',tag:'svitlo-admin-ticket-'+String(ticket?.id||Date.now()),url:'./admin.html',inbox:false});
    const results=await Promise.allSettled(Object.entries(entries).map(async([id,item])=>{
     try{await webpush.sendNotification(item.subscription,payload,{TTL:120,urgency:'high'});return true}
     catch(e){if(e.statusCode===404||e.statusCode===410){delete entries[id];persist()}throw e}
