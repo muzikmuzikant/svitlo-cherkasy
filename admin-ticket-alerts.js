@@ -38,13 +38,40 @@
  };
  const updatePermission=()=>{
   const state=permission();
-  browserBtn.hidden=state==='unavailable'||state==='granted'||state==='denied';
-  browserBtn.title=state==='denied'?'Дозвіл вимкнений у налаштуваннях браузера':'Дозволити оповіщення, поки сторінка адмінки відкрита';
+  browserBtn.hidden=state==='unavailable'||state==='denied';
+  browserBtn.textContent=state==='granted'?'Увімкнути push на цьому пристрої':'Увімкнути push-сповіщення';
+  browserBtn.title=state==='denied'?'Дозвіл вимкнений у налаштуваннях браузера':'Увімкнути фонові push про нові звернення';
  };
  browserBtn.onclick=async()=>{
-  if(!active()||permission()!=='default')return;
-  try{await window.Notification.requestPermission()}catch{}
-  updatePermission();
+  if(!active())return;
+  browserBtn.disabled=true;
+  const previous=browserBtn.textContent;
+  browserBtn.textContent='Підключаємо push…';
+  try{
+   if(!('serviceWorker' in navigator)||!('PushManager' in window))throw Error('Цей браузер не підтримує фонові push.');
+   if(permission()==='default'){
+    const granted=await window.Notification.requestPermission();
+    if(granted!=='granted')throw Error('Дозвольте сповіщення в налаштуваннях браузера.');
+   }
+   if(permission()!=='granted')throw Error('Дозвіл на сповіщення вимкнений у налаштуваннях браузера.');
+   const api=window.svitloAdminApi;
+   if(typeof api!=='function')throw Error('Сервер адмінки ще не готовий. Оновіть сторінку.');
+   const cfg=await api('push-subscription');
+   if(!cfg.publicKey)throw Error('На сервері не налаштований VAPID-ключ push.');
+   const registration=await navigator.serviceWorker.register('./sw.js',{scope:'./'});
+   await navigator.serviceWorker.ready;
+   let subscription=await registration.pushManager.getSubscription();
+   if(!subscription)subscription=await registration.pushManager.subscribe({
+    userVisibleOnly:true,
+    applicationServerKey:Uint8Array.from(atob(cfg.publicKey.replace(/-/g,'+').replace(/_/g,'/')),ch=>ch.charCodeAt(0))
+   });
+   await api('push-subscription',{method:'POST',body:JSON.stringify({subscription:subscription.toJSON()})});
+   browserBtn.textContent='Push увімкнено ✓';
+   subtitle.textContent='Цей пристрій отримуватиме фонові push про нові звернення.';
+  }catch(error){
+   subtitle.textContent=error.message||'Не вдалося підключити push. Спробуйте ще раз.';
+   browserBtn.textContent='Повторити підключення push';
+  }finally{browserBtn.disabled=false;updatePermission();if(previous==='Сповіщення браузера'&&permission()==='default')browserBtn.textContent='Увімкнути push-сповіщення'}
  };
  const view=()=>{
   nav.click();
