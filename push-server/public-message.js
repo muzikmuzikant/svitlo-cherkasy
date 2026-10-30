@@ -17,7 +17,7 @@ export function resolvePublicMessage(id,{schedule,announcements=[],emergencies=[
   const notice=announcements.find(a=>a.active!==false&&a.id===id.slice(7));
   if(!notice)return null;
   return {id,kind:'announcement',title:noticeDisplayTitle(notice),
-   body:notice.body||'',content:notice.content||'',images:notice.images||[],priority:notice.priority||'normal',
+   body:notice.body||'',content:notice.content||'',images:notice.images||[],url:safeUrl(notice.source||notice.url),priority:notice.priority||'normal',
    pinned:notice.pinned===true,at:cleanAt(notice.publishedAt),updatedAt:notice.updatedAt||null,authoritative:true};
  }
  const day=/^day:([1-6]\.[12]):(20\d\d-\d\d-\d\d)(?::(.+))?$/.exec(id);

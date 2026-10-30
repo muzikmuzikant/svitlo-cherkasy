@@ -933,3 +933,5 @@ body{overflow-wrap:break-word}
 :root[data-theme="dark"] .inbox-search-label input{color:#eaf0fb}
 :root[data-theme="dark"] .inbox-rich blockquote{background:#202f46;color:#d5e2f7}
 :root[data-theme="dark"] .inbox-rich code{background:#26344a;color:#e3eeff}
+
+.topbar-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}.topbar-actions .icon-btn{flex:0 0 43px;text-decoration:none}.topbar-actions .icon-btn svg{width:20px;height:20px}

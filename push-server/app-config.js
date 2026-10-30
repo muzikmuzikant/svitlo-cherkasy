@@ -9,7 +9,14 @@ const defaultSite=()=>({links:{help:'./help.html',feedback:'./feedback.html',off
  banner:{enabled:false,title:'Нові можливості',body:'Оновлення застосунку доступне.',url:'',button:'Детальніше'},
  appearance:{accent:'#377dff',background:'#f6f8fc',surface:'#ffffff',density:'comfortable',rounded:true}});
 const defaults=()=>({schemaVersion:1,updatedAt:null,maintenance:{enabled:false,title:'Ми покращуємо застосунок',message:'Незабаром усе знову працюватиме. Актуальні графіки можна перевірити на сайті оператора.',until:null,startsAt:null,mode:'full',theme:'blue',layout:'centered',icon:'✨',imageUrl:'',colors:{background:'#143463',foreground:'#ffffff',accent:'#78aaff'},noticeBefore:true,noticeInInbox:true,plannedBanner:{title:'Заплановані технічні роботи',body:'Під час робіт застосунок може тимчасово бути недоступним.',style:'expanded',button:'Офіційні графіки',url:'https://www.cherkasyoblenergo.com/news',showCountdown:true,showEnd:true,showButton:true,background:'#eaf3ff',foreground:'#22496f',accent:'#347af0'},disabledModules:[]},site:defaultSite(),announcements:[]});
-const str=(v,max)=>String(v??'').trim().slice(0,max+1);
+const textSegments=value=>{
+ const text=String(value??'').trim().normalize('NFC');
+ return typeof Intl.Segmenter==='function'
+  ?[...new Intl.Segmenter('uk',{granularity:'grapheme'}).segment(text)].map(x=>x.segment)
+  :Array.from(text);
+};
+const str=(v,max)=>textSegments(v).slice(0,max+1).join('');
+const textLength=v=>textSegments(v).length;
 function date(v){if(v==null||v==='')return null;if(typeof v!=='string'||v.length>36||!Number.isFinite(Date.parse(v)))throw Error('Неправильна дата');return new Date(v).toISOString()}
 function image(v){const url=str(v,900);if(!url)return '';try{const u=new URL(url);if(u.protocol!=='https:'||u.username||u.password||url.length>900)throw Error();return u.href}catch{throw Error('Фото повинне мати HTTPS-посилання')}}
 const SOCIAL_PLATFORMS=new Set(['telegram','instagram','facebook','tiktok','youtube','threads','website','other']);
@@ -90,7 +97,7 @@ export function validateAppConfig(input){
   const id=String(a?.id||'');if(!/^[A-Za-z0-9_-]{6,64}$/.test(id)||ids.has(id))throw Error('Неправильний або повторний ID');ids.add(id);
   const title=str(a.title,90),body=str(a.body,500),content=str(a.content||body,20000);
   // Drafts may be empty. A published notice needs a meaningful body, but emoji are NEVER mandatory.
-  if(title.length>90||body.length>500||content.length>20000||(a.active===true&&(title.length<1||body.length<1)))
+  if(textLength(title)>90||textLength(body)>500||textLength(content)>20000||(a.active===true&&(textLength(title)<1||textLength(body)<1)))
    throw Error('Додайте заголовок і короткий текст перед публікацією');
   const kind=a.kind||'info',priority=a.priority||'normal',queue=a.queue||'all',delivery=a.delivery||'inbox';
   const settlement=str(a.settlement,70);
@@ -99,7 +106,7 @@ export function validateAppConfig(input){
   const images=a.images??[];if(!Array.isArray(images)||images.length>6)throw Error('Максимум шість зображень');
   const scheduledAt=date(a.scheduledAt),expiresAt=date(a.expiresAt);
   if(scheduledAt&&expiresAt&&scheduledAt>=expiresAt)throw Error('Термін дії раніше публікації');
-  return {id,title,body,content,kind,priority,queue,delivery,settlement,images:images.map(image).filter(Boolean),
+  return {id,title,body,content,source:safeLink(a.source??'', ''),kind,priority,queue,delivery,settlement,images:images.map(image).filter(Boolean),
    pinned:a.pinned===true,icon:str(a.icon,18),active:a.active===true,
    publishedAt:date(a.publishedAt)||new Date().toISOString(),updatedAt:date(a.updatedAt),
    scheduledAt,expiresAt,pushSentAt:date(a.pushSentAt)};

@@ -5,16 +5,21 @@
  const NAME='svitlo-inbox-v1',STORE='messages',FALLBACK='svitlo-inbox-fallback-v1',MAX=600;
  const LEGACY_ADMIN=/^push:svitlo-admin-/;
  const httpImage=u=>{try{const x=new URL(String(u));return x.protocol==='https:'&&x.href.length<=900?x.href:''}catch{return ''}};
+ function limitText(value,max){
+  const text=String(value??'').normalize('NFC');
+  if(typeof Intl.Segmenter==='function')return [...new Intl.Segmenter('uk',{granularity:'grapheme'}).segment(text)].slice(0,max).map(x=>x.segment).join('');
+  return Array.from(text).slice(0,max).join('');
+ }
  function normalize(item){
   if(!item||typeof item!=='object')return null;
   const id=String(item.id||'').slice(0,150);if(!id)return null;
   const at=Number.isFinite(Date.parse(item.at))?new Date(item.at).toISOString():new Date().toISOString();
   const images=Array.isArray(item.images)?item.images.slice(0,6).map(httpImage).filter(Boolean):[];
   const kind=['schedule','emergency','announcement','push','support'].includes(item.kind)?item.kind:'announcement';
-  return {id,title:String(item.title||'Повідомлення').slice(0,100),body:String(item.body||'').slice(0,500),
-   content:String(item.content||'').slice(0,20000),images,kind,at,
+  return {id,title:limitText(item.title||'Повідомлення',100),body:limitText(item.body||'',500),
+   content:limitText(item.content||'',20000),images,kind,at,
    priority:['normal','important','urgent'].includes(item.priority)?item.priority:'normal',
-   pinned:item.pinned===true,icon:String(item.icon||'').slice(0,18),
+   pinned:item.pinned===true,icon:limitText(item.icon||'',18),
    updatedAt:typeof item.updatedAt==='string'?item.updatedAt:null,
    url:typeof item.url==='string'&&/^https:\/\//.test(item.url)?item.url:'',
    read:item.read===true,authoritative:item.authoritative===true};

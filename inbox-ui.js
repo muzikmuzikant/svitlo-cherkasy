@@ -14,8 +14,8 @@
    !d.queues?.[q]?.off?.length?'Планові відключення для підчерги не зазначені.':
    'Планові відключення: '+d.queues[q].off.map(r=>r.join('–')).join(', ')+'.';
   return {firstPublishedAt,dayId,changeId,emergencyId,
-   tomorrowCopy:(q,d,plan)=>({content:'**Графік на '+date(d)+'**\\n\\nОператор опублікував розклад для підчерги '+q+'.\\n\\n'+hours(plan,q)+'\\n\\nПеревірте актуальні години у вкладці «Графік».'}),
-   changeCopy:(q,d,plan)=>({title:'🔄 Графік оновлено',body:'Підчерга '+q+' · Змінено години на '+date(d)+'.',content:'**Графік змінено**\\n\\nОператор оновив розклад для підчерги '+q+' на '+date(d)+'.\\n\\n'+hours(plan,q)}),
+   tomorrowCopy:(q,d,plan)=>({content:'**Графік на '+date(d)+'**\n\nОператор опублікував розклад для підчерги '+q+'.\n\n'+hours(plan,q)+'\n\nПеревірте актуальні години у вкладці «Графік».'}),
+   changeCopy:(q,d,plan)=>({title:'🔄 Графік оновлено',body:'Підчерга '+q+' · Змінено години на '+date(d)+'.',content:'**Графік змінено**\n\nОператор оновив розклад для підчерги '+q+' на '+date(d)+'.\n\n'+hours(plan,q)}),
    emergencyCopy:status=>({title:status==='ended'?'✅ Екстрені обмеження завершено':'⚠️ Екстрені відключення',body:status==='ended'?'Оператор повідомив про завершення обмежень.':'Оператор повідомив про екстрені обмеження.',content:'Перевірте офіційні повідомлення оператора, щоб дізнатися про актуальний стан.'})};
  })();
  if(!store||!$('inboxList'))return;
@@ -85,7 +85,7 @@
  const targeted=a=>!a.settlement||normalizedTown(a.settlement)===normalizedTown(primarySettlement());
  const primaryQueue=()=>{const settings=local('svitlo-prefs-v6',{}),addresses=local('svitlo-addresses-v6',[]);
   return (addresses.find(x=>x.id===settings.primaryId)||addresses[0])?.queue||null};
- const validUrl=url=>{try{const u=new URL(url,location.href);return u.protocol==='https:'&&(u.origin===location.origin||/(^|\.)cherkasyoblenergo\.com$/.test(u.hostname))?u.href:''}catch{return ''}};
+ const validUrl=url=>{try{const u=new URL(url,location.href);return u.protocol==='https:'&&u.origin!==location.origin?u.href:''}catch{return ''}};
  const isGraph=item=>item.kind==='schedule'||item.kind==='push'&&/(графік|підчерг|відключення через|відновлення через)/i.test(item.title+' '+item.body);
  const ticketId=item=>/^ticket:(SC-[A-F0-9]{10}):(?:reply|status):/.exec(String(item?.id||''))?.[1]||'';
  const openTicket=id=>{if(!id)return;const path='./feedback.html?tab=tickets&ticket='+encodeURIComponent(id);closeDetail(()=>{if(window.SvitloInternalPages?.open)window.SvitloInternalPages.open(path);else location.href=path})};
@@ -376,7 +376,7 @@
     const linked=linkedNoticeIds.has('notice:'+a.id);
     if(a.active!==true||(!targeted(a)&&!linked)||(a.queue&&a.queue!=='all'&&a.queue!==queue&&!linked)||a.scheduledAt&&Date.parse(a.scheduledAt)>now||a.expiresAt&&Date.parse(a.expiresAt)<=now)continue;
     incoming.push({id:'notice:'+a.id,kind:'announcement',title:(copy.noticeDisplayTitle?copy.noticeDisplayTitle(a):((a.icon||'📣')+' '+a.title)),icon:a.icon,
-     body:a.body,content:a.content,images:a.images,at:a.publishedAt,updatedAt:a.updatedAt,pinned:a.pinned,priority:a.priority,authoritative:true});
+     body:a.body,content:a.content,images:a.images,at:a.publishedAt,url:a.source||a.url,updatedAt:a.updatedAt,pinned:a.pinned,priority:a.priority,authoritative:true});
    }
    if(incoming.length){
     await store.add(incoming);

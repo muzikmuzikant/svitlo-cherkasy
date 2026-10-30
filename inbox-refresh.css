@@ -131,3 +131,6 @@
 @keyframes inboxFadeLeave{from{opacity:1}to{opacity:0}}
 @media(prefers-reduced-motion:reduce){#updates .inbox-item,#updates .inbox-mark,#updates .inbox-filters button,#updates .inbox-smart-bar,.inbox-actions-sheet,.inbox-actions-sheet::backdrop{animation:none!important;transition:none!important}}
 html.feature-off-animations #updates .inbox-smart-bar,html.feature-off-animations .inbox-actions-sheet,html.feature-off-animations .inbox-actions-sheet::backdrop{animation:none!important;transition:none!important}
+
+/* Keep the first official-history card visually separated from its section heading. */
+#updates .inbox-history .update-list{margin-top:10px}

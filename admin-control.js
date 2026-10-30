@@ -28,15 +28,15 @@
  const target=()=>state?.announcements?.find(n=>n.id===selectedId);
  function status(message,error=false){$('opsMessageStatus').textContent=message;$('opsMessageStatus').className='push-state'+(error?' error':' good')}
  function blank(){
-  return {id:id(),title:'',body:'',content:'',kind:'info',priority:'normal',queue:'all',delivery:'inbox',settlement:'',
+  return {id:id(),title:'',body:'',content:'',source:'',kind:'info',priority:'normal',queue:'all',delivery:'inbox',settlement:'',
    icon:'',images:[],active:false,pinned:false,publishedAt:now(),updatedAt:null,scheduledAt:null,expiresAt:null,pushSentAt:null};
  }
  function capture(){
   const n=target();if(!n)return;
-  const before=JSON.stringify({title:n.title,body:n.body,content:n.content,kind:n.kind,priority:n.priority,
+  const before=JSON.stringify({title:n.title,body:n.body,content:n.content,source:n.source,kind:n.kind,priority:n.priority,
    queue:n.queue,delivery:n.delivery,settlement:n.settlement,icon:n.icon,pinned:n.pinned,active:n.active,scheduledAt:n.scheduledAt,
    expiresAt:n.expiresAt,images:n.images});
-  Object.assign(n,{title:read('opsNoticeTitle'),body:read('opsNoticeBody'),content:read('opsNoticeContent'),
+  Object.assign(n,{title:read('opsNoticeTitle'),body:read('opsNoticeBody'),content:read('opsNoticeContent'),source:read('opsNoticeSource'),
    kind:read('opsNoticeKind'),priority:read('opsNoticePriority'),queue:read('opsNoticeQueue'),
    delivery:read('opsNoticeDelivery'),settlement:read('opsNoticeSettlement'),icon:read('opsNoticeIcon'),pinned:$('opsNoticePinned').checked,
    active:$('opsNoticeActive').checked,scheduledAt:fromLocal($('opsNoticeSchedule').value),
@@ -90,7 +90,7 @@
   for(const field of ['opsNoticeTitle','opsNoticeBody','opsNoticeContent','opsNoticeIcon'])options(field,n?.[field.replace('opsNotice','').toLowerCase()]||'');
   options('opsNoticeKind',n?.kind||'info');options('opsNoticePriority',n?.priority||'normal');
   options('opsNoticeQueue',n?.queue||'all');options('opsNoticeDelivery',n?.delivery||'inbox');options('opsNoticeSettlement',n?.settlement||'');
-  options('opsNoticeSchedule',local(n?.scheduledAt));options('opsNoticeExpires',local(n?.expiresAt));
+  options('opsNoticeSource',n?.source||'');options('opsNoticeSchedule',local(n?.scheduledAt));options('opsNoticeExpires',local(n?.expiresAt));
   check('opsNoticeActive',n?.active);check('opsNoticePinned',n?.pinned);
   options('opsNoticePublishedAt',kyivLocal(n?.publishedAt));$('opsNoticePublishedAt').disabled=!n?.active;
   photos=[...(n?.images||[])];drawPhotos();previewMessage();renderNoticeMetrics();
@@ -408,7 +408,7 @@
   try{await saveConfig({scope:'content'});status('Знято з публікації '+exp.length+' прострочених повідомлень.')}
   catch(e){state=backup;fill();drawList();status('Не вдалося зняти повідомлення: '+e.message,true)}
  };
- for(const id of ['opsNoticeTitle','opsNoticeBody','opsNoticeContent','opsNoticeKind','opsNoticePriority','opsNoticeIcon','opsNoticeQueue','opsNoticeDelivery','opsNoticeSettlement','opsNoticeActive','opsNoticePinned','opsNoticeSchedule','opsNoticeExpires']){
+ for(const id of ['opsNoticeTitle','opsNoticeBody','opsNoticeContent','opsNoticeKind','opsNoticePriority','opsNoticeIcon','opsNoticeQueue','opsNoticeDelivery','opsNoticeSettlement','opsNoticeSource','opsNoticeActive','opsNoticePinned','opsNoticeSchedule','opsNoticeExpires']){
   $(id).addEventListener('input',()=>{
    capture();previewMessage();drawList();
    if(['opsNoticeActive','opsNoticePinned'].includes(id)){
