@@ -41,8 +41,8 @@ test('Inbox never labels an application homepage as an official source',()=>{
 
 test('home top bar links directly to the existing support center',()=>{
  const html=read('index.html');
- assert.match(html,/id="supportTop" href="\.\/feedback\.html\?from=home"/);
- assert.match(html,/aria-label="Підтримка"/);
+ assert.match(html,/id="supportTop" href="\\.\\/support-project\\.html"/);
+ assert.match(html,/aria-label="Підтримати проєкт"/);
  assert.match(read('style.css'),/\.topbar-actions/);
 });
 
