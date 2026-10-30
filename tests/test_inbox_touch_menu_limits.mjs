@@ -74,7 +74,7 @@ test('notice accepts 20k rich characters, 500 preview, rejecting excess; Push mi
   assert.throws(()=>store.update({...config,announcements:[{...notice,content:'п'.repeat(20001)}]}));
   assert.equal(cleanMessage({title:'Тест',body:'а'.repeat(500)}).body.length,500);
   assert.throws(()=>cleanMessage({title:'Тест',body:'а'.repeat(501)}));
-  assert.match(read('notification-center.js'),/content:String\(item.content\|\|''\)\.slice\(0,20000\)/);
+  assert.match(read('notification-center.js'),/content:limitText(item.content||'',20000)/);
   assert.match(read('admin.html'),/id="opsNoticeContent"[^>]*maxlength="20000"/);
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });
