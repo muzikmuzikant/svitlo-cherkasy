@@ -1191,6 +1191,24 @@ function checkNotifications(){
  }
 }
 
+async function getPushRegistration(){
+ if(!('serviceWorker' in navigator))throw Error('Service workers are unavailable in this browser');
+ let registration=swRegistration||await navigator.serviceWorker.getRegistration('./');
+ if(!registration){
+  registration=await navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'});
+ }
+ swRegistration=registration;
+ // Edge may finish installing an app's worker after the settings screen has loaded.
+ // Wait for the active registration, not merely for register() to return.
+ let timeoutId;
+ const timeout=new Promise((_,reject)=>{timeoutId=setTimeout(()=>reject(Error('Service worker activation timed out')),15000)});
+ let ready;
+ try{ready=await Promise.race([navigator.serviceWorker.ready,timeout])}
+ finally{clearTimeout(timeoutId)}
+ if(!ready?.active||!ready.pushManager)throw Error('Active Push service worker is unavailable');
+ swRegistration=ready;
+ return ready;
+}
 function pushHealthMessage(message){
  // Health checks still repair subscriptions, but never expose developer telemetry
  // or the time of the last Push to end users.
@@ -1275,24 +1293,6 @@ async function getPushConfig(){
  }catch(e){console.warn('Push config:',e.message)}renderSettings();updatePushInvite();checkPushDelivery(true).catch(console.warn);
 }
 function urlsafe(value){const str=(value+'='.repeat((4-value.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/');return Uint8Array.from(atob(str),x=>x.charCodeAt(0))}
-async function getPushRegistration(){
- if(!('serviceWorker' in navigator))throw Error('Service workers are unavailable in this browser');
- let registration=swRegistration||await navigator.serviceWorker.getRegistration('./');
- if(!registration){
-  registration=await navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'});
- }
- swRegistration=registration;
- // Edge may finish installing an app's worker after the settings screen has loaded.
- // Wait for the active registration, not merely for register() to return.
- let timeoutId;
- const timeout=new Promise((_,reject)=>{timeoutId=setTimeout(()=>reject(Error('Service worker activation timed out')),15000)});
- let ready;
- try{ready=await Promise.race([navigator.serviceWorker.ready,timeout])}
- finally{clearTimeout(timeoutId)}
- if(!ready?.active||!ready.pushManager)throw Error('Active Push service worker is unavailable');
- swRegistration=ready;
- return ready;
-}
 async function updatePushSubscription(){
  if(!('Notification' in window)||!('serviceWorker' in navigator)||!pushConfig||Notification.permission!=='granted'||!primary()?.queue)throw Error('Push prerequisites are unavailable');
  const reg=await getPushRegistration();let sub=await reg.pushManager.getSubscription();
