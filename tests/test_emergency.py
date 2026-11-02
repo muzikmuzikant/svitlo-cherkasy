@@ -1,6 +1,7 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from scripts.update_data import emergency_link_candidates, parse_emergency_article
+import scripts.update_data as importer
+from scripts.update_data import emergency_link_candidates, parse_emergency_article, update_emergency
 TZ=ZoneInfo('Europe/Kyiv')
 NOW=datetime(2026,10,10,10,30,tzinfo=TZ)
 
@@ -38,3 +39,23 @@ def test_reject_expired_and_unrelated():
 def test_only_official_links():
     html='<a href="/media/emergency">Запроваджено екстрені відключення</a><a href="/media/ordinary">Новина про електропостачання</a><a href="https://evil.example/media/foo">Введено аварійні відключення</a>'
     assert emergency_link_candidates(html)==['https://www.cherkasyoblenergo.com/media/emergency','https://www.cherkasyoblenergo.com/media/ordinary']
+
+
+
+def test_update_emergency_reads_current_media_center(monkeypatch, tmp_path):
+    monkeypatch.setattr(importer, 'DATA', tmp_path)
+    requested = []
+    listing = '<a href="/media/emergency">Оперативна інформація</a>'
+
+    def fake_fetch(session, url, binary=False):
+        requested.append(url)
+        if url == 'https://www.cherkasyoblenergo.com/media':
+            return listing
+        return page('Запроваджено аварійні відключення')
+
+    monkeypatch.setattr(importer, 'fetch', fake_fetch)
+    result = update_emergency(object(), NOW)
+
+    assert requested[0] == 'https://www.cherkasyoblenergo.com/media'
+    assert result['source'] == 'https://www.cherkasyoblenergo.com/media'
+    assert len(result['events']) == 1
