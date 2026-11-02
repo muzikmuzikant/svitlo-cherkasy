@@ -30,7 +30,8 @@ test('emergency and test copy has distinct emoji and cautious wording',()=>{
  assert.match(emergencyCopy('active').title,/⚠️/);
  assert.match(emergencyCopy('active').body,/Оператор повідомив/);
  assert.match(emergencyCopy('ended').title,/✅/);
- assert.equal(emergencyCopy('notice'),null);
+ assert.match(emergencyCopy('notice').title,/аварійні відключення/i);
+ assert.ok(emergencyCopy('notice').content.length>80);
  assert.match(testCopy().title,/🧪/);
 });
 test('Railway delivery, iOS service worker and local fallback use the new style',()=>{
