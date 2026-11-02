@@ -29,6 +29,17 @@ def test_gav_article_with_single_digit_hour_is_detected():
     assert obj['publishedAt'].endswith('08:55+02:00')
 
 
+def test_gav_article_with_split_clock_markup_is_detected():
+    now=datetime(2026,11,2,9,0,tzinfo=TZ)
+    html=('<html><h1>По Черкаській області застосовані графіки аварійних відключень (ГАВ)</h1>'
+          '<div>02.11.2026 <span>8</span> <span>:</span> <span>55</span></div></html>')
+    obj=parse_emergency_article(html,
+        'https://www.cherkasyoblenergo.com/media/po-cherkaskiy-oblasti-zastosovani-hrafiky-avariynykh-vidklyuchen-hav?lang=uk',
+        now)
+    assert obj['status']=='active'
+    assert obj['publishedAt'].endswith('08:55+02:00')
+
+
 def test_detect_explicit_emergency():
     obj=parse_emergency_article(page('Запроваджено екстрені відключення'),'https://www.cherkasyoblenergo.com/media/one',NOW)
     assert obj['status']=='active'
