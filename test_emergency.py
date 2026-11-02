@@ -20,6 +20,12 @@ def test_cancellation_is_not_active():
     assert obj['status']=='ended'
 
 
+def test_cancellation_wording_variants_are_detected():
+    for title in ('Скасування аварійних відключень', 'Графіки аварійних відключень скасовано'):
+        obj=parse_emergency_article(page(title),'https://www.cherkasyoblenergo.com/media/cancel',NOW)
+        assert obj['status']=='ended'
+
+
 def test_unconfirmed_is_notice():
     obj=parse_emergency_article(page('Аварійні відключення: інформація'),'https://www.cherkasyoblenergo.com/media/three',NOW)
     assert obj['status']=='notice'
