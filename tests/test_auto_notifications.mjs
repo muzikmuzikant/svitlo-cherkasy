@@ -20,6 +20,8 @@ test('automatic messages have real, schedule-specific expanded descriptions',()=
  assert.ok(copy.changeCopy('6.1',day.date,day).content.length>100);
  assert.ok(copy.transitionCopy('off','6.1',720,30,day.date).content.length>100);
  assert.ok(copy.emergencyCopy('active').content.length>100);
+ assert.match(copy.emergencyCopy('notice').title,/аварійні відключення/i);
+ assert.ok(copy.emergencyCopy('notice').content.length>80);
 });
 test('both unwanted blocks are absent from schedule UI',()=>{
  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
