@@ -59,3 +59,13 @@ def test_update_emergency_reads_current_media_center(monkeypatch, tmp_path):
     assert requested[0] == 'https://www.cherkasyoblenergo.com/media'
     assert result['source'] == 'https://www.cherkasyoblenergo.com/media'
     assert len(result['events']) == 1
+
+
+
+def test_emergency_schedule_headline_with_graphiky_is_detected():
+    obj=parse_emergency_article(
+        page('По Черкаській області застосовані графіки аварійних відключень (ГАВ)'),
+        'https://www.cherkasyoblenergo.com/media/news-4358',
+        NOW
+    )
+    assert obj['status']=='active'
