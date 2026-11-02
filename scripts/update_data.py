@@ -997,7 +997,11 @@ def parse_emergency_article(html,url,now=None):
     if not h:return None
     title=h.get_text(' ',strip=True)
     if not EMERGENCY_TITLE.search(title):return None
-    m=PUB_TS.search(soup.get_text(' ',strip=True))
+    full=soup.get_text(' ',strip=True).replace('\xa0',' ')
+    # The operator CMS can split the clock around a nested span (e.g. "8 : 55").
+    full=re.sub(r'(?<=\d)\s*:\s*(?=\d{2}\b)',':',full)
+    full=re.sub(r'(?<!\d)0\s+([0-9]):([0-5]\d)\b',r'0\1:\2',full)
+    m=PUB_TS.search(full)
     if not m:return None
     published=datetime.strptime(' '.join(m.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
     now=now or datetime.now(TZ)
