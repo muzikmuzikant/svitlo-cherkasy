@@ -943,8 +943,14 @@ function emergencyEvents(){
  return all.filter(e=>e&&typeof e.source==='string'&&/^https:\/\/(?:www\.)?cherkasyoblenergo\.com\//.test(e.source)&&Number.isFinite(new Date(e.publishedAt).getTime())).sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
 }
 function latestEmergency(){
- // Do not infer a currently active interruption from old or ambiguous reports.
- return emergencyEvents().find(e=>{const age=Date.now()-new Date(e.publishedAt).getTime();return age>=0&&age<24*60*60*1000})||null;
+ // Emergency status is valid only for the Kyiv calendar day on which it was published.
+ // The operator may not publish a separate "ended" notice, so never carry it into tomorrow.
+ return emergencyEvents().find(e=>{
+  const published=new Date(e.publishedAt);
+  if(!Number.isFinite(published.getTime()))return false;
+  const p=dateParts(published);
+  return `${p.year}-${p.month}-${p.day}`===today();
+ })||null;
 }
 function renderEmergency(){
  const e=latestEmergency(),banner=$('emergencyBanner');
@@ -953,7 +959,8 @@ function renderEmergency(){
  const recent=Date.now()-new Date(e.publishedAt).getTime()<3*60*60*1000;
  banner.className='emergency-banner '+(e.status==='active'&&recent?'is-warning':'is-note');
  setText('emergencyTitle',e.status==='active'&&recent?'Офіційне повідомлення про аварійні відключення':e.status==='ended'?'Оновлення: завершення обмежень':'Повідомлення про аварійні відключення');
- setText('emergencyText',`${e.title||'Інформація про відключення'} · ${fmtStamp(e.publishedAt)}. Перевіряйте поточний стан в оператора.`);
+ const message=String(e.title||'Інформація про відключення').replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n').replace(/\r\n/g,'\n');
+ setText('emergencyText',`${message} · ${fmtStamp(e.publishedAt)}. Перевіряйте поточний стан в оператора.`);
  $('emergencySource').href=e.source;
 }
 function notifyEmergencyEvent(){
