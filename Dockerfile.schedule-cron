@@ -4,5 +4,5 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY scripts/ ./scripts/
-COPY data/schedules.json data/source_review.json ./data/
+COPY data/schedules.json data/source_review.json data/emergency.json ./data/
 CMD ["python", "-m", "scripts.railway_schedule_cron"]
