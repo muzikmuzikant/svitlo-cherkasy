@@ -1213,7 +1213,7 @@ async function checkPushDelivery(force=false){
   }
   if(!primary()?.queue){pushHealthMessage('Оберіть адресу та підчергу для Push.');return}
   try{
-   const registration=await navigator.serviceWorker.ready;
+   const registration=await getPushRegistration();
    let subscription=await registration.pushManager.getSubscription();
    if(!subscription){
     pushActive=false;
@@ -1269,16 +1269,31 @@ async function getPushConfig(){
   if(r.ok){const c=await r.json();if(/^https:\/\/[^\s]+$/.test(c?.apiBase||'')&&typeof c.publicKey==='string'&&/^[A-Za-z0-9_-]{87}$/.test(c.publicKey))pushConfig=c}
   if(pushConfig&&'Notification' in window&&Notification.permission==='granted'&&localStorage.getItem(PUSH_CONSENT)!=='no'){
    // Existing subscribers are migrated; new users must tap the consent button.
-   const existing=await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+   const existing=await (await getPushRegistration()).pushManager.getSubscription();
    if(existing||localStorage.getItem(PUSH_CONSENT)==='yes')await updatePushSubscription();
   }
  }catch(e){console.warn('Push config:',e.message)}renderSettings();updatePushInvite();checkPushDelivery(true).catch(console.warn);
 }
 function urlsafe(value){const str=(value+'='.repeat((4-value.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/');return Uint8Array.from(atob(str),x=>x.charCodeAt(0))}
+async function getPushRegistration(){
+ if(!('serviceWorker' in navigator))throw Error('Service workers are unavailable in this browser');
+ let registration=swRegistration||await navigator.serviceWorker.getRegistration('./');
+ if(!registration){
+  registration=await navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'});
+ }
+ swRegistration=registration;
+ // Edge may finish installing an app's worker after the settings screen has loaded.
+ // Wait for the active registration, not merely for register() to return.
+ const timeout=new Promise((_,reject)=>setTimeout(()=>reject(Error('Service worker activation timed out')),15000));
+ const ready=await Promise.race([navigator.serviceWorker.ready,timeout]);
+ if(!ready?.active||!ready.pushManager)throw Error('Active Push service worker is unavailable');
+ swRegistration=ready;
+ return ready;
+}
 async function updatePushSubscription(){
- if(!('Notification' in window)||!pushConfig||Notification.permission!=='granted'||!primary()?.queue)return;
- const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();
- const key=urlsafe(pushConfig.publicKey);
+ if(!('Notification' in window)||!('serviceWorker' in navigator)||!pushConfig||Notification.permission!=='granted'||!primary()?.queue)throw Error('Push prerequisites are unavailable');
+ const reg=await getPushRegistration();let sub=await reg.pushManager.getSubscription();
+ const key=urlsafe(pushConfig.publicKey);if(key.length!==65)throw Error('Invalid VAPID public key length');
  // VAPID rotation requires a new subscription. Never silently reuse an old key.
  if(sub&&sub.options?.applicationServerKey){
   const old=Array.from(new Uint8Array(sub.options.applicationServerKey));
@@ -1288,8 +1303,8 @@ async function updatePushSubscription(){
  const payload={subscription:sub.toJSON(),queue:primary().queue,settlement:primary().settlement||'',preferences:{off:prefs.off,on:prefs.on,changes:prefs.changes,tomorrow:prefs.tomorrow,emergency:prefs.emergency}};
  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),12000);
  try{
-  const response=await fetch(pushConfig.apiBase.replace(/\/$/,'')+'/api/subscribe',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload),signal:controller.signal});
-  if(!response.ok)throw Error('Push server response '+response.status);
+  const response=await fetch(pushConfig.apiBase.replace(/\/$/,'')+'/api/subscribe',{method:'POST',headers:{'content-type':'application/json','cache-control':'no-cache'},cache:'no-store',body:JSON.stringify(payload),signal:controller.signal});
+  if(!response.ok){let detail='';try{detail=(await response.json())?.error||''}catch{}throw Error('Push server response '+response.status+(detail?': '+detail:''))}
   pushActive=true;localStorage.setItem(PUSH_CONSENT,'yes');updatePushInvite();
  }finally{clearTimeout(timeout)}
 }
