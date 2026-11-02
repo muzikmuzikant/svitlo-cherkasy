@@ -9,6 +9,15 @@ def page(title,date='10.10.2026 09:30'):
     return '<html><h1>'+title+'</h1><div>'+date+'</div></html>'
 
 
+def test_emergency_schedule_headline_with_graphiky_is_detected():
+    obj=parse_emergency_article(
+        page('По Черкаській області застосовані графіки аварійних відключень (ГАВ)'),
+        'https://www.cherkasyoblenergo.com/media/news-4358',
+        NOW
+    )
+    assert obj['status']=='active'
+
+
 def test_detect_explicit_emergency():
     obj=parse_emergency_article(page('Запроваджено екстрені відключення'),'https://www.cherkasyoblenergo.com/media/one',NOW)
     assert obj['status']=='active'
