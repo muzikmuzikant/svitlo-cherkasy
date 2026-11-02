@@ -1284,8 +1284,11 @@ async function getPushRegistration(){
  swRegistration=registration;
  // Edge may finish installing an app's worker after the settings screen has loaded.
  // Wait for the active registration, not merely for register() to return.
- const timeout=new Promise((_,reject)=>setTimeout(()=>reject(Error('Service worker activation timed out')),15000));
- const ready=await Promise.race([navigator.serviceWorker.ready,timeout]);
+ let timeoutId;
+ const timeout=new Promise((_,reject)=>{timeoutId=setTimeout(()=>reject(Error('Service worker activation timed out')),15000)});
+ let ready;
+ try{ready=await Promise.race([navigator.serviceWorker.ready,timeout)}
+ finally{clearTimeout(timeoutId)}
  if(!ready?.active||!ready.pushManager)throw Error('Active Push service worker is unavailable');
  swRegistration=ready;
  return ready;
