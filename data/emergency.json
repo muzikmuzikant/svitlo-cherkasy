@@ -1,6 +1,16 @@
 {
   "schemaVersion": 1,
-  "lastChecked": "2026-11-02T07:36:44+02:00",
-  "source": "https://www.cherkasyoblenergo.com/news",
-  "events": []
+  "lastChecked": "2026-11-02T15:49:58+02:00",
+  "source": "https://www.cherkasyoblenergo.com/media",
+  "events": [
+    {
+      "id": "https://www.cherkasyoblenergo.com/media/po-cherkaskiy-oblasti-zastosovani-hrafiky-avariynykh-vidklyuchen-hav?lang=uk",
+      "title": "По Черкаській області застосовані графіки аварійних відключень (ГАВ)",
+      "publishedAt": "2026-11-02T08:55+02:00",
+      "source": "https://www.cherkasyoblenergo.com/media/po-cherkaskiy-oblasti-zastosovani-hrafiky-avariynykh-vidklyuchen-hav?lang=uk",
+      "status": "active",
+      "scope": "region",
+      "queues": []
+    }
+  ]
 }
