@@ -973,19 +973,24 @@ def update_addresses(session,now=None):
 # evidence that a particular house lost power, only that the operator published
 # an emergency restriction notice. Inactive/ambiguous bulletins never trigger
 # "active emergency" push messages.
-EMERGENCY_TITLE = re.compile(r'(?:екстрен[іихо]+|аварійн[іихо]+)\s+(?:відключенн|вимкненн)|(?:відключенн|вимкненн)\s+за\s+аварійними',re.I)
+EMERGENCY_TITLE = re.compile(r'(?:екстрен|аварійн)\w*\s+(?:відключенн|вимкненн|знеструмлен)\w*|(?:відключенн|вимкненн|знеструмлен)\w*\s+(?:за\s+)?аварійн\w*',re.I)
 CANCEL_TITLE = re.compile(r'скасован|припинен|завершен|відмін[еє]|відновлен|знято\s+обмеження',re.I)
 ACTIVE_TITLE = re.compile(r'запроваджен|введен|діють|діятимуть|застосовують|почал[ио]|розпочат',re.I)
 
 def emergency_link_candidates(html):
+    """Inspect the newest official media articles by their own H1, not link labels.
+
+    The CMS sometimes shortens or decorates listing labels. Filtering only the
+    anchor text can hide a genuine emergency article before its page is parsed.
+    """
     soup=BeautifulSoup(html,'html.parser');links=[]
     for a in soup.select('a[href]'):
         url=urljoin(BASE,a['href'])
-        label=a.get_text(' ',strip=True)
-        if (EMERGENCY_TITLE.search(label) and '/media/' in url
+        if ('/media/' in url
                 and urlparse(url).netloc in ('cherkasyoblenergo.com','www.cherkasyoblenergo.com')
-                and url not in links):links.append(url)
-    return links
+                and url not in links):
+            links.append(url)
+    return links[:12]
 
 def parse_emergency_article(html,url,now=None):
     soup=BeautifulSoup(html,'html.parser');h=soup.find('h1')
