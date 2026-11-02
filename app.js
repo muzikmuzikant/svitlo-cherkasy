@@ -1231,7 +1231,7 @@ async function checkPushDelivery(force=false){
   }
   if(!primary()?.queue){pushHealthMessage('Оберіть адресу та підчергу для Push.');return}
   try{
-   const registration=await getPushRegistration();
+   const registration=await navigator.serviceWorker.ready;
    let subscription=await registration.pushManager.getSubscription();
    if(!subscription){
     pushActive=false;
