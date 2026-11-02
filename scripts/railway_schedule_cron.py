@@ -155,7 +155,7 @@ def download_previous_emergency(session: requests.Session, base: str) -> None:
     bulletin = response.json()
     if bulletin.get("schemaVersion") != 1 or not isinstance(bulletin.get("events"), list) or not bulletin.get("lastChecked"):
         raise RuntimeError("Railway emergency snapshot invalid")
-    (DATA / "emergency.json").write_text(json.dumps(bulletin, ensure_ascii=False) + "\\n", encoding="utf-8")
+    (DATA / "emergency.json").write_text(json.dumps(bulletin, ensure_ascii=False) + "\n", encoding="utf-8")
     LOG.info("Restored previous Railway emergency state checked at %s", bulletin["lastChecked"])
 
 
