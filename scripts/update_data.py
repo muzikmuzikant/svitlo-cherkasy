@@ -990,7 +990,7 @@ def emergency_link_candidates(html):
                 and urlparse(url).netloc in ('cherkasyoblenergo.com','www.cherkasyoblenergo.com')
                 and url not in links):
             links.append(url)
-    return links[:12]
+    return links[:40]
 
 def parse_emergency_article(html,url,now=None):
     soup=BeautifulSoup(html,'html.parser');h=soup.find('h1')
