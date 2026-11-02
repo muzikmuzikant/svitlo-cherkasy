@@ -1013,7 +1013,11 @@ def update_emergency(session,now=None):
     except (ValueError,FileNotFoundError):old={'events':[]}
     listing=fetch(session,BASE+'/media')
     entries=[]
-    for url in emergency_link_candidates(listing)[:12]:
+    # Explicitly retain the current operator bulletin supplied and verified by the project owner.
+    # Keep it in the normal freshness window so it cannot resurrect old alerts.
+    seed_urls=['https://www.cherkasyoblenergo.com/media/po-cherkaskiy-oblasti-zastosovani-hrafiky-avariynykh-vidklyuchen-hav?lang=uk']
+    candidates=list(dict.fromkeys(seed_urls + emergency_link_candidates(listing)))
+    for url in candidates[:40]:
         try:
             event=parse_emergency_article(fetch(session,url),url,now)
             if event:entries.append(event)
