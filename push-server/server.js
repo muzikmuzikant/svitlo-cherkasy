@@ -131,7 +131,7 @@ async function send(rec,message,key,options={}){
    delete subscribers[hash(rec.subscription.endpoint)];
    try{save()}catch(error){console.error('[auto-push] invalid subscription save failed:',error.message)}
   }
-  else console.warn('Auto Push failed:',e?.statusCode||e?.message);
+  else console.warn('Auto Push failed:',JSON.stringify({name:e?.name||typeof e,message:e?.message||String(e),statusCode:e?.statusCode??null,code:e?.code??null,stack:typeof e?.stack==='string'?e.stack.split('\\n').slice(0,3):undefined}));
   return 'failed';
  }finally{pendingPushKeys.delete(key)}
 }
@@ -252,6 +252,7 @@ async function job(){
   // The freshest verified bulletin determines whether an emergency is active or ended.
   const event=latestOfficialEvent(bulletin,timestamp);
   const all=Object.values(subscribers);
+  let emergencyEligible=0,emergencyAccepted=0,emergencyFailed=0;
   await forEachLimited(all,12,async record=>{
    const q=record?.queue,endpoint=record?.subscription?.endpoint;
    if(!QUEUES.has(q)||!endpoint)return;
@@ -276,8 +277,13 @@ async function job(){
    }
    if(pref.emergency&&freshEvent(event,timestamp)&&(!Array.isArray(event.queues)||!event.queues.length||event.queues.includes(q))){
     const msg=emergencyCopy(event.status);
-    if(msg)await send(record,msg,`${prefix}:emergency:${event.status}:${hash(event.id||event.source)}:${event.publishedAt}`,{
-     notificationId:emergencyId(event),at:event.publishedAt,source:event.source,kind:'emergency',ttl:3600,urgency:'high'});
+    if(msg){
+     emergencyEligible++;
+     const outcome=await send(record,msg,`${prefix}:emergency:${event.status}:${hash(event.id||event.source)}:${event.publishedAt}`,{
+      notificationId:emergencyId(event),at:event.publishedAt,source:event.source,kind:'emergency',ttl:3600,urgency:'high'});
+     if(outcome==='accepted')emergencyAccepted++;
+     else if(outcome==='failed')emergencyFailed++;
+    }
    }
    if(schedulesSafe&&pref.changes)for(const change of freshChanges){
     const changedDay=verifiedScheduleDay(source,change.date,timestamp);
@@ -287,6 +293,7 @@ async function job(){
      notificationId:changeId(q,change),at:change.detectedAt||change.publishedAt,source:change.source});
    }
   });
+  if(event&&freshEvent(event,timestamp))console.info('[emergency-push] status='+event.status+' eligible='+emergencyEligible+' accepted='+emergencyAccepted+' failed='+emergencyFailed);
   // Scheduled admin messages share a stable ID between Push and the public inbox.
   for(const notice of siteControls.duePush().slice(0,6)){
    try{
