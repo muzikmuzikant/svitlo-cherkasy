@@ -1011,7 +1011,7 @@ def update_emergency(session,now=None):
     out=DATA/'emergency.json'
     try:old=json.loads(out.read_text('utf8'))
     except (ValueError,FileNotFoundError):old={'events':[]}
-    listing=fetch(session,BASE+'/news?lang=uk')
+    listing=fetch(session,BASE+'/media')
     entries=[]
     for url in emergency_link_candidates(listing)[:12]:
         try:
@@ -1023,7 +1023,7 @@ def update_emergency(session,now=None):
             item.get('publishedAt','') >= (now-timedelta(hours=48)).isoformat(timespec='minutes')}
     events.update({e['id']:e for e in entries})
     result={'schemaVersion':1,'lastChecked':now.isoformat(timespec='seconds'),
-            'source':BASE+'/news','events':sorted(events.values(),key=lambda x:x['publishedAt'],reverse=True)[:30]}
+            'source':BASE+'/media','events':sorted(events.values(),key=lambda x:x['publishedAt'],reverse=True)[:30]}
     atomic_write(out,result)
     return result
 
