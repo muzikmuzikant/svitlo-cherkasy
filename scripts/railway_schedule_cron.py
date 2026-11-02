@@ -146,18 +146,92 @@ def publish(session: requests.Session, base: str, secret: str) -> dict:
     raise RuntimeError("Railway publication retries exhausted")
 
 
+def download_previous_emergency(session: requests.Session, base: str) -> None:
+    response = download(session, base + "/api/data/emergency.json", bootstrap=True)
+    if response.status_code == 503:
+        LOG.info("No Railway emergency snapshot yet; bootstrap from verified repository seed")
+        return
+    response.raise_for_status()
+    bulletin = response.json()
+    if bulletin.get("schemaVersion") != 1 or not isinstance(bulletin.get("events"), list) or not bulletin.get("lastChecked"):
+        raise RuntimeError("Railway emergency snapshot invalid")
+    (DATA / "emergency.json").write_text(json.dumps(bulletin, ensure_ascii=False) + "\\n", encoding="utf-8")
+    LOG.info("Restored previous Railway emergency state checked at %s", bulletin["lastChecked"])
+
+
+def import_emergency() -> None:
+    subprocess.run([sys.executable, str(ROOT / "scripts" / "update_data.py"), "--emergency-only"],
+                   cwd=ROOT, timeout=100, check=True, stderr=subprocess.STDOUT)
+
+
+def publish_emergency(session: requests.Session, base: str, secret: str) -> dict:
+    bulletin = json.loads((DATA / "emergency.json").read_text(encoding="utf-8"))
+    if bulletin.get("schemaVersion") != 1 or not isinstance(bulletin.get("events"), list) or not bulletin.get("lastChecked"):
+        raise RuntimeError("Importer did not produce a verified emergency bulletin")
+    for attempt in range(len(RETRY_DELAYS) + 1):
+        try:
+            result = session.post(base + "/api/internal/emergency", json={"emergency": bulletin},
+                                  headers={"Authorization": "Bearer " + secret}, timeout=(7, 20))
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as error:
+            try:
+                check = session.get(base + "/api/data/emergency.json", timeout=TIMEOUT)
+                if check.status_code == 200 and check.json().get("lastChecked") == bulletin["lastChecked"]:
+                    LOG.info("Emergency publication was committed despite disconnected acknowledgement")
+                    return {"lastChecked": bulletin["lastChecked"], "count": len(bulletin["events"])}
+            except (requests.exceptions.RequestException, ValueError, TypeError):
+                pass
+            if attempt == len(RETRY_DELAYS):
+                raise RuntimeError("Railway emergency publication unreachable after %d attempts" % (attempt + 1)) from error
+            LOG.warning("Railway emergency publication disconnected; retry %d/%d (%s)",
+                        attempt + 1, len(RETRY_DELAYS), type(error).__name__)
+        else:
+            if result.status_code == 200:
+                body = result.json()
+                if body.get("ok") is not True or body.get("lastChecked") != bulletin["lastChecked"]:
+                    raise RuntimeError("Railway emergency publication acknowledgement mismatch")
+                return body
+            if result.status_code not in TRANSIENT_HTTP:
+                raise RuntimeError("Railway emergency publication rejected (HTTP %s): %s" %
+                                   (result.status_code, result.text[:350]))
+            if attempt == len(RETRY_DELAYS):
+                raise RuntimeError("Railway emergency publication returned HTTP %d after %d attempts" %
+                                   (result.status_code, attempt + 1))
+            LOG.warning("Railway emergency publication HTTP %d; retry %d/%d",
+                        result.status_code, attempt + 1, len(RETRY_DELAYS))
+        time.sleep(RETRY_DELAYS[attempt])
+    raise RuntimeError("Railway emergency publication retries exhausted")
+
+
 def main() -> int:
-    logging.basicConfig(level=logging.INFO, format="[railway-cron] %(levelname)s %(message)s", stream=sys.stdout)
+    logging.basicConfig(level=logging.INFO, format="[railway-minute] %(levelname)s %(message)s", stream=sys.stdout)
     base = endpoint()
     secret = os.environ.get("SCHEDULE_INGEST_SECRET", "")
     if len(secret) < 32:
         raise RuntimeError("SCHEDULE_INGEST_SECRET must be set (at least 32 characters)")
+    failures = []
     with requests.Session() as session:
-        download_previous(session, base)
-        import_official()
-        result = publish(session, base, secret)
-    LOG.info("Published checked=%s, verified days=%s, review pending=%s",
-             result["lastChecked"], result["verifiedDays"], result["reviewPending"])
+        try:
+            download_previous(session, base)
+            import_official()
+            result = publish(session, base, secret)
+            LOG.info("Schedules published checked=%s, verified days=%s, review pending=%s",
+                     result["lastChecked"], result["verifiedDays"], result["reviewPending"])
+        except Exception as error:
+            failures.append(("schedules", error))
+            LOG.exception("Schedule check failed; emergency check will continue")
+        try:
+            download_previous_emergency(session, base)
+            import_emergency()
+            result = publish_emergency(session, base, secret)
+            LOG.info("Emergency bulletins published checked=%s, events=%s",
+                     result["lastChecked"], result["count"])
+        except Exception as error:
+            failures.append(("emergency", error))
+            LOG.exception("Emergency check failed; schedule result is preserved")
+    if len(failures) == 2:
+        raise RuntimeError("Both schedule and emergency checks failed")
+    if failures:
+        LOG.warning("One source check failed; successful source published, retrying both on next minute")
     return 0
 
 
