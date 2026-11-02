@@ -974,7 +974,7 @@ def update_addresses(session,now=None):
 # an emergency restriction notice. Inactive/ambiguous bulletins never trigger
 # "active emergency" push messages.
 EMERGENCY_TITLE = re.compile(r'(?:екстрен|аварійн)\w*\s+(?:графік\w*\s+)?(?:відключен|вимкнен|знеструмлен)\w*|графік\w*\s+аварійн\w*\s+(?:відключен|вимкнен|знеструмлен)\w*|(?:графік\w*\s+)?(?:відключен|вимкнен|знеструмлен)\w*\s+(?:за\s+)?аварійн\w*',re.I)
-CANCEL_TITLE = re.compile(r'скасован|припинен|завершен|відмін[еє]|відновлен|знято\s+обмеження',re.I)
+CANCEL_TITLE = re.compile(r'скасув\w*|скасован\w*|припинен\w*|завершен\w*|відмін\w*|відновлен\w*|знято\s+обмеженн\w*',re.I)
 ACTIVE_TITLE = re.compile(r'запроваджен|введен|діють|діятимуть|застосовують|застосован\w*|почал[ио]|розпочат',re.I)
 
 def emergency_link_candidates(html):
