@@ -25,11 +25,16 @@ def test_unconfirmed_is_notice():
     assert obj['status']=='notice'
 
 
+def test_singular_emergency_headline_is_detected():
+    obj=parse_emergency_article(page('Аварійне відключення електроенергії'),'https://www.cherkasyoblenergo.com/media/singular',NOW)
+    assert obj['status']=='notice'
+
+
 def test_reject_expired_and_unrelated():
     assert parse_emergency_article(page('Звичайний графік відключень'),'https://www.cherkasyoblenergo.com/media/x',NOW) is None
     assert parse_emergency_article(page('Запроваджено екстрені відключення','01.10.2026 09:30'),'https://www.cherkasyoblenergo.com/media/old',NOW) is None
 
 
 def test_only_official_links():
-    html='<a href="/media/emergency">Запроваджено екстрені відключення</a><a href="https://evil.example/media/foo">Введено аварійні відключення</a>'
-    assert emergency_link_candidates(html)==['https://www.cherkasyoblenergo.com/media/emergency']
+    html='<a href="/media/emergency">Запроваджено екстрені відключення</a><a href="/media/ordinary">Новина про електропостачання</a><a href="https://evil.example/media/foo">Введено аварійні відключення</a>'
+    assert emergency_link_candidates(html)==['https://www.cherkasyoblenergo.com/media/emergency','https://www.cherkasyoblenergo.com/media/ordinary']
