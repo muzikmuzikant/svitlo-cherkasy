@@ -4,9 +4,9 @@
 1. Railway Cron svitlo-schedules-cron за розкладом */5 * * * * (UTC) запускає Python 3.12.
 2. Скрипт scripts/railway_schedule_cron.py отримує останній опублікований графік і дані перевірки з Railway. На першому запуску можливе завантаження перевіреного файлу з репозиторію.
 3. Викликає той самий офіційний імпортер: python scripts/update_data.py --schedules-only.
-4. Пара графік + висновки перевірки публікується через захищений POST /api/internal/schedules. Токен SCHEDULE_INGEST_SECRET зберігається тільки в Railway Variables.
-5. Push-сервіс валідує всі перевірені дні та 12 підчерг, відхиляє застарілі файли і атомарно пише один знімок на існуючий постійний том /data.
-6. PWA отримує графік через GET /api/data/schedules.json на Railway, а Push-сервіс використовує той самий знімок. Локальний кеш і GitHub Pages залишаються запасним джерелом.
+4. Графік і висновки перевірки публікуються через захищений POST /api/internal/schedules. Аварійні оголошення незалежно імпортуються режимом --emergency-only і публікуються через POST /api/internal/emergency. Обидва використовують SCHEDULE_INGEST_SECRET тільки з Railway Variables.
+5. Push-сервіс валідує графіки та аварійні оголошення окремо, відхиляє застарілі дані й атомарно зберігає обидва знімки на існуючому постійному томі /data.
+6. PWA та Push-сервіс отримують графік через GET /api/data/schedules.json, а аварійні оголошення через GET /api/data/emergency.json безпосередньо з Railway. GitHub Pages залишається запасним джерелом.
 
 ## Налаштування
 - Сервіс push: svitlo-cherkasy, GitHub root /push-server, volume /data.
@@ -14,11 +14,13 @@
 - Змінна SCHEDULE_INGEST_SECRET однакова на Cron і на Push-сервері. НІКОЛИ не публікувати її в GitHub.
 - SCHEDULE_PUBLISH_URL на Cron: https://svitlo-cherkasy-production.up.railway.app
 - GitHub Actions update.yml: тільки після успішної публікації і перевірки Railway вимкнути schedule. workflow_dispatch зберегти для аварійного резерву.
-- Окремі імпортери адрес і аварійних оголошень залишаються в GitHub Actions.
+- Імпорт адрес залишається в GitHub Actions. Workflow emergency.yml збережений як резервний канал, але штатна перевірка аварійних оголошень тепер працює в тому самому Railway worker, що й графіки.
 
 ## Перевірка
 - GET https://svitlo-cherkasy-production.up.railway.app/api/data/status має повертати ready:true, lastChecked і verifiedDays.
 - GET /api/data/schedules.json повертає schemaVersion 3 і перевірений розклад.
+- GET /api/data/emergency.json повертає schemaVersion 1 і підтверджені оголошення.
+- У логах worker мають окремо з'являтися `Schedules published` та `Emergency bulletins published`; помилка одного джерела не блокує інше.
 - У логах Railway Cron має бути повідомлення Published checked= з актуальним timestamp.
 - Після зупинки старого GitHub cron перевірити, що Railway cron продовжує оновлювати час перевірки.
 - Не надсилати Push для тесту міграції.
