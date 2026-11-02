@@ -22,6 +22,7 @@ import {createNoticeMetrics} from './notice-metrics.js';
 import {createAppConfig} from './app-config.js';
 import {createMediaStore} from './media-store.js';
 import {createSchedulePublication} from './schedule-publication.js';
+import {createEmergencyPublication} from './emergency-publication.js';
 import {createManualOverridesStore} from './manual-overrides-store.js';
 import {createScheduleReview} from './schedule-review.js';
 import {createScheduleMirror} from './schedule-mirror.js';
@@ -72,6 +73,7 @@ const manualOverrides=createManualOverridesStore({directory:path.dirname(DATA_FI
 }});
 const officialSchedules=createSchedulePublication({directory:path.dirname(DATA_FILE),
  token:process.env.SCHEDULE_INGEST_SECRET||'',reviewApprovals:scheduleReview});
+const officialEmergency=createEmergencyPublication({directory:path.dirname(DATA_FILE),token:process.env.SCHEDULE_INGEST_SECRET||''});
 const betaScheduleMirror=createScheduleMirror({publisher:officialSchedules,sourceOrigin:process.env.SCHEDULE_MIRROR_API_BASE||''});
 const liveSchedule=()=>manualOverrides.applySchedule(officialSchedules.schedule());
 const appUrl=new URL('/',APP_ORIGIN).href; // Push opens PWA, never the GitHub raw JSON host.
@@ -234,12 +236,17 @@ async function job(){
   const nextDate=shiftDay(now.date,1);
   const tomorrow=verifiedScheduleDay(source,nextDate,timestamp);
   let bulletin=[];
-  for(const [filename,path] of [['emergency.json','events'],['manual_overrides.json','override']]){
-   try{const u=new URL(SCHEDULE_URL);u.pathname=u.pathname.replace(/schedules\.json$/,filename);
-       const value=await loadJson(u);const events=path==='events'?value.events:value.emergency?.events;
-       if(Array.isArray(events))bulletin.push(...events)}
-   catch(e){console.warn('Bulletin refresh:',e.message)}
+  const railwayEmergency=officialEmergency.snapshot();
+  if(Array.isArray(railwayEmergency?.events)){
+   bulletin.push(...railwayEmergency.events);
+  }else{
+   try{const u=new URL(SCHEDULE_URL);u.pathname=u.pathname.replace(/schedules\\.json$/,'emergency.json');
+       const value=await loadJson(u);if(Array.isArray(value.events))bulletin.push(...value.events)}
+   catch(e){console.warn('Emergency bulletin fallback:',e.message)}
   }
+  try{const u=new URL(SCHEDULE_URL);u.pathname=u.pathname.replace(/schedules\\.json$/,'manual_overrides.json');
+      const value=await loadJson(u);if(Array.isArray(value.emergency?.events))bulletin.push(...value.emergency.events)}
+  catch(e){console.warn('Manual bulletin refresh:',e.message)}
   // Allow a verified cross-device link to resolve recent published emergency messages.
   lastLoadedBulletins=bulletin.filter(e=>e&&typeof e.publishedAt==='string').slice(-40);
   // The freshest verified bulletin determines whether an emergency is active or ended.
@@ -399,6 +406,10 @@ const server=http.createServer(async(req,res)=>{
  if(requestPath==='/api/data/manual_overrides.json'&&req.method==='GET'){
   const live=manualOverrides.snapshot();response(res,live?200:404,live||{error:'No published manual edits'});return;
  }
+ if(requestPath==='/api/data/emergency.json'&&req.method==='GET'){
+  const doc=officialEmergency.snapshot();
+  response(res,doc?200:503,doc||{error:'Railway emergency snapshot is not yet ready'});return;
+ }
  if((requestPath==='/api/data/schedules.json'||requestPath==='/api/data/source_review.json')&&req.method==='GET'){
   const doc=requestPath==='/api/data/source_review.json'?officialSchedules.review():(typeof liveSchedule==='function'?liveSchedule():officialSchedules.schedule());
   if(!doc){response(res,503,{error:'Railway schedule snapshot is not yet ready'});return}
@@ -422,6 +433,17 @@ const server=http.createServer(async(req,res)=>{
    response(res,400,{error:e.message});}
   return;
  }
+ if(req.url==='/api/internal/emergency'&&req.method==='POST'){
+  if(!officialEmergency.authorized(req.headers.authorization)){response(res,401,{error:'Unauthorized'});return}
+  try{
+   const body=await readPayload(req,180_000);
+   const state=officialEmergency.update(body.emergency);
+   console.log('[railway-emergency] Verified publication',state.lastChecked,'events='+state.count);
+   response(res,200,{ok:true,...state});
+   queueMicrotask(()=>void job().catch(error=>console.error('[auto-push] emergency publication cycle:',error.message)));
+  }catch(e){console.error('[railway-emergency] Publish rejected:',e.message);response(res,400,{error:e.message})}
+  return;
+ }
  if(requestPath==='/api/telemetry'&&req.method==='POST'){
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   try{
@@ -436,7 +458,7 @@ const server=http.createServer(async(req,res)=>{
     const result={server:{lastPushCheck:lastSuccess,pushCheckError:lastError,pushSubscribers:Object.keys(subscribers).length},sources:{}};
     await Promise.all([['schedules',SCHEDULE_URL],['emergency',new URL('emergency.json',SCHEDULE_URL).href],['review',new URL('source_review.json',SCHEDULE_URL).href]].map(async([name,url])=>{
       try{
-        const data=(name==='schedules'?(typeof liveSchedule==='function'?liveSchedule():officialSchedules.schedule()):name==='review'?officialSchedules.review():null)||await loadJson(url);
+        const data=(name==='schedules'?(typeof liveSchedule==='function'?liveSchedule():officialSchedules.schedule()):name==='review'?officialSchedules.review():name==='emergency'?officialEmergency.snapshot():null)||await loadJson(url);
         result.sources[name]=name==='schedules'?{lastChecked:data.lastChecked,days:(data.days||[]).map(d=>({date:d.date,verified:d.verified,source:d.source,publishedAt:d.publishedAt})),changes:(data.changes||[]).length,reviewPending:data.reviewPending===true,unresolvedDates:data.unresolvedDates||[]}:
           name==='emergency'?{lastChecked:data.lastChecked,count:(data.events||[]).length,latest:data.events?.[0]?.status||null}:
           {lastChecked:data.lastChecked,rejectedCount:data.rejectedCount||0,warningCount:data.warningCount||0,items:(data.items||[]).slice(0,30)};
