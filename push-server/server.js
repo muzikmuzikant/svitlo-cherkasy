@@ -240,11 +240,11 @@ async function job(){
   if(Array.isArray(railwayEmergency?.events)){
    bulletin.push(...railwayEmergency.events);
   }else{
-   try{const u=new URL(SCHEDULE_URL);u.pathname=u.pathname.replace(/schedules\\.json$/,'emergency.json');
+   try{const u=new URL(SCHEDULE_URL);u.pathname=u.pathname.replace(/schedules\.json$/,'emergency.json');
        const value=await loadJson(u);if(Array.isArray(value.events))bulletin.push(...value.events)}
    catch(e){console.warn('Emergency bulletin fallback:',e.message)}
   }
-  try{const u=new URL(SCHEDULE_URL);u.pathname=u.pathname.replace(/schedules\\.json$/,'manual_overrides.json');
+  try{const u=new URL(SCHEDULE_URL);u.pathname=u.pathname.replace(/schedules\.json$/,'manual_overrides.json');
       const value=await loadJson(u);if(Array.isArray(value.emergency?.events))bulletin.push(...value.emergency.events)}
   catch(e){console.warn('Manual bulletin refresh:',e.message)}
   // Allow a verified cross-device link to resolve recent published emergency messages.
