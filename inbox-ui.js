@@ -345,7 +345,26 @@
    }
    const [schedules,emergency]=await Promise.all([
     fetch('./data/schedules.json?inbox='+now,{cache:'no-store'}).then(x=>x.ok?x.json():null).catch(()=>null),
-    fetch('./data/emergency.json?inbox='+now,{cache:'no-store'}).then(x=>x.ok?x.json():null).catch(()=>null)
+    (async()=>{
+     // Railway is the one-minute source of truth; Pages is only the fallback.
+     try{
+      const configResponse=await fetch('./push-config.json?inbox='+now,{cache:'no-store'});
+      if(configResponse.ok){
+       const config=await configResponse.json(),api=new URL(config.apiBase);
+       if(api.protocol==='https:'&&!api.username&&!api.password){
+        const url=new URL('/api/data/emergency.json',api);
+        url.searchParams.set('inbox',String(now));
+        const response=await fetch(url.href,{cache:'no-store'});
+        if(response.ok){
+         const snapshot=await response.json();
+         if(Array.isArray(snapshot.events))return snapshot;
+        }
+       }
+      }
+     }catch{}
+     return fetch('./data/emergency.json?inbox='+now,{cache:'no-store'})
+      .then(x=>x.ok?x.json():null).catch(()=>null);
+    })()
    ]);
    if(queue&&Array.isArray(schedules?.days)){
     for(const x of schedules.changes||[]){
@@ -519,5 +538,5 @@
   if(shared)routeMessage(shared);
   else if(id)routePush(id);
  }).catch(console.warn);
- setInterval(()=>{if(!document.hidden)sync().catch(console.warn)},5*60000);
+ setInterval(()=>{if(!document.hidden)sync().catch(console.warn)},60*1000);
 })();
