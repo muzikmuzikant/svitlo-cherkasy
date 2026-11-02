@@ -973,9 +973,9 @@ def update_addresses(session,now=None):
 # evidence that a particular house lost power, only that the operator published
 # an emergency restriction notice. Inactive/ambiguous bulletins never trigger
 # "active emergency" push messages.
-EMERGENCY_TITLE = re.compile(r'(?:екстрен|аварійн)\w*\s+(?:графік\w*\s+)?(?:відключенн|вимкненн|знеструмлен)\w*|(?:графік\w*\s+)?(?:відключенн|вимкненн|знеструмлен)\w*\s+(?:за\s+)?аварійн\w*',re.I)
+EMERGENCY_TITLE = re.compile(r'(?:екстрен|аварійн)\w*\s+(?:графік\w*\s+)?(?:відключенн|вимкненн|знеструмлен)\w*|графік\w*\s+аварійн\w*\s+(?:відключенн|вимкненн|знеструмлен)\w*|(?:графік\w*\s+)?(?:відключенн|вимкненн|знеструмлен)\w*\s+(?:за\s+)?аварійн\w*',re.I)
 CANCEL_TITLE = re.compile(r'скасован|припинен|завершен|відмін[еє]|відновлен|знято\s+обмеження',re.I)
-ACTIVE_TITLE = re.compile(r'запроваджен|введен|діють|діятимуть|застосовують|почал[ио]|розпочат',re.I)
+ACTIVE_TITLE = re.compile(r'запроваджен|введен|діють|діятимуть|застосовують|застосован\w*|почал[ио]|розпочат',re.I)
 
 def emergency_link_candidates(html):
     """Inspect the newest official media articles by their own H1, not link labels.
