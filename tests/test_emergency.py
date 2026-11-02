@@ -18,6 +18,17 @@ def test_emergency_schedule_headline_with_graphiky_is_detected():
     assert obj['status']=='active'
 
 
+def test_gav_article_with_single_digit_hour_is_detected():
+    now=datetime(2026,11,2,9,0,tzinfo=TZ)
+    obj=parse_emergency_article(
+        page('По Черкаській області застосовані графіки аварійних відключень (ГАВ)','02.11.2026 8:55'),
+        'https://www.cherkasyoblenergo.com/media/po-cherkaskiy-oblasti-zastosovani-hrafiky-avariynykh-vidklyuchen-hav?lang=uk',
+        now
+    )
+    assert obj['status']=='active'
+    assert obj['publishedAt'].endswith('08:55+02:00')
+
+
 def test_detect_explicit_emergency():
     obj=parse_emergency_article(page('Запроваджено екстрені відключення'),'https://www.cherkasyoblenergo.com/media/one',NOW)
     assert obj['status']=='active'
