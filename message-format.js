@@ -24,7 +24,7 @@
  function render(host,text){
   host.replaceChildren();
   let list=null,listType='';
-  for(const raw of String(text||'').split('\n').slice(0,150)){
+  for(const raw of String(text||'').replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n').replace(/\\r/g,'\n').replace(/\r\n/g,'\n').split('\n').slice(0,150)){
    const t=raw.trim();
    if(!t){list=null;listType='';const space=document.createElement('div');space.className='message-space';host.append(space);continue}
    if(/^([-*_])\1\1+$/.test(t)){list=null;listType='';host.append(document.createElement('hr'));continue}
