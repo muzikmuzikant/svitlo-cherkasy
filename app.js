@@ -984,7 +984,7 @@ function applyOverrides(){
    data.days=[...map.values()].sort((a,b)=>a.date.localeCompare(b.date));
  }
  index=mergeIndexes(addressSourceIndex||index,overrides.addresses||{},{manual:true});
- index=mergeIndexes(index,railwayAddressCorrections,{manual:true,protectHouseStreets:true});
+ index=mergeIndexes(index,railwayAddressCorrections,{manual:true});
  const removeFrom=(target,key,isStreet)=>{if(!target)return;if(isStreet){delete target.streets?.[key];delete target.streetQueues?.[key];for(const houseKey of Object.keys(target.keys||{}))if(houseKey.startsWith(key+'|'))delete target.keys[houseKey];}else delete target.keys?.[key];};
  for(const item of railwayDeletedKeys){const target=item.settlementKey==='черкаси'?index:index.localities?.[item.settlementKey];removeFrom(target,item.key,false)}
  for(const item of railwayDeletedStreets){const target=item.settlementKey==='черкаси'?index:index.localities?.[item.settlementKey];removeFrom(target,item.key,true)}
