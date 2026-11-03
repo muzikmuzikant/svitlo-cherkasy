@@ -77,6 +77,7 @@
   writeQueues(item?.queues|| (item?.queue?[item.queue]:current));
   $('corrSource').value=item?.source||catalogue?.source||'';
   $('corrComment').value=item?.comment||'';
+  $('corrDeleted').checked=item?.deleted===true;
   $('corrPublish').checked=item?.status==='published';
   $('corrProof').checked=false;
   $('corrProofRow').hidden=!item||!owner()||!$('corrPublish').checked;
@@ -165,13 +166,13 @@
   if(!readQueues().length){announce('Оберіть хоча б одну підчергу.',true);return}
   const item=record(),payload={
    settlementKey:$('corrTown').value,streetKey:$('corrStreet').value,
-   house:$('corrHouse').value.trim(),queues:readQueues(),
+   house:$('corrHouse').value.trim(),queues:readQueues(),deleted:$('corrDeleted').checked,
    source:$('corrSource').value.trim(),comment:$('corrComment').value.trim()
   };
   if(item){
    payload.expectedRevision=item.revision;
    payload.status=$('corrPublish').checked?'published':'draft';
-   const changed=['settlementKey','streetKey','house','source'].some(key=>payload[key]!==item[key])||JSON.stringify(payload.queues)!==JSON.stringify(item.queues||[item.queue]);
+   const changed=['settlementKey','streetKey','house','source','deleted'].some(key=>payload[key]!==item[key])||JSON.stringify(payload.queues)!==JSON.stringify(item.queues||[item.queue]);
    if(payload.status==='published'&&(item.status!=='published'||changed)){
     if(!owner()||!$('corrProof').checked){announce('Підтвердьте перевірку адреси за офіційним джерелом.',true);return}
     payload.confirmSourceReviewed=true;
