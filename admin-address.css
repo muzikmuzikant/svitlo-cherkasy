@@ -21,3 +21,10 @@
 .corr-list{scrollbar-width:thin}.corr-row{transition:background .2s,border-color .2s,transform .2s}.corr-row:active{transform:scale(.99)}
 .corr-more{width:100%;border:1px dashed #a9c7f0;border-radius:11px;background:#edf5ff;padding:13px;color:#2366bc;font-weight:760}
 @media(max-width:720px){.registry-toolbar:has(#corrBrowseTown){grid-template-columns:1fr 1fr}.registry-toolbar #corrSearch{grid-column:1/-1;grid-row:2}.corr-list{max-height:360px}}
+
+.corr-queues{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:8px}
+.corr-queue-option{display:flex!important;align-items:center;gap:7px;padding:9px 10px;border:1px solid #dce6ec;border-radius:8px;background:#f8fafc;cursor:pointer}
+.corr-queue-option input{width:17px!important;height:17px;flex:0 0 17px}
+.corr-queue-option span{font-size:13px;font-weight:650}
+#corrAddTown,#corrAddStreet{margin-top:7px;width:100%}
+@media(max-width:520px){.corr-queues{grid-template-columns:repeat(3,minmax(0,1fr))}}
