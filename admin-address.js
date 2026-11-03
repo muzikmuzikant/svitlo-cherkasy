@@ -14,8 +14,29 @@
  const allQueues=()=>Array.from({length:6},(_,i)=>[1,2].map(n=>(i+1)+'.'+n)).flat();
  function readQueues(){return Array.from($('corrQueues')?.querySelectorAll('input:checked')||[]).map(x=>x.value)}
  function writeQueues(values=[]){const root=$('corrQueues');if(!root)return;root.replaceChildren();for(const q of allQueues()){const label=create('label',undefined,'corr-queue-option');const input=create('input');input.type='checkbox';input.value=q;input.checked=values.includes(q);label.append(input,create('span',q));root.append(label)}}
- function addStreet(){const name=prompt('Назва нової вулиці');if(!name?.trim())return;const clean=name.trim();const prefix=/^(вулиця|провулок|проспект|бульвар|узвіз|алея|площа|майдан|шосе|набережна|тупик|проїзд)\\s+/i.test(clean)?clean:'Вулиця '+clean;const kind=(prefix.match(/^(вулиця|провулок|проспект|бульвар|узвіз|алея|площа|майдан|шосе|набережна|тупик|проїзд)/i)||['вулиця'])[0].toLocaleLowerCase('uk-UA');const key=kind+'|'+prefix.slice(kind.length).trim().toLocaleLowerCase('uk-UA').replace(/\\s+/g,'-');const option=new Option(prefix,key);$('corrStreet').add(option);$('corrStreet').value=key;}
- function addTown(){const name=prompt('Назва нового населеного пункту');if(!name?.trim())return;const label=name.trim(),key=label.toLocaleLowerCase('uk-UA').replace(/\\s+/g,'-');const option=new Option(label,key);$('corrTown').add(option);$('corrBrowseTown').add(new Option(label,key));catalogue.localities??={};catalogue.localities[key]={label,streets:{},keys:{},streetQueues:{}};$('corrTown').value=key;$('corrBrowseTown').value=key;streets();}
+ function addStreet(){
+  if(!canEdit())return;
+  const name=prompt('Назва нової вулиці');if(!name?.trim())return;
+  const clean=name.trim().replace(/\s+/g,' ');
+  const kinds=['вулиця','провулок','проспект','бульвар','узвіз','алея','площа','майдан','шосе','набережна','тупик','проїзд'];
+  const match=clean.match(new RegExp('^('+kinds.join('|')+')\\s+','i'));
+  const kind=(match?.[1]||'вулиця').toLocaleLowerCase('uk-UA');
+  const label=match?clean:(kind.charAt(0).toLocaleUpperCase('uk-UA')+kind.slice(1)+' '+clean);
+  const key=kind+'|'+(match?clean.slice(match[0].length):clean).trim().toLocaleLowerCase('uk-UA').replace(/\s+/g,'-');
+  const idx=indexFor($('corrTown').value);if(!idx)return;
+  idx.streets??={};idx.streets[key]=label;
+  streets(key);announce('Вулицю додано до картки. Щоб зберегти її в довіднику, заповніть підчергу та джерело й натисніть «Зберегти».');
+ }
+ function addTown(){
+  if(!canEdit())return;
+  const name=prompt('Назва нового населеного пункту');if(!name?.trim())return;
+  const label=name.trim().replace(/\s+/g,' ');
+  const key=label.toLocaleLowerCase('uk-UA').replace(/\s+/g,'-');
+  catalogue.localities??={};
+  catalogue.localities[key]??={label,streets:{},keys:{},streetQueues:{}};
+  placeChoices();$('corrTown').value=key;$('corrBrowseTown').value=key;streets();
+  announce('Населений пункт додано до картки. Додайте вулицю, підчергу та джерело, потім натисніть «Зберегти», щоб записати його в довідник.');
+ }
  const record=()=>items.find(row=>row.id===chosen);
  const indexFor=town=>town==='черкаси'?catalogue:catalogue?.localities?.[town];
  function announce(message,isError=false){
