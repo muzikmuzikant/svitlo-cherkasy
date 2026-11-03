@@ -1115,11 +1115,11 @@ async function refreshData(manual=false){
        railwayAddressCorrections=update.corrections;
        railwayDeletedKeys=Array.isArray(update.deletedKeys)?update.deletedKeys:[];
        railwayDeletedStreets=Array.isArray(update.deletedStreets)?update.deletedStreets:[];
-       try{localStorage.setItem(RAILWAY_ADDRESS_CACHE,JSON.stringify(railwayAddressCorrections))}catch{}
-      }else railwayAddressCorrections=safeJSON(RAILWAY_ADDRESS_CACHE,railwayAddressCorrections);
+       try{localStorage.setItem(RAILWAY_ADDRESS_CACHE,JSON.stringify({schemaVersion:2,corrections:railwayAddressCorrections,deletedKeys:railwayDeletedKeys,deletedStreets:railwayDeletedStreets}))}catch{}
+      }else {const cached=safeJSON(RAILWAY_ADDRESS_CACHE,{});railwayAddressCorrections=cached.corrections||cached;railwayDeletedKeys=Array.isArray(cached.deletedKeys)?cached.deletedKeys:[];railwayDeletedStreets=Array.isArray(cached.deletedStreets)?cached.deletedStreets:[];}
      }catch(error){
       console.warn('Address correction source unavailable:',error.message);
-      railwayAddressCorrections=safeJSON(RAILWAY_ADDRESS_CACHE,railwayAddressCorrections);
+      const cached=safeJSON(RAILWAY_ADDRESS_CACHE,{});railwayAddressCorrections=cached.corrections||cached;railwayDeletedKeys=Array.isArray(cached.deletedKeys)?cached.deletedKeys:[];railwayDeletedStreets=Array.isArray(cached.deletedStreets)?cached.deletedStreets:[];
      }
      applyOverrides();
    }catch(error){console.warn('Bulletin or admin overrides:',error)}
