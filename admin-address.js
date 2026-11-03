@@ -11,6 +11,11 @@
  const owner=()=>role()==='owner';
  let catalogue=null,items=[],addresses=[],chosen='',baseSelection=null,busy=false,limit=90,renderTimer=null;
  const identity=(town,street,house)=>town+'|'+street+'|'+house;
+ const allQueues=()=>Array.from({length:6},(_,i)=>[1,2].map(n=>(i+1)+'.'+n)).flat();
+ function readQueues(){return Array.from($('corrQueues')?.querySelectorAll('input:checked')||[]).map(x=>x.value)}
+ function writeQueues(values=[]){const root=$('corrQueues');if(!root)return;root.replaceChildren();for(const q of allQueues()){const label=create('label',undefined,'corr-queue-option');const input=create('input');input.type='checkbox';input.value=q;input.checked=values.includes(q);label.append(input,create('span',q));root.append(label)}}
+ function addStreet(){const name=prompt('Назва нової вулиці');if(!name?.trim())return;const clean=name.trim();const prefix=/^(вулиця|провулок|проспект|бульвар|узвіз|алея|площа|майдан|шосе|набережна|тупик|проїзд)\\s+/i.test(clean)?clean:'Вулиця '+clean;const key=prefix.toLocaleLowerCase('uk-UA').replace(/\\s+/g,'|');const option=new Option(prefix,key);$('corrStreet').add(option);$('corrStreet').value=key;}
+ function addTown(){const name=prompt('Назва нового населеного пункту');if(!name?.trim())return;const label=name.trim(),key=label.toLocaleLowerCase('uk-UA');const option=new Option(label,key);$('corrTown').add(option);$('corrBrowseTown').add(new Option(label,key));catalogue.localities??={};catalogue.localities[key]={label,streets:{},keys:{},streetQueues:{}};$('corrTown').value=key;$('corrBrowseTown').value=key;streets();}
  const record=()=>items.find(row=>row.id===chosen);
  const indexFor=town=>town==='черкаси'?catalogue:catalogue?.localities?.[town];
  function announce(message,isError=false){
@@ -145,6 +150,7 @@
   }catch(error){announce('Не вдалося завантажити довідник: '+error.message,true)}
  }
  $('corrTown').addEventListener('change',()=>streets());
+ $('corrAddTown')?.addEventListener('click',addTown);$('corrAddStreet')?.addEventListener('click',addStreet);
  $('corrBrowseTown').addEventListener('change',()=>{limit=90;draw()});
  $('corrNew').onclick=()=>{selectItem(null);draw()};
  $('corrReload').onclick=()=>refresh();
@@ -155,6 +161,7 @@
   event.preventDefault();
   if(!canEdit()||busy)return;
   if(!$('corrStreet').value){announce('Оберіть вулицю.',true);return}
+  if(!readQueues().length){announce('Оберіть хоча б одну підчергу.',true);return}
   if(!readQueues().length){announce('Оберіть хоча б одну підчергу.',true);return}
   const item=record(),payload={
    settlementKey:$('corrTown').value,streetKey:$('corrStreet').value,
