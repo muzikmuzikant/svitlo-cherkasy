@@ -37,9 +37,11 @@
  // "Read" is an approximation: detail stayed in the foreground for two seconds.
  let metricApi='',readTimer=null,seenObserver=null;
  const reported=new Set(),pendingMetrics=new Set();
+ // Count supported clients with an installation ID after explicit consent for
+ // this purpose. Standalone display mode is not a privacy boundary and excluded
+ // otherwise-consented browser installations from message engagement.
  const analyticsReady=()=>{try{
-  return (matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)
-   &&localStorage.getItem('svitlo-beta-analytics-opt-in')==='yes'
+  return localStorage.getItem('svitlo-beta-analytics-opt-in')==='yes'
    &&['notice-engagement-v1','7.9.11-notices'].includes(localStorage.getItem('svitlo-beta-analytics-consent-revision'))
    &&localStorage.getItem('svitlo-beta-analytics-choice')==='accepted';
  }catch{return false}};
@@ -59,6 +61,18 @@
    if(result.ok)reported.add(key);
   }catch{}finally{pendingMetrics.delete(key)}
  }
+ // Count taps on system Push notifications, including when the service worker
+ // opens a fresh window and passes the notice ID in the URL.
+ const recordPushClick=id=>{if(/^notice:[A-Za-z0-9_-]{6,64}$/.test(id||''))trackNotice(id,'pushClick')};
+ navigator.serviceWorker?.addEventListener('message',event=>{
+  if(event.data?.type==='SVITLO_NOTICE_PUSH_CLICK')recordPushClick(event.data.id);
+ });
+ try{
+  const url=new URL(location.href),pushClick=url.searchParams.get('pushclick');
+  if(pushClick){recordPushClick(pushClick);url.searchParams.delete('pushclick');history.replaceState(history.state,'',url.href)}
+ }catch{}
+ document.addEventListener('svitlo:analytics-consent-updated',observeNoticeCards);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)observeNoticeCards()});
  function observeNoticeCards(){
   seenObserver?.disconnect();
   const screen=$('updates');
