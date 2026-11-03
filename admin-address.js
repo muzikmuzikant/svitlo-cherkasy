@@ -1,4 +1,4 @@
-/* Unified catalog + reviewed exact-address corrections for Beta.
+/* Main-app address catalogue and reviewed address corrections.
  * Catalog rows are read-only references. Saving creates a reversible correction
  * instead of modifying imported official data. */
 (()=>{'use strict';
