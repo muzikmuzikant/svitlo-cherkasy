@@ -111,7 +111,8 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
   <div class="field"><label>Підчерги (можна обрати всі потрібні, до 12)</label><div id="corrQueues" class="corr-queues"></div></div></div>
   <div class="field"><label for="corrSource">Посилання на джерело обленерго</label><input id="corrSource" type="url" maxlength="350" required placeholder="https://www.cherkasyoblenergo.com/..."></div>
   <div class="field"><label for="corrComment">Службова примітка</label><textarea id="corrComment" maxlength="600" rows="3" placeholder="Деталі звірки"></textarea></div>
-  <label class="corr-check" id="corrPublishRow" hidden><input type="checkbox" id="corrPublish"> Опублікувати уточнення для користувачів за цією адресою</label>
+  <label class="corr-check"><input type="checkbox" id="corrDeleted"> Видалити цю адресу з публічного довідника (можна відновити)</label>
+  <label class="corr-check" id="corrPublishRow" hidden><input type="checkbox" id="corrPublish"> Опублікувати зміни для користувачів</label>
   <label class="corr-check" id="corrProofRow" hidden><input type="checkbox" id="corrProof"> Я перевірив підчергу вулиці або конкретного будинку за офіційним джерелом</label>
   <div class="corr-actions"><button id="corrSave" type="button" data-admin-save-action>Зберегти</button><button id="corrDelete" type="button" class="danger" hidden>Видалити</button></div>
   </div></div></div><p id="corrMessage" role="status" class="registry-status"></p>
