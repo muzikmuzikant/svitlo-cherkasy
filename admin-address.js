@@ -137,6 +137,20 @@
   try{
    const data=await api('address-corrections');
    items=Array.isArray(data.items)?data.items:[];
+   for(const item of items){
+    const town=item.settlementKey;
+    if(town!=='черкаси')catalogue.localities??={};
+    if(town!=='черкаси')catalogue.localities[town]??={label:town.split('-').map(x=>x.charAt(0).toLocaleUpperCase('uk-UA')+x.slice(1)).join(' '),streets:{},keys:{},streetQueues:{}};
+    const idx=town==='черкаси'?catalogue:catalogue.localities[town];
+    idx.streets??={};idx.keys??={};idx.streetQueues??={};
+    if(!idx.streets[item.streetKey]){
+     const parts=item.streetKey.split('|'),kind=parts.shift(),slug=parts.join(' ').replace(/-/g,' ');
+     idx.streets[item.streetKey]=({вулиця:'Вулиця',провулок:'Провулок',проспект:'Проспект',бульвар:'Бульвар',узвіз:'Узвіз',алея:'Алея',площа:'Площа',майдан:'Майдан',шосе:'Шосе',набережна:'Набережна',тупик:'Тупик',проїзд:'Проїзд'}[kind]||'Вулиця')+' '+slug;
+    }
+    if(item.house)idx.keys[item.streetKey+'|'+item.house]=item.queues||[];
+    else if(!item.deleted)idx.streetQueues[item.streetKey]=item.queues||[];
+   }
+   placeChoices();buildCatalog();
    if(chosen&&!items.some(x=>x.id===chosen))chosen='';
    if(chosen)selectItem(record(),baseSelection);
    draw();announce('Каталог та адресні уточнення оновлено.');
