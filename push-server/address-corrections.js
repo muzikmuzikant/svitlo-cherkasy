@@ -4,8 +4,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 const QUEUES=new Set(Array.from({length:6},(_,i)=>[1,2].map(n=>String(i+1)+'.'+n)).flat());
-const STREET=/^(вулиця|провулок|проспект|бульвар|узвіз|алея|площа|майдан|шосе|набережна|тупик|проїзд)\|[\p{L}\p{N}]{2,90}$/u;
-const TOWN=/^[\p{L}\p{N}]{3,90}$/u;
+const STREET=/^(вулиця|провулок|проспект|бульвар|узвіз|алея|площа|майдан|шосе|набережна|тупик|проїзд)\|[\p{L}\p{N}-]{2,90}$/u;
+const TOWN=/^[\p{L}\p{N}-]{3,90}$/u;
 const HOUSE=/^[0-9]{1,5}(?:[\p{L}]{1,2})?(?:\/[0-9]{1,5}[\p{L}]?)?$/u;
 const SOURCE=/^https:\/\/(?:www\.)?cherkasyoblenergo\.com\/[a-zA-Z0-9%_/?=.&-]+$/;
 function normalize(data,old={}){
