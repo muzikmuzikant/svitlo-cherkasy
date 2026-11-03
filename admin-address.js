@@ -69,7 +69,7 @@
   if(!house && hasDetailedHouses)$('corrRevision').textContent+=' · Є окремі підчерги будинків: загальне уточнення їх не змінить';
   $('corrTown').value=town;streets(street);
   $('corrHouse').value=house;
-  $('corrQueue').value=item?.queue||(current.length===1?current[0]:'');
+  writeQueues(item?.queues|| (item?.queue?[item.queue]:current));
   $('corrSource').value=item?.source||catalogue?.source||'';
   $('corrComment').value=item?.comment||'';
   $('corrPublish').checked=item?.status==='published';
@@ -93,16 +93,16 @@
    if(base.town!==town)continue;
    const item=linkedCorrection(base,lookup);
    if(status==='draft'&&item?.status!=='draft'||status==='published'&&item?.status!=='published'||status==='catalog'&&item)continue;
-   const line=base.streetLabel+' '+base.house+' '+base.queues.join(' ')+' '+(item?.queue||'');
+   const line=base.streetLabel+' '+base.house+' '+base.queues.join(' ')+' '+(item?.queues||[item?.queue||'']).join(' ');
    if(query&&!line.toLocaleLowerCase('uk-UA').includes(query))continue;
    matches.push({base,item});if(item)seen.add(item.id);
   }
   for(const item of items){
    if(seen.has(item.id)||item.settlementKey!==town)continue;
    if(status==='draft'&&item.status!=='draft'||status==='published'&&item.status!=='published'||status==='catalog')continue;
-   const line=item.streetKey+' '+item.house+' '+item.queue;
+   const line=item.streetKey+' '+item.house+' '+(item.queues||[item.queue]).join(' ');
    if(query&&!line.toLocaleLowerCase('uk-UA').includes(query))continue;
-   const idx=indexFor(town),base={town,street:item.streetKey,house:item.house,streetLabel:idx?.streets?.[item.streetKey]||item.streetKey.replace('|',' '),queues:[],catalog:false};
+   const idx=indexFor(town),base={town,street:item.streetKey,house:item.house,streetLabel:idx?.streets?.[item.streetKey]||item.streetKey.replace('|',' '),queues:item.queues||[item.queue],catalog:false};
    matches.unshift({base,item});
   }
   matches.sort((a,b)=>Number(!!b.item)-Number(!!a.item)||a.base.streetLabel.localeCompare(b.base.streetLabel,'uk-UA')||
@@ -113,7 +113,7 @@
    const button=create('button',undefined,'corr-row'+(highlighted?' selected':''));
    button.type='button';
    button.append(create('strong',base.streetLabel+(base.house?' · '+base.house:'')),
-    create('span',item?'Уточнення: '+item.queue:'У довіднику: '+(base.queues.join(', ')||'підчергу уточнити')),
+    create('span',item?(item.deleted?'Адресу буде видалено':('Підчерги: '+(item.queues||[item.queue]).join(', '))):'У довіднику: '+(base.queues.join(', ')||'підчергу уточнити')),
     create('small',item?(item.status==='published'?'Опубліковано':'Чернетка'):base.house?'Адреса з каталогу':'Уся вулиця · номер будинку необов’язковий'));
    button.onclick=()=>{selectItem(item||null,base);draw()};
    list.append(button);
@@ -155,20 +155,21 @@
   event.preventDefault();
   if(!canEdit()||busy)return;
   if(!$('corrStreet').value){announce('Оберіть вулицю.',true);return}
+  if(!readQueues().length){announce('Оберіть хоча б одну підчергу.',true);return}
   const item=record(),payload={
    settlementKey:$('corrTown').value,streetKey:$('corrStreet').value,
-   house:$('corrHouse').value.trim(),queue:$('corrQueue').value,
+   house:$('corrHouse').value.trim(),queues:readQueues(),
    source:$('corrSource').value.trim(),comment:$('corrComment').value.trim()
   };
   if(item){
    payload.expectedRevision=item.revision;
    payload.status=$('corrPublish').checked?'published':'draft';
-   const changed=['settlementKey','streetKey','house','queue','source'].some(key=>payload[key]!==item[key]);
+   const changed=['settlementKey','streetKey','house','source'].some(key=>payload[key]!==item[key])||JSON.stringify(payload.queues)!==JSON.stringify(item.queues||[item.queue]);
    if(payload.status==='published'&&(item.status!=='published'||changed)){
     if(!owner()||!$('corrProof').checked){announce('Підтвердьте перевірку адреси за офіційним джерелом.',true);return}
     payload.confirmSourceReviewed=true;
     const subject=payload.house?'будинку '+payload.house:'вулиці без номера будинку';
-    if(!confirm('Опублікувати підчергу '+payload.queue+' для '+subject+'? Відомі точні адреси будинків залишаться без змін.'))return;
+    if(!confirm('Опублікувати підчерги '+payload.queues.join(', ')+' для '+subject+'?'))return;
    }
   }
   busy=true;$('corrSave').disabled=true;
@@ -177,7 +178,7 @@
     {method:item?'PATCH':'POST',body:JSON.stringify(payload)});
    chosen=saved.id;baseSelection=null;
    await refresh();
-   announce(item?'Зміни збережено. Публікація оновлює підчергу без GitHub.':
+   announce(item?'Зміни збережено. Публікація оновлює адресний довідник без GitHub.':
     'Адресу додано до уточнень як чернетку. Для публікації власник має підтвердити джерело.');
   }catch(error){announce('Не збережено: '+error.message,true)}
   finally{busy=false;$('corrSave').disabled=!canEdit()}
