@@ -24,7 +24,7 @@
  }
  function placeChoices(){
   const towns=[['черкаси','Черкаси'],...Object.entries(catalogue?.localities||{})
-    .filter(([,v])=>v?.streets&&Object.keys(v.streets).length)
+    .filter(([,v])=>!!v)
     .map(([key,v])=>[key,v.label||key])];
   towns.sort((a,b)=>a[1].localeCompare(b[1],'uk-UA'));
   for(const id of ['corrTown','corrBrowseTown']){
