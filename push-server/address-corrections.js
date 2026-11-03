@@ -78,7 +78,10 @@ export function createAddressCorrectionStore({directory,record=()=>{}}){
   for(const entry of state.items){
    if(entry.status!=='published')continue;
    const target=entry.settlementKey==='черкаси'?corrections:
-    (corrections.localities[entry.settlementKey]??={keys:{},streetQueues:{}});
+    (corrections.localities[entry.settlementKey]??={label:entry.settlementKey.split(/[- ]/).map(x=>x.charAt(0).toLocaleUpperCase('uk-UA')+x.slice(1)).join(' '),keys:{},streets:{},streetQueues:{}});
+   target.streets??={};
+   const kind=entry.streetKey.split('|')[0],slug=entry.streetKey.split('|').slice(1).join(' ').replace(/-/g,' ');
+   target.streets[entry.streetKey]=({вулиця:'Вулиця',провулок:'Провулок',проспект:'Проспект',бульвар:'Бульвар',узвіз:'Узвіз',алея:'Алея',площа:'Площа',майдан:'Майдан',шосе:'Шосе',набережна:'Набережна',тупик:'Тупик',проїзд:'Проїзд'}[kind]||'Вулиця')+' '+slug.split(' ').map(x=>x.charAt(0).toLocaleUpperCase('uk-UA')+x.slice(1)).join(' ');
    const key=entry.streetKey+(entry.house?'|'+entry.house:'');
    if(entry.deleted){(entry.house?deletedKeys:deletedStreets).push({settlementKey:entry.settlementKey,key});continue}
    if(entry.house)target.keys[key]=[...entry.queues];
