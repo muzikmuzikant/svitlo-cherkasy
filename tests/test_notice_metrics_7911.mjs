@@ -70,6 +70,10 @@ test('PWA reports only after voluntary consent and actual actions, not passive l
  const inbox=file('inbox-ui.js'),sw=file('sw.js'),admin=file('admin.html'),server=file('push-server/server.js');
  assert.match(inbox,/svitlo-beta-analytics-consent-revision/);
  assert.match(inbox,/7\.9\.11-notices/);
+ assert.doesNotMatch(inbox,/display-mode:\s*standalone/,'consented browser installations are not excluded');
+ assert.match(inbox,/SVITLO_NOTICE_PUSH_CLICK/);
+ assert.match(inbox,/pushclick/);
+ assert.match(inbox,/svitlo:analytics-consent-updated/);
  assert.match(inbox,/document\.hidden/);
  assert.match(inbox,/setTimeout\(\(\)=>\{/);
  assert.match(inbox,/trackNotice\(id,'read'\)/);
