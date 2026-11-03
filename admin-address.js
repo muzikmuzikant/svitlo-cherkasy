@@ -164,7 +164,6 @@
   if(!canEdit()||busy)return;
   if(!$('corrStreet').value){announce('Оберіть вулицю.',true);return}
   if(!readQueues().length&&!$('corrDeleted').checked){announce('Оберіть хоча б одну підчергу або позначте видалення адреси.',true);return}
-  if(!readQueues().length){announce('Оберіть хоча б одну підчергу.',true);return}
   const item=record(),payload={
    settlementKey:$('corrTown').value,streetKey:$('corrStreet').value,
    house:$('corrHouse').value.trim(),queues:readQueues(),deleted:$('corrDeleted').checked,
