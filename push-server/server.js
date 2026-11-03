@@ -2,6 +2,7 @@
  * Keep DATA_FILE on Railway's persistent volume; keep VAPID private key in Railway Variables.
  */
 import http from 'node:http';
+import {validPushEndpoint} from './valid-endpoint.js';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
@@ -308,12 +309,7 @@ async function job(){
  }catch(e){lastError=e.message;console.error('Push cycle failed:',e.message)}
  finally{running=false}
 }
-const validEndpoint=raw=>{
- if(typeof raw!=='string'||raw.length>2048)return false;
- try{const u=new URL(raw);if(u.protocol!=='https:'||u.username||u.password||u.port)return false;
-  const h=u.hostname.toLowerCase();return h.endsWith('.push.apple.com')||h==='fcm.googleapis.com'||h==='updates.push.services.mozilla.com'||h.endsWith('.push.services.mozilla.com')||h.endsWith('.googleapis.com');}
- catch{return false}
-};
+const validEndpoint=validPushEndpoint;
 async function readPayload(req,limit=12000){
  let bytes=0,chunks=[];
  for await(const c of req){bytes+=c.length;if(bytes>limit)throw Error('Request too large');chunks.push(c)}
