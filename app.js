@@ -1122,6 +1122,9 @@ async function refreshData(manual=false){
       const cached=safeJSON(RAILWAY_ADDRESS_CACHE,{});railwayAddressCorrections=cached.corrections||cached;railwayDeletedKeys=Array.isArray(cached.deletedKeys)?cached.deletedKeys:[];railwayDeletedStreets=Array.isArray(cached.deletedStreets)?cached.deletedStreets:[];
      }
      applyOverrides();
+     // Address corrections may introduce newly created settlements after
+     // the base address catalogue has already populated the select.
+     populateSettlements();
    }catch(error){console.warn('Bulletin or admin overrides:',error)}
    }
    hasCheckedOnce=true;render();checkNotifications();
