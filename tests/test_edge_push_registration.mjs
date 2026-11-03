@@ -23,3 +23,13 @@ test('Push subscription validates the VAPID key and reports server rejection det
 test('production service worker cache is refreshed with the Edge Push repair',()=>{
  assert.match(sw,/edge-push-fix-20261102/);
 });
+
+
+test('Push endpoint validation accepts Microsoft WNS while rejecting unsafe endpoints',async()=>{
+ const {validPushEndpoint}=await import('../push-server/valid-endpoint.js');
+ assert.equal(validPushEndpoint('https://wns2-example.notify.windows.com/?token=abc'),true);
+ assert.equal(validPushEndpoint('https://notify.windows.com/path'),true);
+ assert.equal(validPushEndpoint('http://wns2-example.notify.windows.com/?token=abc'),false);
+ assert.equal(validPushEndpoint('https://notify.windows.com.evil.example/path'),false);
+ assert.equal(validPushEndpoint('https://user:pass@wns2-example.notify.windows.com/path'),false);
+});
