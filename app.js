@@ -1206,23 +1206,43 @@ function checkNotifications(){
  }
 }
 
+let pushStage='idle';
 async function getPushRegistration(){
- if(!('serviceWorker' in navigator))throw Error('Service workers are unavailable in this browser');
- let registration=swRegistration||await navigator.serviceWorker.getRegistration('./');
- if(!registration){
-  registration=await navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'});
+ if(!('serviceWorker' in navigator))throw Object.assign(Error('Service workers are unavailable'),{pushStage:'unsupported'});
+ const scopeUrl=new URL('./',location.href).href;
+ pushStage='registration-lookup';
+ let registration=await navigator.serviceWorker.getRegistration(scopeUrl);
+ if(!registration||registration.scope!==scopeUrl){
+  pushStage='registration-create';
+  registration=await navigator.serviceWorker.register(new URL('sw.js',scopeUrl).href,{scope:scopeUrl,updateViaCache:'none'});
  }
  swRegistration=registration;
- // Edge may finish installing an app's worker after the settings screen has loaded.
- // Wait for the active registration, not merely for register() to return.
- let timeoutId;
- const timeout=new Promise((_,reject)=>{timeoutId=setTimeout(()=>reject(Error('Service worker activation timed out')),15000)});
- let ready;
- try{ready=await Promise.race([navigator.serviceWorker.ready,timeout])}
- finally{clearTimeout(timeoutId)}
- if(!ready?.active||!ready.pushManager)throw Error('Active Push service worker is unavailable');
- swRegistration=ready;
- return ready;
+ pushStage='worker-update';
+ try{await registration.update()}catch(error){
+  if(!registration.active)throw Object.assign(error,{pushStage});
+  console.warn('Push service worker update:',error?.message||error);
+ }
+ if(!registration.active){
+  pushStage='worker-activation';
+  const worker=registration.installing||registration.waiting;
+  if(!worker)throw Object.assign(Error('Service worker has no active or installing worker'),{pushStage});
+  let timer;
+  try{
+   await Promise.race([
+    new Promise((resolve,reject)=>{
+     const check=()=>{
+      if(registration.active){worker.removeEventListener('statechange',check);resolve(registration)}
+      else if(worker.state==='redundant'){worker.removeEventListener('statechange',check);reject(Error('Service worker installation was rejected'))}
+     };
+     worker.addEventListener('statechange',check);check();
+    }),
+    new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Service worker activation timed out')),20000)})
+   ]);
+  }finally{clearTimeout(timer)}
+ }
+ if(!registration.active)throw Object.assign(Error('Service worker is not active'),{pushStage});
+ if(!registration.pushManager)throw Object.assign(Error('PushManager is unavailable'),{pushStage:'push-manager'});
+ swRegistration=registration;pushStage='service-worker-ready';return registration;
 }
 function pushHealthMessage(message){
  // Health checks still repair subscriptions, but never expose developer telemetry
@@ -1309,21 +1329,17 @@ async function getPushConfig(){
 }
 function urlsafe(value){const str=(value+'='.repeat((4-value.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/');return Uint8Array.from(atob(str),x=>x.charCodeAt(0))}
 async function updatePushSubscription(){
- if(!('Notification' in window)||!('serviceWorker' in navigator)||!pushConfig||Notification.permission!=='granted'||!primary()?.queue)throw Error('Push prerequisites are unavailable');
- const reg=await getPushRegistration();let sub=await reg.pushManager.getSubscription();
- const key=urlsafe(pushConfig.publicKey);if(key.length!==65)throw Error('Invalid VAPID public key length');
- // VAPID rotation requires a new subscription. Never silently reuse an old key.
- if(sub&&sub.options?.applicationServerKey){
-  const old=Array.from(new Uint8Array(sub.options.applicationServerKey));
-  if(old.length!==key.length||old.some((v,i)=>v!==key[i])){await sub.unsubscribe();sub=null}
- }
- if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
+ if(!('Notification' in window)||!('serviceWorker' in navigator)||!pushConfig||Notification.permission!=='granted'||!primary()?.queue)throw Object.assign(Error('Push prerequisites are unavailable'),{pushStage:'prerequisites'});
+ pushStage='service-worker';const reg=await getPushRegistration();let sub=await reg.pushManager.getSubscription();
+ pushStage='vapid-key';const key=urlsafe(pushConfig.publicKey);if(key.length!==65)throw Object.assign(Error('Invalid VAPID public key length'),{pushStage});
+ if(sub&&sub.options?.applicationServerKey){const old=Array.from(new Uint8Array(sub.options.applicationServerKey));if(old.length!==key.length||old.some((v,i)=>v!==key[i])){pushStage='subscription-reset';await sub.unsubscribe();sub=null}}
+ if(!sub){pushStage='subscription-create';sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key})}
  const payload={subscription:sub.toJSON(),queue:primary().queue,settlement:primary().settlement||'',preferences:{off:prefs.off,on:prefs.on,changes:prefs.changes,tomorrow:prefs.tomorrow,emergency:prefs.emergency}};
- const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),12000);
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),12000);pushStage='server-register';
  try{
   const response=await fetch(pushConfig.apiBase.replace(/\/$/,'')+'/api/subscribe',{method:'POST',headers:{'content-type':'application/json','cache-control':'no-cache'},cache:'no-store',body:JSON.stringify(payload),signal:controller.signal});
-  if(!response.ok){let detail='';try{detail=(await response.json())?.error||''}catch{}throw Error('Push server response '+response.status+(detail?': '+detail:''))}
-  pushActive=true;localStorage.setItem(PUSH_CONSENT,'yes');updatePushInvite();
+  if(!response.ok){let detail='';try{detail=(await response.json())?.error||''}catch{}throw Object.assign(Error('Push server response '+response.status+(detail?': '+detail:'')),{pushStage})}
+  pushActive=true;localStorage.setItem(PUSH_CONSENT,'yes');pushStage='registered';updatePushInvite();
  }finally{clearTimeout(timeout)}
 }
 async function disableNotifications(){
@@ -1340,7 +1356,22 @@ async function disableNotifications(){
   pushActive=false;localStorage.setItem(PUSH_CONSENT,'no');flash('Сповіщення вимкнено. Підписку скасовано');renderSettings();updatePushInvite();
  }catch(e){console.warn(e);flash('Не вдалося відписатися — повторіть, коли є інтернет')}
 }
-async function enableNotifications(){if(!('Notification' in window)){flash('Цей браузер не підтримує сповіщення');return}if(Notification.permission==='denied'){flash('Дозвольте сповіщення у налаштуваннях пристрою');return}const granted=await Notification.requestPermission();if(granted!=='granted'){flash('Дозвіл на сповіщення не надано');return}if(pushConfig){try{await updatePushSubscription();flash('Сповіщення увімкнено')}catch(e){console.warn(e);flash('Не вдалося ввімкнути сповіщення. Спробуйте пізніше')}}else flash('Нагадування увімкнено для відкритого застосунку');renderSettings();updatePushInvite()}
+async function enableNotifications(){
+ if(!('Notification' in window)||!('serviceWorker' in navigator)){flash('Цей браузер не підтримує Push-сповіщення');return}
+ if(Notification.permission==='denied'){flash('Дозвіл заблоковано в Edge. Дозвольте сповіщення для сайту в налаштуваннях.');return}
+ try{
+  pushStage='permission-request';const granted=await Notification.requestPermission();
+  if(granted!=='granted'){flash('Edge не надав дозвіл на сповіщення');return}
+  if(!pushConfig)await getPushConfig();
+  if(!pushConfig?.apiBase)throw Object.assign(Error('Push configuration is unavailable'),{pushStage:'push-config'});
+  await updatePushSubscription();flash('Сповіщення увімкнено');
+ }catch(error){
+  const stage=error?.pushStage||pushStage||'unknown';
+  console.error('Push registration failed:',{stage,name:error?.name||'Error',message:error?.message||String(error)});
+  const reason=error?.name==='NotAllowedError'?'Edge заблокував дозвіл':error?.name==='NotSupportedError'?'Браузер не підтримує Push у цьому режимі':error?.name==='InvalidStateError'?'Service Worker ще не готовий':error?.name==='AbortError'?'Перервано з’єднання із сервером':/activation timed out/i.test(error?.message||'')?'Service Worker не активувався':/Push server response 4/.test(error?.message||'')?'Сервер відхилив реєстрацію':/Push server response 5/.test(error?.message||'')?'Помилка сервера під час реєстрації':error?.message||'Невідома помилка';
+  flash('Push не увімкнено: '+reason+'. Етап: '+stage+'.');
+ }finally{renderSettings();updatePushInvite()}
+}
 // An iOS permission change can happen in system Settings while the PWA is suspended.
 window.addEventListener('focus',()=>{updatePushInvite();checkPushDelivery().catch(console.warn);if(!document.hidden)refreshData().catch(console.warn)});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){updatePushInvite();checkNotifications();checkPushDelivery().catch(console.warn)}});
