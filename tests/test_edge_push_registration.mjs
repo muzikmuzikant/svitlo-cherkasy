@@ -9,8 +9,8 @@ test('Push setup explicitly obtains an active service worker registration for Ed
  assert.match(app,/async function getPushRegistration\(\)/);
  assert.match(app,/navigator\.serviceWorker\.getRegistration\('\.\/\'/);
  assert.match(app,/navigator\.serviceWorker\.register\('\.\/sw\.js',\{scope:'\.\/',updateViaCache:'none'\}\)/);
- assert.match(app,/navigator\.serviceWorker\.ready,timeout/);
- assert.match(app,/!ready\?\.active\|\|!ready\.pushManager/);
+ assert.match(app,/registration\.update\(\)/);\n assert.match(app,/pushStage='worker-activation'/);\n assert.match(app,/new URL\('\.\/',location\.href\)\.href/);
+ assert.match(app,/!registration\.active/);\n assert.match(app,/!registration\.pushManager/);
  assert.match(app,/const reg=await getPushRegistration\(\);let sub=await reg\.pushManager\.getSubscription\(\)/);
 });
 
@@ -21,7 +21,7 @@ test('Push subscription validates the VAPID key and reports server rejection det
 });
 
 test('production service worker cache is refreshed with the Edge Push repair',()=>{
- assert.match(sw,/edge-push-fix-20261102/);
+ assert.match(sw,/edge-push-registration-diagnostics-20261104/);
 });
 
 
