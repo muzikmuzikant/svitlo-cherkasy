@@ -133,9 +133,9 @@ function timeline(date,queue){
  if(!QUEUES.includes(queue))return null;
  const day=currentDay(date),q=day?.queues?.[queue];
  if(!day){
-   // Only a fresh operator check can certify a day with no published plan.
-   // An offline/stale/under-review or not-yet-checked day is UNKNOWN.
-   return verifiedNoSchedule(date)?new Int8Array(1440):null;
+  // Product rule: no published schedule means 24 hours of planned power-on,
+  // for every weekday and date in the weekly selector. Display fallback only.
+  return new Int8Array(1440);
  }
  if(!q){return new Int8Array(1440)} // Omitted subqueue in verified publication.
  const start=minute(q.knownFrom||'00:00');if(start<0)return null;
@@ -668,8 +668,8 @@ function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Пі�
  });
  const pub=currentDay(day),t=timeline(day,a.queue);
  const dayStats=stats(t);
- setText('detailDayStat',dayStats?(pub?(dayStats.unknown?'Частина годин уточнюється':'Без світла '+formatDuration(dayStats.off)+' · Зі світлом '+formatDuration(dayStats.on)):''):'Немає даних');
- setText('detailDayLabel',weekdayFull(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:verifiedNoSchedule(day)?'Світло весь день':'Немає підтверджених даних');const grid=$('hourGrid');
+ setText('detailDayStat',!pub?'Світло весь день':dayStats?(dayStats.unknown?'Частина годин уточнюється':'Без світла '+formatDuration(dayStats.off)+' · Зі світлом '+formatDuration(dayStats.on)):'Немає даних');
+  setText('detailDayLabel',weekdayFull(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:'Світло весь день');const grid=$('hourGrid');
  const paintKey=JSON.stringify([day,a.queue,document.documentElement.dataset.theme,pub?.verified,pub?.queues?.[a.queue]||null,day===today()?Math.floor(nowMinutes()/60):null,verifiedNoSchedule(day)]);
  if(grid.dataset.paintKey!==paintKey){
   grid.dataset.paintKey=paintKey;grid.replaceChildren();
