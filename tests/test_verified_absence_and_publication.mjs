@@ -11,6 +11,9 @@ const source=JSON.parse(read('data/schedules.json')),review=JSON.parse(read('dat
 test('CRITICAL PRODUCT RULE: missing graph always means 24 hours of light in visual schedule',()=>{
  const app=read('app.js');
  assert.match(app,/if\(!day\)\{[\s\S]*?return new Int8Array\(1440\)/);
+ assert.doesNotMatch(app,/if\(!day\)\{[\s\S]*?verifiedNoSchedule\(date\)\?new Int8Array\(1440\):null/);
+ assert.match(app,/setText\('detailDayStat',!pub\?'Світло весь день'/);
+ assert.match(app,/setText\('detailUpdated',pub\?[\s\S]*?:'Світло весь день'/);
  assert.match(app,/ГРАФІКА НЕМАЄ · СВІТЛО ВЕСЬ ДЕНЬ/);
  assert.match(app,/Світло весь день/);
  assert.match(read('style.css'),/feature-off-quickAddresses #homeQuickPlaces/);
