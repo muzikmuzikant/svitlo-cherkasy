@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "lastChecked": "2026-11-07T09:53:08+02:00",
+  "lastChecked": "2026-11-07T12:41:06+02:00",
   "reviewPending": false,
   "unresolvedDates": [],
   "confirmedNoScheduleDates": [
@@ -1549,6 +1549,10 @@
               "14:00"
             ],
             [
+              "16:00",
+              "20:00"
+            ],
+            [
               "22:00",
               "24:00"
             ]
@@ -1556,7 +1560,7 @@
         }
       },
       "revisions": 3,
-      "planFingerprint": "3fddbf1439c72a0feaa2",
+      "planFingerprint": "99c31dd99da069538f8b",
       "noScheduledOutages": [],
       "publications": [
         {
@@ -1676,6 +1680,16 @@
         "5.1",
         "5.2",
         "6.1",
+        "6.2"
+      ]
+    },
+    {
+      "date": "2026-11-07",
+      "publishedAt": "2026-11-07T02:59+02:00",
+      "detectedAt": "2026-11-07T12:41:06+02:00",
+      "revisionId": "99c31dd99da069538f8b",
+      "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-7-lystopada-1?lang=uk",
+      "queues": [
         "6.2"
       ]
     }
