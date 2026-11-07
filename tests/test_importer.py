@@ -24,6 +24,24 @@ def test_partial_article_implies_no_planned_outages_for_omitted_queue():
     assert c["queues"]["6.2"]["off"]==[]
     assert c["queues"]["6.1"]["knownFrom"]=="00:00"
 
+
+def test_split_minute_digit_does_not_drop_outage_interval():
+    ranges={q:'08:00 - 10:00' for q in Q}
+    ranges['6.2']='03:00 - 07:00, 10:00 - 14:00, 16:00 - 20:0 0, 22:00 - 24:00'
+    r=parse_article(html(date='7 листопада',ts='07.11.2026 02:59',ranges=ranges),
+                    'https://www.cherkasyoblenergo.com/media/official-update',None)
+    assert r is not None
+    assert r['queues']['6.2']==[(180,420),(600,840),(960,1200),(1320,1440)]
+
+
+def test_split_minute_digit_with_fragmented_colon_is_normalized():
+    ranges={q:'08:00 - 10:00' for q in Q}
+    ranges['6.2']='16:00 - 20 : 0 0'
+    r=parse_article(html(date='7 листопада',ts='07.11.2026 02:59',ranges=ranges),
+                    'https://www.cherkasyoblenergo.com/media/official-update',None)
+    assert r is not None
+    assert r['queues']['6.2']==[(960,1200)]
+
 def test_invalid_intervals_rejected():
     ranges={q:'08:00 - 10:00' for q in Q};ranges['3.1']='18:30 - 18:00'
     assert parse_article(html(ranges=ranges),'https://www.cherkasyoblenergo.com/media/ok',None) is None
