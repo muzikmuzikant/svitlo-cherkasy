@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "lastChecked": "2026-11-07T16:24:57+02:00",
+  "lastChecked": "2026-11-07T20:56:44+02:00",
   "reviewPending": false,
   "unresolvedDates": [],
   "confirmedNoScheduleDates": [
@@ -1298,21 +1298,13 @@
     },
     {
       "date": "2026-11-07",
-      "publishedAt": "2026-11-07T02:59+02:00",
-      "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-7-lystopada-1?lang=uk",
+      "publishedAt": "2026-11-07T16:28+02:00",
+      "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-7-lystopada-2?lang=uk",
       "verified": true,
       "queues": {
         "1.1": {
           "knownFrom": "00:00",
           "off": [
-            [
-              "04:30",
-              "09:00"
-            ],
-            [
-              "11:00",
-              "15:00"
-            ],
             [
               "17:00",
               "21:00"
@@ -1327,19 +1319,7 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "01:00",
-              "04:00"
-            ],
-            [
-              "05:30",
-              "10:00"
-            ],
-            [
-              "12:00",
-              "16:00"
-            ],
-            [
-              "18:00",
+              "17:30",
               "22:00"
             ]
           ]
@@ -1348,19 +1328,7 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "01:00",
-              "04:30"
-            ],
-            [
-              "06:00",
-              "09:00"
-            ],
-            [
-              "11:00",
-              "15:00"
-            ],
-            [
-              "17:00",
+              "16:30",
               "21:00"
             ],
             [
@@ -1373,18 +1341,6 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "02:00",
-              "04:00"
-            ],
-            [
-              "05:30",
-              "10:00"
-            ],
-            [
-              "12:00",
-              "16:00"
-            ],
-            [
               "18:00",
               "22:00"
             ]
@@ -1394,16 +1350,8 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "01:00",
-              "05:30"
-            ],
-            [
-              "07:00",
-              "11:00"
-            ],
-            [
               "13:00",
-              "17:00"
+              "17:30"
             ],
             [
               "19:00",
@@ -1415,19 +1363,11 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "02:00",
-              "06:00"
-            ],
-            [
-              "08:00",
-              "12:00"
-            ],
-            [
               "14:00",
               "18:00"
             ],
             [
-              "20:00",
+              "19:30",
               "22:00"
             ]
           ]
@@ -1436,19 +1376,11 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "03:00",
-              "05:30"
-            ],
-            [
-              "07:00",
-              "11:00"
-            ],
-            [
               "13:00",
               "17:00"
             ],
             [
-              "19:00",
+              "18:30",
               "22:00"
             ]
           ]
@@ -1457,16 +1389,8 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "03:00",
-              "06:00"
-            ],
-            [
-              "08:00",
-              "12:00"
-            ],
-            [
               "14:00",
-              "18:00"
+              "18:30"
             ],
             [
               "20:00",
@@ -1478,19 +1402,11 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "03:00",
-              "06:00"
-            ],
-            [
-              "09:00",
-              "13:00"
-            ],
-            [
               "15:00",
               "19:00"
             ],
             [
-              "21:00",
+              "20:30",
               "24:00"
             ]
           ]
@@ -1498,14 +1414,6 @@
         "5.2": {
           "knownFrom": "00:00",
           "off": [
-            [
-              "04:00",
-              "07:00"
-            ],
-            [
-              "10:00",
-              "14:00"
-            ],
             [
               "16:00",
               "20:00"
@@ -1520,16 +1428,8 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "04:00",
-              "06:00"
-            ],
-            [
-              "09:00",
-              "13:00"
-            ],
-            [
               "15:00",
-              "19:00"
+              "19:30"
             ],
             [
               "21:00",
@@ -1541,16 +1441,8 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "03:00",
-              "07:00"
-            ],
-            [
-              "10:00",
-              "14:00"
-            ],
-            [
               "16:00",
-              "20:00"
+              "20:30"
             ],
             [
               "22:00",
@@ -1559,8 +1451,8 @@
           ]
         }
       },
-      "revisions": 3,
-      "planFingerprint": "99c31dd99da069538f8b",
+      "revisions": 4,
+      "planFingerprint": "a765840d35aacaf4b47e",
       "noScheduledOutages": [],
       "publications": [
         {
@@ -1602,6 +1494,24 @@
         {
           "publishedAt": "2026-11-07T02:59+02:00",
           "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-7-lystopada-1?lang=uk",
+          "queues": [
+            "1.1",
+            "1.2",
+            "2.1",
+            "2.2",
+            "3.1",
+            "3.2",
+            "4.1",
+            "4.2",
+            "5.1",
+            "5.2",
+            "6.1",
+            "6.2"
+          ]
+        },
+        {
+          "publishedAt": "2026-11-07T16:28+02:00",
+          "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-7-lystopada-2?lang=uk",
           "queues": [
             "1.1",
             "1.2",
@@ -1690,6 +1600,27 @@
       "revisionId": "99c31dd99da069538f8b",
       "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-7-lystopada-1?lang=uk",
       "queues": [
+        "6.2"
+      ]
+    },
+    {
+      "date": "2026-11-07",
+      "publishedAt": "2026-11-07T16:28+02:00",
+      "detectedAt": "2026-11-07T20:56:44+02:00",
+      "revisionId": "a765840d35aacaf4b47e",
+      "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-7-lystopada-2?lang=uk",
+      "queues": [
+        "1.1",
+        "1.2",
+        "2.1",
+        "2.2",
+        "3.1",
+        "3.2",
+        "4.1",
+        "4.2",
+        "5.1",
+        "5.2",
+        "6.1",
         "6.2"
       ]
     }
