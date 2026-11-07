@@ -164,10 +164,12 @@ def parse_article(html,url,reference=None):
     # so BeautifulSoup may produce "08 :00" instead of "08:00".
     # Join only numeric clock colons, never merge unrelated table tokens.
     full=re.sub(r'(?<=\d)\s*:\s*(?=\d{2}\b)', ':', full)
-    # Operator CMS occasionally fragments a leading zero across tags:
-    # "0 0:00" / "0 1:00" should be 00:00 / 01:00.
-    # Join only zero + single-digit hour; do not merge queue IDs.
+    # Operator CMS occasionally fragments clock digits across inline spans.
+    # Normalize split hour/minute tokens before parsing; e.g. "0 1:00" ->
+    # "01:00" and the real-world malformed rendering "20:0 0" -> "20:00".
+    # Keep the joins bounded to numeric clock positions so queue IDs are untouched.
     full=re.sub(r'(?<!\d)0\s+([0-9]):([0-5]\d)\b', r'0\1:\2', full)
+    full=re.sub(r'(?<!\d)(\d{1,2})\s*:\s*([0-5])\s+([0-9])(?!\d)', r'\1:\2\3', full)
     time_hit=PUB_TS.search(full)
     if time_hit:
         pub=datetime.strptime(' '.join(time_hit.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
@@ -207,6 +209,7 @@ def parse_article(html,url,reference=None):
         text=container.get_text(' ', strip=True).replace('\xa0',' ').replace('−','-')
         text=re.sub(r'(?<=\d)\s*:\s*(?=\d{2}\b)', ':', text)
         text=re.sub(r'(?<!\d)0\s+([0-9]):([0-5]\d)\b', r'0\1:\2', text)
+        text=re.sub(r'(?<!\d)(\d{1,2})\s*:\s*([0-5])\s+([0-9])(?!\d)', r'\1:\2\3', text)
         heading_pos=text.lower().find(heading)
         table_text=text[heading_pos+len(heading):] if heading_pos>=0 else text
         if len(set(m.group(1) for m in QUEUE_START.finditer(table_text))) < 3:
