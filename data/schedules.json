@@ -1,17 +1,17 @@
 {
   "schemaVersion": 3,
-  "lastChecked": "2026-11-08T21:10:07+02:00",
+  "lastChecked": "2026-11-09T00:51:08+02:00",
   "reviewPending": false,
   "unresolvedDates": [],
   "confirmedNoScheduleDates": [
-    "2026-11-09"
+    "2026-11-10"
   ],
   "source": "https://www.cherkasyoblenergo.com/news",
   "days": [
     {
-      "date": "2026-11-08",
-      "publishedAt": "2026-11-08T00:36+02:00",
-      "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-8-lystopada-1?lang=uk",
+      "date": "2026-11-09",
+      "publishedAt": "2026-11-08T23:03+02:00",
+      "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-9-lystopada?lang=uk",
       "verified": true,
       "queues": {
         "1.1": {
@@ -19,11 +19,11 @@
           "off": [
             [
               "00:00",
-              "02:00"
+              "01:00"
             ],
             [
               "04:00",
-              "08:00"
+              "07:00"
             ],
             [
               "10:00",
@@ -44,11 +44,11 @@
           "off": [
             [
               "00:00",
-              "03:00"
+              "02:00"
             ],
             [
               "05:00",
-              "08:00"
+              "09:00"
             ],
             [
               "11:00",
@@ -72,7 +72,7 @@
               "02:00"
             ],
             [
-              "04:00",
+              "05:00",
               "08:00"
             ],
             [
@@ -84,7 +84,7 @@
               "20:00"
             ],
             [
-              "23:00",
+              "22:00",
               "24:00"
             ]
           ]
@@ -94,7 +94,7 @@
           "off": [
             [
               "00:00",
-              "03:00"
+              "02:00"
             ],
             [
               "05:00",
@@ -119,10 +119,10 @@
           "off": [
             [
               "01:00",
-              "04:00"
+              "03:00"
             ],
             [
-              "07:00",
+              "06:00",
               "10:00"
             ],
             [
@@ -139,11 +139,11 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "01:00",
+              "02:00",
               "04:00"
             ],
             [
-              "08:00",
+              "07:00",
               "11:00"
             ],
             [
@@ -181,7 +181,7 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "02:00",
+              "01:00",
               "05:00"
             ],
             [
@@ -202,12 +202,8 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "00:00",
-              "01:00"
-            ],
-            [
-              "03:00",
-              "06:00"
+              "02:00",
+              "05:00"
             ],
             [
               "08:00",
@@ -227,12 +223,8 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "00:00",
-              "01:00"
-            ],
-            [
               "03:00",
-              "07:00"
+              "06:00"
             ],
             [
               "09:00",
@@ -244,7 +236,7 @@
             ],
             [
               "21:00",
-              "23:00"
+              "24:00"
             ]
           ]
         },
@@ -295,49 +287,13 @@
           ]
         }
       },
-      "revisions": 3,
-      "planFingerprint": "ccbd147918854e48d180",
+      "revisions": 1,
+      "planFingerprint": "5e77faabf49a8cb8fa81",
       "noScheduledOutages": [],
       "publications": [
         {
-          "publishedAt": "2026-11-07T21:47+02:00",
-          "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-8-lystopada?lang=uk",
-          "queues": [
-            "1.1",
-            "1.2",
-            "2.1",
-            "2.2",
-            "3.1",
-            "3.2",
-            "4.1",
-            "4.2",
-            "5.1",
-            "5.2",
-            "6.1",
-            "6.2"
-          ]
-        },
-        {
-          "publishedAt": "2026-11-07T23:25+02:00",
-          "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-8-lystopada?lang=uk",
-          "queues": [
-            "1.1",
-            "1.2",
-            "2.1",
-            "2.2",
-            "3.1",
-            "3.2",
-            "4.1",
-            "4.2",
-            "5.1",
-            "5.2",
-            "6.1",
-            "6.2"
-          ]
-        },
-        {
-          "publishedAt": "2026-11-08T00:36+02:00",
-          "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-8-lystopada-1?lang=uk",
+          "publishedAt": "2026-11-08T23:03+02:00",
+          "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-9-lystopada?lang=uk",
           "queues": [
             "1.1",
             "1.2",
@@ -356,24 +312,5 @@
       ]
     }
   ],
-  "changes": [
-    {
-      "date": "2026-11-08",
-      "publishedAt": "2026-11-08T00:36+02:00",
-      "detectedAt": "2026-11-08T03:41:01+02:00",
-      "revisionId": "ccbd147918854e48d180",
-      "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-8-lystopada-1?lang=uk",
-      "queues": [
-        "1.1",
-        "1.2",
-        "2.1",
-        "2.2",
-        "3.1",
-        "3.2",
-        "5.1",
-        "5.2",
-        "6.2"
-      ]
-    }
-  ]
+  "changes": []
 }
