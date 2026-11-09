@@ -17,6 +17,11 @@ test('Push setup obtains and refreshes the exact active service worker registrat
  assert.match(app,/const reg=await getPushRegistration\(\);let sub=await reg\.pushManager\.getSubscription\(\)/);
 });
 
+test('Push API CORS preflight allows the cache-control header sent by the client',()=>{
+ const server=readFileSync(new URL('../push-server/server.js',import.meta.url),'utf8');
+ assert.match(server,/access-control-allow-headers[^\\n]*content-type, authorization, cache-control/);
+});
+
 test('Push subscription validates the VAPID key and reports server rejection details',()=>{
  assert.match(app,/key\.length!==65/);
  assert.match(app,/cache:'no-store',body:JSON\.stringify\(payload\)/);
