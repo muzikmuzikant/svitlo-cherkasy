@@ -342,7 +342,7 @@ const server=http.createServer(async(req,res)=>{
  res._allowedAppOrigin=originPolicy.isAllowed(origin)?origin:'';
  if(req.method==='OPTIONS'){
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
-  res.writeHead(204,{'access-control-allow-origin':origin,'access-control-allow-methods':'POST, OPTIONS, GET, PUT, PATCH, DELETE','access-control-allow-headers':'content-type, authorization','vary':'Origin'});res.end();return;
+  res.writeHead(204,{'access-control-allow-origin':origin,'access-control-allow-methods':'POST, OPTIONS, GET, PUT, PATCH, DELETE','access-control-allow-headers':'content-type, authorization, cache-control','vary':'Origin'});res.end();return;
  }
  if(requestPath==='/api/events'&&req.method==='GET'){
    if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
