@@ -1,3 +1,4 @@
+// Final CI trigger for 7.9.14 Beta checks.
 // 7.9.14 Beta feature regression checks.
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
