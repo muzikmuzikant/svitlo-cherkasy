@@ -51,6 +51,15 @@ def main():
             page.wait_for_function("() => !document.querySelector('#updates').hidden")
             page.evaluate("history.back()")
             page.wait_for_function("() => !document.querySelector('#settings').hidden", timeout=4000)
+            # Let the 460ms tab transition finish before interacting with the
+            # long Settings page; smooth document scrolling otherwise keeps
+            # Playwright's click target moving while it auto-scrolls.
+            page.wait_for_timeout(550)
+            page.evaluate("""() => {
+              const link=document.querySelector('#settings a[href^="./help.html"]');
+              if(link){document.documentElement.style.scrollBehavior='auto';link.scrollIntoView({block:'center',behavior:'auto'});}
+            }""")
+            page.wait_for_timeout(100)
             print("PASS: Android Back returns to the prior tab")
 
             page.locator('#settings a[href^="./help.html"]').first.click()
