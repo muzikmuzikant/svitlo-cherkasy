@@ -41,7 +41,10 @@
    const list=$('updateList');if(list)insertAfter(list,history);
   }
   if(!$('smartPushHours')){
-   const card=makeCard('smartPushHours','Години отримання Push','Окремі налаштування для кожної збереженої адреси');
+   const card=node('details','smart-tools-card surface');card.id='smartPushHours';
+   const summary=node('summary','smart-tools-heading','Персональні години отримання Push');
+   const body=node('div','smart-push-body');body.id='smartPushHoursBody';
+   card.append(summary,body);
    const categories=$('pushCategorySettings');if(categories)insertAfter(categories,card);
   }
  }
@@ -66,7 +69,7 @@
   const places=addresses();
   if(!selectedIds.size)places.forEach((a,i)=>{if(i<Math.min(4,places.length))selectedIds.add(a.id)});
   for(const id of [...selectedIds])if(!places.some(a=>a.id===id))selectedIds.delete(id);
-  const dates=core()?.getDates?.()||[today()];if(!selectedDate||!dates.includes(selectedDate))selectedDate=today();
+  const availableDates=core()?.getDates?.();const dates=Array.isArray(availableDates)&&availableDates.length?availableDates:[today()];if(!selectedDate||!dates.includes(selectedDate))selectedDate=today();
   const key=JSON.stringify([places.map(a=>[a.id,a.queue,a.nickname,a.street]),selectedDate,[...selectedIds].sort(),data().lastChecked,data().history?.[0]?.id]);
   if(root.dataset.renderKey===key)return;root.dataset.renderKey=key;root.replaceChildren();
   const head=node('div','smart-tools-head');head.append(node('div','smart-tools-heading','Порівняти адреси'),node('p','smart-tools-subtitle','Оберіть місця та день, щоб побачити спільні години зі світлом'));root.append(head);
@@ -108,7 +111,7 @@
  function renderHistory(){
   const root=$('smartHistory');if(!root)return;
   const q=primary()?.queue,history=(data().history||[]).filter(item=>!q||(item.queues||[]).includes(q)).slice(0,12);
-  const key=JSON.stringify([q,history[0]?.id,history.length,(data().changes||[]).at(-1)?.id]);
+  const lastChange=(data().changes||[]).at(-1);const key=JSON.stringify([q,history[0]?.id,history.length,lastChange?.date,lastChange?.queues]);
   if(root.dataset.renderKey===key)return;root.dataset.renderKey=key;root.replaceChildren();const head=node('div','smart-tools-head');head.append(node('div','smart-tools-heading','Історія змін графіка'),node('p','smart-tools-subtitle','Що саме змінилося в опублікованій редакції'));root.append(head);
   if(history.length){
    history.forEach(item=>{
@@ -135,10 +138,10 @@
   row.append(title,toggleLabel,range);parent.append(row);
  }
  function renderPushHours(){
-  const root=$('smartPushHours');if(!root)return;
+  const root=$('smartPushHoursBody');if(!root)return;
   const a=primary(),config=getAllowedHours(),key=String(a?.id||'none')+JSON.stringify(config);
   if(root.dataset.renderKey===key)return;root.dataset.renderKey=key;root.replaceChildren();
-  const head=node('div','smart-tools-head');head.append(node('div','smart-tools-heading','Години отримання Push'),node('p','smart-tools-subtitle',a?'Для адреси: '+(a.nickname||a.street||a.settlement)+' · '+(a.queue||'підчерга не визначена'):'Спершу додайте адресу з підчергою'));root.append(head);
+  const head=node('div','smart-tools-head');head.append(node('p','smart-tools-subtitle',a?'Для адреси: '+(a.nickname||a.street||a.settlement)+' · '+(a.queue||'підчерга не визначена'):'Спершу додайте адресу з підчергою'));root.append(head);
   if(!a?.id){root.append(node('p','smart-tools-empty','Збережіть адресу, щоб налаштувати години сповіщень окремо для неї.'));return}
   const masterLabel=node('label','smart-hours-master'),master=node('input');master.type='checkbox';master.checked=!!config.enabled;
   master.addEventListener('change',()=>{const next=getAllowedHours();next.enabled=master.checked;saveHours(next);renderPushHours()});
