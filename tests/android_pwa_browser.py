@@ -51,7 +51,20 @@ def main():
             nav("updates").click()
             page.wait_for_function("() => !document.querySelector('#updates').hidden")
             page.wait_for_timeout(550)
+            print("DEBUG before first Back:", page.evaluate("""() => ({
+              state: history.state, length: history.length,
+              settingsHidden: document.querySelector('#settings').hidden,
+              updatesHidden: document.querySelector('#updates').hidden,
+              activeNav: document.querySelector('.bottom-nav .nav-item.active')?.dataset.go
+            })"""))
             page.evaluate("history.back()")
+            page.wait_for_timeout(350)
+            print("DEBUG after first Back:", page.evaluate("""() => ({
+              state: history.state, length: history.length,
+              settingsHidden: document.querySelector('#settings').hidden,
+              updatesHidden: document.querySelector('#updates').hidden,
+              activeNav: document.querySelector('.bottom-nav .nav-item.active')?.dataset.go
+            })"""))
             page.wait_for_function(
                 "() => !document.querySelector('#settings').hidden && document.querySelector('#updates').hidden",
                 timeout=5500,
