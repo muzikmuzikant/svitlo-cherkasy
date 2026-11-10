@@ -60,6 +60,14 @@ def main():
             page.wait_for_function("() => window.history.state?.svitloTab === 'updates'")
             page.wait_for_timeout(550)
             page.evaluate("window.history.back()")
+            page.wait_for_timeout(250)
+            print("DEBUG after tab Back:", page.evaluate("""() => ({
+              state: window.history.state,
+              length: window.history.length,
+              settingsHidden: document.querySelector('#settings').hidden,
+              updatesHidden: document.querySelector('#updates').hidden,
+              activeNav: document.querySelector('.bottom-nav .nav-item.active')?.dataset.go
+            })"""))
             page.wait_for_function("() => window.history.state?.svitloTab === 'settings'", timeout=5500)
             page.wait_for_function(
                 "() => !document.querySelector('#settings').hidden && document.querySelector('#updates').hidden",
