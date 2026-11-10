@@ -19,7 +19,7 @@
   if(Array.isArray(value?.days)){
    const days=Array.from({length:7},(_,day)=>{
     const raw=value.days.find(x=>Number(x?.day)===day),windows=(Array.isArray(raw?.windows)?raw.windows:[]).slice(0,2)
-     .filter(x=>/^([01]\d|2[0-3]):[0-5]\d$/.test(x?.from||'')&&/^([01]\d|2[0-3]):[0-5]\d$/.test(x?.to||'')&&x.from!==x.to)
+     .filter(x=>/^([01]\d|2[0-3]):[0-5]\d$/.test(x?.from||'')&&/^([01]\d|2[0-3]):[0-5]\d$/.test(x?.to||'')&&x.from<x.to)
      .map(x=>({from:x.from,to:x.to})).sort((a,b)=>a.from.localeCompare(b.from));
     return {day,enabled:!!raw?.enabled&&windows.length>0,windows};
    });
@@ -187,11 +187,12 @@
    });
    if(dayConfig.windows.length<2){
     const add=node('button','smart-hours-add','Додати ще один проміжок');add.type='button';
+    const candidates=[{from:'08:00',to:'12:00'},{from:'14:00',to:'18:00'},{from:'19:00',to:'22:00'},{from:'00:00',to:'06:00'}];
+    const available=candidates.find(extra=>!dayConfig.windows.some(x=>x.from<extra.to&&extra.from<x.to));
+    if(!available){add.disabled=true;add.textContent='Немає вільного проміжку'}
     add.addEventListener('click',()=>{
-     const next=getAllowedHours(),target=next.days[dayConfig.day],first=target.windows[0];
-     const extra=first&&first.to<='12:00'?{from:'14:00',to:'18:00'}:{from:'08:00',to:'12:00'};
-     if(target.windows.some(x=>x.from<extra.to&&extra.from<x.to)){extra.from='19:00';extra.to='22:00'}
-     target.windows.push(extra);target.windows.sort((a,b)=>a.from.localeCompare(b.from));saveHours(next);renderPushHours();
+     if(!available)return;
+     const next=getAllowedHours(),target=next.days[dayConfig.day];target.windows.push(available);target.windows.sort((a,b)=>a.from.localeCompare(b.from));saveHours(next);renderPushHours();
     });
     body.append(add);
    }
