@@ -46,25 +46,13 @@ def main():
 
             nav = lambda tab: page.locator('.bottom-nav [data-go="' + tab + '"]')
             nav("settings").click()
-            page.wait_for_function("() => !document.querySelector('#settings').hidden")
+            page.wait_for_function("() => history.state?.svitloTab === 'settings'")
             page.wait_for_timeout(550)
             nav("updates").click()
-            page.wait_for_function("() => !document.querySelector('#updates').hidden")
+            page.wait_for_function("() => history.state?.svitloTab === 'updates'")
             page.wait_for_timeout(550)
-            print("DEBUG before first Back:", page.evaluate("""() => ({
-              state: history.state, length: history.length,
-              settingsHidden: document.querySelector('#settings').hidden,
-              updatesHidden: document.querySelector('#updates').hidden,
-              activeNav: document.querySelector('.bottom-nav .nav-item.active')?.dataset.go
-            })"""))
-            page.evaluate("history.back()")
-            page.wait_for_timeout(350)
-            print("DEBUG after first Back:", page.evaluate("""() => ({
-              state: history.state, length: history.length,
-              settingsHidden: document.querySelector('#settings').hidden,
-              updatesHidden: document.querySelector('#updates').hidden,
-              activeNav: document.querySelector('.bottom-nav .nav-item.active')?.dataset.go
-            })"""))
+            page.evaluate("window.history.back()")
+            page.wait_for_function("() => history.state?.svitloTab === 'settings'", timeout=5500)
             page.wait_for_function(
                 "() => !document.querySelector('#settings').hidden && document.querySelector('#updates').hidden",
                 timeout=5500,
