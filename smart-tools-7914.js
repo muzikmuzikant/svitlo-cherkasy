@@ -150,7 +150,7 @@
   root.append(node('p','smart-tools-footnote','Налаштування зберігаються окремо для кожної адреси на цьому пристрої та застосовуються до її підчерги після синхронізації Push.'));
   if(config.enabled&&!config.weekdays.enabled&&!config.weekends.enabled)root.append(node('p','smart-tools-warning','Усі дні залишаються без обмежень. Увімкніть обмеження для буднів або вихідних.'));
  }
- function refresh(){ensurePanels();renderPlanner();renderCompare();renderHistory();if(document.getElementById('settings')?.hidden===false)renderPushHours()}
+ function refresh(){ensurePanels();renderPlanner();renderCompare();renderHistory();renderPushHours()}
  window.addEventListener('svitlo:smart-tools-refresh',refresh);
  window.addEventListener('svitlo:smart-tools-settings-refresh',()=>{ensurePanels();renderPushHours()});
  document.addEventListener('DOMContentLoaded',refresh,{once:true});
