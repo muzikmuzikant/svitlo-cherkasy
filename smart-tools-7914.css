@@ -85,9 +85,11 @@
 .smart-history-body{padding:0 0 13px}
 .smart-history-body .smart-tools-head{margin:0 0 8px}
 .smart-history-body .smart-history-item:first-of-type{border-top:1px solid var(--line,#e7edf4)}
-.smart-push-dialog[open]{animation:smart-push-enter 220ms cubic-bezier(.2,.8,.2,1) both}
-@keyframes smart-push-enter{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
-@media(prefers-reduced-motion:reduce){.smart-history-chevron{transition:none}.smart-push-dialog[open]{animation:none}}
+.smart-push-dialog[open]::backdrop{animation:smart-push-backdrop-in 220ms ease both}
+.smart-push-dialog[data-closing="true"]::backdrop{animation:smart-push-backdrop-out 180ms ease both}
+@keyframes smart-push-backdrop-in{from{opacity:0}to{opacity:1}}
+@keyframes smart-push-backdrop-out{from{opacity:1}to{opacity:0}}
+@media(prefers-reduced-motion:reduce){.smart-history-chevron{transition:none}.smart-push-dialog[open]::backdrop,.smart-push-dialog[data-closing="true"]::backdrop{animation:none}}
 
 .smart-compare-pickers{grid-template-columns:1fr 1fr;gap:9px}
 .smart-compare-field{display:grid;gap:6px;min-width:0}
