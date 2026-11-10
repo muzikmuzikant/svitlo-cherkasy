@@ -5,7 +5,7 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const ui=read('features-7914.js'),server=read('push-server/server.js'),importer=read('scripts/update_data.py'),html=read('index.html'),sw=read('sw.js'),build=read('scripts/build_pages.py'),install=read('install.js');
 test('planner and address comparison use only verified schedule days',()=>{
  assert.match(ui,/function renderPlanner/);assert.match(ui,/function renderCompare/);assert.match(ui,/verified===true/);
- assert.match(ui,/Немає підтвердженого графіка/);assert.match(ui,/Спільний час зі світлом/);
+ assert.match(ui,/ще немає підтвердженого графіка/);assert.match(ui,/Спільний час зі світлом/);
 });
 test('revision history stores and displays exact before and after queue intervals',()=>{
  assert.match(importer,/'before': before/);assert.match(importer,/'after': after/);
