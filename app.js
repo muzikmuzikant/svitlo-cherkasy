@@ -93,8 +93,11 @@ function retainWeeklySchedules(incoming,previous={days:[]}){
  const recent=normalizeData(incoming),days=new Map();
  for(const day of previous.days||[])if(weekAllowed(day.date)&&day.verified===true)days.set(day.date,day);
  for(const day of recent.days)if(weekAllowed(day.date))days.set(day.date,day);
+ const history=new Map();
+ for(const item of [...(recent.history||[]),...(previous.history||[])])if(item?.id&&weekAllowed(item.date)&&!history.has(item.id))history.set(item.id,item);
  return {...recent,days:[...days.values()].sort((a,b)=>a.date.localeCompare(b.date)),
-  changes:(recent.changes||[]).filter(c=>typeof c?.date==='string'&&weekAllowed(c.date))};
+  changes:(recent.changes||[]).filter(c=>typeof c?.date==='string'&&weekAllowed(c.date)),
+  history:[...history.values()].sort((a,b)=>String(b.detectedAt||b.publishedAt||'').localeCompare(String(a.detectedAt||a.publishedAt||''))).slice(0,40)};
 }
 const currentDay=date=>data.days.find(x=>x.date===date&&x.verified===true);
 const minute=s=>s==='24:00'?1440:/^([01]\d|2[0-3]):[0-5]\d$/.test(s||'')?Number(s.slice(0,2))*60+Number(s.slice(3)):-1;
@@ -286,6 +289,7 @@ function renderFreshness(){
  node.append(title,message);
 }
 function renderHome(){
+ window.dispatchEvent(new Event('svitlo:smart-tools-refresh'));
  const intro=$('homeIntro');if(intro)intro.hidden=Boolean(primary());
 
  try{window.SvitloTelemetry?.sampleSelected(primary())}catch{}
@@ -648,7 +652,7 @@ function navigate(name,{fromHistory=false}={}){
   tabMotion=null;
  },()=>{});
 }
-function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Підчерга '+previewQueue,settlement:'Черкаси та район'}:primary();
+function renderDetail(){window.dispatchEvent(new Event('svitlo:smart-tools-refresh'));const a=previewQueue?{queue:previewQueue,nickname:'Підчерга '+previewQueue,settlement:'Черкаси та район'}:primary();
  if(!a)return;
  $('editActive').hidden=!!previewQueue;
  setText('detailAddress',previewQueue?'Підчерга '+previewQueue+' · тимчасовий перегляд':fullAddress(a));const tToday=timeline(today(),a.queue),st=stateAt(tToday,nowMinutes()),nxt=nextChange(today(),a.queue,nowMinutes());const status=$('detailStatus');status.className='detail-status '+st;status.textContent=statusCopy(st,nxt,a.queue,today()).title;
@@ -979,7 +983,7 @@ function applyOverrides(){
  index=mergeIndexes(addressSourceIndex||index,overrides.addresses||{},{manual:true});
  index=mergeIndexes(index,railwayAddressCorrections,{manual:true,protectHouseStreets:true});
 }
-function normalizeData(obj){if(!obj||!Array.isArray(obj.days))throw Error('Bad JSON');return {days:obj.days.filter(x=>/^20\d\d-\d\d-\d\d$/.test(x.date)&&x.verified===true),changes:Array.isArray(obj.changes)?obj.changes:[],lastChecked:obj.lastChecked||null,confirmedNoScheduleDates:Array.isArray(obj.confirmedNoScheduleDates)?obj.confirmedNoScheduleDates:undefined,reviewPending:obj.reviewPending===true,unresolvedDates:Array.isArray(obj.unresolvedDates)?obj.unresolvedDates.filter(x=>/^20\d\d-\d\d-\d\d$/.test(x)):undefined}}
+function normalizeData(obj){if(!obj||!Array.isArray(obj.days))throw Error('Bad JSON');return {days:obj.days.filter(x=>/^20\d\d-\d\d-\d\d$/.test(x.date)&&x.verified===true),changes:Array.isArray(obj.changes)?obj.changes:[],history:Array.isArray(obj.history)?obj.history.filter(x=>x&&typeof x.id==='string'&&/^20\d\d-\d\d-\d\d$/.test(x.date)):[],lastChecked:obj.lastChecked||null,confirmedNoScheduleDates:Array.isArray(obj.confirmedNoScheduleDates)?obj.confirmedNoScheduleDates:undefined,reviewPending:obj.reviewPending===true,unresolvedDates:Array.isArray(obj.unresolvedDates)?obj.unresolvedDates.filter(x=>/^20\d\d-\d\d-\d\d$/.test(x)):undefined}}
 function mergeIndexes(live,backup,options={}){
  return SvitloDataMerge.mergeIndexes(live,backup,options);
 }
@@ -1232,7 +1236,8 @@ async function checkPushDelivery(force=false){
    const remote=await response.json();
    const sameQueue=remote.queue===primary().queue;
    const samePrefs=['off','on','changes','tomorrow','emergency'].every(name=>remote.preferences?.[name]===!!prefs[name]);
-   if(!remote.registered||!sameQueue||!samePrefs){
+   const sameAllowed=JSON.stringify(remote.allowedHours||null)===JSON.stringify(window.SvitloSmartTools?.getAllowedHours?.()||null);
+   if(!remote.registered||!sameQueue||!samePrefs||!sameAllowed){
     await updatePushSubscription();
     pushHealthMessage('Push-підписку оновлено для підчерги '+primary().queue+'. Перевіряємо майбутні нагадування автоматично.');
    }else{
@@ -1285,7 +1290,7 @@ async function updatePushSubscription(){
   if(old.length!==key.length||old.some((v,i)=>v!==key[i])){await sub.unsubscribe();sub=null}
  }
  if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
- const payload={subscription:sub.toJSON(),queue:primary().queue,settlement:primary().settlement||'',preferences:{off:prefs.off,on:prefs.on,changes:prefs.changes,tomorrow:prefs.tomorrow,emergency:prefs.emergency}};
+ const payload={subscription:sub.toJSON(),queue:primary().queue,settlement:primary().settlement||'',preferences:{off:prefs.off,on:prefs.on,changes:prefs.changes,tomorrow:prefs.tomorrow,emergency:prefs.emergency},allowedHours:window.SvitloSmartTools?.getAllowedHours?.()||null};
  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),12000);
  try{
   const response=await fetch(pushConfig.apiBase.replace(/\/$/,'')+'/api/subscribe',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload),signal:controller.signal});
@@ -1387,6 +1392,14 @@ $('pushMaster').onchange=async event=>{
   renderSettings();
  }
 };
+window.SvitloCore={
+ getAddresses:()=>addresses.slice(),getPrimary:()=>primary(),getData:()=>data,
+ getToday:()=>today(),getDates:()=>stripDates(),getTimeline:(date,queue)=>timeline(date,queue),
+ getCurrentDay:date=>currentDay(date),getSelectedDay:()=>daySelected||today(),
+ getFormatDate:date=>formatDate(date),getClock:minute=>clock(minute),
+ isPushActive:()=>pushActive,syncPush:()=>updatePushSubscription()
+};
+window.addEventListener('svitlo:push-hours-changed',()=>{if(pushActive)updatePushSubscription().catch(error=>console.warn('Push hours update:',error))});
 fillQueueSelect();
  const requestedScreen=new URL(location.href).searchParams.get('screen');
  let restore=null;
