@@ -66,82 +66,116 @@
   const animation=dialog.animate([{opacity:1,transform:'translateY(0) scale(1)'},{opacity:0,transform:'translateY(9px) scale(.99)'}],{duration:180,easing:'cubic-bezier(.4,0,.7,.3)'});
   animation.finished.then(finish,finish);
  }
+ function animateItems(root,selector){
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches||document.documentElement.classList.contains('feature-off-animations'))return;
+  root.querySelectorAll(selector).forEach((element,index)=>{
+   if(element.dataset.motionPlayed)return;element.dataset.motionPlayed='1';
+   element.animate([{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'translateY(0)'}],{duration:300,delay:Math.min(index*48,192),easing:'cubic-bezier(.2,.8,.2,1)',fill:'both'});
+  });
+ }
  function ensurePanels(){
   if(!$('smartCompare')){
-   const compare=makeCard('smartCompare','Порівняти адреси','Знайдіть години, коли у вибраних місцях одночасно є світло');
-   const notice=document.querySelector('#home .notice-strip'),places=$('placeList');
-   if(notice?.parentNode)notice.parentNode.insertBefore(compare,notice);
-   else if(places?.parentNode)insertAfter(places.parentNode,compare);
-  }
-  if(!$('smartHistory')){
-   const history=node('details','smart-history-panel surface');history.id='smartHistory';
-   const summary=node('summary','smart-history-summary');
-   summary.append(node('strong','','Історія графіка'),node('span','smart-history-chevron','⌄'));
-   const body=node('div','smart-history-body');body.id='smartHistoryBody';
-   history.append(summary,body);
-   const anchor=document.querySelector('#detail .schedule-meta');
-   if(anchor?.parentNode)insertAfter(anchor,history);
+   const compare=makeCard('smartCompare','Порівняння графіків','Побачте спільні години зі світлом для двох адрес');
+   compare.classList.add('smart-compare-card');
+   const detail=$('detail'),anchor=detail?.querySelector('.info-card');
+   if(anchor?.parentNode)insertAfter(anchor,compare);
   }
   if(!$('smartPushHoursDialog')){
-   const dialog=node('dialog','smart-push-dialog');dialog.id='smartPushHoursDialog';
-   const panel=node('div','smart-push-dialog-panel'),top=node('div','smart-push-dialog-top');
-   top.append(node('strong','smart-push-dialog-title','Персональні години Push'));
-   const close=button('Закрити','smart-push-dialog-close');close.addEventListener('click',()=>closeDialog(dialog));top.append(close);
-   const body=node('div','smart-push-body');body.id='smartPushHoursBody';panel.append(top,body);dialog.append(panel);
-   dialog.addEventListener('click',event=>{if(event.target===dialog)closeDialog(dialog)});dialog.addEventListener('cancel',event=>{event.preventDefault();closeDialog(dialog)});document.body.append(dialog);
-   const title=document.querySelector('#settings .settings-push-controls .subsection-title');
-   if(title&&!$('smartPushHoursOpen')){const trigger=button('Години Push','smart-push-trigger');trigger.id='smartPushHoursOpen';trigger.setAttribute('aria-label','Налаштувати години отримання Push');trigger.addEventListener('click',()=>openDialog(dialog));title.append(trigger)}
+   const dialog=node('dialog','sheet smart-push-dialog');dialog.id='smartPushHoursDialog';
+   const handle=node('div','sheet-handle');
+   const top=node('div','sheet-top'),copy=node('div');
+   copy.append(node('h2','','Години Push'),node('p','','Виберіть, коли отримувати планові сповіщення'));
+   const close=button('×','sheet-close');close.setAttribute('aria-label','Закрити');
+   close.addEventListener('click',()=>window.SvitloSheetMotion?.dismiss(dialog)||dialog.close());
+   top.append(copy,close);
+   const inner=node('div','sheet-inner'),body=node('div','smart-push-body');body.id='smartPushHoursBody';
+   inner.append(body);dialog.append(handle,top,inner);document.body.append(dialog);
+   window.SvitloSheetMotion?.bind(dialog);
+  }
+  if(!$('smartPushHoursOpen')){
+   const anchor=document.querySelector('#settings .settings-push-controls .push-master-card');
+   if(anchor?.parentNode){
+    const trigger=button('Налаштувати години Push','smart-push-trigger');trigger.id='smartPushHoursOpen';
+    trigger.setAttribute('aria-label','Налаштувати години отримання Push');
+    trigger.append(node('span','smart-push-trigger-arrow','›'));
+    trigger.addEventListener('click',()=>{const dialog=$('smartPushHoursDialog');if(dialog&&!dialog.open)dialog.showModal()});
+    insertAfter(anchor,trigger);
+   }
   }
  }
  function nowMinutes(){const p=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(x=>[x.type,x.value]));return Number(p.hour)*60+Number(p.minute)}
  function renderCompare(){
   const root=$('smartCompare');if(!root)return;
-  const places=addresses();
-  const availableDates=core()?.getDates?.();
-  const dates=Array.isArray(availableDates)&&availableDates.length?availableDates:[today()];
+  const places=addresses(),available=core()?.getDates?.();
+  const dates=Array.isArray(available)&&available.length?available:[today()];
   if(!selectedDate||!dates.includes(selectedDate))selectedDate=dates.includes(today())?today():dates[0];
-  const validIds=places.map(a=>a.id);
-  let firstId=validIds.includes([...selectedIds][0])?[...selectedIds][0]:(places[0]?.id||'');
-  let secondId=validIds.find(id=>id!==firstId)||'';
-  if(selectedIds.size>=2){const ids=[...selectedIds].filter(id=>validIds.includes(id));if(ids.length>=2){firstId=ids[0];secondId=ids[1]}}
-  const key=JSON.stringify([places.map(a=>[a.id,a.queue,a.nickname,a.street]),selectedDate,firstId,secondId,data().lastChecked,data().history?.[0]?.id]);
-  if(root.dataset.renderKey===key)return;root.dataset.renderKey=key;root.replaceChildren();
-  const head=node('div','smart-tools-head');
-  head.append(node('div','smart-tools-heading','Порівняння адрес'),node('p','smart-tools-subtitle','Виберіть два місця, щоб побачити, коли в обох одночасно є світло'));
-  root.append(head);
-  if(places.length<2){root.append(node('p','smart-tools-empty','Щоб порівняти графіки, додайте ще одну адресу.'));return}
-  const controls=node('div','smart-compare-controls'),dateLabel=node('label','smart-compare-date-label','День'),dateSelect=node('select','smart-compare-date');
-  dateSelect.setAttribute('aria-label','День для порівняння');
-  dates.forEach(date=>{const option=node('option','',date===today()?'Сьогодні':new Intl.DateTimeFormat('uk-UA',{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z')));option.value=date;dateSelect.append(option)});
-  dateSelect.value=selectedDate;dateSelect.addEventListener('change',()=>{selectedDate=dateSelect.value;root.dataset.renderKey='';renderCompare()});
-  controls.append(dateLabel,dateSelect);root.append(controls);
-  const pickers=node('div','smart-compare-pickers');
+  const valid=places.map(a=>a.id);
+  let first=valid.includes([...selectedIds][0])?[...selectedIds][0]:(places[0]?.id||'');
+  let second=valid.find(id=>id!==first)||'';
+  if(selectedIds.size>=2){const ids=[...selectedIds].filter(id=>valid.includes(id));if(ids.length>=2){first=ids[0];second=ids[1]}}
+  const key=JSON.stringify([places.map(a=>[a.id,a.queue,a.nickname,a.street]),selectedDate,first,second,data().lastChecked]);
+  if(root.dataset.renderKey===key)return;
+  root.dataset.renderKey=key;root.replaceChildren();
+  const intro=node('div','smart-compare-intro');
+  intro.append(node('span','smart-compare-kicker','ДЛЯ ДВОХ АДРЕС'),node('h2','','Коли у вас одночасно є світло?'),node('p','','Порівняйте графіки двох місць на один день та знайдіть спільний час.'));
+  root.append(intro);
+  if(places.length<2){root.append(node('p','smart-tools-empty','Додайте ще одну адресу, щоб порівняти графіки.'));return}
+  const controls=node('div','smart-compare-controls');
   const makePicker=(labelText,value,exclude)=>{
    const label=node('label','smart-compare-field');label.append(node('span','smart-compare-field-label',labelText));
-   const select=node('select','smart-compare-date');select.setAttribute('aria-label',labelText);
-   places.forEach(a=>{const option=node('option','',(a.nickname||a.street||a.settlement)+' · '+(a.queue||'підчерга не визначена'));option.value=a.id;option.disabled=a.id===exclude;select.append(option)});
-   select.value=value;select.addEventListener('change',()=>{const first=select===firstPicker.select?select.value:firstPicker.select.value;const second=select===secondPicker.select?select.value:secondPicker.select.value;selectedIds=new Set([first,second]);root.dataset.renderKey='';renderCompare()});
-   return {label,select};
+   const select=node('select','smart-compare-select');select.setAttribute('aria-label',labelText);
+   places.forEach(a=>{const option=node('option','',(a.nickname||a.street||a.settlement)+' · '+(a.queue||'черга невідома'));option.value=a.id;option.disabled=a.id===exclude;select.append(option)});
+   select.value=value;return {label,select};
   };
   let firstPicker,secondPicker;
-  firstPicker=makePicker('Перша адреса',firstId,secondId);
-  secondPicker=makePicker('Друга адреса',secondId,firstId);
-  pickers.append(firstPicker.label,secondPicker.label);root.append(pickers);
-  selectedIds=new Set([firstId,secondId]);
-  const chosen=places.filter(a=>selectedIds.has(a.id));
-  if(chosen.length!==2){root.append(node('p','smart-tools-empty','Оберіть дві різні адреси.'));return}
-  const rows=chosen.map(a=>({address:a,values:a.queue?core()?.getTimeline?.(selectedDate,a.queue):null}));
-  const list=node('div','smart-compare-results');
-  rows.forEach(({address,values})=>{
-   const row=node('div','smart-compare-row');
-   row.append(node('strong','smart-compare-name',address.nickname||address.street||address.settlement));
-   row.append(node('span','smart-compare-detail','Підчерга '+(address.queue||'не визначена')));
-   if(!values)row.append(node('span','smart-compare-detail','Для цієї підчерги немає підтвердженого графіка на вибраний день.'));
-   else row.append(node('span','smart-compare-detail','Світло: '+intervalText(intervals(values,0))));
-   list.append(row);
+  firstPicker=makePicker('Перша адреса',first,second);
+  secondPicker=makePicker('Друга адреса',second,first);
+  const update=()=>{selectedIds=new Set([firstPicker.select.value,secondPicker.select.value]);root.dataset.renderKey='';renderCompare()};
+  firstPicker.select.addEventListener('change',update);secondPicker.select.addEventListener('change',update);
+  controls.append(firstPicker.label,secondPicker.label);root.append(controls);
+  const dayHead=node('div','smart-compare-day-head');
+  dayHead.append(node('strong','','День порівняння'),node('span','','Оберіть дату'));
+  const dateStrip=node('div','smart-compare-date-strip');
+  dates.slice(0,7).forEach(date=>{
+   const label=date===today()?'Сьогодні':new Intl.DateTimeFormat('uk-UA',{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));
+   const pill=button(label,'smart-compare-date-pill'+(date===selectedDate?' is-active':''));
+   pill.setAttribute('aria-pressed',String(date===selectedDate));
+   pill.addEventListener('click',()=>{selectedDate=date;root.dataset.renderKey='';renderCompare()});
+   dateStrip.append(pill);
   });
-  root.append(list);
-  if(rows.some(x=>!x.values)){root.append(node('p','smart-tools-empty','Спільні години не розраховані, бо для однієї з адрес немає підтвердженого графіка.'));return}
+  dayHead.append(dateStrip);root.append(dayHead);
+  selectedIds=new Set([firstPicker.select.value,secondPicker.select.value]);
+  const chosen=places.filter(a=>selectedIds.has(a.id));
+  const rows=chosen.map(a=>({address:a,values:a.queue?core()?.getTimeline?.(selectedDate,a.queue):null}));
+  if(rows.length!==2){root.append(node('p','smart-tools-empty','Оберіть дві різні адреси.'));return}
+  const chart=node('div','smart-compare-chart');
+  rows.forEach(({address,values},index)=>{
+   const row=node('section','smart-compare-track-row');
+   const meta=node('div','smart-compare-track-meta');
+   const left=node('div','smart-compare-address-copy');
+   left.append(node('strong','',address.nickname||address.street||address.settlement),node('span','',address.settlement+' · '+(address.queue||'підчерга не визначена')));
+   meta.append(node('span','smart-compare-index',String(index+1).padStart(2,'0')),left);
+   row.append(meta);
+   const track=node('div','smart-compare-track');track.setAttribute('role','img');
+   track.setAttribute('aria-label',(address.nickname||address.street)+' — погодинний графік');
+   if(values){
+    for(let slot=0;slot<48;slot++){
+     const from=slot*30,a=values[from],b=values[Math.min(1439,from+29)];
+     const state=a<0||b<0?'unknown':a===1||b===1?'off':'on';
+     const cell=node('span','smart-compare-segment is-'+state);
+     cell.title=clock(from)+'–'+clock(from+30)+': '+(state==='on'?'є світло':state==='off'?'відключення':'немає даних');
+     track.append(cell);
+    }
+   }else track.append(node('span','smart-compare-track-empty','Немає підтвердженого графіка'));
+   row.append(track);chart.append(row);
+  });
+  const axis=node('div','smart-compare-axis');
+  ['00:00','06:00','12:00','18:00','24:00'].forEach(x=>axis.append(node('span','',x)));
+  chart.append(axis);root.append(chart);
+  const legend=node('div','smart-compare-legend');
+  [['is-on','Є світло'],['is-off','Відключення'],['is-unknown','Немає даних']].forEach(([cls,label])=>{const item=node('span','');item.append(node('i',cls),node('span','',label));legend.append(item)});
+  root.append(legend);
+  if(rows.some(x=>!x.values)){root.append(node('p','smart-tools-warning','Спільні години не розраховані: для однієї з адрес немає підтвердженого графіка на цю дату.'));return}
   const common=[];let startMinute=-1;
   for(let minute=0;minute<=1440;minute++){
    const yes=minute<1440&&rows.every(row=>row.values[minute]===0);
@@ -149,34 +183,10 @@
    if(!yes&&startMinute>=0){common.push({from:startMinute,to:minute});startMinute=-1}
   }
   const result=node('div','smart-compare-common');
-  result.append(node('span','smart-plan-label','Одночасно зі світлом'),node('strong','smart-plan-time',common.length?intervalText(common):'Спільного часу зі світлом немає'));
+  result.append(node('span','smart-compare-common-label','СПІЛЬНИЙ ЧАС ЗІ СВІТЛОМ'),node('strong','smart-compare-common-value',common.length?intervalText(common):'Спільних годин немає'));
+  if(common.length)result.append(node('span','smart-compare-common-note',common.reduce((sum,x)=>sum+x.to-x.from,0)>=60?'Можна планувати справи на цей проміжок':'Короткі спільні проміжки протягом дня'));
   root.append(result);
- }
- function formatPlan(plan){
-  if(!plan)return 'Немає попередньої підтвердженої редакції';
-  const off=Array.isArray(plan.off)?plan.off:[];
-  return off.length?off.map(x=>x[0]+'–'+x[1]).join(', '):'Планових відключень не зазначено';
- }
- function renderHistory(){
-  const root=$('smartHistoryBody');if(!root)return;
-  const q=primary()?.queue,history=(data().history||[]).filter(item=>!q||(item.queues||[]).includes(q)).slice(0,12);
-  const lastChange=(data().changes||[]).at(-1);const key=JSON.stringify([q,history[0]?.id,history.length,lastChange?.date,lastChange?.queues]);
-  if(root.dataset.renderKey===key)return;root.dataset.renderKey=key;root.replaceChildren();const head=node('div','smart-tools-head');head.append(node('p','smart-tools-subtitle','Зміни опублікованих графіків для вашої підчерги'));root.append(head);
-  if(history.length){
-   history.forEach(item=>{
-    const card=node('article','smart-history-item'),title=node('strong','smart-history-title',item.date+' · '+(item.queues?.join(', ')||'графік оновлено'));
-    const stamp=node('time','smart-history-time',item.detectedAt?new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Kyiv'}).format(new Date(item.detectedAt)):'Час не вказано');card.append(title,stamp);
-    const change=item.changes?.[q];
-    if(change){card.append(node('p','smart-history-before','Було: '+formatPlan(change.before)),node('p','smart-history-after','Стало: '+formatPlan(change.after)))}
-    else card.append(node('p','smart-history-note','Зміни зафіксовано, але попередні години для цієї редакції ще не зберігалися.'));
-    if(item.source&&/^https:\/\/www\.cherkasyoblenergo\.com\//.test(item.source)){const link=node('a','smart-history-source','Офіційне джерело ↗');link.href=item.source;link.target='_blank';link.rel='noopener noreferrer';card.append(link)}
-    root.append(card);
-   });
-   return;
-  }
-  const legacy=(data().changes||[]).filter(item=>!q||(item.queues||[]).includes(q)).slice(-8).reverse();
-  if(legacy.length){legacy.forEach(item=>{const card=node('article','smart-history-item');card.append(node('strong','smart-history-title',item.date+' · '+(item.queues?.join(', ')||'оновлення')),node('p','smart-history-note','Оновлення графіка зафіксовано. Детального збереженого порівняння попередніх годин для цієї редакції немає.'));root.append(card)})}
-  else root.append(node('p','smart-tools-empty','Поки немає збережених змін графіка для цієї підчерги.'));
+  animateItems(root,'.smart-compare-track-row,.smart-compare-common,.smart-compare-legend');
  }
  function createDayRow(parent,dayConfig,dayName){
   const row=node('section','smart-hours-day'),head=node('div','smart-hours-day-head');
@@ -245,8 +255,9 @@
   root.append(node('p','smart-tools-footnote','Налаштування зберігаються окремо для кожної адреси на цьому пристрої та застосовуються до її підчерги після синхронізації Push.'));
   if(config.enabled&&!config.days.some(day=>day.enabled))root.append(node('p','smart-tools-warning','Зараз усі дні дозволені цілодобово. Увімкніть обмеження для тих днів, коли потрібні конкретні години.'));
   root.append(node('p','smart-push-sync-status',pushSyncMessage||'Зміни зберігаються автоматично.'));
+  animateItems(root,'.smart-hours-master,.smart-hours-day,.smart-push-sync-status');
  }
- function refresh(){ensurePanels();renderCompare();renderHistory();renderPushHours()}
+ function refresh(){ensurePanels();renderCompare();renderPushHours()}
  window.addEventListener('svitlo:smart-tools-refresh',refresh);
  window.addEventListener('svitlo:smart-tools-settings-refresh',()=>{ensurePanels();renderPushHours()});
  document.addEventListener('DOMContentLoaded',refresh,{once:true});
