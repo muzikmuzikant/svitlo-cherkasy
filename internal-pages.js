@@ -67,10 +67,13 @@
  retry.addEventListener('click',()=>{if(expectedUrl)display(expectedUrl,false)});
  back.addEventListener('click',dismiss);
  addEventListener('popstate',event=>{
-  if(explicitDismiss){explicitDismiss=false;close();return}
+  if(explicitDismiss){explicitDismiss=false;close();window.SvitloCore?.restoreTabFromHistory?.(event.state);return}
   if(event.state?.svitloInternal){
    if(!isOpen||expectedUrl!==new URL(event.state.path,location.origin).href)display(event.state.path,false)
-  }else close();
+  }else{
+   close();
+   window.SvitloCore?.restoreTabFromHistory?.(event.state);
+  }
  });
  addEventListener('keydown',event=>{if(isOpen&&event.key==='Escape'){event.preventDefault();dismiss()}});
  document.addEventListener('click',event=>{
