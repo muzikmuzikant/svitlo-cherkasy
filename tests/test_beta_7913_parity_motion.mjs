@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const read=name=>fs.readFileSync(new URL('../'+name,import.meta.url),'utf8');
-test('7.9.13 remains a Beta-only release candidate',()=>{
+test('7.9.14 remains a Beta-only release candidate',()=>{
  const release=JSON.parse(read('release.json'));
  assert.equal(release.channel,'beta');
- assert.equal(release.version,'7.9.13');
+ assert.equal(release.version,'7.9.14');
  assert.match(read('sw.js'),/v7\.9\.13-beta/);
 });
 test('Production Railway schedule safeguards are present in Beta',()=>{
