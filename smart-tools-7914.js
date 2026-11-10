@@ -3,7 +3,7 @@
  const $=id=>document.getElementById(id),STORE='svitlo-smart-tools-v7914';
  const defaultHours=()=>({enabled:false,days:Array.from({length:7},(_,day)=>({day,enabled:false,windows:[]}))});
  const readStore=()=>{try{const x=JSON.parse(localStorage.getItem(STORE)||'{}');return x&&typeof x==='object'?x:{}}catch{return {}}};
- let saved=readStore(),selectedDate='',selectedIds=new Set(),syncTimer=null;
+ let saved=readStore(),selectedDate='',selectedIds=new Set(),syncTimer=null,pushSyncMessage='';
  const core=()=>window.SvitloCore;
  const addresses=()=>core()?.getAddresses?.()||[];
  const primary=()=>core()?.getPrimary?.()||null;
@@ -36,7 +36,15 @@
  };
  const getAllowedHours=()=>{const a=primary();return a?.id?normalizeHours(saved[a.id]):defaultHours()};
  const saveHours=hours=>{const a=primary();if(!a?.id)return;saved[a.id]=normalizeHours(hours);localStorage.setItem(STORE,JSON.stringify(saved));queuePushSync()};
- function queuePushSync(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>{if(core()?.isPushActive?.())window.dispatchEvent(new Event('svitlo:push-hours-changed'))},500)}
+ function queuePushSync(){
+  clearTimeout(syncTimer);
+  pushSyncMessage=core()?.isPushActive?.()?'Зміни збережено. Синхронізуємо з Push…':'Зміни збережено на цьому пристрої. Після ввімкнення Push вони синхронізуються автоматично.';
+  syncTimer=setTimeout(()=>{if(core()?.isPushActive?.())window.dispatchEvent(new Event('svitlo:push-hours-changed'));renderPushHours()},500);
+ }
+ window.addEventListener('svitlo:push-hours-sync',event=>{
+  pushSyncMessage=event.detail?.ok?'Години Push синхронізовано.':'Не вдалося синхронізувати години. Перевірте інтернет і спробуйте ще раз.';
+  renderPushHours();
+ });
  window.SvitloSmartTools={getAllowedHours};
  function insertAfter(reference,element){reference?.parentNode?.insertBefore(element,reference.nextSibling)}
  function makeCard(id,title,subtitle){
@@ -236,6 +244,7 @@
   root.append(node('p','smart-tools-footnote','Для кожного дня можна задати до двох проміжків. Якщо вимкнути обмеження дня, планові Push надходитимуть цілодобово. Аварійні повідомлення оператора не обмежуються.'));
   root.append(node('p','smart-tools-footnote','Налаштування зберігаються окремо для кожної адреси на цьому пристрої та застосовуються до її підчерги після синхронізації Push.'));
   if(config.enabled&&!config.days.some(day=>day.enabled))root.append(node('p','smart-tools-warning','Зараз усі дні дозволені цілодобово. Увімкніть обмеження для тих днів, коли потрібні конкретні години.'));
+  root.append(node('p','smart-push-sync-status',pushSyncMessage||'Зміни зберігаються автоматично.'));
  }
  function refresh(){ensurePanels();renderCompare();renderHistory();renderPushHours()}
  window.addEventListener('svitlo:smart-tools-refresh',refresh);
