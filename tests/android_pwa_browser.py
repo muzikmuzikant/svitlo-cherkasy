@@ -79,7 +79,7 @@ def main():
             frame_url=page.locator(".svitlo-internal-frame").evaluate(
                 "(frame) => frame.contentWindow.location.href")
             assert "help.html" in frame_url, frame_url
-            page.evaluate("history.back()")
+            page.evaluate("window.history.back()")
             page.wait_for_function(
                 "() => document.querySelector('#svitloInternalPage').hidden",
                 timeout=5500,
