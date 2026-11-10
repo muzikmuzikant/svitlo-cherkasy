@@ -133,7 +133,7 @@ export function kyivWallInstants(date,minute){
 
 
 /** Validate a user's local notification delivery window. Times are Kyiv wall-clock minutes. */
-const validClock = value => typeof value === 'string' && /^(?:[01]\\d|2[0-3]):[0-5]\\d$/.test(value);
+const validClock = value => typeof value === 'string' && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
 export function normalizeAllowedHours(input) {
   const empty = {enabled:false,weekdays:{enabled:false,from:'08:00',to:'20:00'},weekends:{enabled:false,from:'08:00',to:'20:00'}};
   if (input == null) return empty;
@@ -148,7 +148,7 @@ export function normalizeAllowedHours(input) {
 export function notificationAllowed(input, date, minute) {
   const schedule = normalizeAllowedHours(input);
   if (!schedule.enabled) return true;
-  if (typeof date !== 'string' || !/^\\d{4}-\\d{2}-\\d{2}$/.test(date) || !Number.isInteger(minute) || minute < 0 || minute >= 1440) return false;
+  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isInteger(minute) || minute < 0 || minute >= 1440) return false;
   const weekday = new Date(date + 'T12:00:00Z').getUTCDay();
   const period = weekday === 0 || weekday === 6 ? schedule.weekends : schedule.weekdays;
   if (!period.enabled) return true;
