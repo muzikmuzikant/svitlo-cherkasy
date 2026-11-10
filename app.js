@@ -93,11 +93,11 @@ function retainWeeklySchedules(incoming,previous={days:[]}){
  const recent=normalizeData(incoming),days=new Map();
  for(const day of previous.days||[])if(weekAllowed(day.date)&&day.verified===true)days.set(day.date,day);
  for(const day of recent.days)if(weekAllowed(day.date))days.set(day.date,day);
- const history=new Map();
- for(const item of [...(recent.history||[]),...(previous.history||[])])if(item?.id&&/^20\\d{2}-\\d{2}-\\d{2}$/.test(item.date||'')&&!history.has(item.id))history.set(item.id,item);
+ const scheduleHistory=new Map();
+ for(const item of [...(recent.scheduleHistory||[]),...(previous.scheduleHistory||[])])if(item?.id&&/^20\\d{2}-\\d{2}-\\d{2}$/.test(item.date||'')&&!scheduleHistory.has(item.id))scheduleHistory.set(item.id,item);
  return {...recent,days:[...days.values()].sort((a,b)=>a.date.localeCompare(b.date)),
   changes:(recent.changes||[]).filter(c=>typeof c?.date==='string'&&weekAllowed(c.date)),
-  history:[...history.values()].sort((a,b)=>String(b.detectedAt||b.publishedAt||'').localeCompare(String(a.detectedAt||a.publishedAt||''))).slice(0,40)};
+  history:[...scheduleHistory.values()].sort((a,b)=>String(b.detectedAt||b.publishedAt||'').localeCompare(String(a.detectedAt||a.publishedAt||''))).slice(0,40)};
 }
 const currentDay=date=>data.days.find(x=>x.date===date&&x.verified===true);
 const minute=s=>s==='24:00'?1440:/^([01]\d|2[0-3]):[0-5]\d$/.test(s||'')?Number(s.slice(0,2))*60+Number(s.slice(3)):-1;
