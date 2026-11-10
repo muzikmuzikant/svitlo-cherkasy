@@ -112,6 +112,10 @@
             const updater = document.createElement('script');
             updater.src = './version-check.js';
             document.body.append(updater);
+            const smartFeatures = document.createElement('script');
+            smartFeatures.src = './features-7914.js';
+            smartFeatures.onerror = () => console.warn('Additional schedule tools unavailable.');
+            document.body.append(smartFeatures);
           };
           document.body.append(app);
           };
