@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
-import {timeline,dueTransitionAcrossDays,freshSchedule,usableSchedule,verifiedScheduleDay,preferFreshSchedule,QUEUES} from '../push-server/schedule-engine.js';
+import {timeline,dueTransitionAcrossDays,freshSchedule,usableSchedule,verifiedScheduleDay,preferFreshSchedule,QUEUES,notificationAllowed} from '../push-server/schedule-engine.js';
 import {transitionCopy} from '../push-server/notification-copy.js';
 
 const server=readFileSync(new URL('../push-server/server.js',import.meta.url),'utf8');
@@ -24,7 +24,7 @@ function fixture({minute=570,off=true,on=true,stale=false,noDate=false,failOnce=
  const state={officialSchedules:{schedule:()=>source},lastLoadedSchedule:null,transitionRunning:false,
   dayInKyiv:()=>({date:nowDate,m:state.currentMinute}),currentMinute:minute,
   shiftDay:(d,n)=>new Date(new Date(d+'T12:00:00Z').getTime()+n*86400_000).toISOString().slice(0,10),
-  freshSchedule,usableSchedule,verifiedScheduleDay,preferFreshSchedule,timeline,dueTransitionAcrossDays,transitionCopy,QUEUES,subscribers,deliveryStats,sent,
+  freshSchedule,usableSchedule,verifiedScheduleDay,preferFreshSchedule,timeline,dueTransitionAcrossDays,transitionCopy,notificationAllowed,QUEUES,subscribers,deliveryStats,sent,
   hash:()=> 'subscriber-hash',
   async forEachLimited(items,limit,callback){for(const rec of items)await callback(rec)},
   async send(rec,message,key,options){
