@@ -130,3 +130,28 @@ export function kyivWallInstants(date,minute){
  }
  return matches.sort((a,b)=>a-b);
 }
+
+
+/** Validate a user's local notification delivery window. Times are Kyiv wall-clock minutes. */
+const validClock = value => typeof value === 'string' && /^(?:[01]\\d|2[0-3]):[0-5]\\d$/.test(value);
+export function normalizeAllowedHours(input) {
+  const empty = {enabled:false,weekdays:{enabled:false,from:'08:00',to:'20:00'},weekends:{enabled:false,from:'08:00',to:'20:00'}};
+  if (input == null) return empty;
+  if (!input || typeof input !== 'object' || Array.isArray(input) || typeof input.enabled !== 'boolean') throw Error('Invalid notification hours');
+  const normalizePeriod = (period, name) => {
+    if (!period || typeof period !== 'object' || Array.isArray(period) || typeof period.enabled !== 'boolean' ||
+        !validClock(period.from) || !validClock(period.to) || period.from === period.to) throw Error('Invalid ' + name + ' notification hours');
+    return {enabled:period.enabled,from:period.from,to:period.to};
+  };
+  return {enabled:input.enabled,weekdays:normalizePeriod(input.weekdays,'weekday'),weekends:normalizePeriod(input.weekends,'weekend')};
+}
+export function notificationAllowed(input, date, minute) {
+  const schedule = normalizeAllowedHours(input);
+  if (!schedule.enabled) return true;
+  if (typeof date !== 'string' || !/^\\d{4}-\\d{2}-\\d{2}$/.test(date) || !Number.isInteger(minute) || minute < 0 || minute >= 1440) return false;
+  const weekday = new Date(date + 'T12:00:00Z').getUTCDay();
+  const period = weekday === 0 || weekday === 6 ? schedule.weekends : schedule.weekdays;
+  if (!period.enabled) return true;
+  const from = parseMinute(period.from), to = parseMinute(period.to);
+  return from < to ? minute >= from && minute < to : minute >= from || minute < to;
+}
