@@ -51,3 +51,13 @@ test('history is stored by the authoritative schedule publisher, not fabricated 
  assert.match(publisher,/buildScheduleHistory/);
  assert.match(publisher,/changes\[queue\] = \{before,after\}/);
 });
+
+test('address comparison is a simple two-address workflow and personal Push reports sync state',()=>{
+ const tools=read('smart-tools-7914.js');
+ assert.match(tools,/Перша адреса/);
+ assert.match(tools,/Друга адреса/);
+ assert.doesNotMatch(tools,/smart-compare-place|smart-compare-place input/);
+ assert.match(tools,/svitlo:push-hours-sync/);
+ assert.match(tools,/Години Push синхронізовано/);
+ assert.match(app,/svitlo:push-hours-sync/);
+});
