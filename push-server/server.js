@@ -32,7 +32,7 @@ import webpush from 'web-push';
 import {adminRouter} from './admin.js';
 import {createManualPush} from './manual-push.js';
 import {transitionCopy,tomorrowCopy,changeCopy,emergencyCopy,firstPublishedAt,dayId,changeId,isLatestRevision,emergencyId,noticeDisplayTitle} from './notification-copy.js';
-import {QUEUES,timeline,dueTransition,latestOfficialEvent,freshEvent,freshSchedule,dueTransitionAcrossDays,usableSchedule,verifiedScheduleDay,preferFreshSchedule,kyivWallInstants} from './schedule-engine.js';
+import {QUEUES,timeline,dueTransition,latestOfficialEvent,freshEvent,freshSchedule,dueTransitionAcrossDays,usableSchedule,verifiedScheduleDay,preferFreshSchedule,kyivWallInstants,normalizeAllowedHours,notificationAllowed} from './schedule-engine.js';
 
 const {VAPID_PUBLIC_KEY,PUSH_PRIVATE_KEY,PUSH_CONTACT,APP_ORIGIN,SCHEDULE_URL,DATA_FILE='./subscribers.json',PORT='8080'}=process.env;
 if(!VAPID_PUBLIC_KEY||!PUSH_PRIVATE_KEY||!PUSH_CONTACT||!APP_ORIGIN||!SCHEDULE_URL){
@@ -160,6 +160,7 @@ async function transitionJob(){
    const q=record?.queue,endpoint=record?.subscription?.endpoint;
    if(!QUEUES.has(q)||!endpoint)return;
    const pref=record.preferences||{},prefix=hash(endpoint),minutes=now.m;
+   if(!notificationAllowed(record.allowedHours,now.date,minutes))return;
    const values=schedulesSafe?timeline(current,q):null;
    const valuesTomorrow=schedulesSafe?timeline(tomorrow,q):null;
    for(const [type,offset,target] of [['off',30,1],['on',15,0]]){
@@ -246,14 +247,14 @@ async function job(){
   await forEachLimited(all,12,async record=>{
    const q=record?.queue,endpoint=record?.subscription?.endpoint;
    if(!QUEUES.has(q)||!endpoint)return;
-   const pref=record.preferences||{},prefix=hash(endpoint),minutes=now.m;
+   const pref=record.preferences||{},prefix=hash(endpoint),minutes=now.m,allowedNow=notificationAllowed(record.allowedHours,now.date,minutes);
    const freshChanges=(source.changes||[]).slice(-30).filter(change=>{
     const when=Date.parse(change.detectedAt||change.publishedAt||''),age=timestamp-when;
     return Array.isArray(change.queues)&&change.queues.includes(q)&&change.date>=now.date&&
      Number.isFinite(when)&&age>=0&&age<65*60000;
    });
    const tomorrowRevised=freshChanges.some(change=>isLatestRevision(change,tomorrow,q));
-   if(schedulesSafe&&pref.tomorrow&&tomorrow?.verified===true&&minutes>=19*60&&!(pref.changes&&tomorrowRevised)){
+   if(allowedNow&&schedulesSafe&&pref.tomorrow&&tomorrow?.verified===true&&minutes>=19*60&&!(pref.changes&&tomorrowRevised)){
     const revision=firstPublishedAt(tomorrow),msg=tomorrowCopy(q,nextDate,tomorrow);
     // One daily preview per subscriber and calendar date. Revisions are handled
     // separately by 'change' notifications, not repeated 'tomorrow' pushes.
@@ -270,7 +271,7 @@ async function job(){
     if(msg)await send(record,msg,`${prefix}:emergency:${event.status}:${hash(event.id||event.source)}:${event.publishedAt}`,{
      notificationId:emergencyId(event),at:event.publishedAt,source:event.source,kind:'emergency',ttl:3600,urgency:'high'});
    }
-   if(schedulesSafe&&pref.changes)for(const change of freshChanges){
+   if(allowedNow&&schedulesSafe&&pref.changes)for(const change of freshChanges){
     const changedDay=verifiedScheduleDay(source,change.date,timestamp);
     if(!changedDay)continue;
     const msg=changeCopy(q,change.date,changedDay);
@@ -572,7 +573,7 @@ const server=http.createServer(async(req,res)=>{
     return null;
    };
    response(res,200,{ok:true,registered:!!rec,queue:rec?.queue||null,
-    preferences:rec?{off:!!rec.preferences?.off,on:!!rec.preferences?.on,changes:!!rec.preferences?.changes,tomorrow:!!rec.preferences?.tomorrow,emergency:!!rec.preferences?.emergency}:null,
+    preferences:rec?{off:!!rec.preferences?.off,on:!!rec.preferences?.on,changes:!!rec.preferences?.changes,tomorrow:!!rec.preferences?.tomorrow,emergency:!!rec.preferences?.emergency}:null,allowedHours:rec?.allowedHours||normalizeAllowedHours(null),
     latestAutomatic:rec?.automatic||null,upcoming:rec&&fresh?{
      off:rec.preferences?.off?next(1):null,on:rec.preferences?.on?next(0):null}:null,
     lastPushCheck:lastSuccess,checkError:lastError,scheduleFresh:fresh,
@@ -593,9 +594,10 @@ const server=http.createServer(async(req,res)=>{
   if(!data.subscription.keys?.p256dh||!data.subscription.keys?.auth||!QUEUES.has(data.queue))throw Error('Invalid subscription or queue');
   const prefs=data.preferences||{};
   const preferences={off:!!prefs.off,on:!!prefs.on,changes:!!prefs.changes,tomorrow:!!prefs.tomorrow,emergency:!!prefs.emergency};
+  const allowedHours=normalizeAllowedHours(data.allowedHours);
   // Store only the locality for opt-in Push targeting. Never store street/house.
   const settlement=typeof data.settlement==='string'?data.settlement.normalize('NFKC').trim().slice(0,70):'';
-  subscribers[key]={subscription:data.subscription,queue:data.queue,preferences,settlement,
+  subscribers[key]={subscription:data.subscription,queue:data.queue,preferences,allowedHours,settlement,
    automatic:subscribers[key]?.automatic||{}};
   save();response(res,200,{ok:true});
  }catch(e){response(res,e.message?.includes('save failed')?500:400,{error:'Invalid subscription request'})}
