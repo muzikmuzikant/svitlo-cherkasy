@@ -22,6 +22,11 @@ test('day planner, comparison and history use the existing schedule source of tr
 
 test('per-address Push hours are sent to the API and verified against server state',()=>{
  assert.match(app,/allowedHours:window\.SvitloSmartTools/);
+ const tools=read('smart-tools-7914.js');
+ assert.match(tools,/function createDayRow/);
+ assert.match(tools,/Додати ще один проміжок/);
+ assert.match(tools,/days:Array\.from/);
+ assert.match(tools,/Цілодобово/);
  assert.match(app,/sameAllowed/);
  const server=read('push-server/server.js');
  assert.match(server,/normalizeAllowedHours\(data\.allowedHours\)/);
