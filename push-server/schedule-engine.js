@@ -151,10 +151,12 @@ export function normalizeAllowedHours(input) {
         throw Error('Each restricted day needs one or two allowed windows');
       const normalized = windows.map(period => {
         if (!period || typeof period !== 'object' || !validClock(period.from) ||
-            !validClock(period.to) || period.from === period.to)
+            !validClock(period.to) || period.from >= period.to)
           throw Error('Invalid daily notification window');
         return {from:period.from,to:period.to};
-      });
+      }).sort((a,b)=>a.from.localeCompare(b.from));
+      if (normalized.some((period,index)=>index>0&&normalized[index-1].to>period.from))
+        throw Error('Overlapping daily notification windows');
       byDay.set(day,{day,enabled:raw.enabled,windows:normalized});
     }
     return {enabled:input.enabled,days:Array.from({length:7},(_,day)=>byDay.get(day)||{day,enabled:false,windows:[]})};
