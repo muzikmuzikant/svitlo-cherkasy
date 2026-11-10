@@ -135,23 +135,55 @@ export function kyivWallInstants(date,minute){
 /** Validate a user's local notification delivery window. Times are Kyiv wall-clock minutes. */
 const validClock = value => typeof value === 'string' && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
 export function normalizeAllowedHours(input) {
-  const empty = {enabled:false,weekdays:{enabled:false,from:'08:00',to:'20:00'},weekends:{enabled:false,from:'08:00',to:'20:00'}};
-  if (input == null) return empty;
-  if (!input || typeof input !== 'object' || Array.isArray(input) || typeof input.enabled !== 'boolean') throw Error('Invalid notification hours');
+  const emptyDays = Array.from({length:7}, (_,day) => ({day,enabled:false,windows:[]}));
+  if (input == null) return {enabled:false,days:emptyDays};
+  if (!input || typeof input !== 'object' || Array.isArray(input) || typeof input.enabled !== 'boolean')
+    throw Error('Invalid notification hours');
+
+  if (Array.isArray(input.days)) {
+    const byDay = new Map();
+    for (const raw of input.days) {
+      const day = Number(raw?.day);
+      if (!Number.isInteger(day) || day < 0 || day > 6 || byDay.has(day) || typeof raw.enabled !== 'boolean')
+        throw Error('Invalid daily notification hours');
+      const windows = Array.isArray(raw.windows) ? raw.windows : [];
+      if (windows.length > 2 || (raw.enabled && windows.length === 0))
+        throw Error('Each restricted day needs one or two allowed windows');
+      const normalized = windows.map(period => {
+        if (!period || typeof period !== 'object' || !validClock(period.from) ||
+            !validClock(period.to) || period.from === period.to)
+          throw Error('Invalid daily notification window');
+        return {from:period.from,to:period.to};
+      });
+      byDay.set(day,{day,enabled:raw.enabled,windows:normalized});
+    }
+    return {enabled:input.enabled,days:Array.from({length:7},(_,day)=>byDay.get(day)||{day,enabled:false,windows:[]})};
+  }
+
+  // Backward compatibility with the previous weekdays/weekends settings.
   const normalizePeriod = (period, name) => {
     if (!period || typeof period !== 'object' || Array.isArray(period) || typeof period.enabled !== 'boolean' ||
-        !validClock(period.from) || !validClock(period.to) || period.from === period.to) throw Error('Invalid ' + name + ' notification hours');
+        !validClock(period.from) || !validClock(period.to) || period.from === period.to)
+      throw Error('Invalid ' + name + ' notification hours');
     return {enabled:period.enabled,from:period.from,to:period.to};
   };
-  return {enabled:input.enabled,weekdays:normalizePeriod(input.weekdays,'weekday'),weekends:normalizePeriod(input.weekends,'weekend')};
+  const weekdays = normalizePeriod(input.weekdays,'weekday');
+  const weekends = normalizePeriod(input.weekends,'weekend');
+  return {enabled:input.enabled,days:Array.from({length:7},(_,day)=>{
+    const period = day === 0 || day === 6 ? weekends : weekdays;
+    return {day,enabled:period.enabled,windows:period.enabled?[{from:period.from,to:period.to}]:[]};
+  })};
 }
 export function notificationAllowed(input, date, minute) {
   const schedule = normalizeAllowedHours(input);
   if (!schedule.enabled) return true;
-  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isInteger(minute) || minute < 0 || minute >= 1440) return false;
+  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+      !Number.isInteger(minute) || minute < 0 || minute >= 1440) return false;
   const weekday = new Date(date + 'T12:00:00Z').getUTCDay();
-  const period = weekday === 0 || weekday === 6 ? schedule.weekends : schedule.weekdays;
-  if (!period.enabled) return true;
-  const from = parseMinute(period.from), to = parseMinute(period.to);
-  return from < to ? minute >= from && minute < to : minute >= from || minute < to;
+  const period = schedule.days[weekday];
+  if (!period || !period.enabled) return true;
+  return period.windows.some(window => {
+    const from = parseMinute(window.from), to = parseMinute(window.to);
+    return from < to ? minute >= from && minute < to : minute >= from || minute < to;
+  });
 }
