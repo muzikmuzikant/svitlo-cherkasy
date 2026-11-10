@@ -94,7 +94,7 @@ function retainWeeklySchedules(incoming,previous={days:[]}){
  for(const day of previous.days||[])if(weekAllowed(day.date)&&day.verified===true)days.set(day.date,day);
  for(const day of recent.days)if(weekAllowed(day.date))days.set(day.date,day);
  const history=new Map();
- for(const item of [...(recent.history||[]),...(previous.history||[])])if(item?.id&&weekAllowed(item.date)&&!history.has(item.id))history.set(item.id,item);
+ for(const item of [...(recent.history||[]),...(previous.history||[])])if(item?.id&&/^20\\d{2}-\\d{2}-\\d{2}$/.test(item.date||'')&&!history.has(item.id))history.set(item.id,item);
  return {...recent,days:[...days.values()].sort((a,b)=>a.date.localeCompare(b.date)),
   changes:(recent.changes||[]).filter(c=>typeof c?.date==='string'&&weekAllowed(c.date)),
   history:[...history.values()].sort((a,b)=>String(b.detectedAt||b.publishedAt||'').localeCompare(String(a.detectedAt||a.publishedAt||''))).slice(0,40)};
@@ -717,6 +717,7 @@ function updatePushInvite(){
 }
 let pushControlBusy=false,pushControlWanted=null;
 function renderSettings(){
+ window.dispatchEvent(new Event('svitlo:smart-tools-settings-refresh'));
  const categories=[['off','notifyOff'],['on','notifyOn'],['changes','notifyChanges'],['tomorrow','notifyTomorrow'],['emergency','notifyEmergency']];
  const supported='Notification' in window&&'serviceWorker' in navigator;
  const configured=!!pushConfig?.apiBase&&!!pushConfig?.publicKey;
