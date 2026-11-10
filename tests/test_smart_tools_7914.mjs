@@ -11,14 +11,16 @@ test('PWA explicitly loads its required runtime chain before the new features',(
  assert.ok(scriptNames.indexOf('smart-tools-7914.js')<scriptNames.indexOf('all-queues.js'));
 });
 
-test('day planner, comparison and history use the existing schedule source of truth',()=>{
+test('the unwanted day planner is removed and schedule history is discoverable on the schedule screen',()=>{
  assert.match(app,/window\.SvitloCore=/);
  assert.match(app,/history:Array\.isArray\(obj\.history\)/);
  assert.match(app,/svitlo:smart-tools-refresh/);
- assert.match(read('smart-tools-7914.js'),/getTimeline/);
- assert.match(read('smart-tools-7914.js'),/Найдовше без світла/);
- assert.match(read('smart-tools-7914.js'),/Було:/);
- assert.match(read('smart-tools-7914.js'),/Стало:/);
+ const tools=read('smart-tools-7914.js');
+ assert.doesNotMatch(tools,/smartDayPlan|renderPlanner|План дня|Найдовше вікно зі світлом/);
+ assert.match(tools,/id='smartHistory'/);
+ assert.match(tools,/#detail \.schedule-meta/);
+ assert.match(tools,/Було:/);
+ assert.match(tools,/Стало:/);
 });
 
 test('per-address Push hours are sent to the API and verified against server state',()=>{
@@ -48,4 +50,14 @@ test('history is stored by the authoritative schedule publisher, not fabricated 
  const publisher=read('push-server/schedule-publication.js');
  assert.match(publisher,/buildScheduleHistory/);
  assert.match(publisher,/changes\[queue\] = \{before,after\}/);
+});
+
+test('address comparison is a simple two-address workflow and personal Push reports sync state',()=>{
+ const tools=read('smart-tools-7914.js');
+ assert.match(tools,/Перша адреса/);
+ assert.match(tools,/Друга адреса/);
+ assert.doesNotMatch(tools,/smart-compare-place|smart-compare-place input/);
+ assert.match(tools,/svitlo:push-hours-sync/);
+ assert.match(tools,/Години Push синхронізовано/);
+ assert.match(app,/svitlo:push-hours-sync/);
 });

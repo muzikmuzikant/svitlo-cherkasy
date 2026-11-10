@@ -75,3 +75,28 @@
 :root[data-theme="dark"] .smart-hours-day{background:#24344a;border-color:#394e67}
 :root[data-theme="dark"] .smart-hours-add,:root[data-theme="dark"] .smart-hours-remove{background:#1e2b3e;border-color:#394e67}
 @media(max-width:370px){.smart-hours-day-head{grid-template-columns:minmax(0,1fr) auto}.smart-hours-day-status{grid-column:1/-1}.smart-hours-day-body .smart-hours-range{gap:5px}.smart-hours-remove{padding:5px 7px}}
+
+/* Beta 7.9.14 usability correction: history belongs with the schedule, not Inbox. */
+.smart-history-panel{margin:14px 0 18px;padding:0 14px;border-radius:16px;overflow:hidden}
+.smart-history-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:50px;cursor:pointer;list-style:none;font-size:13px}
+.smart-history-summary::-webkit-details-marker{display:none}
+.smart-history-chevron{font-size:19px;color:var(--muted,#718198);transition:transform 220ms ease}
+.smart-history-panel[open] .smart-history-chevron{transform:rotate(180deg)}
+.smart-history-body{padding:0 0 13px}
+.smart-history-body .smart-tools-head{margin:0 0 8px}
+.smart-history-body .smart-history-item:first-of-type{border-top:1px solid var(--line,#e7edf4)}
+.smart-push-dialog[open]::backdrop{animation:smart-push-backdrop-in 220ms ease both}
+.smart-push-dialog[data-closing="true"]::backdrop{animation:smart-push-backdrop-out 180ms ease both}
+@keyframes smart-push-backdrop-in{from{opacity:0}to{opacity:1}}
+@keyframes smart-push-backdrop-out{from{opacity:1}to{opacity:0}}
+@media(prefers-reduced-motion:reduce){.smart-history-chevron{transition:none}.smart-push-dialog[open]::backdrop,.smart-push-dialog[data-closing="true"]::backdrop{animation:none}}
+
+.smart-compare-pickers{grid-template-columns:1fr 1fr;gap:9px}
+.smart-compare-field{display:grid;gap:6px;min-width:0}
+.smart-compare-field-label{font-size:10px;font-weight:700;color:var(--muted,#718198)}
+.smart-compare-field select{width:100%;min-width:0;min-height:42px;padding:0 9px;border:1px solid var(--line,#dce5f0);border-radius:11px;background:var(--surface,#fff);color:inherit;font:inherit;font-size:11px}
+.smart-hours-day-status{font-weight:650}
+@media(max-width:370px){.smart-compare-pickers{grid-template-columns:1fr}}
+
+.smart-push-sync-status{margin:12px 0 0;padding:10px 11px;border-radius:10px;background:var(--soft,#f3f6fa);color:var(--muted,#718198);font-size:10px;line-height:1.45}
+:root[data-theme="dark"] .smart-push-sync-status{background:#24344a}

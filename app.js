@@ -1401,7 +1401,7 @@ window.SvitloCore={
  isPushActive:()=>pushActive,syncPush:()=>updatePushSubscription(),
  restoreTabFromHistory:state=>{const screen=state?.svitloTab;const target=['home','detail','updates','settings'].includes(screen)?screen:active;navigate(target,{fromHistory:true})}
 };
-window.addEventListener('svitlo:push-hours-changed',()=>{if(pushActive)updatePushSubscription().catch(error=>console.warn('Push hours update:',error))});
+window.addEventListener('svitlo:push-hours-changed',()=>{if(pushActive)updatePushSubscription().then(()=>window.dispatchEvent(new CustomEvent('svitlo:push-hours-sync',{detail:{ok:true}}))).catch(error=>{console.warn('Push hours update:',error);window.dispatchEvent(new CustomEvent('svitlo:push-hours-sync',{detail:{ok:false}}))})});
 fillQueueSelect();
  const requestedScreen=new URL(location.href).searchParams.get('screen');
  let restore=null;
