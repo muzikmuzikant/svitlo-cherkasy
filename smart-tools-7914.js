@@ -238,7 +238,7 @@
   const fields=node('div','smart-hours-fields');fields.hidden=!config.enabled;
   if(config.enabled){
    const days=node('div','smart-hours-days'),names=['Неділя','Понеділок','Вівторок','Середа','Четвер','П’ятниця','Субота'];
-   config.days.forEach(day=>createDayRow(days,day,names[day.day]));fields.append(days);
+   [1,2,3,4,5,6,0].forEach(day=>createDayRow(days,config.days[day],names[day]));fields.append(days);
   }
   root.append(fields);
   root.append(node('p','smart-tools-footnote','Для кожного дня можна задати до двох проміжків. Якщо вимкнути обмеження дня, планові Push надходитимуть цілодобово. Аварійні повідомлення оператора не обмежуються.'));
