@@ -43,12 +43,22 @@
   const section=node('section','smart-tools-card surface');section.id=id;
   const head=node('div','smart-tools-head');head.append(node('div','smart-tools-heading',title),node('p','smart-tools-subtitle',subtitle));section.append(head);return section;
  }
- function ensurePanels(){
-  if(!$('smartDayPlan')){
-   const plan=makeCard('smartDayPlan','План дня','Коли за графіком найдовше є світло');
-   const stats=document.querySelector('#home .stats-row'),tomorrow=document.querySelector('#home .tomorrow-preview');
-   if(stats?.parentNode)stats.parentNode.insertBefore(plan,tomorrow||stats.nextSibling);
+ function openDialog(dialog){
+  if(dialog.open)return;
+  dialog.showModal();
+  if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+   dialog.animate([{opacity:0,transform:'translateY(12px) scale(.985)'},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:220,easing:'cubic-bezier(.2,.8,.2,1)'});
   }
+ }
+ function closeDialog(dialog){
+  if(!dialog?.open||dialog.dataset.closing==='true')return;
+  dialog.dataset.closing='true';
+  const finish=()=>{if(dialog.open)dialog.close();delete dialog.dataset.closing};
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){finish();return}
+  const animation=dialog.animate([{opacity:1,transform:'translateY(0) scale(1)'},{opacity:0,transform:'translateY(9px) scale(.99)'}],{duration:180,easing:'cubic-bezier(.4,0,.7,.3)'});
+  animation.finished.then(finish,finish);
+ }
+ function ensurePanels(){
   if(!$('smartCompare')){
    const compare=makeCard('smartCompare','Порівняти адреси','Знайдіть години, коли у вибраних місцях одночасно є світло');
    const notice=document.querySelector('#home .notice-strip'),places=$('placeList');
@@ -56,35 +66,24 @@
    else if(places?.parentNode)insertAfter(places.parentNode,compare);
   }
   if(!$('smartHistory')){
-   const history=makeCard('smartHistory','Історія змін графіка','Порівняння попередньої та актуальної редакцій');
-   const list=$('updateList');if(list)insertAfter(list,history);
+   const history=node('details','smart-history-panel surface');history.id='smartHistory';
+   const summary=node('summary','smart-history-summary');
+   summary.append(node('strong','','Історія графіка'),node('span','smart-history-chevron','⌄'));
+   const body=node('div','smart-history-body');body.id='smartHistoryBody';
+   history.append(summary,body);
+   const anchor=document.querySelector('#detail .schedule-meta');
+   if(anchor?.parentNode)insertAfter(anchor,history);
   }
   if(!$('smartPushHoursDialog')){
    const dialog=node('dialog','smart-push-dialog');dialog.id='smartPushHoursDialog';
    const panel=node('div','smart-push-dialog-panel'),top=node('div','smart-push-dialog-top');
    top.append(node('strong','smart-push-dialog-title','Персональні години Push'));
-   const close=button('Закрити','smart-push-dialog-close');close.addEventListener('click',()=>dialog.close());top.append(close);
+   const close=button('Закрити','smart-push-dialog-close');close.addEventListener('click',()=>closeDialog(dialog));top.append(close);
    const body=node('div','smart-push-body');body.id='smartPushHoursBody';panel.append(top,body);dialog.append(panel);
-   dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close()});document.body.append(dialog);
+   dialog.addEventListener('click',event=>{if(event.target===dialog)closeDialog(dialog)});dialog.addEventListener('cancel',event=>{event.preventDefault();closeDialog(dialog)});document.body.append(dialog);
    const title=document.querySelector('#settings .settings-push-controls .subsection-title');
-   if(title&&!$('smartPushHoursOpen')){const trigger=button('Години Push','smart-push-trigger');trigger.id='smartPushHoursOpen';trigger.setAttribute('aria-label','Налаштувати години отримання Push');trigger.addEventListener('click',()=>dialog.showModal());title.append(trigger)}
+   if(title&&!$('smartPushHoursOpen')){const trigger=button('Години Push','smart-push-trigger');trigger.id='smartPushHoursOpen';trigger.setAttribute('aria-label','Налаштувати години отримання Push');trigger.addEventListener('click',()=>openDialog(dialog));title.append(trigger)}
   }
- }
- function renderPlanner(){
-  const root=$('smartDayPlan');if(!root)return;
-  const a=primary();root.replaceChildren();
-  const head=node('div','smart-tools-head');head.append(node('div','smart-tools-heading','План дня'),node('p','smart-tools-subtitle',a?(a.nickname||a.street||'Ваша адреса')+' · підчерга '+(a.queue||'не визначена'):'Додайте адресу, щоб побудувати план'));root.append(head);
-  if(!a?.queue){root.append(node('p','smart-tools-empty','Після збереження адреси тут з’являться найдовші періоди зі світлом та без нього.'));return}
-  const values=core()?.getTimeline?.(today(),a.queue);
-  if(!values){root.append(node('p','smart-tools-empty','На сьогодні немає підтверджених даних для розрахунку.'));return}
-  const on=intervals(values,0),off=intervals(values,1),longest=[...on].sort((x,y)=>(y.to-y.from)-(x.to-x.from))[0],longestOff=[...off].sort((x,y)=>(y.to-y.from)-(x.to-x.from))[0];
-  const grid=node('div','smart-plan-grid');
-  const best=node('div','smart-plan-highlight');best.append(node('span','smart-plan-label','Найдовше вікно зі світлом'),node('strong','smart-plan-time',longest?clock(longest.from)+'–'+clock(longest.to):'Не визначено'),node('small','smart-plan-duration',longest?duration(longest.to-longest.from):'Немає підтвердженого інтервалу'));grid.append(best);
-  const worst=node('div','smart-plan-next');worst.append(node('span','smart-plan-label','Найдовше без світла'),node('strong','smart-plan-time',longestOff?clock(longestOff.from)+'–'+clock(longestOff.to):'Не визначено'),node('small','smart-plan-duration',longestOff?duration(longestOff.to-longestOff.from):'Немає підтвердженого інтервалу'));grid.append(worst);
-  const minute=nowMinutes();let boundary=-1;for(let i=Math.max(1,minute+1);i<1440;i++){if(values[i]>=0&&values[i-1]>=0&&values[i]!==values[i-1]){boundary=i;break}}
-  const nextState=boundary<0?null:values[boundary],nextLabel=nextState===1?'Відключення о ':nextState===0?'Світло з ':'';
-  const next=node('div','smart-plan-next');next.append(node('span','smart-plan-label','Наступна зміна'),node('strong','smart-plan-time',boundary>=0?nextLabel+clock(boundary):'Змін не зазначено'),node('small','smart-plan-duration',boundary>=0?'Плановий інтервал':'За опублікованим графіком'));grid.append(next);
-  root.append(grid, node('p','smart-tools-footnote','Це розрахунок за опублікованим графіком, а не вимірювання фактичної наявності електроенергії.'));
  }
  function nowMinutes(){const p=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(x=>[x.type,x.value]));return Number(p.hour)*60+Number(p.minute)}
  function renderCompare(){
@@ -132,10 +131,10 @@
   return off.length?off.map(x=>x[0]+'–'+x[1]).join(', '):'Планових відключень не зазначено';
  }
  function renderHistory(){
-  const root=$('smartHistory');if(!root)return;
+  const root=$('smartHistoryBody');if(!root)return;
   const q=primary()?.queue,history=(data().history||[]).filter(item=>!q||(item.queues||[]).includes(q)).slice(0,12);
   const lastChange=(data().changes||[]).at(-1);const key=JSON.stringify([q,history[0]?.id,history.length,lastChange?.date,lastChange?.queues]);
-  if(root.dataset.renderKey===key)return;root.dataset.renderKey=key;root.replaceChildren();const head=node('div','smart-tools-head');head.append(node('div','smart-tools-heading','Історія змін графіка'),node('p','smart-tools-subtitle','Що саме змінилося в опублікованій редакції'));root.append(head);
+  if(root.dataset.renderKey===key)return;root.dataset.renderKey=key;root.replaceChildren();const head=node('div','smart-tools-head');head.append(node('p','smart-tools-subtitle','Зміни опублікованих графіків для вашої підчерги'));root.append(head);
   if(history.length){
    history.forEach(item=>{
     const card=node('article','smart-history-item'),title=node('strong','smart-history-title',item.date+' · '+(item.queues?.join(', ')||'графік оновлено'));
@@ -219,7 +218,7 @@
   root.append(node('p','smart-tools-footnote','Налаштування зберігаються окремо для кожної адреси на цьому пристрої та застосовуються до її підчерги після синхронізації Push.'));
   if(config.enabled&&!config.days.some(day=>day.enabled))root.append(node('p','smart-tools-warning','Зараз усі дні дозволені цілодобово. Увімкніть обмеження для тих днів, коли потрібні конкретні години.'));
  }
- function refresh(){ensurePanels();renderPlanner();renderCompare();renderHistory();renderPushHours()}
+ function refresh(){ensurePanels();renderCompare();renderHistory();renderPushHours()}
  window.addEventListener('svitlo:smart-tools-refresh',refresh);
  window.addEventListener('svitlo:smart-tools-settings-refresh',()=>{ensurePanels();renderPushHours()});
  document.addEventListener('DOMContentLoaded',refresh,{once:true});
