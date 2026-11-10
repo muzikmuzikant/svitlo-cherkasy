@@ -77,9 +77,10 @@
   if(!a?.queue){root.append(node('p','smart-tools-empty','Після збереження адреси тут з’являться найдовші періоди зі світлом та без нього.'));return}
   const values=core()?.getTimeline?.(today(),a.queue);
   if(!values){root.append(node('p','smart-tools-empty','На сьогодні немає підтверджених даних для розрахунку.'));return}
-  const on=intervals(values,0),off=intervals(values,1),longest=[...on].sort((x,y)=>(y.to-y.from)-(x.to-x.from))[0];
+  const on=intervals(values,0),off=intervals(values,1),longest=[...on].sort((x,y)=>(y.to-y.from)-(x.to-x.from))[0],longestOff=[...off].sort((x,y)=>(y.to-y.from)-(x.to-x.from))[0];
   const grid=node('div','smart-plan-grid');
   const best=node('div','smart-plan-highlight');best.append(node('span','smart-plan-label','Найдовше вікно зі світлом'),node('strong','smart-plan-time',longest?clock(longest.from)+'–'+clock(longest.to):'Не визначено'),node('small','smart-plan-duration',longest?duration(longest.to-longest.from):'Немає підтвердженого інтервалу'));grid.append(best);
+  const worst=node('div','smart-plan-next');worst.append(node('span','smart-plan-label','Найдовше без світла'),node('strong','smart-plan-time',longestOff?clock(longestOff.from)+'–'+clock(longestOff.to):'Не визначено'),node('small','smart-plan-duration',longestOff?duration(longestOff.to-longestOff.from):'Немає підтвердженого інтервалу'));grid.append(worst);
   const minute=nowMinutes();let boundary=-1;for(let i=Math.max(1,minute+1);i<1440;i++){if(values[i]>=0&&values[i-1]>=0&&values[i]!==values[i-1]){boundary=i;break}}
   const nextState=boundary<0?null:values[boundary],nextLabel=nextState===1?'Відключення о ':nextState===0?'Світло з ':'';
   const next=node('div','smart-plan-next');next.append(node('span','smart-plan-label','Наступна зміна'),node('strong','smart-plan-time',boundary>=0?nextLabel+clock(boundary):'Змін не зазначено'),node('small','smart-plan-duration',boundary>=0?'Плановий інтервал':'За опублікованим графіком'));grid.append(next);
