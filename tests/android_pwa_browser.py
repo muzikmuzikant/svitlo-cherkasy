@@ -46,6 +46,14 @@ def main():
 
             nav = lambda tab: page.locator('.bottom-nav [data-go="' + tab + '"]')
             nav("settings").click()
+            page.wait_for_timeout(250)
+            print("DEBUG settings tap:", page.evaluate("""() => ({
+              state: window.history.state,
+              length: window.history.length,
+              settingsHidden: document.querySelector('#settings').hidden,
+              activeNav: document.querySelector('.bottom-nav .nav-item.active')?.dataset.go,
+              coreTab: window.SvitloCore?.getActiveTab?.()
+            })"""))
             page.wait_for_function("() => window.history.state?.svitloTab === 'settings'")
             page.wait_for_timeout(550)
             nav("updates").click()
