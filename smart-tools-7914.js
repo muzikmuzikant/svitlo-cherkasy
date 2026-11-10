@@ -151,13 +151,52 @@
   if(legacy.length){legacy.forEach(item=>{const card=node('article','smart-history-item');card.append(node('strong','smart-history-title',item.date+' · '+(item.queues?.join(', ')||'оновлення')),node('p','smart-history-note','Оновлення графіка зафіксовано. Детального збереженого порівняння попередніх годин для цієї редакції немає.'));root.append(card)})}
   else root.append(node('p','smart-tools-empty','Поки немає збережених змін графіка для цієї підчерги.'));
  }
- function createTimeRow(parent,label,period,key){
-  const row=node('div','smart-hours-row'),title=node('strong','smart-hours-label',label),toggle=node('input');toggle.type='checkbox';toggle.checked=!!period.enabled;toggle.addEventListener('change',()=>{const next=getAllowedHours();next[key].enabled=toggle.checked;saveHours(next);renderPushHours()});
+ function createDayRow(parent,dayConfig,dayName){
+  const row=node('section','smart-hours-day'),head=node('div','smart-hours-day-head');
+  const title=node('strong','smart-hours-label',dayName),toggle=node('input');toggle.type='checkbox';toggle.checked=!!dayConfig.enabled;
   const toggleLabel=node('label','smart-hours-toggle');toggleLabel.append(toggle,node('span','', 'Обмежити'));
-  const from=node('input','smart-hours-time'),to=node('input','smart-hours-time');from.type=to.type='time';from.value=period.from||'08:00';to.value=period.to||'20:00';
-  const range=node('div','smart-hours-range');range.append(from,node('span','', 'до'),to);
-  [from,to].forEach((input,index)=>input.addEventListener('change',()=>{const next=getAllowedHours();next[key][index?'to':'from']=input.value||'08:00';if(next[key].from===next[key].to){next[key][index?'from':'to']=index?'08:00':'20:00'}saveHours(next);renderPushHours()}));
-  row.append(title,toggleLabel,range);parent.append(row);
+  const status=node('span','smart-hours-day-status',dayConfig.enabled?'Вибрані години':'Цілодобово');
+  head.append(title,toggleLabel,status);row.append(head);
+  const body=node('div','smart-hours-day-body');
+  toggle.addEventListener('change',()=>{
+   const next=getAllowedHours(),target=next.days[dayConfig.day];target.enabled=toggle.checked;
+   if(target.enabled&&!target.windows.length)target.windows=[{from:'08:00',to:'18:00'}];
+   saveHours(next);renderPushHours();
+  });
+  if(!dayConfig.enabled)body.append(node('p','smart-hours-all-day','Push надходитимуть цілодобово'));
+  else {
+   dayConfig.windows.forEach((period,index)=>{
+    const range=node('div','smart-hours-range'),from=node('input','smart-hours-time'),to=node('input','smart-hours-time');
+    from.type=to.type='time';from.value=period.from;to.value=period.to;
+    const update=(field,value,input)=>{
+     const next=getAllowedHours(),target=next.days[dayConfig.day],candidate={...target.windows[index],[field]:value};
+     if(!value||candidate.from>=candidate.to){input.setCustomValidity('Час початку має бути раніше за завершення.');input.reportValidity();input.setCustomValidity('');return}
+     const windows=target.windows.map((x,i)=>i===index?candidate:x).sort((a,b)=>a.from.localeCompare(b.from));
+     if(windows.some((x,i)=>i>0&&windows[i-1].to>x.from)){input.setCustomValidity('Проміжки не мають перетинатися.');input.reportValidity();input.setCustomValidity('');return}
+     target.windows=windows;saveHours(next);renderPushHours();
+    };
+    from.addEventListener('change',()=>update('from',from.value,from));
+    to.addEventListener('change',()=>update('to',to.value,to));
+    range.append(from,node('span','', 'до'),to);
+    if(dayConfig.windows.length>1){
+     const remove=node('button','smart-hours-remove','Прибрати');remove.type='button';remove.setAttribute('aria-label','Прибрати цей проміжок');
+     remove.addEventListener('click',()=>{const next=getAllowedHours();next.days[dayConfig.day].windows.splice(index,1);saveHours(next);renderPushHours()});
+     range.append(remove);
+    }
+    body.append(range);
+   });
+   if(dayConfig.windows.length<2){
+    const add=node('button','smart-hours-add','Додати ще один проміжок');add.type='button';
+    add.addEventListener('click',()=>{
+     const next=getAllowedHours(),target=next.days[dayConfig.day],first=target.windows[0];
+     const extra=first&&first.to<='12:00'?{from:'14:00',to:'18:00'}:{from:'08:00',to:'12:00'};
+     if(target.windows.some(x=>x.from<extra.to&&extra.from<x.to)){extra.from='19:00';extra.to='22:00'}
+     target.windows.push(extra);target.windows.sort((a,b)=>a.from.localeCompare(b.from));saveHours(next);renderPushHours();
+    });
+    body.append(add);
+   }
+  }
+  row.append(body);parent.append(row);
  }
  function renderPushHours(){
   const root=$('smartPushHoursBody');if(!root)return;
@@ -169,11 +208,14 @@
   master.addEventListener('change',()=>{const next=getAllowedHours();next.enabled=master.checked;saveHours(next);renderPushHours()});
   masterLabel.append(master,node('span','', 'Отримувати Push лише у вибрані години'));root.append(masterLabel);
   const fields=node('div','smart-hours-fields');fields.hidden=!config.enabled;
-  createTimeRow(fields,'Будні (Пн–Пт)',config.weekdays,'weekdays');
-  createTimeRow(fields,'Вихідні (Сб–Нд)',config.weekends,'weekends');root.append(fields);
-  root.append(node('p','smart-tools-footnote','Аварійні повідомлення оператора не обмежуються цими годинами. Якщо період для буднів або вихідних вимкнений, Push для цих днів надходитимуть цілодобово.'));
+  if(config.enabled){
+   const days=node('div','smart-hours-days'),names=['Неділя','Понеділок','Вівторок','Середа','Четвер','П’ятниця','Субота'];
+   config.days.forEach(day=>createDayRow(days,day,names[day.day]));fields.append(days);
+  }
+  root.append(fields);
+  root.append(node('p','smart-tools-footnote','Для кожного дня можна задати до двох проміжків. Якщо обмеження дня вимкнене, планові Push надходитимуть цілодобово. Аварійні повідомлення оператора не обмежуються.'));
   root.append(node('p','smart-tools-footnote','Налаштування зберігаються окремо для кожної адреси на цьому пристрої та застосовуються до її підчерги після синхронізації Push.'));
-  if(config.enabled&&!config.weekdays.enabled&&!config.weekends.enabled)root.append(node('p','smart-tools-warning','Усі дні залишаються без обмежень. Увімкніть обмеження для буднів або вихідних.'));
+  if(config.enabled&&!config.days.some(day=>day.enabled))root.append(node('p','smart-tools-warning','Зараз усі дні дозволені цілодобово. Увімкніть обмеження для тих днів, коли потрібні конкретні години.'));
  }
  function refresh(){ensurePanels();renderPlanner();renderCompare();renderHistory();renderPushHours()}
  window.addEventListener('svitlo:smart-tools-refresh',refresh);
