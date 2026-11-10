@@ -118,12 +118,15 @@ test('maintenance editor preview mirrors mode, end time and the new layout',()=>
  assert.ok(css.includes('ops-preview-header')&&css.includes('ops-preview-time')&&css.includes('ops-preview-buttons'));
 });
 
-test('new smart-tools dialogs and disclosures animate both opening and closing',()=>{
- const tools=read('smart-tools-7914.js'),skin=read('smart-tools-7914.css');
- assert.match(tools,/function openDialog\(/);
- assert.match(tools,/function closeDialog\(/);
- assert.match(tools,/animation\.finished\.then\(finish,finish\)/);
- assert.match(tools,/addEventListener\('cancel'/);
- assert.match(skin,/@media\(prefers-reduced-motion:reduce\)/);
- assert.match(skin,/smart-history-chevron/);
+test('new smart-tools use the shared animated draggable sheet and reveal their content',()=>{
+ const tools=read('smart-tools-7914.js'),skin=read('smart-tools-7914.css'),html=read('index.html');
+ assert.match(tools,/sheet smart-push-dialog/);
+ assert.match(tools,/SvitloSheetMotion\?\.bind/);
+ assert.match(tools,/SvitloSheetMotion\?\.dismiss/);
+ assert.match(tools,/animateItems/);
+ assert.match(skin,/smart-card-enter/);
+ assert.match(skin,/smart-row-enter/);
+ assert.match(skin,/@media\(prefers-reduced-motion:no-preference\)/);
+ assert.match(html,/id="scheduleHistory"/);
+ assert.ok(!html.includes('<details class="inbox-history">'));
 });

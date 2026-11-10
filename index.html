@@ -149,6 +149,10 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="quick-queue-controls"><select id="quickQueueSelect" aria-label="Оберіть підчергу"><option value="">Оберіть підчергу</option></select>
   <button id="quickQueueOpen" type="button">Показати графік →</button></div>
  </section>
+<details class="inbox-history schedule-history" id="scheduleHistory"><summary><span><strong>Історія графіків</strong><small>Попередні оновлення та зміни від оператора</small></span><span class="schedule-history-chevron" aria-hidden="true">⌄</span></summary>
+ <div class="surface update-banner"><div class="tiny-label">ОСТАННЄ ОНОВЛЕННЯ ДАНИХ</div><div id="lastCheck">Ще не перевірено</div><p id="updateNote">Отримуємо інформацію.</p></div>
+ <div id="updateList" class="update-list"></div><a class="external-row" href="https://www.cherkasyoblenergo.com/news" target="_blank" rel="noopener">Новини оператора ↗</a>
+</details>
 <div class="sources-row"><a id="articleLink" target="_blank" rel="noopener" href="https://www.cherkasyoblenergo.com/news">Джерело графіка ↗</a><button id="refreshDetail">Оновити ↻</button></div></section>
 <section id="updates" class="screen" hidden>
  <div class="screen-header no-back inbox-title-bar">
@@ -174,10 +178,6 @@ document.addEventListener('DOMContentLoaded', () => {
   <button id="inboxSearchClose" type="button" aria-label="Закрити пошук">Скасувати</button>
  </div>
  <div id="inboxList" class="inbox-list" aria-live="polite"><div class="inbox-empty">Завантажуємо повідомлення…</div></div>
- <details class="inbox-history"><summary>Історія офіційних графіків <span aria-hidden="true">⌄</span></summary>
-  <div class="surface update-banner"><div class="tiny-label">ОСТАННЄ ОНОВЛЕННЯ ДАНИХ</div><div id="lastCheck">Ще не перевірено</div><p id="updateNote">Отримуємо інформацію.</p></div>
-  <div id="updateList" class="update-list"></div><a class="external-row" href="https://www.cherkasyoblenergo.com/news" target="_blank" rel="noopener">Новини оператора ↗</a>
- </details>
 </section>
 <section id="settings" class="screen" hidden><div class="screen-header no-back"><div><h1>Опції</h1><p>Підлаштуйте під себе</p></div></div><h2 class="subsection-title">Оформлення</h2><div class="surface settings-card appearance-card"><fieldset class="appearance-control"><legend>Тема застосунку</legend><div class="appearance-options"><label class="appearance-choice"><input type="radio" name="appearanceTheme" value="light"><span><span class="appearance-icon" aria-hidden="true">☀</span><b>Світла</b><small>Завжди світла</small></span></label><label class="appearance-choice"><input type="radio" name="appearanceTheme" value="dark"><span><span class="appearance-icon" aria-hidden="true">☾</span><b>Темна</b><small>Завжди темна</small></span></label><label class="appearance-choice"><input type="radio" name="appearanceTheme" value="system"><span><span class="appearance-icon" aria-hidden="true">◐</span><b>Як на телефоні</b><small>Автоматично</small></span></label></div></fieldset><p id="appearanceSummary" class="appearance-summary" role="status" aria-live="polite">Тема автоматично підлаштовується під ваш телефон.</p></div><div class="settings-push-controls"><h2 class="subsection-title">Сповіщення</h2>
 <div class="surface push-master-card">

@@ -17,10 +17,10 @@ test('the unwanted day planner is removed and schedule history is discoverable o
  assert.match(app,/svitlo:smart-tools-refresh/);
  const tools=read('smart-tools-7914.js');
  assert.doesNotMatch(tools,/smartDayPlan|renderPlanner|План дня|Найдовше вікно зі світлом/);
- assert.match(tools,/id='smartHistory'/);
- assert.match(tools,/#detail \.schedule-meta/);
- assert.match(tools,/Було:/);
- assert.match(tools,/Стало:/);
+ assert.ok(html.includes('id="scheduleHistory"'));
+ assert.ok(html.indexOf('id="scheduleHistory"')<html.indexOf('id="updates"'));
+ assert.ok(!html.includes('<details class="inbox-history">'));
+ assert.match(html,/Історія графіків/);
 });
 
 test('per-address Push hours are sent to the API and verified against server state',()=>{
@@ -56,8 +56,31 @@ test('address comparison is a simple two-address workflow and personal Push repo
  const tools=read('smart-tools-7914.js');
  assert.match(tools,/Перша адреса/);
  assert.match(tools,/Друга адреса/);
+ assert.match(tools,/smart-compare-segment/);
+ assert.match(tools,/smart-compare-common-value/);
+ assert.match(tools,/makeCard\('smartCompare'/);
  assert.doesNotMatch(tools,/smart-compare-place|smart-compare-place input/);
  assert.match(tools,/svitlo:push-hours-sync/);
  assert.match(tools,/Години Push синхронізовано/);
  assert.match(app,/svitlo:push-hours-sync/);
+});
+
+test('schedule comparison is rendered as two visual 24-hour timelines and the history is on the schedule screen',()=>{
+ const tools=read('smart-tools-7914.js');
+ assert.match(tools,/smart-compare-track-row/);
+ assert.match(tools,/smart-compare-segment/);
+ assert.match(tools,/smart-compare-date-pill/);
+ assert.match(html,/id="scheduleHistory"/);
+ assert.ok(html.indexOf('id="scheduleHistory"')<html.indexOf('id="updates"'));
+ assert.ok(!html.includes('<details class="inbox-history">'));
+});
+test('personal Push hours use the shared draggable bottom sheet and animate changing content',()=>{
+ const tools=read('smart-tools-7914.js'),skin=read('smart-tools-7914.css');
+ assert.match(tools,/sheet smart-push-dialog/);
+ assert.match(tools,/SvitloSheetMotion\?\.bind/);
+ assert.match(tools,/SvitloSheetMotion\?\.dismiss/);
+ assert.match(tools,/animateItems\(root/);
+ assert.match(skin,/smart-hours-day/);
+ assert.match(skin,/smart-push-dialog\.sheet/);
+ assert.match(skin,/prefers-reduced-motion:no-preference/);
 });
