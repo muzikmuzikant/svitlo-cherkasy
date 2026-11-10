@@ -58,7 +58,7 @@ test('address comparison is a simple two-address workflow and personal Push repo
  assert.match(tools,/Друга адреса/);
  assert.match(tools,/smart-compare-segment/);
  assert.match(tools,/smart-compare-common-value/);
- assert.match(tools,/id,'smartCompare'/);
+ assert.match(tools,/makeCard\('smartCompare'/);
  assert.doesNotMatch(tools,/smart-compare-place|smart-compare-place input/);
  assert.match(tools,/svitlo:push-hours-sync/);
  assert.match(tools,/Години Push синхронізовано/);
