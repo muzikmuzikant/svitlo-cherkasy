@@ -62,7 +62,10 @@ def main():
             page.wait_for_timeout(100)
             print("PASS: Android Back returns to the prior tab")
 
-            page.locator('#settings a[href^="./help.html"]').first.click()
+            # The internal-page click handler is also covered by the dedicated
+            # mobile link-visibility test; use DOM click here to isolate the
+            # Android history-stack behavior from Playwright's scroll heuristics.
+            page.locator('#settings a[href^="./help.html"]').first.evaluate("link => link.click()")
             page.wait_for_function("""() => {
               const shell=document.querySelector('#svitloInternalPage');
               return shell&&!shell.hidden&&!shell.classList.contains('svitlo-internal-loading');
