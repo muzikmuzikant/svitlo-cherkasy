@@ -1340,7 +1340,7 @@ for(const b of document.querySelectorAll('[data-go]'))b.addEventListener('click'
  $('shareToday')?.addEventListener('click',()=>shareSchedule(today()));
  $('copyToday')?.addEventListener('click',()=>shareSchedule(today(),{copy:true}));
  $('shareDetail')?.addEventListener('click',()=>shareSchedule(daySelected||today()));
- if($('shareApp'))$('shareApp').onclick=shareApplication;
+ if(!$('shareApp')?.dataset.shareBound){$('shareApp')?.addEventListener('click',shareApplication);if($('shareApp'))$('shareApp').dataset.shareBound='1'}
  const quickSelect=$('quickQueueSelect');
  if(quickSelect){
   for(const queue of QUEUES){const option=document.createElement('option');option.value=queue;option.textContent='Підчерга '+queue;quickSelect.append(option)}
