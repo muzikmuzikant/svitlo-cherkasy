@@ -40,7 +40,7 @@
   if(!isOpen)return;
   // Close immediately even if Safari delays/drops the History API popstate.
   close();
-  if(history.state?.svitloInternal){explicitDismiss=true;history.back()}
+  if(window.history.state?.svitloInternal){explicitDismiss=true;window.history.back()}
  }
  function display(url,remember=true){const u=internal(url);if(!u)return;
   const wasOpen=isOpen;const resumingClose=leaveTimer!==null;
@@ -59,18 +59,21 @@
    const state={svitloInternal:true,path:u.pathname+u.search};
    const link=location.pathname+location.search+'#internal='+encodeURIComponent(u.pathname+u.search);
    // Internal links are one screen, not an unbounded stack of modal history.
-   if(wasOpen||history.state?.svitloInternal)history.replaceState(state,'',link);
-   else history.pushState(state,'',link);
+   if(wasOpen||window.history.state?.svitloInternal)window.history.replaceState(state,'',link);
+   else window.history.pushState(state,'',link);
   }
   back.focus({preventScroll:true});
  }
  retry.addEventListener('click',()=>{if(expectedUrl)display(expectedUrl,false)});
  back.addEventListener('click',dismiss);
  addEventListener('popstate',event=>{
-  if(explicitDismiss){explicitDismiss=false;close();return}
+  if(explicitDismiss){explicitDismiss=false;close();window.SvitloCore?.restoreTabFromHistory?.(event.state);return}
   if(event.state?.svitloInternal){
    if(!isOpen||expectedUrl!==new URL(event.state.path,location.origin).href)display(event.state.path,false)
-  }else close();
+  }else{
+   close();
+   window.SvitloCore?.restoreTabFromHistory?.(event.state);
+  }
  });
  addEventListener('keydown',event=>{if(isOpen&&event.key==='Escape'){event.preventDefault();dismiss()}});
  document.addEventListener('click',event=>{

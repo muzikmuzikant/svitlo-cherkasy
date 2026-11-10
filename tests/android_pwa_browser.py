@@ -44,16 +44,44 @@ def main():
                 "Android PWA horizontal overflow"
             )
 
+            page.evaluate("""() => {
+              window.__historyTrace=[];
+              const originalPush=window.history.pushState.bind(window.history);
+              window.history.pushState=function(state,...args){
+                window.__historyTrace.push(state);
+                return originalPush(state,...args);
+              };
+            }""")
             nav = lambda tab: page.locator('.bottom-nav [data-go="' + tab + '"]')
             nav("settings").click()
-            page.wait_for_function("() => !document.querySelector('#settings').hidden")
+            page.wait_for_function("() => window.history.state?.svitloTab === 'settings'")
+            assert page.evaluate("window.__historyTrace.length") == 1, "Settings tap must add exactly one history entry"
+            page.wait_for_timeout(550)
             nav("updates").click()
-            page.wait_for_function("() => !document.querySelector('#updates').hidden")
-            page.evaluate("history.back()")
-            page.wait_for_function("() => !document.querySelector('#settings').hidden", timeout=4000)
+            page.wait_for_function("() => window.history.state?.svitloTab === 'updates'")
+            assert page.evaluate("window.__historyTrace.length") == 2, "Updates tap must add exactly one history entry"
+            page.wait_for_timeout(550)
+            page.evaluate("window.history.back()")
+            page.wait_for_function("() => window.history.state?.svitloTab === 'settings'", timeout=5500)
+            page.wait_for_function(
+                "() => !document.querySelector('#settings').hidden && document.querySelector('#updates').hidden",
+                timeout=5500,
+            )
+            # Let the 460ms tab transition finish before interacting with the
+            # long Settings page; smooth document scrolling otherwise keeps
+            # Playwright's click target moving while it auto-scrolls.
+            page.wait_for_timeout(550)
+            page.evaluate("""() => {
+              const link=document.querySelector('#settings a[href^="./help.html"]');
+              if(link){document.documentElement.style.scrollBehavior='auto';link.scrollIntoView({block:'center',behavior:'auto'});}
+            }""")
+            page.wait_for_timeout(100)
             print("PASS: Android Back returns to the prior tab")
 
-            page.locator('#settings a[href^="./help.html"]').first.click()
+            # The internal-page click handler is also covered by the dedicated
+            # mobile link-visibility test; use DOM click here to isolate the
+            # Android history-stack behavior from Playwright's scroll heuristics.
+            page.locator('#settings a[href^="./help.html"]').first.evaluate("link => link.click()")
             page.wait_for_function("""() => {
               const shell=document.querySelector('#svitloInternalPage');
               return shell&&!shell.hidden&&!shell.classList.contains('svitlo-internal-loading');
@@ -61,9 +89,13 @@ def main():
             frame_url=page.locator(".svitlo-internal-frame").evaluate(
                 "(frame) => frame.contentWindow.location.href")
             assert "help.html" in frame_url, frame_url
-            page.evaluate("history.back()")
+            page.evaluate("window.history.back()")
             page.wait_for_function(
                 "() => document.querySelector('#svitloInternalPage').hidden",
+                timeout=5500,
+            )
+            page.wait_for_function(
+                "() => !document.querySelector('#settings').hidden",
                 timeout=5500,
             )
             assert page.locator("#settings").is_visible(), (

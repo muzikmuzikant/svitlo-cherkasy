@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import {timeline,dueTransitionAcrossDays,QUEUES} from '../push-server/schedule-engine.js';
+import {timeline,dueTransitionAcrossDays,QUEUES,notificationAllowed} from '../push-server/schedule-engine.js';
 
 const sourceText=readFileSync(new URL('../push-server/server.js',import.meta.url),'utf8');
 const start=sourceText.indexOf('async function transitionJob(){');
@@ -22,7 +22,7 @@ async function dispatch({minute=570,periods=[['10:00','12:00']],tomorrowPeriods=
   preferFreshSchedule:(published,fallback)=>published||fallback,
   verifiedScheduleDay:(doc,date)=>fresh?doc?.days.find(day=>day.date===date&&day.verified===true)||null:null,
   shiftDay:()=> '2026-10-15',
-  subscribers:{user:record},timeline,dueTransitionAcrossDays,QUEUES,Date,
+  subscribers:{user:record},timeline,dueTransitionAcrossDays,notificationAllowed,QUEUES,Date,
   hash:()=> 'hashed-device',deliveryStats:{lastCycle:null,lastFailure:null},
   transitionCopy:(type,queue,boundary,eta,date)=>({title:type+' '+eta,body:queue+' '+date,content:String(boundary)}),
   forEachLimited:async(items,limit,fn)=>{for(const item of items)await fn(item)},

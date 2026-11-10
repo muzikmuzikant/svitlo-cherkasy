@@ -42,6 +42,40 @@ function validate(schedule,review){
  if(bytes>MAX_BYTES)throw Error('Schedule snapshot too large');
  return bytes;
 }
+export function buildScheduleHistory(previous, schedule, detectedAt = new Date().toISOString()) {
+ const history = Array.isArray(previous?.history) ? [...previous.history] :
+  Array.isArray(schedule?.history) ? [...schedule.history] : [];
+ const additions = [];
+ for (const day of schedule.days || []) {
+  const oldDay = previous?.days?.find(item => item.date === day.date && item.verified === true);
+  if (!oldDay || day.verified !== true) continue;
+  const changes = {};
+  for (const queue of QUEUES) {
+   const beforeRaw = oldDay.queues?.[queue] || null;
+   const afterRaw = day.queues?.[queue] || null;
+   const clean = item => item ? {knownFrom:item.knownFrom ?? '00:00',off:Array.isArray(item.off)?item.off:[]} : null;
+   const before = clean(beforeRaw), after = clean(afterRaw);
+   if (JSON.stringify(before) !== JSON.stringify(after)) changes[queue] = {before,after};
+  }
+  const queues = Object.keys(changes);
+  if (!queues.length) continue;
+  const fingerprint = crypto.createHash('sha256')
+   .update(JSON.stringify([day.date,day.planFingerprint || day.publishedAt || schedule.lastChecked,changes]))
+   .digest('hex').slice(0,24);
+  additions.push({
+   id:fingerprint,date:day.date,publishedAt:day.publishedAt || schedule.lastChecked,
+   detectedAt,source:day.source || schedule.source || '',
+   queues,changes
+  });
+ }
+ const merged = new Map();
+ for (const item of [...additions,...history]) {
+  if (!item || typeof item.id !== 'string' || !validDate(item.date)) continue;
+  if (!merged.has(item.id)) merged.set(item.id,item);
+ }
+ return [...merged.values()].sort((a,b)=>stamp(b.detectedAt || b.publishedAt || '')-stamp(a.detectedAt || a.publishedAt || '')).slice(0,40);
+}
+
 export function createSchedulePublication({directory,token,reviewApprovals=null}){
  const file=path.join(directory,'railway-official-schedules.json');
  let current=null;
@@ -62,7 +96,9 @@ export function createSchedulePublication({directory,token,reviewApprovals=null}
    if(next<old)throw Error('Outdated schedule update refused');
   }
   const publishedAt=new Date().toISOString();
-  const snapshot={schedule,review,publishedAt};
+  const nextSchedule={...schedule,history:buildScheduleHistory(current?.schedule,schedule,publishedAt)};
+  validate(nextSchedule,review);
+  const snapshot={schedule:nextSchedule,review,publishedAt};
   fs.mkdirSync(directory,{recursive:true});
   const tmp=file+'.'+process.pid+'.tmp';
   fs.writeFileSync(tmp,JSON.stringify(snapshot));
@@ -82,6 +118,7 @@ export function createSchedulePublication({directory,token,reviewApprovals=null}
   publishedAt:current?.publishedAt||null,
   verifiedDays:schedule()?.days?.map(x=>x.date)||[],
   reviewPending:schedule()?.reviewPending===true,
+  historyCount:Array.isArray(schedule()?.history)?schedule().history.length:0,
   source:'railway-cron'
  });
  return {schedule,review,rawSchedule,rawReview,status,update,authorized,file};
