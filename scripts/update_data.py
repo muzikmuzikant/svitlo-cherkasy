@@ -429,8 +429,8 @@ def update_schedules(session, now=None):
                 for q in diffs:
                     oldq = prev.get('queues', {}).get(q)
                     newq = latest['queues'].get(q)
-                    before[q] = ({'knownFrom': oldq.get('knownFrom'), 'off': oldq.get('off', [])} if oldq else None)
-                    after[q] = ({'knownFrom': newq.get('knownFrom'), 'off': newq.get('off', [])} if newq else None)
+                    before[q] = ({'knownFrom': oldq.get('knownFrom'), 'off': oldq.get('off', [])} if isinstance(oldq, dict) and oldq else None)
+                    after[q] = ({'knownFrom': newq.get('knownFrom'), 'off': newq.get('off', [])} if isinstance(newq, dict) and newq else None)
                 changed.append({'date': day, 'publishedAt': latest['publishedAt'],
                                 'detectedAt': utc_stamp(now),
                                 'revisionId': latest['planFingerprint'],
