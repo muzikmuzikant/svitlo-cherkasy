@@ -120,7 +120,7 @@
    const label=node('label','smart-compare-field');label.append(node('span','smart-compare-field-label',labelText));
    const select=node('select','smart-compare-date');select.setAttribute('aria-label',labelText);
    places.forEach(a=>{const option=node('option','',(a.nickname||a.street||a.settlement)+' · '+(a.queue||'підчерга не визначена'));option.value=a.id;option.disabled=a.id===exclude;select.append(option)});
-   select.value=value;select.addEventListener('change',()=>{selectedIds=new Set([select===firstPicker?select.value:firstPicker.value,select===secondPicker?select.value:secondPicker.value]);root.dataset.renderKey='';renderCompare()});
+   select.value=value;select.addEventListener('change',()=>{const first=select===firstPicker.select?select.value:firstPicker.select.value;const second=select===secondPicker.select?select.value:secondPicker.select.value;selectedIds=new Set([first,second]);root.dataset.renderKey='';renderCompare()});
    return {label,select};
   };
   let firstPicker,secondPicker;
