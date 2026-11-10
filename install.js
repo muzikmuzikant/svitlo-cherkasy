@@ -49,6 +49,17 @@
       .catch(error=>console.warn('SW registration:',error));
   }
   if (standalone) {
+    // index.html already loads the complete module runtime before this deferred
+    // installer script. Do not inject a second classic copy of app.js: duplicate
+    // click handlers create duplicate History entries and break Android Back.
+    const staticApp = document.querySelector('script[src="./app.js"][type="module"]');
+    if (staticApp) {
+      const updater = document.createElement('script');
+      updater.src = './version-check.js';
+      document.body.append(updater);
+      return;
+    }
+    // Legacy fallback for older cached shells that do not include app.js in HTML.
     // A failed cached script must present a retry, not leave the splash stuck.
     const reportLaunchFailure = () => {
       const splash = document.getElementById('appBootScreen');
