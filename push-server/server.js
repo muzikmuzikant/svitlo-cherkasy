@@ -26,6 +26,7 @@ import {createScheduleReview} from './schedule-review.js';
 import {createScheduleMirror} from './schedule-mirror.js';
 import {createPushReceipts} from './push-receipts.js';
 import {tomorrowKey,alreadySentTomorrow} from './tomorrow-dedupe.js';
+import {normalizeQuietHours,isQuietForRecord} from './quiet-hours.js';
 import {resolvePublicMessage} from './public-message.js';
 import {originPolicy} from './origins.js';
 import webpush from 'web-push';
@@ -163,7 +164,7 @@ async function transitionJob(){
    const values=schedulesSafe?timeline(current,q):null;
    const valuesTomorrow=schedulesSafe?timeline(tomorrow,q):null;
    for(const [type,offset,target] of [['off',30,1],['on',15,0]]){
-    if(!pref[type])continue;
+    if(!pref[type]||isQuietForRecord(record,now.date,minutes))continue;
     // Recover reminders delayed by Railway restarts or temporarily slow schedule imports.
     // The helper never returns transitions that have already started.
     const due=dueTransitionAcrossDays(values,valuesTomorrow,minutes,offset,target,offset-1,timestamp,now.date);
@@ -253,7 +254,7 @@ async function job(){
      Number.isFinite(when)&&age>=0&&age<65*60000;
    });
    const tomorrowRevised=freshChanges.some(change=>isLatestRevision(change,tomorrow,q));
-   if(schedulesSafe&&pref.tomorrow&&tomorrow?.verified===true&&minutes>=19*60&&!(pref.changes&&tomorrowRevised)){
+   if(schedulesSafe&&pref.tomorrow&&tomorrow?.verified===true&&minutes>=19*60&&!isQuietForRecord(record,now.date,minutes)&&!(pref.changes&&tomorrowRevised)){
     const revision=firstPublishedAt(tomorrow),msg=tomorrowCopy(q,nextDate,tomorrow);
     // One daily preview per subscriber and calendar date. Revisions are handled
     // separately by 'change' notifications, not repeated 'tomorrow' pushes.
@@ -270,7 +271,7 @@ async function job(){
     if(msg)await send(record,msg,`${prefix}:emergency:${event.status}:${hash(event.id||event.source)}:${event.publishedAt}`,{
      notificationId:emergencyId(event),at:event.publishedAt,source:event.source,kind:'emergency',ttl:3600,urgency:'high'});
    }
-   if(schedulesSafe&&pref.changes)for(const change of freshChanges){
+   if(schedulesSafe&&pref.changes&&!isQuietForRecord(record,now.date,minutes))for(const change of freshChanges){
     const changedDay=verifiedScheduleDay(source,change.date,timestamp);
     if(!changedDay)continue;
     const msg=changeCopy(q,change.date,changedDay);
@@ -542,6 +543,18 @@ const server=http.createServer(async(req,res)=>{
   }catch{response(res,400,{error:'Invalid receipt'})}
   return;
  }
+ if(requestPath==='/api/push/preferences'&&req.method==='POST'){
+  if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+  try{
+   const body=await readPayload(req,4096),endpoint=body?.subscription?.endpoint;
+   if(!validEndpoint(endpoint))throw Error('Invalid endpoint');
+   const rec=subscribers[hash(endpoint)];
+   if(!rec){response(res,404,{error:'Push-підписку не знайдено'});return}
+   rec.quietHours=normalizeQuietHours(body.quietHours||[]);
+   save();response(res,200,{ok:true,quietHours:rec.quietHours});
+  }catch(e){response(res,400,{error:e.message||'Невірні налаштування тихих годин'})}
+  return;
+ }
  if(requestPath==='/api/push/subscription-status'&&req.method==='POST'){
   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
   try{
@@ -573,7 +586,7 @@ const server=http.createServer(async(req,res)=>{
    };
    response(res,200,{ok:true,registered:!!rec,queue:rec?.queue||null,
     preferences:rec?{off:!!rec.preferences?.off,on:!!rec.preferences?.on,changes:!!rec.preferences?.changes,tomorrow:!!rec.preferences?.tomorrow,emergency:!!rec.preferences?.emergency}:null,
-    latestAutomatic:rec?.automatic||null,upcoming:rec&&fresh?{
+    latestAutomatic:rec?.automatic||null,quietHours:rec?.quietHours||[],upcoming:rec&&fresh?{
      off:rec.preferences?.off?next(1):null,on:rec.preferences?.on?next(0):null}:null,
     lastPushCheck:lastSuccess,checkError:lastError,scheduleFresh:fresh,
     lastTransitionCheck:deliveryStats.lastCycle?.at||null});
@@ -596,7 +609,7 @@ const server=http.createServer(async(req,res)=>{
   // Store only the locality for opt-in Push targeting. Never store street/house.
   const settlement=typeof data.settlement==='string'?data.settlement.normalize('NFKC').trim().slice(0,70):'';
   subscribers[key]={subscription:data.subscription,queue:data.queue,preferences,settlement,
-   automatic:subscribers[key]?.automatic||{}};
+   quietHours:subscribers[key]?.quietHours||[],automatic:subscribers[key]?.automatic||{}};
   save();response(res,200,{ok:true});
  }catch(e){response(res,e.message?.includes('save failed')?500:400,{error:'Invalid subscription request'})}
 });
