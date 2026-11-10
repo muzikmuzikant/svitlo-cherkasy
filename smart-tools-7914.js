@@ -63,15 +63,16 @@
  function nowMinutes(){const p=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(x=>[x.type,x.value]));return Number(p.hour)*60+Number(p.minute)}
  function renderCompare(){
   const root=$('smartCompare');if(!root)return;
-  const places=addresses();root.replaceChildren();
-  const head=node('div','smart-tools-head');head.append(node('div','smart-tools-heading','Порівняти адреси'),node('p','smart-tools-subtitle','Оберіть місця та день, щоб побачити спільні години зі світлом'));root.append(head);
-  if(places.length<2){root.append(node('p','smart-tools-empty','Додайте ще одну адресу, щоб порівняти графіки.'));return}
+  const places=addresses();
   if(!selectedIds.size)places.forEach((a,i)=>{if(i<Math.min(4,places.length))selectedIds.add(a.id)});
   for(const id of [...selectedIds])if(!places.some(a=>a.id===id))selectedIds.delete(id);
+  const dates=core()?.getDates?.()||[today()];if(!selectedDate||!dates.includes(selectedDate))selectedDate=today();
+  const key=JSON.stringify([places.map(a=>[a.id,a.queue,a.nickname,a.street]),selectedDate,[...selectedIds].sort(),data().lastChecked,data().history?.[0]?.id]);
+  if(root.dataset.renderKey===key)return;root.dataset.renderKey=key;root.replaceChildren();
+  const head=node('div','smart-tools-head');head.append(node('div','smart-tools-heading','Порівняти адреси'),node('p','smart-tools-subtitle','Оберіть місця та день, щоб побачити спільні години зі світлом'));root.append(head);
+  if(places.length<2){root.append(node('p','smart-tools-empty','Додайте ще одну адресу, щоб порівняти графіки.'));return}
   const controls=node('div','smart-compare-controls'),dateSelect=node('select','smart-compare-date');
-  const dates=core()?.getDates?.()||[today()];
   dates.forEach(date=>{const option=node('option','',date===today()?'Сьогодні':new Intl.DateTimeFormat('uk-UA',{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z')));option.value=date;dateSelect.append(option)});
-  if(!selectedDate||!dates.includes(selectedDate))selectedDate=today();
   dateSelect.value=selectedDate;dateSelect.addEventListener('change',()=>{selectedDate=dateSelect.value;renderCompare()});
   controls.append(node('label','smart-compare-date-label','День'),dateSelect);root.append(controls);
   const pickers=node('div','smart-compare-pickers');
@@ -106,8 +107,9 @@
  }
  function renderHistory(){
   const root=$('smartHistory');if(!root)return;
-  root.replaceChildren();const head=node('div','smart-tools-head');head.append(node('div','smart-tools-heading','Історія змін графіка'),node('p','smart-tools-subtitle','Що саме змінилося в опублікованій редакції'));root.append(head);
   const q=primary()?.queue,history=(data().history||[]).filter(item=>!q||(item.queues||[]).includes(q)).slice(0,12);
+  const key=JSON.stringify([q,history[0]?.id,history.length,(data().changes||[]).at(-1)?.id]);
+  if(root.dataset.renderKey===key)return;root.dataset.renderKey=key;root.replaceChildren();const head=node('div','smart-tools-head');head.append(node('div','smart-tools-heading','Історія змін графіка'),node('p','smart-tools-subtitle','Що саме змінилося в опублікованій редакції'));root.append(head);
   if(history.length){
    history.forEach(item=>{
     const card=node('article','smart-history-item'),title=node('strong','smart-history-title',item.date+' · '+(item.queues?.join(', ')||'графік оновлено'));
@@ -134,7 +136,8 @@
  }
  function renderPushHours(){
   const root=$('smartPushHours');if(!root)return;
-  root.replaceChildren();const a=primary(),config=getAllowedHours();
+  const a=primary(),config=getAllowedHours(),key=String(a?.id||'none')+JSON.stringify(config);
+  if(root.dataset.renderKey===key)return;root.dataset.renderKey=key;root.replaceChildren();
   const head=node('div','smart-tools-head');head.append(node('div','smart-tools-heading','Години отримання Push'),node('p','smart-tools-subtitle',a?'Для адреси: '+(a.nickname||a.street||a.settlement)+' · '+(a.queue||'підчерга не визначена'):'Спершу додайте адресу з підчергою'));root.append(head);
   if(!a?.id){root.append(node('p','smart-tools-empty','Збережіть адресу, щоб налаштувати години сповіщень окремо для неї.'));return}
   const masterLabel=node('label','smart-hours-master'),master=node('input');master.type='checkbox';master.checked=!!config.enabled;
@@ -147,8 +150,9 @@
   root.append(node('p','smart-tools-footnote','Налаштування зберігаються окремо для кожної адреси на цьому пристрої та застосовуються до її підчерги після синхронізації Push.'));
   if(config.enabled&&!config.weekdays.enabled&&!config.weekends.enabled)root.append(node('p','smart-tools-warning','Усі дні залишаються без обмежень. Увімкніть обмеження для буднів або вихідних.'));
  }
- function refresh(){ensurePanels();renderPlanner();renderCompare();renderHistory();renderPushHours()}
+ function refresh(){ensurePanels();renderPlanner();renderCompare();renderHistory();if(document.getElementById('settings')?.hidden===false)renderPushHours()}
  window.addEventListener('svitlo:smart-tools-refresh',refresh);
+ window.addEventListener('svitlo:smart-tools-settings-refresh',()=>{ensurePanels();renderPushHours()});
  document.addEventListener('DOMContentLoaded',refresh,{once:true});
  if(document.readyState!=='loading')refresh();
 })();
