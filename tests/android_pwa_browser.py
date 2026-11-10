@@ -78,6 +78,14 @@ def main():
                 "() => document.querySelector('#svitloInternalPage').hidden",
                 timeout=5500,
             )
+            print("DEBUG internal Back:", page.evaluate("""() => ({
+              state: history.state,
+              settingsHidden: document.querySelector('#settings').hidden,
+              updatesHidden: document.querySelector('#updates').hidden,
+              activeNav: document.querySelector('.bottom-nav .nav-item.active')?.dataset.go,
+              coreTab: window.SvitloCore?.getActiveTab?.(),
+              restoreAvailable: typeof window.SvitloCore?.restoreTabFromHistory
+            })"""))
             page.wait_for_function(
                 "() => !document.querySelector('#settings').hidden",
                 timeout=5500,
