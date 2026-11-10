@@ -29,7 +29,7 @@ test('per-address Push hours are sent to the API and verified against server sta
  assert.match(tools,/function createDayRow/);
  assert.match(tools,/Додати ще один проміжок/);
  assert.match(tools,/days:Array\.from/);
- assert.match(tools,/Цілодобово/);
+ assert.match(tools,/Увесь день/);
  assert.match(app,/sameAllowed/);
  const server=read('push-server/server.js');
  assert.match(server,/normalizeAllowedHours\(data\.allowedHours\)/);
