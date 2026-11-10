@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 const source=name=>fs.readFileSync(new URL('../'+name,import.meta.url),'utf8');
-test('beta release 7.9.13 is consistent across manifest, HTML and service worker',()=>{
+test('beta release version is consistent across manifest, HTML and service worker',()=>{
  const release=JSON.parse(source('release.json'));
- assert.equal(release.version,'7.9.13');
+ assert.match(release.version,/^\d+\.\d+\.\d+$/);
  assert.equal(release.channel,'beta');
  for(const file of ['index.html','feedback.html'])
-  assert.match(source(file),/name="svitlo-version" content="7\.9\.13"/);
- assert.match(source('sw.js'),/const VERSION='svitlo-cherkasy-shell-v7\.9\.13-beta/);
+  assert.ok(source(file).includes('name="svitlo-version" content="'+release.version+'"'),file);
+ assert.ok(source('sw.js').includes("const VERSION='svitlo-cherkasy-shell-v"+release.version+"-beta"),'service worker cache version');
 });
 test('privacy policy explicitly explains secure private media, purpose, access and retention',()=>{
  const privacy=source('privacy.html');
