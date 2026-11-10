@@ -6,6 +6,7 @@ const ui=read('features-7914.js'),server=read('push-server/server.js'),importer=
 test('planner and address comparison use only verified schedule days',()=>{
  assert.match(ui,/function renderPlanner/);assert.match(ui,/function renderCompare/);assert.match(ui,/verified===true/);
  assert.match(ui,/ще немає підтвердженого графіка/);assert.match(ui,/Спільний час зі світлом/);
+ assert.match(ui,/Весь день/);assert.match(ui,/plannerOffset/);assert.match(ui,/compareOffset/);
 });
 test('revision history stores and displays exact before and after queue intervals',()=>{
  assert.match(importer,/'before': before/);assert.match(importer,/'after': after/);
