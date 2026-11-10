@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {timeline,dueTransitionAcrossDays,QUEUES} from '../push-server/schedule-engine.js';
+import {isQuietForRecord} from '../push-server/quiet-hours.js';
 
 const sourceText=readFileSync(new URL('../push-server/server.js',import.meta.url),'utf8');
 const start=sourceText.indexOf('async function transitionJob(){');
@@ -27,7 +28,7 @@ async function dispatch({minute=570,periods=[['10:00','12:00']],tomorrowPeriods=
   transitionCopy:(type,queue,boundary,eta,date)=>({title:type+' '+eta,body:queue+' '+date,content:String(boundary)}),
   forEachLimited:async(items,limit,fn)=>{for(const item of items)await fn(item)},
   send:async(rec,msg,key,options)=>{calls.push({rec,msg,key,options});sent[key]=new Date().toISOString();return 'accepted'},
-  sent,save:()=>{saves++},
+  sent,save:()=>{saves++},isQuietForRecord,
   console:{info(){},warn(){},error:(...args)=>errors.push(args.join(' '))}
  };
  vm.createContext(ctx);
