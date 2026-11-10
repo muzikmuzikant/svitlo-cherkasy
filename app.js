@@ -240,7 +240,7 @@ function el(tag,cls,text){const n=document.createElement(tag);if(cls)n.className
 function label(a){return a?.nickname?.trim()||[a?.street,a?.house].filter(Boolean).join(', ')||'Додайте адресу'}
 function fullAddress(a){return a?[a.settlement||'Черкаси',[a.street,a.house].filter(Boolean).join(', ')].join(' · '):'Оберіть адресу'}
 function setText(id,text){if($(id).textContent!==String(text))$(id).textContent=String(text)}
-function render(){renderHome();if(active==='detail')renderDetail();if(active==='updates')renderUpdates();if(active==='settings')renderSettings();window.SvitloAllQueues?.refresh?.()}
+function render(){renderHome();if(active==='detail'){renderDetail();renderUpdates()}if(active==='updates')renderUpdates();if(active==='settings')renderSettings();window.SvitloAllQueues?.refresh?.()}
 function scheduleQueueChanged(before, after, queue) {
  // Ignore rollovers and re-publications which do not change actual queue intervals.
  if (!queue || !before?.days?.length || !after?.days?.length) return false;
@@ -578,7 +578,7 @@ function navigate(name,{fromHistory=false}={}){
  const previous=active;
  if(name!=='detail')previewQueue=null;
  try{sessionStorage.setItem(SCREEN_RETURN,name)}catch{}
- if(name==='detail'){daySelected=today();renderDetail()}
+ if(name==='detail'){daySelected=today();renderDetail();renderUpdates()}
  else if(name==='updates')renderUpdates();
  else if(name==='settings')renderSettings();
  else renderHome();
