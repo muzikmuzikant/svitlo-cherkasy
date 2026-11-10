@@ -15,3 +15,9 @@ test('quiet period follows Kyiv weekday and excludes the end minute',()=>{
  assert.equal(isQuietForRecord(record,'2026-11-09',1080),false);
  assert.equal(isQuietForRecord(record,'2026-11-10',600),false);
 });
+test('all-day quiet periods include the final minute of the selected weekday',()=>{
+ const rules=normalizeQuietHours([{day:0,slot:0,start:'00:00',end:'24:00'}]);
+ assert.equal(isQuietForRecord({quietHours:rules},'2026-11-08',0),true);
+ assert.equal(isQuietForRecord({quietHours:rules},'2026-11-08',1439),true);
+ assert.equal(isQuietForRecord({quietHours:rules},'2026-11-09',600),false);
+});
