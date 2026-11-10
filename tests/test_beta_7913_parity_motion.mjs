@@ -6,7 +6,7 @@ test('7.9.14 remains a Beta-only release candidate',()=>{
  const release=JSON.parse(read('release.json'));
  assert.equal(release.channel,'beta');
  assert.equal(release.version,'7.9.14');
- assert.match(read('sw.js'),/v7\.9\.13-beta/);
+ assert.match(read('sw.js'),/v7\.9\.14-beta/);
 });
 test('Production Railway schedule safeguards are present in Beta',()=>{
  const server=read('push-server/server.js'),admin=read('push-server/admin.js');
