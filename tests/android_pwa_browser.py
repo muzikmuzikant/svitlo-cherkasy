@@ -44,6 +44,17 @@ def main():
                 "Android PWA horizontal overflow"
             )
 
+            page.evaluate("""() => {
+              window.__historyTrace=[];
+              const originalPush=window.history.pushState.bind(window.history);
+              window.history.pushState=function(state,...args){
+                window.__historyTrace.push({type:'push',state,stack:new Error().stack});
+                return originalPush(state,...args);
+              };
+              window.addEventListener('popstate',event=>window.__historyTrace.push({
+                type:'pop',state:event.state,current:window.history.state,length:window.history.length
+              }));
+            }""")
             nav = lambda tab: page.locator('.bottom-nav [data-go="' + tab + '"]')
             nav("settings").click()
             page.wait_for_timeout(250)
@@ -66,7 +77,8 @@ def main():
               length: window.history.length,
               settingsHidden: document.querySelector('#settings').hidden,
               updatesHidden: document.querySelector('#updates').hidden,
-              activeNav: document.querySelector('.bottom-nav .nav-item.active')?.dataset.go
+              activeNav: document.querySelector('.bottom-nav .nav-item.active')?.dataset.go,
+              trace: window.__historyTrace
             })"""))
             page.wait_for_function("() => window.history.state?.svitloTab === 'settings'", timeout=5500)
             page.wait_for_function(
