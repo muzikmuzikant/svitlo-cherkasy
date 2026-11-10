@@ -38,3 +38,38 @@ test('invalid and zero-length periods are rejected rather than silently widening
  assert.throws(()=>normalizeAllowedHours({enabled:true,weekdays:{enabled:true,from:'25:00',to:'08:00'},weekends:{enabled:false,from:'08:00',to:'20:00'}}));
  assert.throws(()=>normalizeAllowedHours([]));
 });
+
+const perDay = {
+ enabled:true,
+ days:[
+  {day:0,enabled:false,windows:[]},
+  {day:1,enabled:true,windows:[{from:'08:00',to:'12:00'},{from:'14:00',to:'18:00'}]},
+  {day:2,enabled:true,windows:[{from:'08:00',to:'18:00'}]},
+  {day:3,enabled:true,windows:[{from:'08:00',to:'18:00'}]},
+  {day:4,enabled:true,windows:[{from:'08:00',to:'18:00'}]},
+  {day:5,enabled:true,windows:[{from:'08:00',to:'18:00'}]},
+  {day:6,enabled:false,windows:[]}
+ ]
+};
+
+test('per-day settings support split weekday windows and all-day weekends',()=>{
+ assert.equal(notificationAllowed(perDay,'2026-11-09',479),false);
+ assert.equal(notificationAllowed(perDay,'2026-11-09',480),true);
+ assert.equal(notificationAllowed(perDay,'2026-11-09',719),true);
+ assert.equal(notificationAllowed(perDay,'2026-11-09',720),false);
+ assert.equal(notificationAllowed(perDay,'2026-11-09',840),true);
+ assert.equal(notificationAllowed(perDay,'2026-11-09',1080),false);
+ assert.equal(notificationAllowed(perDay,'2026-11-14',0),true);
+ assert.equal(notificationAllowed(perDay,'2026-11-15',1439),true);
+});
+
+test('per-day settings reject duplicate days, empty restricted days and more than two windows',()=>{
+ assert.throws(()=>normalizeAllowedHours({enabled:true,days:[
+  {day:1,enabled:true,windows:[{from:'08:00',to:'18:00'}]},
+  {day:1,enabled:false,windows:[]}
+ ]}));
+ assert.throws(()=>normalizeAllowedHours({enabled:true,days:[{day:1,enabled:true,windows:[]}]}));
+ assert.throws(()=>normalizeAllowedHours({enabled:true,days:[{day:1,enabled:true,windows:[
+  {from:'08:00',to:'10:00'},{from:'11:00',to:'13:00'},{from:'14:00',to:'18:00'}
+ ]}]}));
+});
