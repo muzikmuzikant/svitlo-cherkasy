@@ -51,21 +51,6 @@
   const section=node('section','smart-tools-card surface');section.id=id;
   const head=node('div','smart-tools-head');head.append(node('div','smart-tools-heading',title),node('p','smart-tools-subtitle',subtitle));section.append(head);return section;
  }
- function openDialog(dialog){
-  if(dialog.open)return;
-  dialog.showModal();
-  if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
-   dialog.animate([{opacity:0,transform:'translateY(12px) scale(.985)'},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:220,easing:'cubic-bezier(.2,.8,.2,1)'});
-  }
- }
- function closeDialog(dialog){
-  if(!dialog?.open||dialog.dataset.closing==='true')return;
-  dialog.dataset.closing='true';
-  const finish=()=>{if(dialog.open)dialog.close();delete dialog.dataset.closing};
-  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){finish();return}
-  const animation=dialog.animate([{opacity:1,transform:'translateY(0) scale(1)'},{opacity:0,transform:'translateY(9px) scale(.99)'}],{duration:180,easing:'cubic-bezier(.4,0,.7,.3)'});
-  animation.finished.then(finish,finish);
- }
  function animateItems(root,selector){
   if(window.matchMedia('(prefers-reduced-motion: reduce)').matches||document.documentElement.classList.contains('feature-off-animations'))return;
   root.querySelectorAll(selector).forEach((element,index)=>{
