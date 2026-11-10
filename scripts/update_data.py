@@ -424,10 +424,18 @@ def update_schedules(session, now=None):
             if not diffs and prev.get('publishedAt') == latest['publishedAt'] and prev.get('source') == latest['source'] and not prev.get('manualReview'):
                 continue
             if diffs:
+                before = {}
+                after = {}
+                for q in diffs:
+                    oldq = prev.get('queues', {}).get(q)
+                    newq = latest['queues'].get(q)
+                    before[q] = ({'knownFrom': oldq.get('knownFrom'), 'off': oldq.get('off', [])} if oldq else None)
+                    after[q] = ({'knownFrom': newq.get('knownFrom'), 'off': newq.get('off', [])} if newq else None)
                 changed.append({'date': day, 'publishedAt': latest['publishedAt'],
                                 'detectedAt': utc_stamp(now),
                                 'revisionId': latest['planFingerprint'],
-                                'source': latest['source'], 'queues': diffs})
+                                'source': latest['source'], 'queues': diffs,
+                                'before': before, 'after': after})
         existing[day] = latest
 
     old_changes = [x for x in old.get('changes', [])
