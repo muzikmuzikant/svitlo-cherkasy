@@ -1398,7 +1398,8 @@ window.SvitloCore={
  getToday:()=>today(),getDates:()=>stripDates(),getTimeline:(date,queue)=>timeline(date,queue),
  getCurrentDay:date=>currentDay(date),getSelectedDay:()=>daySelected||today(),
  getFormatDate:date=>formatDate(date),getClock:minute=>clock(minute),
- isPushActive:()=>pushActive,syncPush:()=>updatePushSubscription()
+ isPushActive:()=>pushActive,syncPush:()=>updatePushSubscription(),
+ restoreTabFromHistory:state=>{const screen=state?.svitloTab;const target=['home','detail','updates','settings'].includes(screen)?screen:active;navigate(target,{fromHistory:true})}
 };
 window.addEventListener('svitlo:push-hours-changed',()=>{if(pushActive)updatePushSubscription().catch(error=>console.warn('Push hours update:',error))});
 fillQueueSelect();
