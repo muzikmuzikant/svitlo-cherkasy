@@ -1,7 +1,7 @@
 /* Beta 7.9.14: day planner, per-address Push hours, schedule history and address comparison. */
 (()=>{'use strict';
  const $=id=>document.getElementById(id),STORE='svitlo-smart-tools-v7914';
- const defaultHours=()=>({enabled:false,weekdays:{enabled:false,from:'08:00',to:'20:00'},weekends:{enabled:false,from:'08:00',to:'20:00'}});
+ const defaultHours=()=>({enabled:false,days:Array.from({length:7},(_,day)=>({day,enabled:false,windows:[]}))});
  const readStore=()=>{try{const x=JSON.parse(localStorage.getItem(STORE)||'{}');return x&&typeof x==='object'?x:{}}catch{return {}}};
  let saved=readStore(),selectedDate='',selectedIds=new Set(),syncTimer=null;
  const core=()=>window.SvitloCore;
@@ -15,8 +15,27 @@
  const button=(label,cls)=>{const b=node('button',cls,label);b.type='button';return b};
  const intervals=(values,state)=>{if(!values)return [];const out=[];let start=-1;for(let i=0;i<=1440;i++){const yes=i<1440&&values[i]===state;if(yes&&start<0)start=i;if(!yes&&start>=0){out.push({from:start,to:i});start=-1}}return out};
  const intervalText=xs=>xs.length?xs.map(x=>clock(x.from)+'–'+clock(x.to)).join(', '):'немає';
- const getAllowedHours=()=>{const a=primary();return a?.id?(saved[a.id]||defaultHours()):defaultHours()};
- const saveHours=hours=>{const a=primary();if(!a?.id)return;saved[a.id]=hours;localStorage.setItem(STORE,JSON.stringify(saved));queuePushSync()};
+ const normalizeHours=value=>{
+  if(Array.isArray(value?.days)){
+   const days=Array.from({length:7},(_,day)=>{
+    const raw=value.days.find(x=>Number(x?.day)===day),windows=(Array.isArray(raw?.windows)?raw.windows:[]).slice(0,2)
+     .filter(x=>/^([01]\d|2[0-3]):[0-5]\d$/.test(x?.from||'')&&/^([01]\d|2[0-3]):[0-5]\d$/.test(x?.to||'')&&x.from!==x.to)
+     .map(x=>({from:x.from,to:x.to})).sort((a,b)=>a.from.localeCompare(b.from));
+    return {day,enabled:!!raw?.enabled&&windows.length>0,windows};
+   });
+   return {enabled:!!value.enabled,days};
+  }
+  if(value?.weekdays&&value?.weekends){
+   return {enabled:!!value.enabled,days:Array.from({length:7},(_,day)=>{
+    const period=day===0||day===6?value.weekends:value.weekdays;
+    const valid=/^([01]\d|2[0-3]):[0-5]\d$/.test(period.from||'')&&/^([01]\d|2[0-3]):[0-5]\d$/.test(period.to||'')&&period.from!==period.to;
+    return {day,enabled:!!period.enabled&&valid,windows:period.enabled&&valid?[{from:period.from,to:period.to}]:[]};
+   })};
+  }
+  return defaultHours();
+ };
+ const getAllowedHours=()=>{const a=primary();return a?.id?normalizeHours(saved[a.id]):defaultHours()};
+ const saveHours=hours=>{const a=primary();if(!a?.id)return;saved[a.id]=normalizeHours(hours);localStorage.setItem(STORE,JSON.stringify(saved));queuePushSync()};
  function queuePushSync(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>{if(core()?.isPushActive?.())window.dispatchEvent(new Event('svitlo:push-hours-changed'))},500)}
  window.SvitloSmartTools={getAllowedHours};
  function insertAfter(reference,element){reference?.parentNode?.insertBefore(element,reference.nextSibling)}
