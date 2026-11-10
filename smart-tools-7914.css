@@ -1,0 +1,45 @@
+/* Beta 7.9.14 smart schedule tools */
+.smart-tools-card{margin:16px 0;padding:17px;border-radius:20px;min-width:0;overflow:hidden}
+.smart-tools-head{display:flex;flex-direction:column;gap:4px;margin-bottom:13px}
+.smart-tools-heading{font-size:15px;font-weight:800;letter-spacing:-.25px}
+.smart-tools-subtitle{margin:0;color:var(--muted,#718198);font-size:11px;line-height:1.45}
+.smart-tools-empty,.smart-tools-footnote,.smart-tools-warning{font-size:11px;line-height:1.55;color:var(--muted,#718198);margin:10px 0 0}
+.smart-tools-warning{color:#a56b16}
+.smart-plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.smart-plan-highlight,.smart-plan-next,.smart-compare-common{display:flex;flex-direction:column;gap:5px;min-width:0;padding:13px;border-radius:14px;background:var(--soft,#f2f6fc);border:1px solid var(--line,#e4eaf2)}
+.smart-plan-highlight{background:var(--accent-soft,#edf4ff)}
+.smart-plan-label{font-size:10px;color:var(--muted,#718198);font-weight:650}
+.smart-plan-time{font-size:15px;line-height:1.3;overflow-wrap:anywhere}
+.smart-plan-duration{font-size:10px;color:var(--muted,#718198)}
+.smart-compare-controls{display:flex;align-items:center;gap:9px;margin:10px 0}
+.smart-compare-date-label{font-size:11px;color:var(--muted,#718198)}
+.smart-compare-date{min-height:37px;min-width:0;flex:1;border:1px solid var(--line,#dce5f0);border-radius:10px;padding:0 10px;background:var(--surface,#fff);color:inherit;font:inherit;font-size:12px}
+.smart-compare-pickers{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0}
+.smart-compare-place{display:flex;align-items:center;gap:7px;min-width:0;padding:9px;border:1px solid var(--line,#e3e9f1);border-radius:11px;font-size:11px;line-height:1.35}
+.smart-compare-place input{accent-color:var(--blue,#377dff);flex:0 0 auto}
+.smart-compare-place span{overflow-wrap:anywhere}
+.smart-compare-results{display:grid;gap:7px;margin-top:12px}
+.smart-compare-row{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:11px;background:var(--soft,#f3f6fa)}
+.smart-compare-name{font-size:12px}
+.smart-compare-detail{font-size:10px;line-height:1.5;color:var(--muted,#718198);overflow-wrap:anywhere}
+.smart-compare-common{margin-top:10px}
+.smart-history-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;padding:12px 0;border-top:1px solid var(--line,#e7edf4)}
+.smart-history-title{font-size:12px;overflow-wrap:anywhere}
+.smart-history-time{font-size:10px;color:var(--muted,#718198);white-space:nowrap}
+.smart-history-before,.smart-history-after,.smart-history-note{grid-column:1/-1;margin:0;font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+.smart-history-before{color:var(--muted,#718198)}
+.smart-history-after{font-weight:700}
+.smart-history-source{grid-column:1/-1;width:max-content;max-width:100%;font-size:10px;color:var(--blue,#377dff);text-decoration:none}
+.smart-hours-master{display:flex;align-items:center;gap:9px;padding:11px;border-radius:12px;background:var(--soft,#f3f6fa);font-size:12px;font-weight:700}
+.smart-hours-master input,.smart-hours-toggle input{accent-color:var(--blue,#377dff)}
+.smart-hours-fields{display:grid;gap:8px;margin-top:10px}
+.smart-hours-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px;align-items:center;padding:11px;border:1px solid var(--line,#e3e9f1);border-radius:12px}
+.smart-hours-label{font-size:11px}
+.smart-hours-toggle{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted,#718198)}
+.smart-hours-range{grid-column:1/-1;display:flex;align-items:center;gap:8px;font-size:10px;color:var(--muted,#718198)}
+.smart-hours-time{min-width:0;flex:1;height:37px;padding:0 8px;border:1px solid var(--line,#dce5f0);border-radius:9px;background:var(--surface,#fff);color:inherit;font:inherit;font-size:12px}
+:root[data-theme="dark"] .smart-plan-highlight,:root[data-theme="dark"] .smart-plan-next,:root[data-theme="dark"] .smart-compare-common{background:#24344a;border-color:#3a506c}
+:root[data-theme="dark"] .smart-compare-place,:root[data-theme="dark"] .smart-hours-row{border-color:#394e67}
+:root[data-theme="dark"] .smart-compare-row,:root[data-theme="dark"] .smart-hours-master{background:#24344a}
+@media(max-width:370px){.smart-plan-grid{grid-template-columns:1fr}.smart-compare-pickers{grid-template-columns:1fr}.smart-history-item{grid-template-columns:1fr}.smart-history-time{grid-column:1/-1}}
+@media(prefers-reduced-motion:reduce){.smart-tools-card *{scroll-behavior:auto!important;transition:none!important}}
