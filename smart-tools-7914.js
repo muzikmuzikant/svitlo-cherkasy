@@ -55,8 +55,9 @@
   const on=intervals(values,0),off=intervals(values,1),longest=[...on].sort((x,y)=>(y.to-y.from)-(x.to-x.from))[0];
   const grid=node('div','smart-plan-grid');
   const best=node('div','smart-plan-highlight');best.append(node('span','smart-plan-label','Найдовше вікно зі світлом'),node('strong','smart-plan-time',longest?clock(longest.from)+'–'+clock(longest.to):'Не визначено'),node('small','smart-plan-duration',longest?duration(longest.to-longest.from):'Немає підтвердженого інтервалу'));grid.append(best);
-  const minute=nowMinutes(),nextOff=off.find(x=>x.from>minute),nextOn=on.find(x=>x.from>minute);
-  const next=node('div','smart-plan-next');next.append(node('span','smart-plan-label','Наступна зміна'),node('strong','smart-plan-time',nextOff?'Відключення о '+clock(nextOff.from):nextOn?'Світло з '+clock(nextOn.from):'Змін не зазначено'),node('small','smart-plan-duration',nextOff?'Плановий інтервал':nextOn?'Наступне вікно зі світлом':'За опублікованим графіком'));grid.append(next);
+  const minute=nowMinutes();let boundary=-1;for(let i=Math.max(1,minute+1);i<1440;i++){if(values[i]>=0&&values[i-1]>=0&&values[i]!==values[i-1]){boundary=i;break}}
+  const nextState=boundary<0?null:values[boundary],nextLabel=nextState===1?'Відключення о ':nextState===0?'Світло з ':'';
+  const next=node('div','smart-plan-next');next.append(node('span','smart-plan-label','Наступна зміна'),node('strong','smart-plan-time',boundary>=0?nextLabel+clock(boundary):'Змін не зазначено'),node('small','smart-plan-duration',boundary>=0?'Плановий інтервал':'За опублікованим графіком'));grid.append(next);
   root.append(grid, node('p','smart-tools-footnote','Це розрахунок за опублікованим графіком, а не вимірювання фактичної наявності електроенергії.'));
  }
  function nowMinutes(){const p=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(x=>[x.type,x.value]));return Number(p.hour)*60+Number(p.minute)}
