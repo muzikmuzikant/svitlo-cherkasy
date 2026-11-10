@@ -94,7 +94,7 @@ function retainWeeklySchedules(incoming,previous={days:[]}){
  for(const day of previous.days||[])if(weekAllowed(day.date)&&day.verified===true)days.set(day.date,day);
  for(const day of recent.days)if(weekAllowed(day.date))days.set(day.date,day);
  const scheduleHistory=new Map();
- for(const item of [...(recent.scheduleHistory||[]),...(previous.scheduleHistory||[])])if(item?.id&&/^20\\d{2}-\\d{2}-\\d{2}$/.test(item.date||'')&&!scheduleHistory.has(item.id))scheduleHistory.set(item.id,item);
+ for(const item of [...(recent.history||[]),...(previous.history||[])])if(item?.id&&/^20\\d{2}-\\d{2}-\\d{2}$/.test(item.date||'')&&!scheduleHistory.has(item.id))scheduleHistory.set(item.id,item);
  return {...recent,days:[...days.values()].sort((a,b)=>a.date.localeCompare(b.date)),
   changes:(recent.changes||[]).filter(c=>typeof c?.date==='string'&&weekAllowed(c.date)),
   history:[...scheduleHistory.values()].sort((a,b)=>String(b.detectedAt||b.publishedAt||'').localeCompare(String(a.detectedAt||a.publishedAt||''))).slice(0,40)};
