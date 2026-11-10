@@ -33,7 +33,7 @@ async function harness({saved=[{id:ID,token:TOKEN,status:'new',createdAt:'2026-1
  return{window,values,messages,visited,setCurrent:x=>{result=x},setOnline:value=>{sandbox.navigator.onLine=value}};
 }
 test('one support reply means exactly one private Inbox message even after repeated checks',async()=>{
- const m={id:'012345abcdef',from:'admin',text:'Private user correspondence must stay in Railway',at:'2026-10-21T16:03:00.000Z'};
+ const m={id:'012345abcdef',from:'admin',text:'Private user correspondence must stay in Railway',at:new Date().toISOString()};
  const h=await harness({snapshot:{[ID]:{status:'new',replyIds:[]}},current:ticket({messages:[m],status:'in_progress'})});
  assert.equal(h.messages.size,1,'automatic new to in_progress transition must not spam a second notice');
  const item=[...h.messages.values()][0];
