@@ -11,14 +11,16 @@ test('PWA explicitly loads its required runtime chain before the new features',(
  assert.ok(scriptNames.indexOf('smart-tools-7914.js')<scriptNames.indexOf('all-queues.js'));
 });
 
-test('day planner, comparison and history use the existing schedule source of truth',()=>{
+test('the unwanted day planner is removed and schedule history is discoverable on the schedule screen',()=>{
  assert.match(app,/window\.SvitloCore=/);
  assert.match(app,/history:Array\.isArray\(obj\.history\)/);
  assert.match(app,/svitlo:smart-tools-refresh/);
- assert.match(read('smart-tools-7914.js'),/getTimeline/);
- assert.match(read('smart-tools-7914.js'),/Найдовше без світла/);
- assert.match(read('smart-tools-7914.js'),/Було:/);
- assert.match(read('smart-tools-7914.js'),/Стало:/);
+ const tools=read('smart-tools-7914.js');
+ assert.doesNotMatch(tools,/smartDayPlan|renderPlanner|План дня|Найдовше вікно зі світлом/);
+ assert.match(tools,/id='smartHistory'/);
+ assert.match(tools,/#detail \.schedule-meta/);
+ assert.match(tools,/Було:/);
+ assert.match(tools,/Стало:/);
 });
 
 test('per-address Push hours are sent to the API and verified against server state',()=>{
