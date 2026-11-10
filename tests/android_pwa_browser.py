@@ -46,13 +46,13 @@ def main():
 
             nav = lambda tab: page.locator('.bottom-nav [data-go="' + tab + '"]')
             nav("settings").click()
-            page.wait_for_function("() => history.state?.svitloTab === 'settings'")
+            page.wait_for_function("() => window.history.state?.svitloTab === 'settings'")
             page.wait_for_timeout(550)
             nav("updates").click()
-            page.wait_for_function("() => history.state?.svitloTab === 'updates'")
+            page.wait_for_function("() => window.history.state?.svitloTab === 'updates'")
             page.wait_for_timeout(550)
             page.evaluate("window.history.back()")
-            page.wait_for_function("() => history.state?.svitloTab === 'settings'", timeout=5500)
+            page.wait_for_function("() => window.history.state?.svitloTab === 'settings'", timeout=5500)
             page.wait_for_function(
                 "() => !document.querySelector('#settings').hidden && document.querySelector('#updates').hidden",
                 timeout=5500,
