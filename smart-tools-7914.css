@@ -43,3 +43,9 @@
 :root[data-theme="dark"] .smart-compare-row,:root[data-theme="dark"] .smart-hours-master{background:#24344a}
 @media(max-width:370px){.smart-plan-grid{grid-template-columns:1fr}.smart-compare-pickers{grid-template-columns:1fr}.smart-history-item{grid-template-columns:1fr}.smart-history-time{grid-column:1/-1}}
 @media(prefers-reduced-motion:reduce){.smart-tools-card *{scroll-behavior:auto!important;transition:none!important}}
+
+.smart-push-body{padding-top:12px}
+.smart-tools-card>summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.smart-tools-card>summary::-webkit-details-marker{display:none}
+.smart-tools-card>summary::after{content:'⌄';font-size:18px;color:var(--muted,#718198);transition:transform .2s ease}
+.smart-tools-card[open]>summary::after{transform:rotate(180deg)}
