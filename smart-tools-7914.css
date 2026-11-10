@@ -95,3 +95,6 @@
 .smart-compare-field select{width:100%;min-width:0;min-height:42px;padding:0 9px;border:1px solid var(--line,#dce5f0);border-radius:11px;background:var(--surface,#fff);color:inherit;font:inherit;font-size:11px}
 .smart-hours-day-status{font-weight:650}
 @media(max-width:370px){.smart-compare-pickers{grid-template-columns:1fr}}
+
+.smart-push-sync-status{margin:12px 0 0;padding:10px 11px;border-radius:10px;background:var(--soft,#f3f6fa);color:var(--muted,#718198);font-size:10px;line-height:1.45}
+:root[data-theme="dark"] .smart-push-sync-status{background:#24344a}
