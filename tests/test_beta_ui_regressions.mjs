@@ -117,3 +117,13 @@ test('maintenance editor preview mirrors mode, end time and the new layout',()=>
  assert.ok(js.includes("opsPreviewEta")&&js.includes("opsPreviewBadge"));
  assert.ok(css.includes('ops-preview-header')&&css.includes('ops-preview-time')&&css.includes('ops-preview-buttons'));
 });
+
+test('new smart-tools dialogs and disclosures animate both opening and closing',()=>{
+ const tools=read('smart-tools-7914.js'),skin=read('smart-tools-7914.css');
+ assert.match(tools,/function openDialog\(/);
+ assert.match(tools,/function closeDialog\(/);
+ assert.match(tools,/animation\.finished\.then\(finish,finish\)/);
+ assert.match(tools,/addEventListener\('cancel'/);
+ assert.match(skin,/@media\(prefers-reduced-motion:reduce\)/);
+ assert.match(skin,/smart-history-chevron/);
+});
