@@ -571,7 +571,7 @@ function navigate(name,{fromHistory=false}={}){
  const names=['home','detail','updates','settings'];
  if(!names.includes(name))return;
  if(name==='detail'&&!primary()&&!previewQueue){if(fromHistory)return navigate('home',{fromHistory:true});openAddressSheet();return}
- if(name===active)return;
+ if(name===active&&!$(name).hidden)return;
  if(!fromHistory){
   try{history.pushState({svitloTab:name},'',location.href)}catch(error){console.warn('Tab history:',error?.message)}
  }
@@ -1416,7 +1416,7 @@ fillQueueSelect();
  window.addEventListener('popstate',event=>{
   if(event.state?.svitloInternal)return;
   const screen=event.state?.svitloTab;
-  const valid=['home','detail','updates','settings'].includes(screen)?screen:'home';
+  const valid=['home','detail','updates','settings'].includes(screen)?screen:active;
   navigate(valid,{fromHistory:true});
  });
  // Keep first-render placeholders completely behind the launch screen.
