@@ -4,6 +4,7 @@ import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import {timeline,dueTransitionAcrossDays,freshSchedule,usableSchedule,verifiedScheduleDay,preferFreshSchedule,QUEUES} from '../push-server/schedule-engine.js';
 import {transitionCopy} from '../push-server/notification-copy.js';
+import {isQuietForRecord} from '../push-server/quiet-hours.js';
 
 const server=readFileSync(new URL('../push-server/server.js',import.meta.url),'utf8');
 const start=server.indexOf('async function transitionJob(){');
@@ -21,7 +22,7 @@ function fixture({minute=570,off=true,on=true,stale=false,noDate=false,failOnce=
  const record={queue:'1.1',preferences:{off,on},subscription:{endpoint:'https://web.push.apple.com/fixture'}};
  const sent={},deliveryStats={lastFailure:null,lastCycle:null},subscribers={fixture:record};
  const deliveries=[],log=[],updates=[];let fail=failOnce;
- const state={officialSchedules:{schedule:()=>source},lastLoadedSchedule:null,transitionRunning:false,
+ const state={isQuietForRecord,officialSchedules:{schedule:()=>source},lastLoadedSchedule:null,transitionRunning:false,
   dayInKyiv:()=>({date:nowDate,m:state.currentMinute}),currentMinute:minute,
   shiftDay:(d,n)=>new Date(new Date(d+'T12:00:00Z').getTime()+n*86400_000).toISOString().slice(0,10),
   freshSchedule,usableSchedule,verifiedScheduleDay,preferFreshSchedule,timeline,dueTransitionAcrossDays,transitionCopy,QUEUES,subscribers,deliveryStats,sent,
