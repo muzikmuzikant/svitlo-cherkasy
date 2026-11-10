@@ -12,6 +12,10 @@ on:
       - 'app.js'
       - 'index.html'
       - 'install.js'
+      - 'features-7914.js'
+      - 'features-7914.css'
+      - 'tests/test_features_7914.mjs'
+      - 'tests/test_quiet_hours_7914.mjs'
       - 'scripts/build_pages.py'
       - 'tests/*_browser.py'
   workflow_dispatch:
@@ -27,7 +31,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Validate 12-queue minute-accurate model and PNG integration
-        run: node --test tests/test_all_queues_beta.mjs tests/test_beta_7913_parity_motion.mjs
+        run: node --test tests/test_all_queues_beta.mjs tests/test_beta_7913_parity_motion.mjs tests/test_features_7914.mjs tests/test_quiet_hours_7914.mjs
       - name: Build actual installable static PWA
         run: python scripts/build_pages.py
       - name: Install Chromium browser for real Service Worker test
