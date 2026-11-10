@@ -78,6 +78,10 @@ def main():
                 "() => document.querySelector('#svitloInternalPage').hidden",
                 timeout=5500,
             )
+            page.wait_for_function(
+                "() => !document.querySelector('#settings').hidden",
+                timeout=5500,
+            )
             assert page.locator("#settings").is_visible(), (
                 "Android Back must close a help page before leaving Settings"
             )
