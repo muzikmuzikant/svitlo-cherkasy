@@ -40,12 +40,15 @@
    const history=makeCard('smartHistory','Історія змін графіка','Порівняння попередньої та актуальної редакцій');
    const list=$('updateList');if(list)insertAfter(list,history);
   }
-  if(!$('smartPushHours')){
-   const card=node('details','smart-tools-card surface');card.id='smartPushHours';
-   const summary=node('summary','smart-tools-heading','Персональні години отримання Push');
-   const body=node('div','smart-push-body');body.id='smartPushHoursBody';
-   card.append(summary,body);
-   const categories=$('pushCategorySettings');if(categories)insertAfter(categories,card);
+  if(!$('smartPushHoursDialog')){
+   const dialog=node('dialog','smart-push-dialog');dialog.id='smartPushHoursDialog';
+   const panel=node('div','smart-push-dialog-panel'),top=node('div','smart-push-dialog-top');
+   top.append(node('strong','smart-push-dialog-title','Персональні години Push'));
+   const close=button('Закрити','smart-push-dialog-close');close.addEventListener('click',()=>dialog.close());top.append(close);
+   const body=node('div','smart-push-body');body.id='smartPushHoursBody';panel.append(top,body);dialog.append(panel);
+   dialog.addEventListener('click',event=>{if(event.target===dialog)dialog.close()});document.body.append(dialog);
+   const title=document.querySelector('#settings .settings-push-controls .subsection-title');
+   if(title&&!$('smartPushHoursOpen')){const trigger=button('Години Push','smart-push-trigger');trigger.id='smartPushHoursOpen';trigger.setAttribute('aria-label','Налаштувати години отримання Push');trigger.addEventListener('click',()=>dialog.showModal());title.append(trigger)}
   }
  }
  function renderPlanner(){
