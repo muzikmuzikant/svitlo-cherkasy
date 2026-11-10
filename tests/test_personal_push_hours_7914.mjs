@@ -73,3 +73,12 @@ test('per-day settings reject duplicate days, empty restricted days and more tha
   {from:'08:00',to:'10:00'},{from:'11:00',to:'13:00'},{from:'14:00',to:'18:00'}
  ]}]}));
 });
+
+test('overlapping daily windows are rejected',()=>{
+ assert.throws(()=>normalizeAllowedHours({enabled:true,days:[{day:1,enabled:true,windows:[
+  {from:'08:00',to:'14:00'},{from:'12:00',to:'18:00'}
+ ]}]}));
+ assert.throws(()=>normalizeAllowedHours({enabled:true,days:[{day:1,enabled:true,windows:[
+  {from:'18:00',to:'08:00'}
+ ]}]}));
+});
