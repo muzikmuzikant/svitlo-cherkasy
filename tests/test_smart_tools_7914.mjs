@@ -16,6 +16,7 @@ test('day planner, comparison and history use the existing schedule source of tr
  assert.match(app,/history:Array\.isArray\(obj\.history\)/);
  assert.match(app,/svitlo:smart-tools-refresh/);
  assert.match(read('smart-tools-7914.js'),/getTimeline/);
+ assert.match(read('smart-tools-7914.js'),/Найдовше без світла/);
  assert.match(read('smart-tools-7914.js'),/Було:/);
  assert.match(read('smart-tools-7914.js'),/Стало:/);
 });
