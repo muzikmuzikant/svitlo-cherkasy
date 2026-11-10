@@ -42,6 +42,6 @@ test('Only address picker retains Beta visual overrides and shell cache refreshe
  assert.match(css,/\.redesigned-places-sheet/);
  assert.match(css,/:root\[data-theme="dark"\]/);
  assert.doesNotMatch(css,/#home|#settings/);
- assert.match(sw,/svitlo-cherkasy-shell-v7\.9\.13-beta-ui-rollback-v2/);
+ assert.match(sw,/svitlo-cherkasy-shell-v7\.9\.14-beta-smart-tools/);
  assert.match(html,/data-deployment-channel="beta"/);
 });
