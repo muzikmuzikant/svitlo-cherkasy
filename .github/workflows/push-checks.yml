@@ -4,6 +4,10 @@ on:
     branches: [staging, main]
     paths:
       - 'push-server/**'
+      - 'features-7914.js'
+      - 'features-7914.css'
+      - 'tests/test_quiet_hours_7914.mjs'
+      - 'tests/test_features_7914.mjs'
       - 'app.js'
       - 'sw.js'
       - 'index.html'
@@ -21,6 +25,10 @@ on:
     branches: [staging, main]
     paths:
       - 'push-server/**'
+      - 'features-7914.js'
+      - 'features-7914.css'
+      - 'tests/test_quiet_hours_7914.mjs'
+      - 'tests/test_features_7914.mjs'
       - 'app.js'
       - 'sw.js'
       - 'index.html'
