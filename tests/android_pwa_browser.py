@@ -50,7 +50,10 @@ def main():
             nav("updates").click()
             page.wait_for_function("() => !document.querySelector('#updates').hidden")
             page.evaluate("history.back()")
-            page.wait_for_function("() => !document.querySelector('#settings').hidden", timeout=4000)
+            page.wait_for_function(
+                "() => !document.querySelector('#settings').hidden && document.querySelector('#updates').hidden",
+                timeout=5500,
+            )
             # Let the 460ms tab transition finish before interacting with the
             # long Settings page; smooth document scrolling otherwise keeps
             # Playwright's click target moving while it auto-scrolls.
@@ -78,14 +81,6 @@ def main():
                 "() => document.querySelector('#svitloInternalPage').hidden",
                 timeout=5500,
             )
-            print("DEBUG internal Back:", page.evaluate("""() => ({
-              state: history.state,
-              settingsHidden: document.querySelector('#settings').hidden,
-              updatesHidden: document.querySelector('#updates').hidden,
-              activeNav: document.querySelector('.bottom-nav .nav-item.active')?.dataset.go,
-              coreTab: window.SvitloCore?.getActiveTab?.(),
-              restoreAvailable: typeof window.SvitloCore?.restoreTabFromHistory
-            })"""))
             page.wait_for_function(
                 "() => !document.querySelector('#settings').hidden",
                 timeout=5500,
