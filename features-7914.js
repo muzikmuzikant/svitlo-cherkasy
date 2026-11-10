@@ -11,6 +11,7 @@ const addresses=()=>{const a=safe(KEYS.addresses,[]);return Array.isArray(a)?a.f
 const primary=()=>{const a=addresses(),p=safe(KEYS.prefs,{});return a.find(x=>x.id===p.primaryId)||a[0]||null};
 const addressLabel=a=>[a?.nickname,a?.settlement,a?.street? a.street+(a.house?' '+a.house:''):''].filter(Boolean).join(' · ')||a?.queue||'Адреса';
 const dayData=date=>schedule?.days?.find(x=>x.date===date&&x.verified===true)||null;
+const staleSchedule=()=>!schedule?.lastChecked||!Number.isFinite(Date.parse(schedule.lastChecked))||Date.now()-Date.parse(schedule.lastChecked)>55*60_000||navigator.onLine===false;
 function timeline(day,queue){if(!day||!queues.includes(queue))return null;const q=day.queues?.[queue],out=new Int8Array(1440);out.fill(0);if(!q)return out;const start=minute(q.knownFrom||'00:00');if(start<0)return null;out.fill(-1);out.fill(0,start);let last=0;for(const p of q.off||[]){if(!Array.isArray(p)||p.length!==2)return null;const a=minute(p[0]),b=minute(p[1]);if(a<last||a<start||a<0||b<=a||b>1440)return null;out.fill(1,a,b);last=b}return out}
 function runs(values,target,from=0,to=1440){if(!values)return[];const out=[];let start=-1;for(let i=from;i<=to;i++){const ok=i<to&&values[i]===target;if(ok&&start<0)start=i;if(!ok&&start>=0){out.push({start,end:i,duration:i-start});start=-1}}return out}
 const duration=n=>n>=60?Math.floor(n/60)+' год'+(n%60?' '+n%60+' хв':''):n+' хв',range=r=>clock(r.start)+'–'+clock(r.end);
@@ -22,7 +23,7 @@ function renderPlanner(root){
  root.replaceChildren();const a=primary(),day=dayData(dateKey(plannerOffset)),head=document.createElement('div');head.className='sf-feature-head';head.append(text('div',a?addressLabel(a)+' · '+a.queue:'Додайте адресу з підчергою','sf-eyebrow'),tabs(plannerOffset,v=>{plannerOffset=v;renderAll()}));root.append(head);
  if(!a){root.append(text('p','Щоб скласти план дня, збережіть адресу з визначеною підчергою.','sf-muted'));return}
  if(!day){root.append(text('p','На цей день ще немає підтвердженого графіка. План з’явиться після оновлення даних оператора.','sf-muted'));return}
- if(schedule?.lastChecked){const age=Date.now()-Date.parse(schedule.lastChecked);if(!Number.isFinite(age)||age>55*60_000||navigator.onLine===false)root.append(text('p','Показуємо останні збережені дані. Вони можуть бути застарілими.','sf-muted'))}
+ if(staleSchedule())root.append(text('p','Показуємо останні збережені дані. Вони можуть бути застарілими.','sf-muted'))
  const values=timeline(day,a.queue);if(!values){root.append(text('p','Не вдалося прочитати інтервали цього графіка.','sf-muted'));return}
  const from=plannerOffset===0?currentMinute():0,unknown=Array.from(values.slice(from)).some(v=>v<0),powered=runs(values,0,from).sort((x,y)=>y.duration-x.duration)[0],outage=runs(values,1,from).sort((x,y)=>y.duration-x.duration)[0],grid=document.createElement('div');grid.className='sf-plan-grid';
  const add=(label,value,detail,kind)=>{const card=document.createElement('div');card.className='sf-plan-stat '+kind;card.append(text('span',label,'sf-stat-label'),text('strong',value,'sf-stat-value'),text('small',detail,'sf-stat-detail'));grid.append(card)};
@@ -33,13 +34,14 @@ function renderCompare(root){
  root.replaceChildren();const list=addresses(),day=dayData(dateKey(compareOffset)),head=document.createElement('div');head.className='sf-feature-head';head.append(text('div','Порівняння збережених адрес','sf-eyebrow'),tabs(compareOffset,v=>{compareOffset=v;renderAll()}));root.append(head);
  if(list.length<2){root.append(text('p','Додайте щонайменше дві адреси з підчергою, щоб порівняти їхні графіки.','sf-muted'));return}
  if(!day){root.append(text('p','Для цього дня ще немає підтвердженого графіка.','sf-muted'));return}
+ if(staleSchedule())root.append(text('p','Порівняння побудовано за останніми збереженими даними, які можуть бути застарілими.','sf-muted'));
  const entries=list.map(a=>({a,v:timeline(day,a.queue)}));if(entries.some(x=>!x.v)){root.append(text('p','Для частини підчерг немає достатньо підтверджених даних.','sf-muted'));return}
  const allOn=new Int8Array(1440);allOn.fill(-1);for(let i=0;i<1440;i++)if(entries.every(x=>x.v[i]===0))allOn[i]=0;
  const from=compareOffset===0?currentMinute():0,shared=runs(allOn,0,from).sort((a,b)=>b.duration-a.duration),unknownCount=entries.reduce((n,x)=>n+Array.from(x.v.slice(from)).filter(v=>v<0).length,0),rows=document.createElement('div');rows.className='sf-compare-list';
  for(const {a,v} of entries){const on=runs(v,0,from).reduce((n,x)=>n+x.duration,0),off=runs(v,1,from).reduce((n,x)=>n+x.duration,0),row=document.createElement('div');row.className='sf-compare-row';row.append(text('strong',addressLabel(a)),text('span',a.queue+' · зі світлом '+duration(on)+' · без '+duration(off)));rows.append(row)}
  root.append(rows);if(unknownCount)root.append(text('p','Частина годин не має підтверджених даних, тому порівняння охоплює лише відомі проміжки.','sf-muted'));const result=document.createElement('div');result.className='sf-advice';result.append(text('strong',shared.length?'Спільний час зі світлом':'Спільного вікна зі світлом немає'),text('p',shared.length?'Найдовше спільне вікно: '+range(shared[0])+' ('+duration(shared[0].duration)+').':'Немає періоду, коли за графіком світло є одночасно за всіма адресами.'));root.append(result)
 }
-function formatPeriods(q){if(!q)return 'Немає попередніх даних';const off=q.off||[];return off.length?off.map(x=>x[0]+'–'+x[1]).join(', '):'Відключень не заплановано'}
+function formatPeriods(q){if(!q)return 'Немає попередніх даних';const off=q.off||[],periods=off.length?off.map(x=>x[0]+'–'+x[1]).join(', '):'Відключень не заплановано';return q.knownFrom&&q.knownFrom!=='00:00'?'Відомо з '+q.knownFrom+': '+periods:periods}
 function renderHistory(root){
  root.replaceChildren();const changes=(schedule?.changes||[]).slice().sort((a,b)=>Date.parse(b.detectedAt||b.publishedAt||'')-Date.parse(a.detectedAt||a.publishedAt||'')).slice(0,25);if(!changes.length){root.append(text('p','Історія змін з’явиться після наступного оновлення графіка.','sf-muted'));return}
  const q=primary()?.queue;
