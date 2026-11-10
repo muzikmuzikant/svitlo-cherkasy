@@ -89,41 +89,60 @@
  function renderCompare(){
   const root=$('smartCompare');if(!root)return;
   const places=addresses();
-  if(!selectedIds.size)places.forEach((a,i)=>{if(i<Math.min(4,places.length))selectedIds.add(a.id)});
-  for(const id of [...selectedIds])if(!places.some(a=>a.id===id))selectedIds.delete(id);
-  const availableDates=core()?.getDates?.();const dates=Array.isArray(availableDates)&&availableDates.length?availableDates:[today()];if(!selectedDate||!dates.includes(selectedDate))selectedDate=today();
-  const key=JSON.stringify([places.map(a=>[a.id,a.queue,a.nickname,a.street]),selectedDate,[...selectedIds].sort(),data().lastChecked,data().history?.[0]?.id]);
+  const availableDates=core()?.getDates?.();
+  const dates=Array.isArray(availableDates)&&availableDates.length?availableDates:[today()];
+  if(!selectedDate||!dates.includes(selectedDate))selectedDate=dates.includes(today())?today():dates[0];
+  const validIds=places.map(a=>a.id);
+  let firstId=validIds.includes([...selectedIds][0])?[...selectedIds][0]:(places[0]?.id||'');
+  let secondId=validIds.find(id=>id!==firstId)||'';
+  if(selectedIds.size>=2){const ids=[...selectedIds].filter(id=>validIds.includes(id));if(ids.length>=2){firstId=ids[0];secondId=ids[1]}}
+  const key=JSON.stringify([places.map(a=>[a.id,a.queue,a.nickname,a.street]),selectedDate,firstId,secondId,data().lastChecked,data().history?.[0]?.id]);
   if(root.dataset.renderKey===key)return;root.dataset.renderKey=key;root.replaceChildren();
-  const head=node('div','smart-tools-head');head.append(node('div','smart-tools-heading','Порівняти адреси'),node('p','smart-tools-subtitle','Оберіть місця та день, щоб побачити спільні години зі світлом'));root.append(head);
-  if(places.length<2){root.append(node('p','smart-tools-empty','Додайте ще одну адресу, щоб порівняти графіки.'));return}
-  const controls=node('div','smart-compare-controls'),dateSelect=node('select','smart-compare-date');
+  const head=node('div','smart-tools-head');
+  head.append(node('div','smart-tools-heading','Порівняння адрес'),node('p','smart-tools-subtitle','Виберіть два місця, щоб побачити, коли в обох одночасно є світло'));
+  root.append(head);
+  if(places.length<2){root.append(node('p','smart-tools-empty','Щоб порівняти графіки, додайте ще одну адресу.'));return}
+  const controls=node('div','smart-compare-controls'),dateLabel=node('label','smart-compare-date-label','День'),dateSelect=node('select','smart-compare-date');
+  dateSelect.setAttribute('aria-label','День для порівняння');
   dates.forEach(date=>{const option=node('option','',date===today()?'Сьогодні':new Intl.DateTimeFormat('uk-UA',{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z')));option.value=date;dateSelect.append(option)});
-  dateSelect.value=selectedDate;dateSelect.addEventListener('change',()=>{selectedDate=dateSelect.value;renderCompare()});
-  controls.append(node('label','smart-compare-date-label','День'),dateSelect);root.append(controls);
+  dateSelect.value=selectedDate;dateSelect.addEventListener('change',()=>{selectedDate=dateSelect.value;root.dataset.renderKey='';renderCompare()});
+  controls.append(dateLabel,dateSelect);root.append(controls);
   const pickers=node('div','smart-compare-pickers');
-  places.forEach(a=>{
-   const label=node('label','smart-compare-place'),input=node('input');input.type='checkbox';input.checked=selectedIds.has(a.id);
-   input.addEventListener('change',()=>{if(input.checked)selectedIds.add(a.id);else selectedIds.delete(a.id);renderCompare()});
-   label.append(input,node('span','', (a.nickname||a.street||a.settlement)+' · '+(a.queue||'без підчерги')));pickers.append(label);
-  });root.append(pickers);
+  const makePicker=(labelText,value,exclude)=>{
+   const label=node('label','smart-compare-field');label.append(node('span','smart-compare-field-label',labelText));
+   const select=node('select','smart-compare-date');select.setAttribute('aria-label',labelText);
+   places.forEach(a=>{const option=node('option','',(a.nickname||a.street||a.settlement)+' · '+(a.queue||'підчерга не визначена'));option.value=a.id;option.disabled=a.id===exclude;select.append(option)});
+   select.value=value;select.addEventListener('change',()=>{selectedIds=new Set([select===firstPicker?select.value:firstPicker.value,select===secondPicker?select.value:secondPicker.value]);root.dataset.renderKey='';renderCompare()});
+   return {label,select};
+  };
+  let firstPicker,secondPicker;
+  firstPicker=makePicker('Перша адреса',firstId,secondId);
+  secondPicker=makePicker('Друга адреса',secondId,firstId);
+  pickers.append(firstPicker.label,secondPicker.label);root.append(pickers);
+  selectedIds=new Set([firstId,secondId]);
   const chosen=places.filter(a=>selectedIds.has(a.id));
-  if(chosen.length<2){root.append(node('p','smart-tools-empty','Оберіть щонайменше дві адреси.'));return}
+  if(chosen.length!==2){root.append(node('p','smart-tools-empty','Оберіть дві різні адреси.'));return}
   const rows=chosen.map(a=>({address:a,values:a.queue?core()?.getTimeline?.(selectedDate,a.queue):null}));
   const list=node('div','smart-compare-results');
   rows.forEach(({address,values})=>{
-   const row=node('div','smart-compare-row');row.append(node('strong','smart-compare-name',address.nickname||address.street||address.settlement));
-   if(!values)row.append(node('span','smart-compare-detail','Немає підтверджених даних'));
-   else row.append(node('span','smart-compare-detail','Зі світлом: '+intervalText(intervals(values,0))));
+   const row=node('div','smart-compare-row');
+   row.append(node('strong','smart-compare-name',address.nickname||address.street||address.settlement));
+   row.append(node('span','smart-compare-detail','Підчерга '+(address.queue||'не визначена')));
+   if(!values)row.append(node('span','smart-compare-detail','Для цієї підчерги немає підтвердженого графіка на вибраний день.'));
+   else row.append(node('span','smart-compare-detail','Світло: '+intervalText(intervals(values,0))));
    list.append(row);
-  });root.append(list);
-  if(rows.some(x=>!x.values)){root.append(node('p','smart-tools-empty','Спільні години не розраховані: для однієї або кількох адрес немає підтвердженого графіка.'));return}
-  const common=[];let start=-1;
+  });
+  root.append(list);
+  if(rows.some(x=>!x.values)){root.append(node('p','smart-tools-empty','Спільні години не розраховані, бо для однієї з адрес немає підтвердженого графіка.'));return}
+  const common=[];let startMinute=-1;
   for(let minute=0;minute<=1440;minute++){
    const yes=minute<1440&&rows.every(row=>row.values[minute]===0);
-   if(yes&&start<0)start=minute;
-   if(!yes&&start>=0){common.push({from:start,to:minute});start=-1}
+   if(yes&&startMinute<0)startMinute=minute;
+   if(!yes&&startMinute>=0){common.push({from:startMinute,to:minute});startMinute=-1}
   }
-  const result=node('div','smart-compare-common');result.append(node('span','smart-plan-label','Одночасно зі світлом у всіх вибраних місцях'),node('strong','smart-plan-time',common.length?intervalText(common):'Спільного вікна не знайдено'));root.append(result);
+  const result=node('div','smart-compare-common');
+  result.append(node('span','smart-plan-label','Одночасно зі світлом'),node('strong','smart-plan-time',common.length?intervalText(common):'Спільного часу зі світлом немає'));
+  root.append(result);
  }
  function formatPlan(plan){
   if(!plan)return 'Немає попередньої підтвердженої редакції';
@@ -154,8 +173,8 @@
  function createDayRow(parent,dayConfig,dayName){
   const row=node('section','smart-hours-day'),head=node('div','smart-hours-day-head');
   const title=node('strong','smart-hours-label',dayName),toggle=node('input');toggle.type='checkbox';toggle.checked=!!dayConfig.enabled;
-  const toggleLabel=node('label','smart-hours-toggle');toggleLabel.append(toggle,node('span','', 'Обмежити'));
-  const status=node('span','smart-hours-day-status',dayConfig.enabled?'Вибрані години':'Цілодобово');
+  const toggleLabel=node('label','smart-hours-toggle');toggleLabel.append(toggle,node('span','', 'За годинами'));
+  const status=node('span','smart-hours-day-status',dayConfig.enabled?'За розкладом':'Увесь день');
   head.append(title,toggleLabel,status);row.append(head);
   const body=node('div','smart-hours-day-body');
   toggle.addEventListener('change',()=>{
@@ -203,18 +222,18 @@
   const root=$('smartPushHoursBody');if(!root)return;
   const a=primary(),config=getAllowedHours(),key=String(a?.id||'none')+JSON.stringify(config);
   if(root.dataset.renderKey===key)return;root.dataset.renderKey=key;root.replaceChildren();
-  const head=node('div','smart-tools-head');head.append(node('p','smart-tools-subtitle',a?'Для адреси: '+(a.nickname||a.street||a.settlement)+' · '+(a.queue||'підчерга не визначена'):'Спершу додайте адресу з підчергою'));root.append(head);
+  const head=node('div','smart-tools-head');head.append(node('p','smart-tools-subtitle',a?'Основна адреса: '+(a.nickname||a.street||a.settlement)+' · '+(a.queue||'підчерга не визначена'):'Спершу додайте адресу з підчергою'));root.append(head);
   if(!a?.id){root.append(node('p','smart-tools-empty','Збережіть адресу, щоб налаштувати години сповіщень окремо для неї.'));return}
   const masterLabel=node('label','smart-hours-master'),master=node('input');master.type='checkbox';master.checked=!!config.enabled;
   master.addEventListener('change',()=>{const next=getAllowedHours();next.enabled=master.checked;saveHours(next);renderPushHours()});
-  masterLabel.append(master,node('span','', 'Отримувати Push лише у вибрані години'));root.append(masterLabel);
+  masterLabel.append(master,node('span','', 'Обмежити Push вибраними годинами'));root.append(masterLabel);
   const fields=node('div','smart-hours-fields');fields.hidden=!config.enabled;
   if(config.enabled){
    const days=node('div','smart-hours-days'),names=['Неділя','Понеділок','Вівторок','Середа','Четвер','П’ятниця','Субота'];
    config.days.forEach(day=>createDayRow(days,day,names[day.day]));fields.append(days);
   }
   root.append(fields);
-  root.append(node('p','smart-tools-footnote','Для кожного дня можна задати до двох проміжків. Якщо обмеження дня вимкнене, планові Push надходитимуть цілодобово. Аварійні повідомлення оператора не обмежуються.'));
+  root.append(node('p','smart-tools-footnote','Для кожного дня можна задати до двох проміжків. Якщо вимкнути обмеження дня, планові Push надходитимуть цілодобово. Аварійні повідомлення оператора не обмежуються.'));
   root.append(node('p','smart-tools-footnote','Налаштування зберігаються окремо для кожної адреси на цьому пристрої та застосовуються до її підчерги після синхронізації Push.'));
   if(config.enabled&&!config.days.some(day=>day.enabled))root.append(node('p','smart-tools-warning','Зараз усі дні дозволені цілодобово. Увімкніть обмеження для тих днів, коли потрібні конкретні години.'));
  }
