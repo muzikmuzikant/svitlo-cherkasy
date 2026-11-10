@@ -10,7 +10,7 @@ test('all four Beta tabs use the requested identical 460ms motion',()=>{
  assert.ok(begin>=0&&end>begin);
  const nav=app.slice(begin,end);
  assert.match(nav,/\['home','detail','updates','settings'\]/);
- assert.match(nav,/if\(name===active\)return;/);
+ assert.match(nav,/if\(name===active&&!\$\(name\)\.hidden\)return;/);
  assert.match(nav,/token\.outgoing=previousSection\.animate\([\s\S]*?duration:TAB_MOTION_MS/);
  assert.match(nav,/token\.incoming=nextSection\.animate\([\s\S]*?duration:TAB_MOTION_MS/);
  assert.doesNotMatch(nav,/queuedName|cooldown|setTimeout\(/i);
