@@ -48,38 +48,20 @@ def main():
               window.__historyTrace=[];
               const originalPush=window.history.pushState.bind(window.history);
               window.history.pushState=function(state,...args){
-                window.__historyTrace.push({type:'push',state,stack:new Error().stack});
+                window.__historyTrace.push(state);
                 return originalPush(state,...args);
               };
-              window.addEventListener('popstate',event=>window.__historyTrace.push({
-                type:'pop',state:event.state,current:window.history.state,length:window.history.length
-              }));
             }""")
             nav = lambda tab: page.locator('.bottom-nav [data-go="' + tab + '"]')
             nav("settings").click()
-            page.wait_for_timeout(250)
-            print("DEBUG settings tap:", page.evaluate("""() => ({
-              state: window.history.state,
-              length: window.history.length,
-              settingsHidden: document.querySelector('#settings').hidden,
-              activeNav: document.querySelector('.bottom-nav .nav-item.active')?.dataset.go,
-              coreTab: window.SvitloCore?.getActiveTab?.()
-            })"""))
             page.wait_for_function("() => window.history.state?.svitloTab === 'settings'")
+            assert page.evaluate("window.__historyTrace.length") == 1, "Settings tap must add exactly one history entry"
             page.wait_for_timeout(550)
             nav("updates").click()
             page.wait_for_function("() => window.history.state?.svitloTab === 'updates'")
+            assert page.evaluate("window.__historyTrace.length") == 2, "Updates tap must add exactly one history entry"
             page.wait_for_timeout(550)
             page.evaluate("window.history.back()")
-            page.wait_for_timeout(250)
-            print("DEBUG after tab Back:", page.evaluate("""() => ({
-              state: window.history.state,
-              length: window.history.length,
-              settingsHidden: document.querySelector('#settings').hidden,
-              updatesHidden: document.querySelector('#updates').hidden,
-              activeNav: document.querySelector('.bottom-nav .nav-item.active')?.dataset.go,
-              trace: window.__historyTrace
-            })"""))
             page.wait_for_function("() => window.history.state?.svitloTab === 'settings'", timeout=5500)
             page.wait_for_function(
                 "() => !document.querySelector('#settings').hidden && document.querySelector('#updates').hidden",
