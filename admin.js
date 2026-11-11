@@ -247,7 +247,7 @@ async function refreshPushStatus(){
  }
  catch(e){$('pushCount').textContent='—';pushResult('Не вдалося перевірити підписки: '+e.message,false);return null}
 }
-$('refreshPush').onclick=async()=>{if(!remote)return;const r=await refreshPushStatus();if(pollId){pushResult(deliverySummary(result)+' Голосування створено: '+pollId,true);await loadPollAdmin()}if(r)pushResult('Зареєстровано '+r.subscribers+' пристроїв.',true)};
+$('refreshPush').onclick=async()=>{if(!remote)return;const r=await refreshPushStatus();if(r)pushResult('Зареєстровано '+r.subscribers+' пристроїв.',true);await loadPollAdmin()};
 async function currentDeviceEndpoint(){
  if(!('serviceWorker' in navigator))return null;
  const registration=await navigator.serviceWorker.getRegistration('./');
@@ -302,6 +302,7 @@ async function loadPollAdmin(){
 $('pollReload')?.addEventListener('click',loadPollAdmin);
 document.addEventListener('svitlo:admin-ready',loadPollAdmin);
 
+$('sendPush').onclick=async()=>{
  if(!remote||pushBusy)return;
  const title=$('pushTitle').value.trim(),body=$('pushBody').value.trim(),queue=$('pushQueue').value;
  if(!title||!body)return;
