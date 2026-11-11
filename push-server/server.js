@@ -487,7 +487,7 @@ const server=http.createServer(async(req,res)=>{
     const tickets=feedback.list().items;
     result.feedback={total:tickets.length,new:tickets.filter(t=>t.status==='new').length,inProgress:tickets.filter(t=>t.status==='in_progress').length};
     return result;
-  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule((typeof liveSchedule==='function'?liveSchedule():officialSchedules.schedule())||lastLoadedSchedule),errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry,addressCorrections,manualOverrides,adminPush);return}
+  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule((typeof liveSchedule==='function'?liveSchedule():officialSchedules.schedule())||lastLoadedSchedule),errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry,addressCorrections,manualOverrides,adminPush,polls);return}
  if(req.url?.startsWith('/api/media/')&&req.method==='GET'){
    const id=req.url.slice('/api/media/'.length).split('?')[0],file=mediaStore.read(id);
    if(!file){response(res,404,{error:'Фото не знайдене'});return}
