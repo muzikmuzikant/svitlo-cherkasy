@@ -168,17 +168,19 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
     const created=polls.create(await readJson(req,6500),session.username);
     extras?.record('poll.create',created.id);send(res,201,created);return true;
    }
-   const pollAction=/^\\/api\\/admin\\/polls\\/(poll_[a-f0-9]{24})\\/(close)$/.exec(pathName);
-   if(pollAction&&method==='POST'){
+
+   const pollPath='/api/admin/polls/';
+   const pollTail=pathName.startsWith(pollPath)?pathName.slice(pollPath.length).split('/'):[];
+   const validPollId=value=>/^poll_[a-f0-9]{24}$/.test(value||'');
+   if(pollTail.length===2&&validPollId(pollTail[0])&&pollTail[1]==='close'&&method==='POST'){
     if(!['owner','editor'].includes(role)){send(res,403,{error:'Завершувати голосування може власник або редактор'});return true}
     if(!polls){send(res,503,{error:'Голосування недоступні'});return true}
-    const closed=polls.close(pollAction[1]);extras?.record('poll.close',pollAction[1]);send(res,200,closed);return true;
+    const closed=polls.close(pollTail[0]);extras?.record('poll.close',pollTail[0]);send(res,200,closed);return true;
    }
-   const pollDelete=/^\\/api\\/admin\\/polls\\/(poll_[a-f0-9]{24})$/.exec(pathName);
-   if(pollDelete&&method==='DELETE'){
+   if(pollTail.length===1&&validPollId(pollTail[0])&&method==='DELETE'){
     if(role!=='owner'||session.managed){send(res,403,{error:'Видаляти голосування може лише власник'});return true}
     if(!polls){send(res,503,{error:'Голосування недоступні'});return true}
-    const removed=polls.remove(pollDelete[1]);extras?.record('poll.delete',pollDelete[1]);send(res,200,removed);return true;
+    const removed=polls.remove(pollTail[0]);extras?.record('poll.delete',pollTail[0]);send(res,200,removed);return true;
    }
 
    if(pathName==='/api/admin/push-subscription'&&method==='GET'){
