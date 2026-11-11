@@ -109,7 +109,7 @@ export function validateAppConfig(input){
   return {id,title,body,content,source:safeLink(a.source??'', ''),kind,priority,queue,delivery,settlement,images:images.map(image).filter(Boolean),
    pinned:a.pinned===true,icon:str(a.icon,18),active:a.active===true,
    publishedAt:date(a.publishedAt)||new Date().toISOString(),updatedAt:date(a.updatedAt),
-   scheduledAt,expiresAt,pushSentAt:date(a.pushSentAt)};
+   scheduledAt,expiresAt,pushSentAt:date(a.pushSentAt),...(typeof a.pollId==='string'&&/^poll_[a-f0-9]{24}$/.test(a.pollId)?{pollId:a.pollId}:{})};
  });
  return {schemaVersion:1,updatedAt:new Date().toISOString(),maintenance,site,announcements};
 }
