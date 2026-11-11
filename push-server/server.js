@@ -25,6 +25,7 @@ import {createMediaStore} from './media-store.js';
 import {createSchedulePublication} from './schedule-publication.js';
 import {createEmergencyPublication} from './emergency-publication.js';
 import {createManualOverridesStore} from './manual-overrides-store.js';
+import {createPollStore} from './poll-store.js';
 import {createScheduleReview} from './schedule-review.js';
 import {createScheduleMirror} from './schedule-mirror.js';
 import {createPushReceipts} from './push-receipts.js';
@@ -67,6 +68,7 @@ const errorCounts=createDiagnosticsStore({directory:path.dirname(DATA_FILE)});
 const dailyReports=createDailyReports({directory:path.dirname(DATA_FILE)});
 const siteControls=createAppConfig({directory:path.dirname(DATA_FILE),record:extras.record});
 const mediaStore=createMediaStore(path.dirname(DATA_FILE));
+const polls=createPollStore({directory:path.dirname(DATA_FILE),record:extras.record});
 const noticeMetrics=createNoticeMetrics({directory:path.dirname(DATA_FILE)});
 const scheduleReview=createScheduleReview({directory:path.dirname(DATA_FILE)});
 const manualOverrides=createManualOverridesStore({directory:path.dirname(DATA_FILE),onChanged:()=>{
