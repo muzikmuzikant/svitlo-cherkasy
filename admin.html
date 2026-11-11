@@ -378,7 +378,9 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
        <button type="button" data-ops-format="divider" aria-label="Розділювач">─</button>
       <button type="button" data-ops-format="link" aria-label="Посилання"><span>↗</span></button>
     </div>
-    <textarea id="opsNoticeContent" rows="9" maxlength="20000" placeholder="Докладно опишіть, що сталося, і що робити користувачеві..."><section class="ops-poll-builder" aria-labelledby="opsPollHeading">
+    <textarea id="opsNoticeContent" rows="9" maxlength="20000" placeholder="Докладно опишіть, що сталося, і що робити користувачеві..."></textarea>
+   </div>
+<section class="ops-poll-builder" aria-labelledby="opsPollHeading">
     <div class="ops-poll-heading"><div><span class="ops-poll-eyebrow">ІНТЕРАКТИВ У ДОПИСІ</span><h3 id="opsPollHeading">📊 Голосування у «Вхідних»</h3><p>Голосування буде показане всередині цього допису. Саме по собі воно не надсилає Push.</p></div><span class="ops-poll-tag">Опитування</span></div>
     <label class="ops-poll-toggle"><input id="opsPollEnabled" type="checkbox"> <span><strong>Додати голосування до цього допису</strong><small>Користувачі зможуть проголосувати, відкривши допис у «Вхідних».</small></span></label>
     <div id="opsPollComposer" class="ops-poll-composer" hidden>
@@ -405,8 +407,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
    .ops-poll-composer{padding-top:15px}.ops-poll-composer[hidden],.ops-poll-attached[hidden]{display:none!important}.ops-poll-options-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 0 9px}.ops-poll-options-head strong{font-size:13px}.ops-poll-options-head button{padding:9px 12px}.ops-poll-options{display:grid;gap:8px}.ops-poll-option-row{display:grid;grid-template-columns:62px minmax(0,1fr) 40px;gap:7px}.ops-poll-option-row input{width:100%}.ops-poll-option-row .ops-poll-emoji{text-align:center;padding-inline:5px}.ops-poll-option-row button{padding:8px;font-size:18px}
    .ops-poll-settings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:15px}.ops-poll-settings>label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700}.ops-poll-settings .field{grid-column:1/-1}.ops-poll-settings .field input{width:100%}.ops-poll-note,.ops-poll-state{font-size:11px;color:#657993;margin:12px 0 0}.ops-poll-attached{margin-top:14px;padding:14px;border:1px solid #dce7f5;border-radius:15px;background:white}.ops-poll-result-card{display:grid;gap:8px}.ops-poll-result-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.ops-poll-result-head strong{font-size:13px}.ops-poll-result-head small{font-size:11px;color:#71839c}.ops-poll-result-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;font-size:12px}.ops-poll-result-bar{height:7px;border-radius:9px;background:#edf2f9;overflow:hidden;grid-column:1/-1}.ops-poll-result-bar i{display:block;height:100%;background:#347dff}.ops-poll-close{margin-top:12px;padding:10px 14px}.ops-poll-participants{margin-top:10px;font-size:11px;color:#667b95}
    @media(max-width:600px){.ops-poll-builder{padding:14px}.ops-poll-settings{grid-template-columns:1fr}.ops-poll-settings .field{grid-column:auto}.ops-poll-heading{gap:7px}.ops-poll-tag{display:none}}
-   </style></textarea>
-   </div>
+   </style>
    <div class="two">
     <div class="field"><label for="opsNoticeKind">
 Категорія</label><select id="opsNoticeKind"><option value="info">💬 Інформація</option><option value="important">📣 Важливе</option><option value="schedule">🗓️ Графіки</option><option value="emergency">⚠️ Екстрене</option><option value="update">✨ Оновлення</option></select></div>
