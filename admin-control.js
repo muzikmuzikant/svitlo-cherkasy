@@ -4,7 +4,6 @@
  if(!section||!document.getElementById('opsNoticeContent'))return;
  const $=id=>document.getElementById(id);
  let state=null,serverState=null,selectedId='',busy=false,photos=[],autoSaveTimer=null,metricsReport=null;
- let pollDrafts=new Map();
  const kinds={info:'💬',important:'📣',update:'✨',schedule:'🗓️',emergency:'⚠️'};
  const options=(field,value)=>{if($(field))$(field).value=value==null?'':String(value)};
  const check=(field,value)=>{if($(field))$(field).checked=value===true};
@@ -27,64 +26,6 @@
  }
  const id=()=>('n_'+(crypto.randomUUID?.()||Math.random().toString(36).slice(2)).replaceAll('-',''));
  const target=()=>state?.announcements?.find(n=>n.id===selectedId);
-
- function pollOptionRows(){return [...$('opsPollOptions').querySelectorAll('.ops-poll-option-row')]}
- function setPollOptionRows(items){
-  const root=$('opsPollOptions');if(!root)return;root.replaceChildren();
-  for(const item of items){
-   const row=document.createElement('div');row.className='ops-poll-option-row';
-   const emoji=document.createElement('input');emoji.className='ops-poll-emoji';emoji.maxLength=8;emoji.placeholder='✨';emoji.setAttribute('aria-label','Емодзі варіанта');emoji.value=item.emoji||'';
-   const label=document.createElement('input');label.className='ops-poll-label';label.maxLength=90;label.placeholder='Текст варіанта';label.setAttribute('aria-label','Текст варіанта');label.value=item.label||'';
-   const remove=document.createElement('button');remove.type='button';remove.className='danger ops-poll-remove';remove.setAttribute('aria-label','Видалити варіант');remove.textContent='×';
-   row.append(emoji,label,remove);root.append(row);
-  }
- }
- function capturePollDraft(n){
-  if(!n||n.pollId)return;
-  if(!$('opsPollEnabled')?.checked){pollDrafts.delete(n.id);return}
-  const options=pollOptionRows().map(row=>({emoji:row.querySelector('.ops-poll-emoji').value.trim(),label:row.querySelector('.ops-poll-label').value.trim()}));
-  const raw=$('opsPollEndsAt').value;
-  const endsAt=raw?fromKyivLocal(raw):null;
-  pollDrafts.set(n.id,{question:read('opsPollQuestion'),description:read('opsPollDescription'),options,
-   multiple:$('opsPollMultiple').checked,anonymous:$('opsPollAnonymous').checked,endsAt});
- }
- function drawAttachedPoll(poll){
-  const host=$('opsPollAdminResults'),stateBox=$('opsPollAttachedStatus');if(!host||!stateBox)return;
-  host.replaceChildren();stateBox.textContent=(poll.status==='active'?'Голосування активне':'Голосування завершене')+
-   ' · '+poll.totalVotes+' учасників'+(poll.endsAt?' · до '+new Date(poll.endsAt).toLocaleString('uk-UA'):'');
-  const card=document.createElement('div');card.className='ops-poll-result-card';
-  const title=document.createElement('strong');title.textContent=poll.question;card.append(title);
-  for(const option of poll.options||[]){
-   const row=document.createElement('div');row.className='ops-poll-result-row';
-   const label=document.createElement('span');label.textContent=(option.emoji?option.emoji+' ':'')+option.label;
-   const count=document.createElement('strong');count.textContent=option.count+' · '+(poll.totalVotes?Math.round(option.count/poll.totalVotes*100):0)+'%';
-   const bar=document.createElement('div');bar.className='ops-poll-result-bar';const fill=document.createElement('i');
-   fill.style.width=(poll.totalVotes?option.count/poll.totalVotes*100:0)+'%';bar.append(fill);row.append(label,count,bar);card.append(row);
-  }
-  host.append(card);
-  if(!poll.anonymous&&Array.isArray(poll.participants)){
-   const details=document.createElement('details');details.className='ops-poll-participants';
-   const summary=document.createElement('summary');summary.textContent='Переглянути відповіді ('+poll.participants.length+')';details.append(summary);
-   poll.participants.forEach((person,index)=>{const line=document.createElement('p');line.textContent='Учасник '+(index+1)+': '+person.options.map(id=>poll.options.find(x=>x.id===id)?.label||id).join(', ');details.append(line)});
-   host.append(details);
-  }
-  if(poll.status==='active'){
-   const close=document.createElement('button');close.type='button';close.className='secondary ops-poll-close';close.textContent='Завершити голосування';
-   close.onclick=async()=>{if(!confirm('Завершити голосування для цього допису? Нові відповіді більше не прийматимуться.'))return;
-    close.disabled=true;try{await api('polls/'+encodeURIComponent(poll.id)+'/close',{method:'POST',body:'{}'});await loadAttachedPoll(poll.id)}catch(e){close.disabled=false;stateBox.textContent='Не вдалося завершити: '+e.message}};
-   host.append(close);
-  }
- }
- async function loadAttachedPoll(pollId){
-  const box=$('opsPollAttachedStatus'),host=$('opsPollAdminResults');if(!pollId||!box||!host||!remote)return;
-  box.textContent='Завантажуємо результати голосування…';host.replaceChildren();
-  try{const data=await api('polls');const poll=(data.items||[]).find(x=>x.id===pollId);
-   if(!poll)throw Error('Голосування не знайдено на сервері');
-   if(target()?.pollId!==pollId)return;
-   drawAttachedPoll(poll);
-  }catch(e){box.textContent='Не вдалося завантажити голосування: '+e.message}
- }
-
  function status(message,error=false){$('opsMessageStatus').textContent=message;$('opsMessageStatus').className='push-state'+(error?' error':' good')}
  function blank(){
   return {id:id(),title:'',body:'',content:'',source:'',kind:'info',priority:'normal',queue:'all',delivery:'inbox',settlement:'',
@@ -100,7 +41,6 @@
    delivery:read('opsNoticeDelivery'),settlement:read('opsNoticeSettlement'),icon:read('opsNoticeIcon'),pinned:$('opsNoticePinned').checked,
    active:$('opsNoticeActive').checked,scheduledAt:fromLocal($('opsNoticeSchedule').value),
    expiresAt:fromLocal($('opsNoticeExpires').value),images:[...photos]});
-  capturePollDraft(n);
   const after=JSON.stringify({title:n.title,body:n.body,content:n.content,kind:n.kind,priority:n.priority,
    queue:n.queue,delivery:n.delivery,settlement:n.settlement,icon:n.icon,pinned:n.pinned,active:n.active,scheduledAt:n.scheduledAt,
    expiresAt:n.expiresAt,images:n.images});
@@ -153,15 +93,6 @@
   options('opsNoticeSource',n?.source||'');options('opsNoticeSchedule',local(n?.scheduledAt));options('opsNoticeExpires',local(n?.expiresAt));
   check('opsNoticeActive',n?.active);check('opsNoticePinned',n?.pinned);
   options('opsNoticePublishedAt',kyivLocal(n?.publishedAt));$('opsNoticePublishedAt').disabled=!n?.active;
-
-  const attached=!!n?.pollId,draft=pollDrafts.get(n?.id);
-  check('opsPollEnabled',attached||!!draft);$('opsPollEnabled').disabled=attached;
-  $('opsPollComposer').hidden=attached||!draft;$('opsPollAttached').hidden=!attached;
-  options('opsPollQuestion',draft?.question||'');options('opsPollDescription',draft?.description||'');
-  check('opsPollMultiple',draft?.multiple===true);check('opsPollAnonymous',draft?.anonymous!==false);
-  options('opsPollEndsAt',draft?.endsAt?kyivLocal(draft.endsAt):'');
-  setPollOptionRows(draft?.options||[{emoji:'👍',label:''},{emoji:'👎',label:''}]);
-  if(attached)loadAttachedPoll(n.pollId);
   photos=[...(n?.images||[])];drawPhotos();previewMessage();renderNoticeMetrics();
   document.dispatchEvent(new CustomEvent('svitlo:cms-loaded'));
  }
@@ -433,30 +364,7 @@
  }
  const queues=$('opsNoticeQueue');for(let i=1;i<=6;i++)for(const suffix of ['1','2'])queues.add(new Option('Підчерга '+i+'.'+suffix,i+'.'+suffix));
  $('opsNewNotice').onclick=()=>{if(!state)return;capture();const n=blank();state.announcements.unshift(n);selectedId=n.id;fill();drawList();status('Чернетка створена. Збережіть її перед виходом.')};
- $('opsDuplicateNotice').onclick=()=>{const n=target();if(!n)return;capture();const copy={...n,id:id(),title:n.title+' (копія)',active:false,pushSentAt:null,publishedAt:now(),images:[...(n.images||[])]};delete copy.pollId;pollDrafts.delete(copy.id);state.announcements.unshift(copy);selectedId=copy.id;fill();drawList()};
- 
- $('opsPollEnabled').addEventListener('change',()=>{
-  const n=target();if(!n)return;
-  if(n.pollId){$('opsPollEnabled').checked=true;return}
-  $('opsPollComposer').hidden=!$('opsPollEnabled').checked;
-  if(!$('opsPollEnabled').checked)pollDrafts.delete(n.id);else capturePollDraft(n);
- });
- $('opsPollAddOption').addEventListener('click',()=>{
-  const rows=pollOptionRows().map(row=>({emoji:row.querySelector('.ops-poll-emoji').value,label:row.querySelector('.ops-poll-label').value}));if(rows.length>=10){status('Максимум 10 варіантів відповіді.',true);return}
-  rows.push({emoji:'',label:''});setPollOptionRows(rows);capturePollDraft(target());
- });
- $('opsPollOptions').addEventListener('click',event=>{
-  if(!event.target.closest('.ops-poll-remove'))return;
-  const rows=pollOptionRows();if(rows.length<=2){status('Потрібно щонайменше два варіанти.',true);return}
-  const remaining=rows.filter(row=>row!==event.target.closest('.ops-poll-option-row')).map(row=>({emoji:row.querySelector('.ops-poll-emoji').value,label:row.querySelector('.ops-poll-label').value}));
-  setPollOptionRows(remaining);capturePollDraft(target());
- });
- for(const id of ['opsPollQuestion','opsPollDescription','opsPollMultiple','opsPollAnonymous','opsPollEndsAt']){
-  $(id).addEventListener('input',()=>{const n=target();if(n&&!n.pollId&&$('opsPollEnabled').checked)capturePollDraft(n)});
-  $(id).addEventListener('change',()=>{const n=target();if(n&&!n.pollId&&$('opsPollEnabled').checked)capturePollDraft(n)});
- }
- $('opsPollOptions').addEventListener('input',()=>{const n=target();if(n&&!n.pollId&&$('opsPollEnabled').checked)capturePollDraft(n)});
-
+ $('opsDuplicateNotice').onclick=()=>{const n=target();if(!n)return;capture();const copy={...n,id:id(),title:n.title+' (копія)',active:false,pushSentAt:null,publishedAt:now(),images:[...(n.images||[])]};state.announcements.unshift(copy);selectedId=copy.id;fill();drawList()};
  $('opsDeleteNotice').onclick=async()=>{
   if(!target()||!confirm('Видалити повідомлення з сервера та «Вхідних» усіх користувачів?'))return;
   clearTimeout(autoSaveTimer);
@@ -557,20 +465,6 @@
   // newer feature/appearance settings written in another admin workspace.
   const latest=await api('app-config');
   const noticeChanges=scope==='content'?state.announcements:[...latest.announcements];
-  if(scope==='content'){
-   for(const notice of noticeChanges){
-    const draft=pollDrafts.get(notice.id);
-    if(notice.pollId&&notice.delivery==='push')throw Error('Голосування можна додати лише до допису у «Вхідних». Змініть спосіб доставки на «Тільки у Вхідні» або «Вхідні та Push».');
-    if(!notice.pollId&&draft){
-     if(notice.delivery==='push')throw Error('Голосування доступне лише для дописів, які показуються у «Вхідних».');
-     if(!draft.question)throw Error('Додайте запитання до голосування.');
-     if(draft.options.length<2||draft.options.length>10||draft.options.some(x=>!x.label))throw Error('Заповніть від 2 до 10 варіантів відповіді.');
-     const created=await api('polls',{method:'POST',body:JSON.stringify(draft)});
-     notice.pollId=created.id;pollDrafts.delete(notice.id);
-    }
-   }
-  }
-
   const toPush=noticeChanges.filter(x=>x.active&&['push','both'].includes(x.delivery)&&!x.pushSentAt
    &&(!x.scheduledAt||Date.parse(x.scheduledAt)<=Date.now()));
   if(toPush.some(n=>{const icon=n.icon||kinds[n.kind]||'💬';const title=n.title||'';return (/^\p{Extended_Pictographic}/u.test(title)||title.startsWith(icon)?title:icon+' '+title).length>85}))

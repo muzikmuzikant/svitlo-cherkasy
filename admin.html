@@ -380,37 +380,8 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
     </div>
     <textarea id="opsNoticeContent" rows="9" maxlength="20000" placeholder="Докладно опишіть, що сталося, і що робити користувачеві..."></textarea>
    </div>
-<section class="ops-poll-builder" aria-labelledby="opsPollHeading">
-    <div class="ops-poll-heading"><div><span class="ops-poll-eyebrow">ІНТЕРАКТИВ У ДОПИСІ</span><h3 id="opsPollHeading">📊 Голосування у «Вхідних»</h3><p>Голосування буде показане всередині цього допису. Саме по собі воно не надсилає Push.</p></div><span class="ops-poll-tag">Опитування</span></div>
-    <label class="ops-poll-toggle"><input id="opsPollEnabled" type="checkbox"> <span><strong>Додати голосування до цього допису</strong><small>Користувачі зможуть проголосувати, відкривши допис у «Вхідних».</small></span></label>
-    <div id="opsPollComposer" class="ops-poll-composer" hidden>
-     <div class="field"><label for="opsPollQuestion">Запитання</label><input id="opsPollQuestion" maxlength="180" placeholder="Наприклад, чи зручний вам новий формат графіків?"></div>
-     <div class="field"><label for="opsPollDescription">Пояснення до голосування (необов’язково)</label><textarea id="opsPollDescription" rows="2" maxlength="500" placeholder="Додаткові деталі для користувачів…"></textarea></div>
-     <div class="ops-poll-options-head"><strong>Варіанти відповіді</strong><button type="button" id="opsPollAddOption" class="secondary">＋ Додати варіант</button></div>
-     <div id="opsPollOptions" class="ops-poll-options">
-      <div class="ops-poll-option-row"><input class="ops-poll-emoji" maxlength="8" placeholder="👍" aria-label="Емодзі варіанта"><input class="ops-poll-label" maxlength="90" placeholder="Варіант 1" aria-label="Текст варіанта"><button type="button" class="danger ops-poll-remove" aria-label="Видалити варіант">×</button></div>
-      <div class="ops-poll-option-row"><input class="ops-poll-emoji" maxlength="8" placeholder="👎" aria-label="Емодзі варіанта"><input class="ops-poll-label" maxlength="90" placeholder="Варіант 2" aria-label="Текст варіанта"><button type="button" class="danger ops-poll-remove" aria-label="Видалити варіант">×</button></div>
-     </div>
-     <div class="ops-poll-settings">
-      <label><input id="opsPollMultiple" type="checkbox"> Дозволити декілька відповідей</label>
-      <label><input id="opsPollAnonymous" type="checkbox" checked> Анонімне голосування</label>
-      <div class="field"><label for="opsPollEndsAt">Завершити голосування (Київ)</label><input id="opsPollEndsAt" type="datetime-local"><small class="hint">Залиште порожнім, щоб голосування тривало до ручного завершення.</small></div>
-     </div>
-     <p class="ops-poll-note">Після публікації запитання та варіанти фіксуються. Результати й завершення голосування можна буде контролювати тут.</p>
-    </div>
-    <div id="opsPollAttached" class="ops-poll-attached" hidden><div id="opsPollAttachedStatus" class="ops-poll-state">Завантажуємо результати…</div><div id="opsPollAdminResults"></div></div>
-   </section>
-   <style>
-   .ops-poll-builder{margin:18px 0;padding:18px;border:1px solid #cbdcf4;border-radius:20px;background:linear-gradient(145deg,#f4f8ff,#fbfdff);box-shadow:0 10px 28px #315d9910}
-   .ops-poll-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.ops-poll-heading h3{margin:4px 0 5px;font-size:17px;color:#213b60}.ops-poll-heading p{margin:0;font-size:12px;max-width:520px}.ops-poll-eyebrow{font-size:10px;letter-spacing:1px;font-weight:850;color:#3675ca}.ops-poll-tag{padding:7px 11px;background:#e4efff;border-radius:20px;color:#2863ae;font-size:11px;font-weight:800;white-space:nowrap}
-   .ops-poll-toggle{display:flex;align-items:center;gap:11px;padding:13px;margin-top:14px;border:1px solid #dbe6f5;border-radius:14px;background:white;cursor:pointer}.ops-poll-toggle input,.ops-poll-settings input{width:19px;height:19px;accent-color:#347dff;flex:0 0 auto}.ops-poll-toggle span{display:grid;gap:4px}.ops-poll-toggle strong{font-size:13px}.ops-poll-toggle small{font-size:11px;color:#71839c;font-weight:500}
-   .ops-poll-composer{padding-top:15px}.ops-poll-composer[hidden],.ops-poll-attached[hidden]{display:none!important}.ops-poll-options-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 0 9px}.ops-poll-options-head strong{font-size:13px}.ops-poll-options-head button{padding:9px 12px}.ops-poll-options{display:grid;gap:8px}.ops-poll-option-row{display:grid;grid-template-columns:62px minmax(0,1fr) 40px;gap:7px}.ops-poll-option-row input{width:100%}.ops-poll-option-row .ops-poll-emoji{text-align:center;padding-inline:5px}.ops-poll-option-row button{padding:8px;font-size:18px}
-   .ops-poll-settings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:15px}.ops-poll-settings>label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700}.ops-poll-settings .field{grid-column:1/-1}.ops-poll-settings .field input{width:100%}.ops-poll-note,.ops-poll-state{font-size:11px;color:#657993;margin:12px 0 0}.ops-poll-attached{margin-top:14px;padding:14px;border:1px solid #dce7f5;border-radius:15px;background:white}.ops-poll-result-card{display:grid;gap:8px}.ops-poll-result-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.ops-poll-result-head strong{font-size:13px}.ops-poll-result-head small{font-size:11px;color:#71839c}.ops-poll-result-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;font-size:12px}.ops-poll-result-bar{height:7px;border-radius:9px;background:#edf2f9;overflow:hidden;grid-column:1/-1}.ops-poll-result-bar i{display:block;height:100%;background:#347dff}.ops-poll-close{margin-top:12px;padding:10px 14px}.ops-poll-participants{margin-top:10px;font-size:11px;color:#667b95}
-   @media(max-width:600px){.ops-poll-builder{padding:14px}.ops-poll-settings{grid-template-columns:1fr}.ops-poll-settings .field{grid-column:auto}.ops-poll-heading{gap:7px}.ops-poll-tag{display:none}}
-   </style>
    <div class="two">
-    <div class="field"><label for="opsNoticeKind">
-Категорія</label><select id="opsNoticeKind"><option value="info">💬 Інформація</option><option value="important">📣 Важливе</option><option value="schedule">🗓️ Графіки</option><option value="emergency">⚠️ Екстрене</option><option value="update">✨ Оновлення</option></select></div>
+    <div class="field"><label for="opsNoticeKind">Категорія</label><select id="opsNoticeKind"><option value="info">💬 Інформація</option><option value="important">📣 Важливе</option><option value="schedule">🗓️ Графіки</option><option value="emergency">⚠️ Екстрене</option><option value="update">✨ Оновлення</option></select></div>
     <div class="field"><label for="opsNoticePriority">Пріоритет</label><select id="opsNoticePriority"><option value="normal">Звичайний</option><option value="important">Важливий</option><option value="urgent">Терміновий</option></select></div>
    </div>
    <div class="two">
@@ -612,8 +583,6 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
 <section class="card" data-admin-panel="push" hidden aria-labelledby="pushToolsTitle">
   <div class="headline"><h2 id="pushToolsTitle">Push-повідомлення</h2><span class="pill" id="pushAvailability">Увійдіть для надсилання</span></div>
   <p>Перевірте доставку на iPhone або самостійно напишіть оголошення. Повідомлення надсилаються одразу на зареєстровані пристрої через Railway — без коміту в GitHub.</p>
-  
-
   <p class="hint">Зареєстровано пристроїв: <strong id="pushCount">—</strong>. Підписка у Safari і встановленому iPhone PWA може бути різною.</p>
   <p class="hint" id="pushAutoStatus" aria-live="polite">Автоматичні PUSH: дані про доставку з’являться після перевірки сервера.</p>
   <div class="push-options">
@@ -629,7 +598,7 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
   <p class="hint">Попередній перегляд на екрані блокування (вигляд залежить від iOS):</p>
   <div class="push-preview" aria-live="polite"><span class="push-preview-icon" aria-hidden="true">ϟ</span><div><b id="pushPreviewTitle">Заголовок сповіщення</b><p id="pushPreviewBody">Тут буде твій текст повідомлення.</p></div></div>
   <div class="push-actions" style="margin-top:14px"><button type="button" id="sendPush" disabled>Надіслати власне повідомлення</button></div>
-  <div id="pushResult" class="push-state" role="status" aria-live="polite" style="margin-top:12px">Авторизуйтеся, щоб надіслати Push.</div>  <hr class="push-hr">
+  <div id="pushResult" class="push-state" role="status" aria-live="polite" style="margin-top:12px">Авторизуйтеся, щоб надіслати Push.</div>
 </section>
 <section class="card" data-admin-panel="ads" hidden><div class="headline"><div><h2>Реклама</h2><p>Налаштування головної сторінки, контакти, кампанії, аналітика.</p></div></div><div id="betaAdsAdmin"></div></section>
 <section class="card support-admin" data-admin-panel="feedback" hidden aria-labelledby="ticketsHeading">

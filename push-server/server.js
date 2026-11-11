@@ -25,7 +25,6 @@ import {createMediaStore} from './media-store.js';
 import {createSchedulePublication} from './schedule-publication.js';
 import {createEmergencyPublication} from './emergency-publication.js';
 import {createManualOverridesStore} from './manual-overrides-store.js';
-import {createPollStore} from './poll-store.js';
 import {createScheduleReview} from './schedule-review.js';
 import {createScheduleMirror} from './schedule-mirror.js';
 import {createPushReceipts} from './push-receipts.js';
@@ -68,7 +67,6 @@ const errorCounts=createDiagnosticsStore({directory:path.dirname(DATA_FILE)});
 const dailyReports=createDailyReports({directory:path.dirname(DATA_FILE)});
 const siteControls=createAppConfig({directory:path.dirname(DATA_FILE),record:extras.record});
 const mediaStore=createMediaStore(path.dirname(DATA_FILE));
-const polls=createPollStore({directory:path.dirname(DATA_FILE),record:extras.record});
 const noticeMetrics=createNoticeMetrics({directory:path.dirname(DATA_FILE)});
 const scheduleReview=createScheduleReview({directory:path.dirname(DATA_FILE)});
 const manualOverrides=createManualOverridesStore({directory:path.dirname(DATA_FILE),onChanged:()=>{
@@ -459,20 +457,6 @@ const server=http.createServer(async(req,res)=>{
   }catch{response(res,400,{error:'Invalid aggregate event'})}
   return;
  }
- if(req.url?.startsWith('/api/polls/')){
-  const parts=new URL(req.url,'http://localhost').pathname.split('/').filter(Boolean);
-  const pollId=parts[2];
-  if(!/^poll_[a-f0-9]{24}$/.test(pollId)){response(res,404,{error:'Poll not found'});return}
-  try{
-   if(req.method==='GET'){const viewer=new URL(req.url,'http://localhost').searchParams.get('viewer')||'';response(res,200,polls.public(pollId,viewer));return}
-   if(req.method==='POST'&&parts[3]==='vote'){
-    if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
-    const input=await readPayload(req,3000);
-    response(res,200,polls.vote(pollId,input.viewer,input.options));return
-   }
-  }catch(e){response(res,e.statusCode||400,{error:e.message});return}
-  response(res,405,{error:'Method not allowed'});return;
- }
  if(req.url?.startsWith('/api/admin/')){
   await adminRouter(req,res,manualPush,feedback,extras,async()=>{
     const result={server:{lastPushCheck:lastSuccess,pushCheckError:lastError,pushSubscribers:Object.keys(subscribers).length},sources:{}};
@@ -487,7 +471,7 @@ const server=http.createServer(async(req,res)=>{
     const tickets=feedback.list().items;
     result.feedback={total:tickets.length,new:tickets.filter(t=>t.status==='new').length,inProgress:tickets.filter(t=>t.status==='in_progress').length};
     return result;
-  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule((typeof liveSchedule==='function'?liveSchedule():officialSchedules.schedule())||lastLoadedSchedule),errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry,addressCorrections,manualOverrides,adminPush,polls);return}
+  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule((typeof liveSchedule==='function'?liveSchedule():officialSchedules.schedule())||lastLoadedSchedule),errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry,addressCorrections,manualOverrides,adminPush);return}
  if(req.url?.startsWith('/api/media/')&&req.method==='GET'){
    const id=req.url.slice('/api/media/'.length).split('?')[0],file=mediaStore.read(id);
    if(!file){response(res,404,{error:'Фото не знайдене'});return}

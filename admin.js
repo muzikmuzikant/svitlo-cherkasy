@@ -286,7 +286,7 @@ $('sendPush').onclick=async()=>{
  if(!confirm('НАДІСЛАТИ повідомлення '+(queue==='all'?'усім підписаним пристроям':'підчерзі '+queue)+'? Воно може з’явитися на заблокованих телефонах.'))return;
  pushBusy=true;updatePushDraft();
  try{
-  const result=await api('push/send',{method:'POST',body:JSON.stringify({title,body,queue,confirmSend:true,...(pollId?{pollId}:{})})});
+  const result=await api('push/send',{method:'POST',body:JSON.stringify({title,body,queue,confirmSend:true})});
   pushResult(deliverySummary(result),result.ok);await refreshPushStatus();
  }catch(e){pushResult('Повідомлення не надіслано: '+e.message,false)}
  finally{pushBusy=false;updatePushDraft()}
