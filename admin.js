@@ -247,7 +247,7 @@ async function refreshPushStatus(){
  }
  catch(e){$('pushCount').textContent='—';pushResult('Не вдалося перевірити підписки: '+e.message,false);return null}
 }
-$('refreshPush').onclick=async()=>{if(!remote)return;const r=await refreshPushStatus();if(r)pushResult('Зареєстровано '+r.subscribers+' пристроїв.',true);await loadPollAdmin()};
+$('refreshPush').onclick=async()=>{if(!remote)return;const r=await refreshPushStatus();if(r)pushResult('Зареєстровано '+r.subscribers+' пристроїв.',true)};
 async function currentDeviceEndpoint(){
  if(!('serviceWorker' in navigator))return null;
  const registration=await navigator.serviceWorker.getRegistration('./');
@@ -279,29 +279,6 @@ $('testPush').onclick=async()=>{
  catch(e){pushResult('Тест не надіслано: '+e.message,false)}
  finally{pushBusy=false;$('testPush').disabled=!remote;updatePushDraft()}
 };
-// Poll editor and results manager.
-const pollEnabled=$('pollEnabled'),pollComposer=$('pollComposer'),pollOptions=$('pollOptions');
-pollEnabled?.addEventListener('change',()=>{pollComposer.hidden=!pollEnabled.checked;});
-function pollOptionRows(){return [...pollOptions.querySelectorAll('.poll-option-row')]}
-$('pollAddOption')?.addEventListener('click',()=>{if(pollOptionRows().length>=10)return;const row=document.createElement('div');row.className='poll-option-row';row.innerHTML='<input class="poll-emoji" maxlength="8" aria-label="Емодзі" placeholder="✨"><input class="poll-option-label" maxlength="90" placeholder="Новий варіант"><button type="button" class="danger poll-remove-option" aria-label="Видалити варіант">×</button>';pollOptions.append(row)});
-pollOptions?.addEventListener('click',e=>{if(e.target.closest('.poll-remove-option')&&pollOptionRows().length>2)e.target.closest('.poll-option-row').remove()});
-async function loadPollAdmin(){
- const host=$('pollAdminList');if(!host||!remote)return;
- try{const data=await api('polls');host.replaceChildren();
-  if(!data.items?.length){host.textContent='Голосувань поки немає.';return}
-  for(const p of data.items){const card=document.createElement('article');card.className='poll-admin-card';
-   const h=document.createElement('h3');h.textContent=p.question;card.append(h);
-   const meta=document.createElement('p');meta.textContent=(p.status==='active'?'Активне':'Завершене')+' · '+p.totalVotes+' учасників'+(p.endsAt?' · до '+new Date(p.endsAt).toLocaleString('uk-UA'):'');card.append(meta);
-   for(const o of p.options){const row=document.createElement('div');row.className='poll-admin-row';const label=document.createElement('span');label.textContent=(o.emoji?o.emoji+' ':'')+o.label;const value=document.createElement('b');value.textContent=o.count+' · '+(p.totalVotes?Math.round(o.count/p.totalVotes*100):0)+'%';row.append(label,value);card.append(row);const bar=document.createElement('div');bar.className='poll-bar';const fill=document.createElement('i');fill.style.width=(p.totalVotes?o.count/p.totalVotes*100:0)+'%';bar.append(fill);card.append(bar)}
-   if(p.status==='active'){const close=document.createElement('button');close.type='button';close.className='secondary';close.textContent='Завершити';close.onclick=async()=>{if(!confirm('Завершити це голосування?'))return;try{await api('polls/'+encodeURIComponent(p.id)+'/close',{method:'POST',body:'{}'});await loadPollAdmin()}catch(e){alert(e.message)}};card.append(close)}
-   if(!p.anonymous&&p.participants){const details=document.createElement('details');const summary=document.createElement('summary');summary.textContent='Переглянути голоси ('+p.participants.length+')';details.append(summary);for(const voter of p.participants){const line=document.createElement('p');line.textContent=voter.voter.slice(0,10)+'… · '+voter.options.map(id=>p.options.find(o=>o.id===id)?.label||id).join(', ');details.append(line)}card.append(details)}
-   host.append(card);
-  }
- }catch(e){host.textContent='Не вдалося завантажити голосування: '+e.message}
-}
-$('pollReload')?.addEventListener('click',loadPollAdmin);
-document.addEventListener('svitlo:admin-ready',loadPollAdmin);
-
 $('sendPush').onclick=async()=>{
  if(!remote||pushBusy)return;
  const title=$('pushTitle').value.trim(),body=$('pushBody').value.trim(),queue=$('pushQueue').value;
@@ -309,17 +286,8 @@ $('sendPush').onclick=async()=>{
  if(!confirm('НАДІСЛАТИ повідомлення '+(queue==='all'?'усім підписаним пристроям':'підчерзі '+queue)+'? Воно може з’явитися на заблокованих телефонах.'))return;
  pushBusy=true;updatePushDraft();
  try{
-  let poll=null;
-  if(pollEnabled?.checked){
-   const options=pollOptionRows().map(row=>({emoji:row.querySelector('.poll-emoji').value.trim(),label:row.querySelector('.poll-option-label').value.trim()}));
-   if(options.some(x=>!x.label)||options.length<2)throw Error('Заповніть щонайменше два варіанти голосування');
-   const raw=$('pollEndsAt').value;poll={question:$('pollQuestion').value,description:$('pollDescription').value,options,multiple:$('pollMultiple').checked,anonymous:$('pollAnonymous').checked,endsAt:raw?new Date(raw).toISOString():null};
-   if(!poll.question.trim())throw Error('Додайте запитання голосування');
-  }
-  let pollId=null;
-  if(poll){const created=await api('polls',{method:'POST',body:JSON.stringify(poll)});pollId=created.id}
   const result=await api('push/send',{method:'POST',body:JSON.stringify({title,body,queue,confirmSend:true,...(pollId?{pollId}:{})})});
-  pushResult(deliverySummary(result),result.ok);await refreshPushStatus();if(pollId)await loadPollAdmin();
+  pushResult(deliverySummary(result),result.ok);await refreshPushStatus();
  }catch(e){pushResult('Повідомлення не надіслано: '+e.message,false)}
  finally{pushBusy=false;updatePushDraft()}
 };
