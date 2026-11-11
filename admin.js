@@ -318,7 +318,7 @@ document.addEventListener('svitlo:admin-ready',loadPollAdmin);
   let pollId=null;
   if(poll){const created=await api('polls',{method:'POST',body:JSON.stringify(poll)});pollId=created.id}
   const result=await api('push/send',{method:'POST',body:JSON.stringify({title,body,queue,confirmSend:true,...(pollId?{pollId}:{})})});
-  pushResult(deliverySummary(result),result.ok);await refreshPushStatus();
+  pushResult(deliverySummary(result),result.ok);await refreshPushStatus();if(pollId)await loadPollAdmin();
  }catch(e){pushResult('Повідомлення не надіслано: '+e.message,false)}
  finally{pushBusy=false;updatePushDraft()}
 };
