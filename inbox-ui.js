@@ -182,7 +182,7 @@
    const apiPoll=async()=>{const cfg=await fetch('./push-config.json',{cache:'no-store'}).then(r=>r.json());const base=String(cfg.apiBase||'').replace(/\/$/,'');if(!/^https:\/\//.test(base))throw Error('Сервер голосування недоступний');return base};
    const renderPoll=async()=>{
     try{
-     const base=await apiPoll(),p=await fetch(base+'/api/polls/'+item.pollId,{cache:'no-store'}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error||'Помилка');return d});
+     const base=await apiPoll(),p=await fetch(base+'/api/polls/'+item.pollId+(viewer?'?viewer='+encodeURIComponent(viewer):''),{cache:'no-store'}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error||'Помилка');return d});
      pollRoot.querySelectorAll('.inbox-poll-option,.inbox-poll-submit').forEach(n=>n.remove());
      state.textContent=p.description||'Оберіть '+(p.multiple?'один або декілька варіантів':'один варіант')+'.';
      for(const o of p.options){const label=el('label','','inbox-poll-option');const input=document.createElement('input');input.type=p.multiple?'checkbox':'radio';input.name='poll-'+p.id;input.value=o.id;input.checked=p.myVotes.includes(o.id);input.disabled=p.status!=='active';const title=el('span',(o.emoji?o.emoji+' ':'')+o.label);const result=el('small',o.count+' голосів · '+(p.totalVotes?Math.round(o.count/p.totalVotes*100):0)+'%');label.append(input,title,result);pollRoot.append(label)}
