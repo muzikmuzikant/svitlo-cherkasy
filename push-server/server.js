@@ -464,7 +464,7 @@ const server=http.createServer(async(req,res)=>{
   const pollId=parts[2];
   if(!/^poll_[a-f0-9]{24}$/.test(pollId)){response(res,404,{error:'Poll not found'});return}
   try{
-   if(req.method==='GET'){response(res,200,polls.public(pollId));return}
+   if(req.method==='GET'){const viewer=new URL(req.url,'http://localhost').searchParams.get('viewer')||'';response(res,200,polls.public(pollId,viewer));return}
    if(req.method==='POST'&&parts[3]==='vote'){
     if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
     const input=await readPayload(req,3000);
