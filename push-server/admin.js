@@ -131,6 +131,7 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
   pathName.startsWith('/api/admin/help')?'help':
   pathName.startsWith('/api/admin/ads')?'ads':
   pathName.startsWith('/api/admin/push')?'push':
+  pathName.startsWith('/api/admin/polls')?'notices':
   pathName.startsWith('/api/admin/notices')||pathName.startsWith('/api/admin/app-config')?'notices':
   pathName.startsWith('/api/admin/media')?'media':
   /\/(?:analytics|monitor|audit|reports|diagnostics)$/.test(pathName)?'view':
@@ -156,6 +157,30 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
     ||(pathName.startsWith('/api/admin/feedback/')&&method==='DELETE'));
  if(!allowed){send(res,403,{error:'Недостатньо прав для цієї дії'});return true}
  try{
+
+   if(pathName==='/api/admin/polls'&&method==='GET'){
+    if(!polls){send(res,503,{error:'Голосування недоступні'});return true}
+    send(res,200,{items:polls.list()});return true;
+   }
+   if(pathName==='/api/admin/polls'&&method==='POST'){
+    if(!['owner','editor'].includes(role)){send(res,403,{error:'Створювати голосування може власник або редактор'});return true}
+    if(!polls){send(res,503,{error:'Голосування недоступні'});return true}
+    const created=polls.create(await readJson(req,6500),session.username);
+    extras?.record('poll.create',created.id);send(res,201,created);return true;
+   }
+   const pollAction=/^\\/api\\/admin\\/polls\\/(poll_[a-f0-9]{24})\\/(close)$/.exec(pathName);
+   if(pollAction&&method==='POST'){
+    if(!['owner','editor'].includes(role)){send(res,403,{error:'Завершувати голосування може власник або редактор'});return true}
+    if(!polls){send(res,503,{error:'Голосування недоступні'});return true}
+    const closed=polls.close(pollAction[1]);extras?.record('poll.close',pollAction[1]);send(res,200,closed);return true;
+   }
+   const pollDelete=/^\\/api\\/admin\\/polls\\/(poll_[a-f0-9]{24})$/.exec(pathName);
+   if(pollDelete&&method==='DELETE'){
+    if(role!=='owner'||session.managed){send(res,403,{error:'Видаляти голосування може лише власник'});return true}
+    if(!polls){send(res,503,{error:'Голосування недоступні'});return true}
+    const removed=polls.remove(pollDelete[1]);extras?.record('poll.delete',pollDelete[1]);send(res,200,removed);return true;
+   }
+
    if(pathName==='/api/admin/push-subscription'&&method==='GET'){
     send(res,200,{publicKey:adminPush?.publicKey||'',subscribedCount:adminPush?.count?.()||0});return true;
    }
