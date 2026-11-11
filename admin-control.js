@@ -442,8 +442,8 @@
   if(!$('opsPollEnabled').checked)pollDrafts.delete(n.id);else capturePollDraft(n);
  });
  $('opsPollAddOption').addEventListener('click',()=>{
-  const rows=pollOptionRows();if(rows.length>=10){status('Максимум 10 варіантів відповіді.',true);return}
-  rows.push({emoji:'',label:''});setPollOptionRows(rows.map(r=>({emoji:r.querySelector('.ops-poll-emoji').value,label:r.querySelector('.ops-poll-label').value})));capturePollDraft(target());
+  const rows=pollOptionRows().map(row=>({emoji:row.querySelector('.ops-poll-emoji').value,label:row.querySelector('.ops-poll-label').value}));if(rows.length>=10){status('Максимум 10 варіантів відповіді.',true);return}
+  rows.push({emoji:'',label:''});setPollOptionRows(rows);capturePollDraft(target());
  });
  $('opsPollOptions').addEventListener('click',event=>{
   if(!event.target.closest('.ops-poll-remove'))return;
