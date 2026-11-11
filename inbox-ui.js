@@ -173,6 +173,27 @@
    if(gallery.childElementCount)content.append(gallery);
   }
   if(item.content&&item.content!==item.body){const body=el('div','','inbox-rich');rich(body,item.content);content.append(body)}
+  if(item.pollId&&/^poll_[a-f0-9]{24}$/.test(item.pollId)){
+   const pollRoot=el('section','','inbox-poll');pollRoot.setAttribute('aria-label','Голосування');
+   const heading=el('h3','Голосування');pollRoot.append(heading);
+   const state=el('p','Завантаження голосування…','inbox-poll-state');pollRoot.append(state);
+   const viewerKey='svitlo-poll-voter-'+item.pollId;let viewer='';
+   try{viewer=localStorage.getItem(viewerKey)||'';if(!viewer){viewer=crypto.randomUUID();localStorage.setItem(viewerKey,viewer)}}catch{viewer=''}
+   const apiPoll=async()=>{const cfg=await fetch('./push-config.json',{cache:'no-store'}).then(r=>r.json());const base=String(cfg.apiBase||'').replace(/\/$/,'');if(!/^https:\/\//.test(base))throw Error('Сервер голосування недоступний');return base};
+   const renderPoll=async()=>{
+    try{
+     const base=await apiPoll(),p=await fetch(base+'/api/polls/'+item.pollId,{cache:'no-store'}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error||'Помилка');return d});
+     pollRoot.querySelectorAll('.inbox-poll-option,.inbox-poll-submit').forEach(n=>n.remove());
+     state.textContent=p.description||'Оберіть '+(p.multiple?'один або декілька варіантів':'один варіант')+'.';
+     for(const o of p.options){const label=el('label','','inbox-poll-option');const input=document.createElement('input');input.type=p.multiple?'checkbox':'radio';input.name='poll-'+p.id;input.value=o.id;input.checked=p.myVotes.includes(o.id);input.disabled=p.status!=='active';const title=el('span',(o.emoji?o.emoji+' ':'')+o.label);const result=el('small',o.count+' голосів · '+(p.totalVotes?Math.round(o.count/p.totalVotes*100):0)+'%');label.append(input,title,result);pollRoot.append(label)}
+     if(p.status==='active'){
+      const submit=el('button','Проголосувати','inbox-poll-submit');submit.type='button';submit.disabled=!viewer;submit.onclick=async()=>{const selected=[...pollRoot.querySelectorAll('input:checked')].map(x=>x.value);if(!selected.length){state.textContent='Оберіть варіант відповіді.';return}submit.disabled=true;try{const r=await fetch(base+'/api/polls/'+p.id+'/vote',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({viewer,options:selected})});const d=await r.json();if(!r.ok)throw Error(d.error||'Не вдалося зберегти голос');await renderPoll()}catch(e){state.textContent=e.message;submit.disabled=false}};pollRoot.append(submit);
+     }else state.textContent='Голосування завершено · '+p.totalVotes+' учасників';
+     if(p.status==='active')state.textContent=(p.description||'')+' · '+p.totalVotes+' учасників'+(p.endsAt?' · до '+new Date(p.endsAt).toLocaleString('uk-UA'):'');
+    }catch(e){state.textContent='Не вдалося завантажити голосування: '+e.message}
+   };
+   content.append(pollRoot);renderPoll();
+  }
   const buttons=el('div','','inbox-detail-actions');
   if(isGraph(item)){const graph=el('button','📅 Відкрити графік','inbox-detail-primary');graph.type='button';graph.onclick=()=>{
    closeDetail(()=>window.dispatchEvent(new CustomEvent('svitlo:open-schedule',{detail:{date:graphDate(item)}})));
@@ -395,7 +416,7 @@
     const linked=linkedNoticeIds.has('notice:'+a.id);
     if(a.active!==true||(!targeted(a)&&!linked)||(a.queue&&a.queue!=='all'&&a.queue!==queue&&!linked)||a.scheduledAt&&Date.parse(a.scheduledAt)>now||a.expiresAt&&Date.parse(a.expiresAt)<=now)continue;
     incoming.push({id:'notice:'+a.id,kind:'announcement',title:(copy.noticeDisplayTitle?copy.noticeDisplayTitle(a):((a.icon||'📣')+' '+a.title)),icon:a.icon,
-     body:a.body,content:a.content,images:a.images,at:a.publishedAt,url:a.source||a.url,updatedAt:a.updatedAt,pinned:a.pinned,priority:a.priority,authoritative:true});
+     body:a.body,content:a.content,images:a.images,pollId:a.pollId,at:a.publishedAt,url:a.source||a.url,updatedAt:a.updatedAt,pinned:a.pinned,priority:a.priority,authoritative:true});
    }
    if(incoming.length){
     await store.add(incoming);
