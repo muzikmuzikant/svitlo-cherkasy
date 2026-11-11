@@ -65,7 +65,7 @@ async function github(path,method='GET',payload){
  return data;
 }
 async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
-export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal,auditSchedules,errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry,addressCorrections,manualOverrides,adminPush){
+export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal,auditSchedules,errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry,addressCorrections,manualOverrides,adminPush,polls){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(!originPolicy.isAllowed(req.headers.origin)){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const url=new URL(req.url,'http://localhost');
@@ -148,7 +148,7 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
    ||role==='viewer'&&method==='GET'&&!privileged
    ||role==='operator'&&(
     method==='GET'&&(pathName.startsWith('/api/admin/feedback/attachment/')||/\/api\/admin\/(?:monitor|audit|status|feedback|help|analytics|ads|work-items)$/.test(pathName)
-     ||pathName==='/api/admin/push/status')
+     ||pathName==='/api/admin/push/status'||pathName==='/api/admin/polls')
     ||method==='PATCH'&&pathName.startsWith('/api/admin/feedback/'))
    ||role==='editor'&&!privileged&&!(pathName==='/api/admin/push/send'
     ||pathName==='/api/admin/notices/send'||pathName==='/api/admin/push/test'
