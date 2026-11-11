@@ -459,6 +459,20 @@ const server=http.createServer(async(req,res)=>{
   }catch{response(res,400,{error:'Invalid aggregate event'})}
   return;
  }
+ if(req.url?.startsWith('/api/polls/')){
+  const parts=new URL(req.url,'http://localhost').pathname.split('/').filter(Boolean);
+  const pollId=parts[2];
+  if(!/^poll_[a-f0-9]{24}$/.test(pollId)){response(res,404,{error:'Poll not found'});return}
+  try{
+   if(req.method==='GET'){response(res,200,polls.public(pollId));return}
+   if(req.method==='POST'&&parts[3]==='vote'){
+    if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+    const input=await readPayload(req,3000);
+    response(res,200,polls.vote(pollId,input.viewer,input.options));return
+   }
+  }catch(e){response(res,e.statusCode||400,{error:e.message});return}
+  response(res,405,{error:'Method not allowed'});return;
+ }
  if(req.url?.startsWith('/api/admin/')){
   await adminRouter(req,res,manualPush,feedback,extras,async()=>{
     const result={server:{lastPushCheck:lastSuccess,pushCheckError:lastError,pushSubscribers:Object.keys(subscribers).length},sources:{}};
