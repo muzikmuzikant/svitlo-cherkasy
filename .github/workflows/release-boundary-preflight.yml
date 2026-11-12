@@ -1,0 +1,41 @@
+name: Beta Release Boundary Preflight
+on:
+  push:
+    branches: [release/qa-boundary-20261024]
+  pull_request:
+    branches: [staging]
+    paths:
+      - 'scripts/release_preflight.py'
+      - 'tests/test_release_preflight.py'
+      - '.github/workflows/release-boundary-preflight.yml'
+      - 'release.json'
+      - 'push-config.json'
+      - 'manifest.webmanifest'
+      - 'robots.txt'
+      - 'CNAME'
+      - 'sw.js'
+      - 'scripts/build_pages.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run release boundary unit tests
+        run: python -m unittest discover -s tests -p test_release_preflight.py -v
+      - name: Build the real Beta PWA
+        run: python scripts/build_pages.py
+      - name: Refuse staging to production config leaks
+        run: python scripts/release_preflight.py --channel beta
+      - name: Verify schedule, Push and DST regression contracts
+        run: |
+          node --test tests/test_dst_kyiv_2026.mjs tests/test_transition_server_dispatch.mjs tests/test_push_receipts_beta.mjs tests/test_schedule_mirror_beta.mjs
