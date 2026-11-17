@@ -395,7 +395,7 @@ const server=http.createServer(async(req,res)=>{
   response(res,message?200:404,message||{error:'Повідомлення більше недоступне'});return;
  }
  if(requestPath==='/api/status'&&req.method==='GET'){
-  response(res,200,statusStore.snapshot());return;
+  response(res,200,statusStore.publicSnapshot());return;
  }
  if(requestPath==='/api/data/status'&&req.method==='GET'){
   response(res,200,officialSchedules.status());return;
