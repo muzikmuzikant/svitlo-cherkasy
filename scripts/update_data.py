@@ -247,6 +247,8 @@ def parse_article(html,url,reference=None):
     full=normalize_article_clocks(soup.get_text(' ',strip=True))
     table_rows='\n'.join(row.get_text(' ',strip=True) for row in soup.select('tr'))
     layout=normalize_article_clocks(table_rows+'\n'+soup.get_text('\n',strip=True))
+    if '18 листопада' in heading:
+        LOG.info('18NOV PARSER LAYOUT %r', layout[:5000])
     time_hit=PUB_TS.search(full)
     if time_hit:
         pub=datetime.strptime(' '.join(time_hit.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
@@ -303,6 +305,8 @@ def parse_article(html,url,reference=None):
         r'Відключення\s+електроенергії\s+можуть',
         hourly_text,maxsplit=1,flags=re.I)[0]
     hourly_queues=parse_hourly_queue_rows(hourly_text)
+    if '18 листопада' in heading:
+        LOG.info('18NOV HOURLY PARSE %s', bool(hourly_queues))
     if hourly_queues:
         return {'date':day,'publishedAt':pub.isoformat(timespec='minutes'),
                 'source':url,'queues':hourly_queues}
