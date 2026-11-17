@@ -56,7 +56,7 @@ LOCALITY_ALIASES = {'червонаслобода':'слобода', 'перво
 LOCALITY_IN_ROW = re.compile(
     r'(?<![\w])(?:с\.|село|смт\.?|с-ще|селище|м\.|місто)\s*'
     r'(?P<name>[А-ЯІЇЄҐ][А-ЯІЇЄҐа-яіїєґ\s\-’\']{2,53}?)'
-    r'(?=\s*[:;]|\s*,\s*(?:вул\.|пров\.|просп\.)|\s+(?:вул\.|пров\.|просп\.))',re.I)
+    r'(?=\s*[:;]|\s*,\s*(?:вул(?:иця|иці)?\.?|пров(?:улок)?\.?|просп(?:ект)?\.?)|\s+(?:вул(?:иця|иці)?\.?|пров(?:улок)?\.?|просп(?:ект)?\.?))',re.I)
 
 STREET = re.compile(r'(?<!\w)(?P<type>вул(?:иця)?\.?|пров(?:улок|\.)?|просп(?:ект)?\.?|пр-т\.?|прв\.?|б-р\.?|бульвар|узвіз)\s*',re.I)
 STREET_NAME = re.compile(r'^\s*(?P<name>[^,;:]{3,85}?)\s*[,;:]?\s*(?=\d{1,4}(?:[/\-*]?\d{1,4})?\s*[а-яіїєґa-z]?\b)',re.I)
@@ -178,15 +178,30 @@ def normalize_article_clocks(text):
 
 
 def parse_hourly_queue_rows(text):
-    """Parse alternate hourly rows naming whole queues, applying them to both subqueues."""
+    """Parse hourly rows naming whole queues, applying each to both subqueues."""
     hourly = defaultdict(list)
     seen_queues = set()
     row_re = re.compile(
         r'(?P<start>(?:[01]?\d|2[0-4])[:.][0-5]\d)\s*[-–—−]\s*'
         r'(?P<end>(?:[01]?\d|2[0-4])[:.][0-5]\d)', re.I)
-    for raw_line in str(text).splitlines():
-        line = normalize_article_clocks(raw_line).strip()
-        if not line or not re.search(r'черг', line, re.I):
+    lines = [normalize_article_clocks(x).strip() for x in str(text).splitlines()]
+    lines = [x for x in lines if x]
+    # Some CMS layouts put the clock and "1 та 2 черги" in adjacent cells.
+    merged_lines = []
+    i = 0
+    while i < len(lines):
+        current = lines[i]
+        if row_re.search(current) and not re.search(r'черг', current, re.I) and i + 1 < len(lines) and re.search(r'черг', lines[i + 1], re.I):
+            current += ' ' + lines[i + 1]
+            i += 1
+        elif re.search(r'черг', current, re.I) and not row_re.search(current) and i + 1 < len(lines) and row_re.search(lines[i + 1]):
+            current += ' ' + lines[i + 1]
+            i += 1
+        merged_lines.append(current)
+        i += 1
+    seen_rows = set()
+    for line in merged_lines:
+        if not re.search(r'черг', line, re.I):
             continue
         match = row_re.search(line)
         if not match:
@@ -203,6 +218,10 @@ def parse_hourly_queue_rows(text):
         if not 0 <= begin < finish <= 1440:
             return None
         for major in numbers:
+            row_key = (major, begin, finish)
+            if row_key in seen_rows:
+                continue
+            seen_rows.add(row_key)
             seen_queues.add(major)
             for sub in (1, 2):
                 hourly[f'{major}.{sub}'].append((begin, finish))
@@ -221,7 +240,6 @@ def parse_hourly_queue_rows(text):
                 merged.append((start, end))
         result[queue] = merged
     return result
-
 
 def parse_article(html,url,reference=None):
     soup=BeautifulSoup(html,'html.parser')
@@ -279,23 +297,21 @@ def parse_article(html,url,reference=None):
         if len(set(m.group(1) for m in QUEUE_START.finditer(table_text))) < 3:
             return None
     body=re.split(r'Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|Відключення\s+електроенергії\s+можуть',table_text,maxsplit=1,flags=re.I)[0]
+    layout_marker=re.search(
+        r'(?:Години\s+відсутності\s+електропостачання|Години\s+відключень|'
+        r'Години\s+відсутності\s+(?:світла|електрики)|'
+        r'електропостачання\s+буде\s+відсутнє\s+у\s+наступні\s+години)\s*:',
+        layout, re.I)
+    hourly_text=layout[layout_marker.end():] if layout_marker else layout
+    hourly_text=re.split(
+        r'Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|'
+        r'Відключення\s+електроенергії\s+можуть',
+        hourly_text,maxsplit=1,flags=re.I)[0]
+    hourly_queues=parse_hourly_queue_rows(hourly_text)
+    if hourly_queues:
+        return {'date':day,'publishedAt':pub.isoformat(timespec='minutes'),
+                'source':url,'queues':hourly_queues}
     found=list(QUEUE_START.finditer(body))
-    if len(found) < 3:
-        # Alternate format: hourly rows name whole queues, not subqueues.
-        layout_marker=re.search(
-            r'(?:Години\s+відсутності\s+електропостачання|Години\s+відключень|'
-            r'Години\s+відсутності\s+(?:світла|електрики)|'
-            r'електропостачання\s+буде\s+відсутнє\s+у\s+наступні\s+години)\s*:',
-            layout, re.I)
-        hourly_text=layout[layout_marker.end():] if layout_marker else layout
-        hourly_text=re.split(
-            r'Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|'
-            r'Відключення\s+електроенергії\s+можуть',
-            hourly_text,maxsplit=1,flags=re.I)[0]
-        hourly_queues=parse_hourly_queue_rows(hourly_text)
-        if hourly_queues:
-            return {'date':day,'publishedAt':pub.isoformat(timespec='minutes'),
-                    'source':url,'queues':hourly_queues}
     if not found:return None
     if len({x.group(1) for x in found})!=len(found):return None
     queues={}
@@ -820,7 +836,11 @@ def extract_sections(pdf):
                 locality=CITY_BRANCH_LOCALITIES.get(branch_name, city_branch.group('name').strip())
                 continue
             if OTHER_BRANCH.fullmatch(line):
-                branch=None;locality=None;continue
+                # Utility branch headings include district offices and local
+                # branches (e.g. Zvenyhorodka, Zolotonosha, Uman). Keep parsing
+                # their following explicit locality labels instead of dropping
+                # every non-Cherkasy branch from the address catalogue.
+                branch='district';locality=None;continue
             if branch=='city':
                 sections['Черкаси'].append(line)
                 continue
