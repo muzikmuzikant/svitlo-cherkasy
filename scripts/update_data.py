@@ -265,9 +265,6 @@ def parse_article(html,url,reference=None):
     layout_heading_pos=article_layout.lower().find(heading_text.lower())
     if layout_heading_pos>=0:
         article_layout=article_layout[layout_heading_pos+len(heading_text):]
-    if '18 листопада' in heading:
-        LOG.info('DEBUG18 article_text=%r', article_text[:7000])
-        LOG.info('DEBUG18 article_layout=%r', article_layout[:7000])
     time_hit=PUB_TS.search(full)
     if time_hit:
         pub=datetime.strptime(' '.join(time_hit.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
