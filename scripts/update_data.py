@@ -232,7 +232,7 @@ def parse_article(html,url,reference=None):
     if not date_hit:return None
     full=normalize_article_clocks(soup.get_text(' ',strip=True))
     table_rows='\n'.join(row.get_text(' ',strip=True) for row in soup.select('tr'))
-    layout=normalize_article_clocks(table_rows+'\n'+soup.get_text('\n',strip=True))
+    layout=normalize_article_clocks(table_rows if table_rows.strip() else soup.get_text('\n',strip=True))
     time_hit=PUB_TS.search(full)
     if time_hit:
         pub=datetime.strptime(' '.join(time_hit.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
