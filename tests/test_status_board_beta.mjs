@@ -27,3 +27,12 @@ test('status board persists status and incident lifecycle while sanitizing publi
   assert.equal(restored.remove(id,2).incidents.length,0);
  }finally{fs.rmSync(directory,{recursive:true,force:true})}
 });
+
+test('status admin provides a searchable operational incident journal and modal editor',()=>{
+ const html=fs.readFileSync(new URL('../admin.html',import.meta.url),'utf8');
+ const js=fs.readFileSync(new URL('../admin-status.js',import.meta.url),'utf8');
+ const css=fs.readFileSync(new URL('../status-board.css',import.meta.url),'utf8');
+ for(const id of ['statusAdminMetrics','statusMetricActive','statusMetricRecent','statusMetricTotal','statusIncidentSearch','statusIncidentFilter','statusIncidentSort','statusIncidentCount','statusIncidentSeverity','statusIncidentCancelBottom'])assert.ok(html.includes(id),'missing status admin control '+id);
+ for(const feature of ['toLocaleLowerCase','duration(','statusIncidentFilter','statusIncidentSort','status-action-resolve'])assert.ok(js.includes(feature),'missing incident journal behavior '+feature);
+ for(const selector of ['.status-admin-metrics','.status-admin-toolbar','.status-incident-card','.status-admin-modal','.status-admin-severity'])assert.ok(css.includes(selector),'missing admin styling '+selector);
+});
