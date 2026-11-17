@@ -14,7 +14,7 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: svitlo-data-refresh
+  group: svitlo-schedule-refresh
   cancel-in-progress: false
 jobs:
   schedules:
