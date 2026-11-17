@@ -245,8 +245,26 @@ def parse_article(html,url,reference=None):
     date_hit=HEADLINE_DATE.search(heading)
     if not date_hit:return None
     full=normalize_article_clocks(soup.get_text(' ',strip=True))
-    table_rows='\n'.join(row.get_text(' ',strip=True) for row in soup.select('tr'))
-    layout=normalize_article_clocks(table_rows+'\n'+soup.get_text('\n',strip=True))
+    # Scope parsing to the article container whenever possible. Site-wide
+    # navigation and related-news cards can contain other schedule headings.
+    container=header.find_parent('article')
+    if container is None:
+        for parent in header.parents:
+            classes=' '.join(parent.get('class', [])) if hasattr(parent, 'get') else ''
+            if re.search(r'(?:article|news-detail|media-detail|article-content)', classes, re.I):
+                container=parent
+                break
+    container=container or soup
+    article_text=normalize_article_clocks(container.get_text(' ',strip=True))
+    heading_text=header.get_text(' ',strip=True)
+    heading_pos=article_text.lower().find(heading_text.lower())
+    if heading_pos>=0:
+        article_text=article_text[heading_pos+len(heading_text):]
+    table_rows='\n'.join(row.get_text(' ',strip=True) for row in container.select('tr'))
+    article_layout=normalize_article_clocks(table_rows+'\n'+container.get_text('\n',strip=True))
+    layout_heading_pos=article_layout.lower().find(heading_text.lower())
+    if layout_heading_pos>=0:
+        article_layout=article_layout[layout_heading_pos+len(heading_text):]
     time_hit=PUB_TS.search(full)
     if time_hit:
         pub=datetime.strptime(' '.join(time_hit.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
@@ -278,12 +296,11 @@ def parse_article(html,url,reference=None):
     # make an otherwise well-formed official revision unreadable.
     marker=re.search(r'(?:Години\s+відсутності\s+електропостачання|Години\s+відключень|Години\s+відсутності\s+(?:світла|електрики)|електропостачання\s+буде\s+відсутнє\s+у\s+наступні\s+години)(?:\s+по\s+області\b[^:]{0,220})?\s*:', full, re.I)
     if marker:
-        table_text=full[marker.end():]
+        table_text=article_text[marker.end():]
     else:
         # Strict fallback: start at the article heading and require three
         # recognizable queues; navigation/sidebar numbers are not a plan.
-        container=soup.select_one('article, .article-content, .news-article, main') or soup
-        text=container.get_text(' ', strip=True).replace('\xa0',' ').replace('−','-')
+        text=article_text.replace('\xa0',' ').replace('−','-')
         text=re.sub(r'(?<=\d)\s*:\s*(?=\d{2}\b)', ':', text)
         text=re.sub(r'(?<!\d)0\s+([0-9]):([0-5]\d)\b', r'0\1:\2', text)
         text=re.sub(r'(?<!\d)(\d{1,2})\s*:\s*([0-5])\s+([0-9])(?!\d)', r'\1:\2\3', text)
@@ -297,8 +314,8 @@ def parse_article(html,url,reference=None):
         r'Години\s+відсутності\s+(?:світла|електрики)|'
         r'електропостачання\s+буде\s+відсутнє\s+у\s+наступні\s+години)'
         r'(?:\s+по\s+області\b[^:]{0,220})?\s*:',
-        layout, re.I)
-    hourly_text=layout[layout_marker.end():] if layout_marker else layout
+        article_layout, re.I)
+    hourly_text=article_layout[layout_marker.end():] if layout_marker else article_layout
     hourly_text=re.split(
         r'Тимчасові\s+індивідуальні\s+графіки|Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|'
         r'Відключення\s+електроенергії\s+можуть',
@@ -832,11 +849,11 @@ def extract_sections(pdf):
                 locality=CITY_BRANCH_LOCALITIES.get(branch_name, city_branch.group('name').strip())
                 continue
             if OTHER_BRANCH.fullmatch(line):
-                # Utility branch headings include district offices and local
-                # branches (e.g. Zvenyhorodka, Zolotonosha, Uman). Keep parsing
-                # their following explicit locality labels instead of dropping
-                # every non-Cherkasy branch from the address catalogue.
-                branch='district';locality=None;continue
+                # The public app currently indexes Cherkasy city and the
+                # existing Cherkasy district only. Other utility branches
+                # (including Uman, Zhashkiv, Monastyryshche and Khrystynivka)
+                # must never leak into this catalogue.
+                branch=None;locality=None;continue
             if branch=='city':
                 sections['Черкаси'].append(line)
                 continue
@@ -1061,6 +1078,12 @@ def update_addresses(session,now=None):
     if len(urls)!=12:
         raise RuntimeError(f'Only {len(urls)} unambiguously labeled queue PDF links; refusing to guess queue order')
     collected=defaultdict(lambda:defaultdict(set));street_labels=defaultdict(dict);street_q=defaultdict(lambda:defaultdict(set));town_labels={}
+    try:
+        previous_scope=json.loads((DATA / 'addresses.json').read_text(encoding='utf-8'))
+    except (FileNotFoundError, ValueError):
+        previous_scope={}
+    allowed_localities=set(previous_scope.get('localities', {}))
+
     errors=[];source_files=[]
     for queue,url in urls.items():
         try:
@@ -1079,6 +1102,8 @@ def update_addresses(session,now=None):
                   'localities':len(sections)}
             for town,content in sections.items():
                 key=clean_locality(town)
+                if key != clean_locality('Черкаси') and key not in allowed_localities:
+                    continue
                 # Old operator PDFs abbreviate these names or retain
                 # obsolete spellings. Keep the same internal key for saved
                 # addresses while displaying the contemporary village name.
