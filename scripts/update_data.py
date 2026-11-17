@@ -247,8 +247,6 @@ def parse_article(html,url,reference=None):
     full=normalize_article_clocks(soup.get_text(' ',strip=True))
     table_rows='\n'.join(row.get_text(' ',strip=True) for row in soup.select('tr'))
     layout=normalize_article_clocks(table_rows+'\n'+soup.get_text('\n',strip=True))
-    if '18 листопада' in heading:
-        LOG.info('18NOV PARSER LAYOUT %r', layout[:5000])
     time_hit=PUB_TS.search(full)
     if time_hit:
         pub=datetime.strptime(' '.join(time_hit.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
@@ -278,7 +276,7 @@ def parse_article(html,url,reference=None):
     # Operator edits are separate official news posts and sometimes change
     # the wording before the queue table. A fixed introductory phrase must not
     # make an otherwise well-formed official revision unreadable.
-    marker=re.search(r'(?:Години\s+відсутності\s+електропостачання|Години\s+відключень|Години\s+відсутності\s+(?:світла|електрики)|електропостачання\s+буде\s+відсутнє\s+у\s+наступні\s+години)\s*:', full, re.I)
+    marker=re.search(r'(?:Години\s+відсутності\s+електропостачання|Години\s+відключень|Години\s+відсутності\s+(?:світла|електрики)|електропостачання\s+буде\s+відсутнє\s+у\s+наступні\s+години)(?:\s+по\s+області\b[^:]{0,220})?\s*:', full, re.I)
     if marker:
         table_text=full[marker.end():]
     else:
@@ -293,20 +291,19 @@ def parse_article(html,url,reference=None):
         table_text=text[heading_pos+len(heading):] if heading_pos>=0 else text
         if len(set(m.group(1) for m in QUEUE_START.finditer(table_text))) < 3:
             return None
-    body=re.split(r'Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|Відключення\s+електроенергії\s+можуть',table_text,maxsplit=1,flags=re.I)[0]
+    body=re.split(r'Тимчасові\s+індивідуальні\s+графіки|Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|Відключення\s+електроенергії\s+можуть',table_text,maxsplit=1,flags=re.I)[0]
     layout_marker=re.search(
         r'(?:Години\s+відсутності\s+електропостачання|Години\s+відключень|'
         r'Години\s+відсутності\s+(?:світла|електрики)|'
-        r'електропостачання\s+буде\s+відсутнє\s+у\s+наступні\s+години)\s*:',
+        r'електропостачання\s+буде\s+відсутнє\s+у\s+наступні\s+години)'
+        r'(?:\s+по\s+області\b[^:]{0,220})?\s*:',
         layout, re.I)
     hourly_text=layout[layout_marker.end():] if layout_marker else layout
     hourly_text=re.split(
-        r'Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|'
+        r'Тимчасові\s+індивідуальні\s+графіки|Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|'
         r'Відключення\s+електроенергії\s+можуть',
         hourly_text,maxsplit=1,flags=re.I)[0]
     hourly_queues=parse_hourly_queue_rows(hourly_text)
-    if '18 листопада' in heading:
-        LOG.info('18NOV HOURLY PARSE %s', bool(hourly_queues))
     if hourly_queues:
         return {'date':day,'publishedAt':pub.isoformat(timespec='minutes'),
                 'source':url,'queues':hourly_queues}
