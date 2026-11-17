@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import {createFeedbackStore,readFeedbackBody} from './feedback-store.js';
+import {createStatusStore} from './status-store.js';
 import {createSupportTicketNotifier} from './support-ticket-notifier.js';
 import {createAdminExtras} from './admin-extras.js';
 import {createAnalyticsStore} from './analytics.js';
@@ -50,6 +51,7 @@ function save(){
  try{fs.writeFileSync(DATA_FILE+'.tmp',JSON.stringify({subscribers,sent}));fs.renameSync(DATA_FILE+'.tmp',DATA_FILE)}
  catch(e){console.error('Persistent subscriber save failed:',e.message);throw e}
 }
+const statusStore=createStatusStore({directory:path.dirname(DATA_FILE)});
 const feedback=createFeedbackStore({filePath:process.env.FEEDBACK_FILE||path.join(path.dirname(DATA_FILE),'feedback.json')});
 const supportTicketNotifier=createSupportTicketNotifier();
 const extras=createAdminExtras({directory:path.dirname(DATA_FILE)});
@@ -392,6 +394,9 @@ const server=http.createServer(async(req,res)=>{
    announcements:siteControls.publicState().announcements,emergencies:lastLoadedBulletins});
   response(res,message?200:404,message||{error:'Повідомлення більше недоступне'});return;
  }
+ if(requestPath==='/api/status'&&req.method==='GET'){
+  response(res,200,statusStore.snapshot());return;
+ }
  if(requestPath==='/api/data/status'&&req.method==='GET'){
   response(res,200,officialSchedules.status());return;
  }
@@ -444,7 +449,7 @@ const server=http.createServer(async(req,res)=>{
     const tickets=feedback.list().items;
     result.feedback={total:tickets.length,new:tickets.filter(t=>t.status==='new').length,inProgress:tickets.filter(t=>t.status==='in_progress').length};
     return result;
-  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule((typeof liveSchedule==='function'?liveSchedule():officialSchedules.schedule())||lastLoadedSchedule),errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry,addressCorrections,manualOverrides);return}
+  },siteControls,mediaStore,analytics,ads,adminUsers,legal,()=>auditSchedule((typeof liveSchedule==='function'?liveSchedule():officialSchedules.schedule())||lastLoadedSchedule),errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry,addressCorrections,manualOverrides,statusStore);return}
  if(req.url?.startsWith('/api/media/')&&req.method==='GET'){
    const id=req.url.slice('/api/media/'.length).split('?')[0],file=mediaStore.read(id);
    if(!file){response(res,404,{error:'Фото не знайдене'});return}
