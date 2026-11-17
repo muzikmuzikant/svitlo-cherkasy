@@ -1102,7 +1102,7 @@ def update_addresses(session,now=None):
                   'localities':len(sections)}
             for town,content in sections.items():
                 key=clean_locality(town)
-                if key != clean_locality('Черкаси') and key not in allowed_localities:
+                if allowed_localities and key != clean_locality('Черкаси') and key not in allowed_localities:
                     continue
                 # Old operator PDFs abbreviate these names or retain
                 # obsolete spellings. Keep the same internal key for saved
