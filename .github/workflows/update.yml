@@ -33,25 +33,49 @@ jobs:
       - name: Import official schedules
         id: schedule
         run: python scripts/update_data.py --schedules-only
-      - name: Inspect live Railway schedule snapshot
+      - name: Verify Railway snapshot matches official importer
         if: always()
         run: |
           python - <<'PY'
+          import json
+          import time
+          from pathlib import Path
           import requests
+
+          local = json.loads(Path('data/schedules.json').read_text(encoding='utf-8'))
           url = 'https://svitlo-cherkasy-production.up.railway.app/api/data/schedules.json'
-          try:
-              response = requests.get(url, timeout=12, headers={'cache-control': 'no-cache'})
-              print('Railway snapshot HTTP', response.status_code)
-              response.raise_for_status()
-              data = response.json()
-              print('Railway lastChecked=', data.get('lastChecked'))
-              for day in data.get('days', []):
-                  if day.get('date') == '2026-11-18':
-                      print('Railway 2026-11-18 source=', day.get('source'))
-                      for queue in [f'{n}.{sub}' for n in range(1, 7) for sub in (1, 2)]:
-                          print(queue, day.get('queues', {}).get(queue, {}).get('off'))
-          except Exception as error:
-              print('Railway snapshot diagnostic failed:', repr(error))
+          last_error = None
+          for attempt in range(10):
+              try:
+                  response = requests.get(url, timeout=12, headers={'cache-control': 'no-cache'})
+                  response.raise_for_status()
+                  live = response.json()
+                  live_days = {day.get('date'): day for day in live.get('days', [])}
+                  mismatches = []
+                  checked = 0
+                  for expected in local.get('days', []):
+                      actual = live_days.get(expected.get('date'))
+                      if not actual:
+                          mismatches.append(expected.get('date') + ': missing from Railway')
+                          continue
+                      if actual.get('source') != expected.get('source'):
+                          continue
+                      if actual.get('adminCorrection') or actual.get('manualReview'):
+                          continue
+                      checked += 1
+                      if actual.get('queues') != expected.get('queues'):
+                          mismatches.append(expected['date'] + ': queue data differs')
+                  if checked and not mismatches:
+                      print('Railway snapshot verified:', live.get('lastChecked'),
+                            'matching official days:', checked)
+                      break
+                  last_error = '; '.join(mismatches) or 'no matching official source dates yet'
+              except Exception as error:
+                  last_error = repr(error)
+              if attempt < 9:
+                  time.sleep(6)
+          else:
+              raise SystemExit('Railway snapshot verification failed: ' + str(last_error))
           PY
       - name: Show import diagnostics
         if: always()
