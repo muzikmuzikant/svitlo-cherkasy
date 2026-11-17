@@ -33,6 +33,26 @@ jobs:
       - name: Import official schedules
         id: schedule
         run: python scripts/update_data.py --schedules-only
+      - name: Inspect live Railway schedule snapshot
+        if: always()
+        run: |
+          python - <<'PY'
+          import requests
+          url = 'https://svitlo-cherkasy-production.up.railway.app/api/data/schedules.json'
+          try:
+              response = requests.get(url, timeout=12, headers={'cache-control': 'no-cache'})
+              print('Railway snapshot HTTP', response.status_code)
+              response.raise_for_status()
+              data = response.json()
+              print('Railway lastChecked=', data.get('lastChecked'))
+              for day in data.get('days', []):
+                  if day.get('date') == '2026-11-18':
+                      print('Railway 2026-11-18 source=', day.get('source'))
+                      for queue in [f'{n}.{sub}' for n in range(1, 7) for sub in (1, 2)]:
+                          print(queue, day.get('queues', {}).get(queue, {}).get('off'))
+          except Exception as error:
+              print('Railway snapshot diagnostic failed:', repr(error))
+          PY
       - name: Show import diagnostics
         if: always()
         run: |
