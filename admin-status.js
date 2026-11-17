@@ -55,5 +55,5 @@
   try{snapshot=await api(id?'status/incidents/'+encodeURIComponent(id):'status/incidents',{method:id?'PATCH':'POST',body:JSON.stringify(id?{...payload,expectedRevision:Number($('statusIncidentRevision').value)}:payload)});$('statusIncidentEditor').hidden=true;render();$('statusAdminMessage').textContent='Запис збережено.'}catch(e){$('statusAdminMessage').textContent='Помилка: '+e.message}
  });
  document.addEventListener('svitlo:admin-ready',load);
- root.querySelector('[data-admin-tab="status"]')?.addEventListener('click',load);
+ document.querySelector('[data-admin-tab="status"]')?.addEventListener('click',load);
 })();
