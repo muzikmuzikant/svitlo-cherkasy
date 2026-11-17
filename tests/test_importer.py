@@ -118,24 +118,40 @@ def test_queue_number_with_trailing_period_is_recognized():
 
 
 def test_alternate_hourly_format_expands_whole_queues_to_both_subqueues():
+    rows = [
+        ('06:00 - 07:00', '1 та 2 черги'),
+        ('07:00 - 08:00', '1 та 2 черги'),
+        ('08:00 - 09:00', '3 та 4 черги'),
+        ('09:00 - 10:00', '3 та 4 черги'),
+        ('10:00 - 11:00', '5 та 6 черги'),
+        ('11:00 - 12:00', '5 та 6 черги'),
+        ('12:00 - 13:00', '1 та 2 черги'),
+        ('13:00 - 14:00', '1 та 2 черги'),
+        ('14:00 - 15:00', '3 та 4 черги'),
+        ('15:00 - 16:00', '3 та 4 черги'),
+        ('16:00 - 17:00', '5 та 6 черги'),
+        ('17:00 - 18:00', '5 та 6 черги'),
+        ('18:00 - 19:00', '1 та 2 черги'),
+        ('19:00 - 20:00', '1 та 2 черги'),
+        ('20:00 - 21:00', '3 та 4 черги'),
+        ('21:00 - 22:00', '3 та 4 черги'),
+    ]
+    table = ''.join(f'<tr><td>{hours}</td><td>{queues}</td></tr>' for hours, queues in rows)
     raw = (
         '<html><body><span>17.11.2026 21:00</span>'
         '<h1>Графік погодинних відключень (ГПВ) на 18 листопада</h1>'
-        '<div>Години відключень:</div><table>'
-        '<tr><td>06:00 - 07:00</td><td>1 та 2 черги</td></tr>'
-        '<tr><td>08:00 - 09:00</td><td>3 та 4 черги</td></tr>'
-        '<tr><td>10:00 - 11:00</td><td>5 та 6 черги</td></tr>'
+        '<div>Години відключень:</div><table>' + table +
         '</table><p>Свою чергу можна дізнатися в чат-ботах</p></body></html>'
     )
     parsed = parse_article(raw, 'https://www.cherkasyoblenergo.com/media/hourly')
     assert parsed is not None
     assert len(parsed['queues']) == 12
-    assert parsed['queues']['1.1'] == [(360, 420)]
-    assert parsed['queues']['1.2'] == [(360, 420)]
-    assert parsed['queues']['3.1'] == [(480, 540)]
-    assert parsed['queues']['4.2'] == [(480, 540)]
-    assert parsed['queues']['6.1'] == [(600, 660)]
-
+    for queue in ('1.1', '1.2', '2.1', '2.2'):
+        assert parsed['queues'][queue] == [(360, 480), (720, 840), (1080, 1200)]
+    for queue in ('3.1', '3.2', '4.1', '4.2'):
+        assert parsed['queues'][queue] == [(480, 600), (840, 960), (1200, 1320)]
+    for queue in ('5.1', '5.2', '6.1', '6.2'):
+        assert parsed['queues'][queue] == [(600, 720), (960, 1080)]
 
 def test_uman_city_and_district_branches_are_indexed(monkeypatch):
     import fitz
@@ -144,9 +160,10 @@ def test_uman_city_and_district_branches_are_indexed(monkeypatch):
     class FakePage:
         def get_text(self, *args, **kwargs):
             return '\n'.join([
-                'Уманські міські ЕМ',
-                'вул. Незалежності 10, 12',
-                'Уманські районні ЕМ',
+                'ВСП Уманські ЕМ',
+                'м. Умань, вулиці: вул. Незалежності 10, 12',
+                'ВСП Звенигородські ЕМ',
+                'м. Багачеве, вулиці: вул. Ювілейна 1, 2',
                 'с. Бабанка',
                 'вул. Центральна 1, 2',
             ])
@@ -154,4 +171,5 @@ def test_uman_city_and_district_branches_are_indexed(monkeypatch):
     monkeypatch.setattr(fitz, 'open', lambda **kwargs: [FakePage()])
     sections = extract_sections(b'%PDF-fake')
     assert 'Незалежності' in sections['Умань']
+    assert 'Ювілейна' in sections['Багачеве']
     assert 'Центральна' in sections['Бабанка']
