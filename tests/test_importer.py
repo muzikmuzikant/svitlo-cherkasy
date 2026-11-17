@@ -115,3 +115,43 @@ def test_queue_number_with_trailing_period_is_recognized():
     assert len(r['queues'])==12
     assert r['queues']['5.2']==[(480,600),(1200,1320)]
     assert r['queues']['6.2']==[(480,600),(1200,1320)]
+
+
+def test_alternate_hourly_format_expands_whole_queues_to_both_subqueues():
+    raw = (
+        '<html><body><span>17.11.2026 21:00</span>'
+        '<h1>Графік погодинних відключень (ГПВ) на 18 листопада</h1>'
+        '<div>Години відключень:</div><table>'
+        '<tr><td>06:00 - 07:00</td><td>1 та 2 черги</td></tr>'
+        '<tr><td>08:00 - 09:00</td><td>3 та 4 черги</td></tr>'
+        '<tr><td>10:00 - 11:00</td><td>5 та 6 черги</td></tr>'
+        '</table><p>Свою чергу можна дізнатися в чат-ботах</p></body></html>'
+    )
+    parsed = parse_article(raw, 'https://www.cherkasyoblenergo.com/media/hourly')
+    assert parsed is not None
+    assert len(parsed['queues']) == 12
+    assert parsed['queues']['1.1'] == [(360, 420)]
+    assert parsed['queues']['1.2'] == [(360, 420)]
+    assert parsed['queues']['3.1'] == [(480, 540)]
+    assert parsed['queues']['4.2'] == [(480, 540)]
+    assert parsed['queues']['6.1'] == [(600, 660)]
+
+
+def test_uman_city_and_district_branches_are_indexed(monkeypatch):
+    import fitz
+    from scripts.update_data import extract_sections
+
+    class FakePage:
+        def get_text(self, *args, **kwargs):
+            return (
+                'Уманські міські ЕМ\\n'
+                'вул. Незалежності 10, 12\\n'
+                'Уманські районні ЕМ\\n'
+                'с. Бабанка\\n'
+                'вул. Центральна 1, 2'
+            )
+
+    monkeypatch.setattr(fitz, 'open', lambda **kwargs: [FakePage()])
+    sections = extract_sections(b'%PDF-fake')
+    assert 'Незалежності' in sections['Умань']
+    assert 'Центральна' in sections['Бабанка']
