@@ -619,24 +619,36 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
  <details class="support-template-manager"><summary>Шаблони відповідей</summary><div id="adminReplyTemplates"></div></details>
  <div class="support-workspace"><div id="ticketsList" class="support-list" aria-label="Список звернень"></div><section id="ticketDetail" class="support-detail" aria-label="Звернення та відповіді"><div class="support-empty">Оберіть звернення у списку.</div></section></div>
 </section>
-<section class="card" data-admin-panel="status" hidden id="statusAdminPanel">
- <div class="headline"><div><div class="panel-eyebrow">ПУБЛІЧНИЙ СТАН / STATUS PAGE</div><h2>Статус сервісу</h2><p>Керуйте загальним станом і журналом інцидентів. Зміни одразу з’являються на публічній сторінці.</p></div><a class="admin-link" href="./status.html" target="_blank" rel="noopener">Відкрити сторінку ↗</a></div>
+<section class="card status-admin-page" data-admin-panel="status" hidden id="statusAdminPanel">
+ <div class="status-admin-heading"><div><div class="panel-eyebrow">STATUS CENTER / CHERKASY</div><h2>Керування статусом</h2><p>Оперативний стан сервісу та повна історія інцидентів</p></div><a class="status-admin-public-link" href="./status.html" target="_blank" rel="noopener">Публічна сторінка <span>↗</span></a></div>
  <div class="status-admin-overview" id="statusAdminOverview"></div>
- <div class="card status-admin-editor">
-  <h2>Поточний стан</h2>
-  <div class="two"><div class="field"><label for="statusLevel">Колір статусу</label><select id="statusLevel"><option value="green">Зелений · Усе працює</option><option value="yellow">Жовтий · Є часткові проблеми</option><option value="red">Червоний · Критичні проблеми</option></select></div><div class="field"><label for="statusSummary">Короткий опис</label><input id="statusSummary" maxlength="240" placeholder="Усі системи працюють у штатному режимі"></div></div>
-  <div class="flex" style="margin-top:12px"><button id="statusSaveLevel" type="button">Зберегти статус</button><span id="statusAdminMessage" class="hint" role="status"></span></div>
+ <div class="status-admin-metrics" id="statusAdminMetrics">
+  <div class="status-admin-metric"><span>Активні інциденти</span><strong id="statusMetricActive">—</strong><small>Потребують уваги</small></div>
+  <div class="status-admin-metric"><span>За останні 30 днів</span><strong id="statusMetricRecent">—</strong><small>Нові записи журналу</small></div>
+  <div class="status-admin-metric"><span>Усього в журналі</span><strong id="statusMetricTotal">—</strong><small>Збережена історія</small></div>
  </div>
- <div class="headline"><div><h2>Журнал інцидентів</h2><p class="hint">Фіксуйте помилки, час початку, завершення та вплив на сервіс.</p></div><button type="button" id="statusNewIncident">+ Додати проблему</button></div>
- <div id="statusIncidentEditor" class="card status-admin-editor" hidden>
-  <h2 id="statusIncidentEditorTitle">Нова проблема</h2>
-  <input id="statusIncidentId" type="hidden"><input id="statusIncidentRevision" type="hidden">
-  <div class="two"><div class="field"><label for="statusIncidentName">Назва</label><input id="statusIncidentName" maxlength="120" placeholder="Наприклад, не відображаються графіки"></div><div class="field"><label for="statusIncidentLevel">Рівень</label><select id="statusIncidentLevel"><option value="red">Червоний</option><option value="yellow">Жовтий</option><option value="green">Зелений</option></select></div>
-   <div class="field"><label for="statusIncidentStart">Час початку</label><input id="statusIncidentStart" type="datetime-local" required></div><div class="field"><label for="statusIncidentEnd">Час завершення</label><input id="statusIncidentEnd" type="datetime-local"></div></div>
-  <div class="field" style="margin-top:10px"><label for="statusIncidentDescription">Опис</label><textarea id="statusIncidentDescription" rows="4" maxlength="3000" placeholder="Що саме не працює, кого зачіпає та що відомо…"></textarea></div>
-  <div class="flex" style="margin-top:12px"><button type="button" id="statusIncidentSave">Зберегти запис</button><button type="button" class="secondary" id="statusIncidentCancel">Скасувати</button></div>
+ <div class="status-admin-current">
+  <div class="status-admin-block-heading"><div><span class="status-admin-kicker">ЗАГАЛЬНИЙ СТАН</span><h3>Поточний статус сервісу</h3></div><span class="status-admin-live"><i></i> Оновлюється наживо</span></div>
+  <div class="status-admin-level-fields"><div class="field"><label for="statusLevel">Рівень доступності</label><select id="statusLevel"><option value="green">Зелений · Усе працює</option><option value="yellow">Жовтий · Часткові проблеми</option><option value="red">Червоний · Критичні проблеми</option></select></div><div class="field"><label for="statusSummary">Повідомлення для користувачів</label><input id="statusSummary" maxlength="240" placeholder="Усі системи працюють у штатному режимі"></div><button id="statusSaveLevel" type="button">Зберегти зміни</button></div>
+  <div id="statusAdminMessage" class="status-admin-feedback" role="status">Завантаження даних…</div>
  </div>
- <div id="statusIncidentList" class="status-incident-list"><p class="hint">Завантаження журналу…</p></div>
+ <div class="status-admin-journal">
+  <div class="status-admin-journal-heading"><div><span class="status-admin-kicker">EVENT LOG</span><h3>Журнал інцидентів</h3><p>Історія збоїв, планових робіт і відновлення сервісу</p></div><button type="button" id="statusNewIncident" class="status-admin-add">＋ Новий інцидент</button></div>
+  <div class="status-admin-toolbar"><label class="status-admin-search"><span>⌕</span><input id="statusIncidentSearch" type="search" placeholder="Пошук за назвою або описом…" autocomplete="off"></label><select id="statusIncidentFilter" aria-label="Фільтр за станом"><option value="all">Усі інциденти</option><option value="active">Активні</option><option value="resolved">Завершені</option></select><select id="statusIncidentSort" aria-label="Сортування"><option value="newest">Спочатку нові</option><option value="oldest">Спочатку старі</option></select></div>
+  <div id="statusIncidentCount" class="status-admin-count"></div>
+  <div id="statusIncidentList" class="status-incident-list"><p class="hint">Завантаження журналу…</p></div>
+ </div>
+ <div id="statusIncidentEditor" class="status-admin-modal" hidden>
+  <div class="status-admin-modal-card">
+   <div class="status-admin-modal-head"><div><span class="status-admin-kicker">INCIDENT REPORT</span><h3 id="statusIncidentEditorTitle">Новий інцидент</h3><p>Додайте деталі, щоб користувачі розуміли вплив проблеми</p></div><button type="button" class="status-admin-modal-close" id="statusIncidentCancel" aria-label="Закрити">×</button></div>
+   <input id="statusIncidentId" type="hidden"><input id="statusIncidentRevision" type="hidden">
+   <div class="field"><label for="statusIncidentName">Назва інциденту</label><input id="statusIncidentName" maxlength="120" placeholder="Наприклад, затримка оновлення графіків"></div>
+   <div class="field"><label>Вплив на сервіс</label><div class="status-admin-severity" id="statusIncidentSeverity"><label><input type="radio" name="statusSeverity" value="red"><span><i class="red"></i><b>Критичний</b><small>Сервіс недоступний</small></span></label><label><input type="radio" name="statusSeverity" value="yellow" checked><span><i class="yellow"></i><b>Частковий</b><small>Окремі функції працюють нестабільно</small></span></label><label><input type="radio" name="statusSeverity" value="green"><span><i class="green"></i><b>Низький</b><small>Незначний вплив</small></span></label></div></div>
+   <div class="status-admin-datetime"><div class="field"><label for="statusIncidentStart">Початок</label><input id="statusIncidentStart" type="datetime-local" required></div><div class="field"><label for="statusIncidentEnd">Завершення <small>(можна залишити порожнім)</small></label><input id="statusIncidentEnd" type="datetime-local"></div></div>
+   <div class="field"><label for="statusIncidentDescription">Опис і вплив</label><textarea id="statusIncidentDescription" rows="4" maxlength="3000" placeholder="Що сталося, які функції зачепило та що зараз відбувається…"></textarea></div>
+   <div class="status-admin-modal-actions"><button type="button" class="secondary" id="statusIncidentCancelBottom">Скасувати</button><button type="button" id="statusIncidentSave">Зберегти інцидент</button></div>
+  </div>
+ </div>
 </section>
 <div class="two" data-admin-panel="overview"><div class="metric"><strong id="scheduleStat">—</strong><span>Опубліковані дні</span></div><div class="metric"><strong id="addressStat">—</strong><span>Розпізнані адреси + довідник</span></div><div class="metric"><strong id="townStat">—</strong><span>Населені пункти</span></div><div class="metric"><strong id="emergencyStat">—</strong><span>Екстрені бюлетені</span></div></div>
 
