@@ -297,6 +297,75 @@ def atomic_write(path,obj):
     tmp.replace(path)
 
 
+def load_manual_schedule_days(wanted):
+    """Load pinned, manually transcribed official posts when the website index omits them.
+
+    A parsed official website article always takes precedence. Manual entries are
+    separate from the importer output because Railway restores its durable snapshot
+    before every import, replacing data/schedules.json in the worker checkout.
+    """
+    path = DATA / 'manual_schedule_days.json'
+    if not path.exists():
+        return {}
+    try:
+        document = json.loads(path.read_text(encoding='utf-8'))
+    except (OSError, ValueError) as error:
+        raise RuntimeError('Manual schedule file is unreadable') from error
+    if not isinstance(document, dict) or document.get('schemaVersion') != 1 or not isinstance(document.get('days'), list):
+        raise RuntimeError('Manual schedule file has an invalid schema')
+
+    def clock_minutes(value):
+        if value == '24:00':
+            return 1440
+        if not isinstance(value, str) or not re.fullmatch(r'(?:[01]\d|2[0-3]):[0-5]\d', value):
+            return None
+        return int(value[:2]) * 60 + int(value[3:])
+
+    result = {}
+    for day in document['days']:
+        if not isinstance(day, dict):
+            raise RuntimeError('Manual schedule entry must be an object')
+        date = day.get('date')
+        if date not in wanted:
+            continue
+        if day.get('manualEntry') is not True or day.get('verified') is not True:
+            raise RuntimeError('Manual schedule entry must be explicitly marked verified')
+        source = urlparse(str(day.get('source') or ''))
+        if source.scheme != 'https' or source.netloc.lower() not in {
+            't.me', 'cherkasyoblenergo.com', 'www.cherkasyoblenergo.com'
+        }:
+            raise RuntimeError('Manual schedule source is not an official operator page')
+        try:
+            published = datetime.fromisoformat(str(day.get('publishedAt') or '').replace('Z', '+00:00'))
+        except ValueError as error:
+            raise RuntimeError('Manual schedule publication timestamp is invalid') from error
+        if published.date().isoformat() != date:
+            raise RuntimeError('Manual schedule timestamp does not match its date')
+        queues = day.get('queues')
+        if not isinstance(queues, dict) or any(q not in queues for q in QUEUE):
+            raise RuntimeError('Manual schedule must contain all 12 subqueues')
+        for queue in QUEUE:
+            item = queues[queue]
+            if not isinstance(item, dict) or clock_minutes(item.get('knownFrom', '00:00')) is None:
+                raise RuntimeError('Manual schedule has an invalid knownFrom for ' + queue)
+            known_from = clock_minutes(item.get('knownFrom', '00:00'))
+            periods = item.get('off')
+            if not isinstance(periods, list):
+                raise RuntimeError('Manual schedule has invalid outage periods for ' + queue)
+            previous_end = known_from
+            for span in periods:
+                if not isinstance(span, list) or len(span) != 2:
+                    raise RuntimeError('Manual schedule has a malformed outage interval for ' + queue)
+                start, end = (clock_minutes(value) for value in span)
+                if start is None or end is None or start < previous_end or start >= end or end > 1440:
+                    raise RuntimeError('Manual schedule has overlapping or invalid hours for ' + queue)
+                previous_end = end
+        if date in result:
+            raise RuntimeError('Duplicate manual schedule date: ' + date)
+        result[date] = day
+    return result
+
+
 def update_schedules(session, now=None):
     """Refresh verified plans without letting one unreadable article block others.
 
@@ -433,6 +502,13 @@ def update_schedules(session, now=None):
                                 'revisionId': latest['planFingerprint'],
                                 'source': latest['source'], 'queues': diffs})
         existing[day] = latest
+
+    # Preserve manually transcribed official posts if the operator's website
+    # does not list them yet. Once a parseable official article appears, it wins.
+    for manual_date, manual_day in load_manual_schedule_days(wanted).items():
+        if manual_date not in grouped:
+            existing[manual_date] = manual_day
+            LOG.info('Applied pinned official manual schedule for %s', manual_date)
 
     old_changes = [x for x in old.get('changes', [])
                    if isinstance(x, dict) and isinstance(x.get('date'), str)

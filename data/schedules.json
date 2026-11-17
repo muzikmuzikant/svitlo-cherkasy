@@ -286,7 +286,7 @@
     {
       "date": "2026-11-17",
       "publishedAt": "2026-11-17T00:00+02:00",
-      "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-17-lystopada?lang=uk",
+      "source": "https://t.me/pat_cherkasyoblenergo",
       "verified": true,
       "queues": {
         "1.1": {
@@ -536,7 +536,7 @@
       "publications": [
         {
           "publishedAt": "2026-11-17T00:00+02:00",
-          "source": "https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-17-lystopada?lang=uk",
+          "source": "https://t.me/pat_cherkasyoblenergo",
           "queues": [
             "1.1",
             "1.2",
@@ -552,7 +552,8 @@
             "6.2"
           ]
         }
-      ]
+      ],
+      "manualEntry": true
     }
   ],
   "changes": []

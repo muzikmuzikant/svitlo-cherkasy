@@ -62,3 +62,79 @@ def test_headline_conflict_marks_absence_as_unconfirmed(monkeypatch,tmp_path):
     monkeypatch.setattr(importer,'fetch',lambda sess,url:'<html><body><a href="/media/a">Графік погодинних відключень на 8 липня</a></body></html>' if '/news?' in url else news('8 липня','08.10.2026 09:10'))
     out=update_schedules(object(),now=datetime(2026,10,10,22,tzinfo=TZ))
     assert out['reviewPending'] is True
+
+
+def test_manual_official_schedule_survives_missing_operator_article(monkeypatch, tmp_path):
+    import json
+    from scripts import update_data as importer
+    data = tmp_path / 'data'
+    data.mkdir()
+    queues = {
+        f'{i}.{j}': {'knownFrom': '00:00', 'off': [['10:00', '12:00']]}
+        for i in range(1, 7) for j in (1, 2)
+    }
+    manual_day = {
+        'date': '2026-10-10',
+        'publishedAt': '2026-10-10T00:00+03:00',
+        'source': 'https://t.me/pat_cherkasyoblenergo',
+        'verified': True,
+        'manualEntry': True,
+        'queues': queues,
+        'revisions': 1,
+        'planFingerprint': 'manual-test',
+        'noScheduledOutages': [],
+        'publications': [{
+            'publishedAt': '2026-10-10T00:00+03:00',
+            'source': 'https://t.me/pat_cherkasyoblenergo',
+            'queues': sorted(queues)
+        }]
+    }
+    (data / 'manual_schedule_days.json').write_text(
+        json.dumps({'schemaVersion': 1, 'days': [manual_day]}), encoding='utf8'
+    )
+    monkeypatch.setattr(importer, 'DATA', data)
+    monkeypatch.setattr(importer, 'fetch', lambda sess, url:
+        '<html><head><title>Новини Черкасиобленерго</title></head>'
+        '<body><a href="/media/notice">Оголошення</a></body></html>'
+    )
+
+    out = update_schedules(object(), now=datetime(2026, 10, 10, 22, tzinfo=TZ))
+    day = next(item for item in out['days'] if item['date'] == '2026-10-10')
+    assert day['manualEntry'] is True
+    assert day['queues']['6.1']['off'] == [['10:00', '12:00']]
+    assert '2026-10-10' not in out['confirmedNoScheduleDates']
+    assert out['reviewPending'] is False
+
+
+def test_official_article_takes_precedence_over_manual_schedule(monkeypatch, tmp_path):
+    import json
+    from scripts import update_data as importer
+    data = tmp_path / 'data'
+    data.mkdir()
+    queues = {
+        f'{i}.{j}': {'knownFrom': '00:00', 'off': [['10:00', '12:00']]}
+        for i in range(1, 7) for j in (1, 2)
+    }
+    manual_day = {
+        'date': '2026-10-10',
+        'publishedAt': '2026-10-10T00:00+03:00',
+        'source': 'https://t.me/pat_cherkasyoblenergo',
+        'verified': True,
+        'manualEntry': True,
+        'queues': queues,
+    }
+    (data / 'manual_schedule_days.json').write_text(
+        json.dumps({'schemaVersion': 1, 'days': [manual_day]}), encoding='utf8'
+    )
+    monkeypatch.setattr(importer, 'DATA', data)
+    official = news('10 жовтня', '10.10.2026 09:10')
+    monkeypatch.setattr(importer, 'fetch', lambda sess, url:
+        '<html><head><title>Новини Черкасиобленерго</title></head><body>'
+        '<a href="/media/official">Графік погодинних відключень на 10 жовтня</a>'
+        '</body></html>' if '/news?' in url else official
+    )
+
+    out = update_schedules(object(), now=datetime(2026, 10, 10, 12, tzinfo=TZ))
+    day = next(item for item in out['days'] if item['date'] == '2026-10-10')
+    assert day.get('manualEntry') is not True
+    assert day['source'].endswith('/official')

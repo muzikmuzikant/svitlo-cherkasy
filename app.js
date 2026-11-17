@@ -306,7 +306,7 @@ function renderHome(){
  const unknownOffline=Boolean(a&&!schedule&&!verifiedNoSchedule(date));
  setText('stateCaption',!a?'ВАШ ГРАФІК':schedule?'ЗА ОПУБЛІКОВАНИМ ГРАФІКОМ':unknownOffline?'АКТУАЛЬНИЙ ГРАФІК НЕ ПІДТВЕРДЖЕНО':'ГРАФІКА НЕМАЄ · СВІТЛО ВЕСЬ ДЕНЬ');
  setText('heroTitle',a&&!schedule?(unknownOffline?'Немає підтверджених даних':'Світло весь день'):copy.title);setText('heroCountdown',a&&!schedule?(unknownOffline?'Не вдалося підтвердити актуальний графік. Перевірте інформацію оператора.':'Відключень за опублікованим графіком немає.'):copy.detail);
- setText('sourceStamp',schedule?`Опубліковано ${fmtStamp(schedule.publishedAt)}`:unknownOffline?'Час перевірки невідомий або дані застаріли':'Офіційний графік на сьогодні не опубліковано');
+ setText('sourceStamp',schedule?(schedule.manualEntry?'Офіційний графік · додано вручну':`Опубліковано ${fmtStamp(schedule.publishedAt)}`):unknownOffline?'Час перевірки невідомий або дані застаріли':'Офіційний графік на сьогодні не опубліковано');
  setText('queueChip',a?.queue?`Черга ${a.queue}`:'—');
  setText('overviewDate',formatDate(date,{weekday:'long',day:'numeric',month:'long'}));
  setText('overviewLabel',schedule?'24 години':unknownOffline?'Графік не підтверджено':'Світло весь день');renderBar(timelineToday);
@@ -669,7 +669,7 @@ function renderDetail(){const a=previewQueue?{queue:previewQueue,nickname:'Пі�
  const pub=currentDay(day),t=timeline(day,a.queue);
  const dayStats=stats(t);
  setText('detailDayStat',!pub?'Світло весь день':dayStats?(dayStats.unknown?'Частина годин уточнюється':'Без світла '+formatDuration(dayStats.off)+' · Зі світлом '+formatDuration(dayStats.on)):'Немає даних');
-  setText('detailDayLabel',weekdayFull(day));setText('detailUpdated',pub?`Опубліковано ${fmtStamp(pub.publishedAt)}`:'Світло весь день');const grid=$('hourGrid');
+  setText('detailDayLabel',weekdayFull(day));setText('detailUpdated',pub?(pub.manualEntry?'Офіційний графік · додано вручну':`Опубліковано ${fmtStamp(pub.publishedAt)}`):'Світло весь день');const grid=$('hourGrid');
  const paintKey=JSON.stringify([day,a.queue,document.documentElement.dataset.theme,pub?.verified,pub?.queues?.[a.queue]||null,day===today()?Math.floor(nowMinutes()/60):null,verifiedNoSchedule(day)]);
  if(grid.dataset.paintKey!==paintKey){
   grid.dataset.paintKey=paintKey;grid.replaceChildren();
