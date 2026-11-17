@@ -51,7 +51,10 @@
  $('statusIncidentCancel').addEventListener('click',()=>{$('statusIncidentEditor').hidden=true});
  $('statusIncidentSave').addEventListener('click',async()=>{
   const id=$('statusIncidentId').value;
-  const payload={title:$('statusIncidentName').value,level:$('statusIncidentLevel').value,startedAt:new Date($('statusIncidentStart').value).toISOString(),endedAt:$('statusIncidentEnd').value?new Date($('statusIncidentEnd').value).toISOString():null,description:$('statusIncidentDescription').value};
+  const start=$('statusIncidentStart').value,end=$('statusIncidentEnd').value;
+  if(!start||!Number.isFinite(Date.parse(start))){$('statusAdminMessage').textContent='Вкажіть коректний час початку.';return}
+  if(end&&(!Number.isFinite(Date.parse(end))||Date.parse(end)<Date.parse(start))){$('statusAdminMessage').textContent='Перевірте час завершення.';return}
+  const payload={title:$('statusIncidentName').value,level:$('statusIncidentLevel').value,startedAt:new Date(start).toISOString(),endedAt:end?new Date(end).toISOString():null,description:$('statusIncidentDescription').value};
   try{snapshot=await api(id?'status/incidents/'+encodeURIComponent(id):'status/incidents',{method:id?'PATCH':'POST',body:JSON.stringify(id?{...payload,expectedRevision:Number($('statusIncidentRevision').value)}:payload)});$('statusIncidentEditor').hidden=true;render();$('statusAdminMessage').textContent='Запис збережено.'}catch(e){$('statusAdminMessage').textContent='Помилка: '+e.message}
  });
  document.addEventListener('svitlo:admin-ready',load);
