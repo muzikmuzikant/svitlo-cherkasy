@@ -143,13 +143,13 @@ def test_uman_city_and_district_branches_are_indexed(monkeypatch):
 
     class FakePage:
         def get_text(self, *args, **kwargs):
-            return (
-                'Уманські міські ЕМ\\n'
-                'вул. Незалежності 10, 12\\n'
-                'Уманські районні ЕМ\\n'
-                'с. Бабанка\\n'
-                'вул. Центральна 1, 2'
-            )
+            return '\n'.join([
+                'Уманські міські ЕМ',
+                'вул. Незалежності 10, 12',
+                'Уманські районні ЕМ',
+                'с. Бабанка',
+                'вул. Центральна 1, 2',
+            ])
 
     monkeypatch.setattr(fitz, 'open', lambda **kwargs: [FakePage()])
     sections = extract_sections(b'%PDF-fake')
