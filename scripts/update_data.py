@@ -294,7 +294,7 @@ def parse_article(html,url,reference=None):
     # Operator edits are separate official news posts and sometimes change
     # the wording before the queue table. A fixed introductory phrase must not
     # make an otherwise well-formed official revision unreadable.
-    marker=re.search(r'(?:Години\s+відсутності\s+електропостачання|Години\s+відключень|Години\s+відсутності\s+(?:світла|електрики)|електропостачання\s+буде\s+відсутнє\s+у\s+наступні\s+години)(?:\s+по\s+області\b[^:]{0,220})?\s*:', full, re.I)
+    marker=re.search(r'(?:Години\s+відсутності\s+електропостачання|Години\s+відключень|Години\s+відсутності\s+(?:світла|електрики)|електропостачання\s+буде\s+відсутнє\s+у\s+наступні\s+години)(?:\s+по\s+(?:Черкаській\s+)?області\b[^:]{0,220})?\s*:', article_text, re.I)
     if marker:
         table_text=article_text[marker.end():]
     else:
