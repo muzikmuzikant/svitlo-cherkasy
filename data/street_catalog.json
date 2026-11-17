@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-10-20T17:37:18+00:00",
+  "updatedAt": "2026-11-17T20:17:22.798Z",
   "sources": {
     "city": "https://mgis.chmr.gov.ua/server/rest/services/opora/Streets_WGS84/MapServer/0",
     "district": "https://www.openstreetmap.org/copyright"
@@ -631,7 +631,7 @@
       }
     },
     "вканівці": {
-      "label": "в Канівці",
+      "label": "Великі Канівці",
       "streets": {
         "вулиця|шевченка": "Вулиця Шевченка"
       }
@@ -1044,7 +1044,7 @@
       }
     },
     "хрестителево": {
-      "label": "Хрестителево",
+      "label": "Хрестителеве",
       "streets": {}
     },
     "хрещатик": {
