@@ -32,6 +32,20 @@ PUB_TS = re.compile(r'(?<!\d)(\d{2}\.\d{2}\.20\d\d)\s+(\d{1,2}:\d{2})')
 PDF_LINK = re.compile(r'\.pdf(?:\?.*)?$',re.I)
 BRANCH_CITY = re.compile(r'(?:ВСП\s*)?Черкаськ(?:і|их)\s+міськ(?:і|их)\s+(?:ЕМ|енергетичн(?:і|их)\s+мереж(?:і|ах))',re.I)
 BRANCH_DISTRICT = re.compile(r'(?:ВСП\s*)?Черкаськ(?:і|их)\s+(?:(?:районн(?:і|их)\s+)?ЕМ|районн(?:і|их)\s+енергетичн(?:і|их)\s+мереж(?:і|ах))',re.I)
+BRANCH_DISTRICT_GENERIC = re.compile(
+    r'(?:ВСП\s*)?[А-ЯІЇЄҐ][А-ЯІЇЄҐа-яіїєґ\-’\' ]{2,55}районн(?:і|их)\s+(?:ЕМ|енергетичн(?:і|их)\s+мереж(?:і|ах))\s*$', re.I)
+BRANCH_CITY_GENERIC = re.compile(
+    r'(?:ВСП\s*)?(?P<name>[А-ЯІЇЄҐ][А-ЯІЇЄҐа-яіїєґ\-’\' ]{2,45}?)\s+міськ(?:і|их)\s+(?:ЕМ|енергетичн(?:і|их)\s+мереж(?:і|ах))\s*$', re.I)
+CITY_BRANCH_LOCALITIES = {
+    'уманські': 'Умань', 'золотоніські': 'Золотоноша', 'смілянські': 'Сміла',
+    'звенигородські': 'Звенигородка', 'канівські': 'Канів', 'жашківські': 'Жашків',
+    'тальнівські': 'Тальне', 'монастирищенські': 'Монастирище',
+    'христинівські': 'Христинівка', 'чигиринські': 'Чигирин',
+    'корсунь-шевченківські': 'Корсунь-Шевченківський', 'городищенські': 'Городище',
+    'кам’янські': 'Кам’янка', 'катеринопільські': 'Катеринопіль',
+    'лисянські': 'Лисянка', 'маньківські': 'Маньківка', 'драбівські': 'Драбів',
+    'чорнобаївські': 'Чорнобай',
+}
 OTHER_BRANCH = re.compile(r'(?:ВСП\s*)?[А-ЯІЇЄҐ][А-ЯІЇЄҐа-яіїєґ\-’\'\s]{3,75}(?:\sЕМ|\sфілія|енергетичні\s+мережі)\s*$',re.I)
 LOCALITY = re.compile(r'^(?:с\.|село|смт\.?|селище|м\.|місто)\s+([А-ЯІЇЄҐ][\w’\'\- ]{2,58})\s*$', re.I)
 # Names confirmed by Verkhovna Rada Resolution 3984-IX (19 September 2024).
@@ -151,6 +165,63 @@ def check_schedule_date(day, pub, url):
     return True
 
 
+def normalize_article_clocks(text):
+    """Repair common CMS clock fragmentation without touching queue IDs."""
+    text=str(text).replace('\xa0',' ').replace('−','-')
+    text=re.sub(r'(?<=\d)\s*:\s*(?=\d{2}\b)', ':', text)
+    text=re.sub(r'(?<!\d)0\s+([0-9]):([0-5]\d)\b', r'0\1:\2', text)
+    text=re.sub(r'(?<!\d)(\d{1,2})\s*:\s*([0-5])\s+([0-9])(?!\d)', r'\1:\2\3', text)
+    text=re.sub(r'(?<!\d)0\s+0:([0-5]\d)\b', r'00:\1', text)
+    text=re.sub(r'(?<!\d)0\s+1:([0-5]\d)\b', r'01:\1', text)
+    return text
+
+
+def parse_hourly_queue_rows(text):
+    """Parse alternate hourly rows naming whole queues, applying them to both subqueues."""
+    hourly = defaultdict(list)
+    seen_queues = set()
+    row_re = re.compile(
+        r'(?P<start>(?:[01]?\d|2[0-4])[:.][0-5]\d)\s*[-–—−]\s*'
+        r'(?P<end>(?:[01]?\d|2[0-4])[:.][0-5]\d)', re.I)
+    for raw_line in str(text).splitlines():
+        line = normalize_article_clocks(raw_line).strip()
+        if not line or not re.search(r'черг', line, re.I):
+            continue
+        match = row_re.search(line)
+        if not match:
+            continue
+        labels = line[:match.start()] + ' ' + line[match.end():]
+        numbers = list(dict.fromkeys(int(x) for x in
+                       re.findall(r'(?<![\d.])([1-6])(?![\d.])', labels)))
+        if not numbers:
+            continue
+        start, end = match.group('start'), match.group('end')
+        a, b = [int(x) for x in re.split('[:.]', start)]
+        c, d = [int(x) for x in re.split('[:.]', end)]
+        begin, finish = a * 60 + b, c * 60 + d
+        if not 0 <= begin < finish <= 1440:
+            return None
+        for major in numbers:
+            seen_queues.add(major)
+            for sub in (1, 2):
+                hourly[f'{major}.{sub}'].append((begin, finish))
+    if len(seen_queues) < 3 or not hourly:
+        return None
+    result = {}
+    for queue, periods in hourly.items():
+        periods.sort()
+        merged = []
+        for start, end in periods:
+            if merged and start < merged[-1][1]:
+                return None
+            if merged and start == merged[-1][1]:
+                merged[-1] = (merged[-1][0], end)
+            else:
+                merged.append((start, end))
+        result[queue] = merged
+    return result
+
+
 def parse_article(html,url,reference=None):
     soup=BeautifulSoup(html,'html.parser')
     header=soup.find('h1')
@@ -159,17 +230,8 @@ def parse_article(html,url,reference=None):
     if 'погодинн' not in heading or 'відключен' not in heading:return None
     date_hit=HEADLINE_DATE.search(heading)
     if not date_hit:return None
-    full=soup.get_text(' ',strip=True).replace('\xa0',' ').replace('−','-')
-    # The operator's CMS wraps parts of a clock in separate HTML spans,
-    # so BeautifulSoup may produce "08 :00" instead of "08:00".
-    # Join only numeric clock colons, never merge unrelated table tokens.
-    full=re.sub(r'(?<=\d)\s*:\s*(?=\d{2}\b)', ':', full)
-    # Operator CMS occasionally fragments clock digits across inline spans.
-    # Normalize split hour/minute tokens before parsing; e.g. "0 1:00" ->
-    # "01:00" and the real-world malformed rendering "20:0 0" -> "20:00".
-    # Keep the joins bounded to numeric clock positions so queue IDs are untouched.
-    full=re.sub(r'(?<!\d)0\s+([0-9]):([0-5]\d)\b', r'0\1:\2', full)
-    full=re.sub(r'(?<!\d)(\d{1,2})\s*:\s*([0-5])\s+([0-9])(?!\d)', r'\1:\2\3', full)
+    full=normalize_article_clocks(soup.get_text(' ',strip=True))
+    layout=normalize_article_clocks(soup.get_text('\n',strip=True))
     time_hit=PUB_TS.search(full)
     if time_hit:
         pub=datetime.strptime(' '.join(time_hit.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ)
@@ -216,6 +278,22 @@ def parse_article(html,url,reference=None):
             return None
     body=re.split(r'Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|Відключення\s+електроенергії\s+можуть',table_text,maxsplit=1,flags=re.I)[0]
     found=list(QUEUE_START.finditer(body))
+    if len(found) < 3:
+        # Alternate format: hourly rows name whole queues, not subqueues.
+        layout_marker=re.search(
+            r'(?:Години\s+відсутності\s+електропостачання|Години\s+відключень|'
+            r'Години\s+відсутності\s+(?:світла|електрики)|'
+            r'електропостачання\s+буде\s+відсутнє\s+у\s+наступні\s+години)\s*:',
+            layout, re.I)
+        hourly_text=layout[layout_marker.end():] if layout_marker else layout
+        hourly_text=re.split(
+            r'Свою\s+чергу|Перелік\s+адрес|Чат-боти|Сторінка\s+у\s+Telegram|'
+            r'Відключення\s+електроенергії\s+можуть',
+            hourly_text,maxsplit=1,flags=re.I)[0]
+        hourly_queues=parse_hourly_queue_rows(hourly_text)
+        if hourly_queues:
+            return {'date':day,'publishedAt':pub.isoformat(timespec='minutes'),
+                    'source':url,'queues':hourly_queues}
     if not found:return None
     if len({x.group(1) for x in found})!=len(found):return None
     queues={}
@@ -731,8 +809,14 @@ def extract_sections(pdf):
             # A branch marker is a table-cell heading, not a company in a row.
             if BRANCH_CITY.fullmatch(line):
                 branch='city';locality='Черкаси';continue
-            if BRANCH_DISTRICT.fullmatch(line):
+            if BRANCH_DISTRICT.fullmatch(line) or BRANCH_DISTRICT_GENERIC.fullmatch(line):
                 branch='district';locality=None;continue
+            city_branch=BRANCH_CITY_GENERIC.fullmatch(line)
+            if city_branch:
+                branch='district'
+                branch_name=normalize(city_branch.group('name'))
+                locality=CITY_BRANCH_LOCALITIES.get(branch_name, city_branch.group('name').strip())
+                continue
             if OTHER_BRANCH.fullmatch(line):
                 branch=None;locality=None;continue
             if branch=='city':
