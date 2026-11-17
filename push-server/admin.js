@@ -65,7 +65,7 @@ async function github(path,method='GET',payload){
  return data;
 }
 async function readJson(req,limit=4096){let raw='',bytes=0;for await(const chunk of req){bytes+=chunk.length;if(bytes>limit){const e=Error('Завеликий запит');e.statusCode=413;throw e}raw+=chunk.toString('utf8')}return JSON.parse(raw)}
-export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal,auditSchedules,errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry,addressCorrections,manualOverrides){
+export async function adminRouter(req,res,manualPush,feedback,extras,monitor,siteControls,mediaStore,analytics,ads,adminUsers,legal,auditSchedules,errorCounts,dailyReports,noticeMetrics,scheduleReview,officialSchedules,workRegistry,addressCorrections,manualOverrides,statusStore){
  if(!req.url?.startsWith('/api/admin/'))return false;
  if(!originPolicy.isAllowed(req.headers.origin)){send(res,403,{error:'Запит не з дозволеного сайту'});return true}
  const url=new URL(req.url,'http://localhost');
@@ -156,6 +156,26 @@ export async function adminRouter(req,res,manualPush,feedback,extras,monitor,sit
     ||(pathName.startsWith('/api/admin/feedback/')&&method==='DELETE'));
  if(!allowed){send(res,403,{error:'Недостатньо прав для цієї дії'});return true}
  try{
+   if(pathName==='/api/admin/status'&&method==='GET'){send(res,200,statusStore.snapshot());return true}
+   if(pathName==='/api/admin/status/level'&&method==='PUT'){
+    if(!['owner','editor'].includes(role)){send(res,403,{error:'Потрібні права редактора'});return true}
+    send(res,200,statusStore.updateLevel(await readJson(req,1200)));extras?.record('status.level.update');return true;
+   }
+   if(pathName==='/api/admin/status/incidents'&&method==='POST'){
+    if(!['owner','editor'].includes(role)){send(res,403,{error:'Потрібні права редактора'});return true}
+    send(res,201,statusStore.create(await readJson(req,5000),session.username));extras?.record('status.incident.create');return true;
+   }
+   if(pathName.startsWith('/api/admin/status/incidents/')&&['PATCH','DELETE'].includes(method)){
+    const id=decodeURIComponent(pathName.slice('/api/admin/status/incidents/'.length));
+    if(!/^INC-[A-F0-9]{12}$/.test(id)){send(res,400,{error:'Некоректний номер інциденту'});return true}
+    const body=await readJson(req,5000);
+    if(method==='PATCH'){
+     if(!['owner','editor'].includes(role)){send(res,403,{error:'Потрібні права редактора'});return true}
+     send(res,200,statusStore.edit(id,body,session.username));extras?.record('status.incident.update',id);return true;
+    }
+    if(role!=='owner'||session.managed){send(res,403,{error:'Видаляти записи може лише власник'});return true}
+    send(res,200,statusStore.remove(id,body.expectedRevision));extras?.record('status.incident.delete',id);return true;
+   }
    if(pathName==='/api/admin/address-corrections'&&method==='GET'){
     send(res,200,addressCorrections.list());return true;
    }
