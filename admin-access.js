@@ -5,16 +5,16 @@
  const $=id=>document.getElementById(id);
  const MODULE={
   overview:null,insights:'view',quality:'view',audit:'view',
-  registry:'settings',corrections:'schedules',sources:'schedules',planner:'schedules',tools:'schedules',
+  registry:'settings',status:'settings',corrections:'schedules',sources:'schedules',planner:'schedules',tools:'schedules',
   operations:'notices',push:'push',media:'media',ads:'ads',
   feedback:'feedback',help:'help',
   social:'owner',live:'owner',features:'owner',design:'owner',maintenance:'owner',
   data:'owner',security:'owner',backup:'owner',revisions:'owner'
  };
  const ROLE={owner:'Власник',editor:'Редактор',operator:'Оператор',viewer:'Перегляд'};
- const PERM_LABEL={view:'Огляд і аналітика',feedback:'Звернення',notices:'Оголошення',push:'Push',schedules:'Графіки',ads:'Реклама',help:'Центр допомоги',media:'Медіатека',settings:'Службові доручення'};
+ const PERM_LABEL={view:'Огляд і аналітика',feedback:'Звернення',notices:'Оголошення',push:'Push',schedules:'Графіки',ads:'Реклама',help:'Центр допомоги',media:'Медіатека',settings:'Службові інструменти та статус'};
  const legacy={
-  editor:new Set(['overview','insights','quality','audit','registry','corrections','sources','planner','tools','operations','media','ads','feedback','help']),
+  editor:new Set(['overview','insights','quality','audit','registry','status','corrections','sources','planner','tools','operations','media','ads','feedback','help']),
   operator:new Set(['overview','insights','quality','feedback']),
   viewer:new Set(['overview','insights','quality','audit'])
  };
