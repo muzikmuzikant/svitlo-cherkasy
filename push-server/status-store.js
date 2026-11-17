@@ -13,6 +13,7 @@ export function createStatusStore({directory}={}){
  try{const raw=JSON.parse(fs.readFileSync(file,'utf8'));if(raw&&STATES.has(raw.level)&&Array.isArray(raw.incidents))state={...state,...raw,incidents:raw.incidents.slice(0,MAX_ITEMS)}}catch(e){if(e.code!=='ENOENT')throw Error('Cannot load status board: '+e.message)}
  function save(){fs.mkdirSync(directory,{recursive:true});const tmp=file+'.tmp';fs.writeFileSync(tmp,JSON.stringify(state,null,2),{mode:0o600});fs.renameSync(tmp,file)}
  function snapshot(){return JSON.parse(JSON.stringify(state))}
+ function publicSnapshot(){return {level:state.level,summary:state.summary,updatedAt:state.updatedAt,incidents:state.incidents.map(({id,title,description,level,startedAt,endedAt,createdAt,updatedAt})=>({id,title,description,level,startedAt,endedAt,createdAt,updatedAt}))}}
  function updateLevel(input){
   if(!STATES.has(input?.level))throw fail('Оберіть коректний загальний статус.');
   const summary=clean(input.summary,240);
@@ -49,5 +50,5 @@ export function createStatusStore({directory}={}){
   if(revision!==state.incidents[i].revision)throw fail('Запис уже змінено. Оновіть сторінку.',409);
   state.incidents.splice(i,1);state.updatedAt=new Date().toISOString();save();return snapshot();
  }
- return {snapshot,updateLevel,create,edit,remove};
+ return {snapshot,publicSnapshot,updateLevel,create,edit,remove};
 }
