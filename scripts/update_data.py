@@ -178,43 +178,38 @@ def normalize_article_clocks(text):
 
 
 def parse_hourly_queue_rows(text):
-    """Parse hourly rows naming whole queues, applying each to both subqueues."""
+    """Parse whole-queue hourly rows regardless of HTML cell/line ordering."""
+    flat = re.sub(r'\s+', ' ', normalize_article_clocks(text)).strip()
+    intervals = list(INTERVAL.finditer(flat))
+    if not intervals:
+        return None
+    label_re = re.compile(
+        r'(?P<nums>[1-6](?:\s*(?:,|та|і|й|&)\s*[1-6])*)\s*черг(?:а|и)?',
+        re.I)
     hourly = defaultdict(list)
     seen_queues = set()
-    row_re = re.compile(
-        r'(?P<start>(?:[01]?\d|2[0-4])[:.][0-5]\d)\s*[-–—−]\s*'
-        r'(?P<end>(?:[01]?\d|2[0-4])[:.][0-5]\d)', re.I)
-    lines = [normalize_article_clocks(x).strip() for x in str(text).splitlines()]
-    lines = [x for x in lines if x]
-    # Some CMS layouts put the clock and "1 та 2 черги" in adjacent cells.
-    merged_lines = []
-    i = 0
-    while i < len(lines):
-        current = lines[i]
-        if row_re.search(current) and not re.search(r'черг', current, re.I) and i + 1 < len(lines) and re.search(r'черг', lines[i + 1], re.I):
-            current += ' ' + lines[i + 1]
-            i += 1
-        elif re.search(r'черг', current, re.I) and not row_re.search(current) and i + 1 < len(lines) and row_re.search(lines[i + 1]):
-            current += ' ' + lines[i + 1]
-            i += 1
-        merged_lines.append(current)
-        i += 1
     seen_rows = set()
-    for line in merged_lines:
-        if not re.search(r'черг', line, re.I):
+    for index, interval in enumerate(intervals):
+        previous_end = intervals[index - 1].end() if index else max(0, interval.start() - 90)
+        next_start = intervals[index + 1].start() if index + 1 < len(intervals) else min(len(flat), interval.end() + 90)
+        before = flat[max(previous_end, interval.start() - 90):interval.start()]
+        after = flat[interval.end():min(next_start, interval.end() + 90)]
+        candidates = []
+        for label in label_re.finditer(before):
+            candidates.append((interval.start() - label.end(), label))
+        for label in label_re.finditer(after):
+            candidates.append((label.start() + interval.end() - interval.end(), label))
+        if not candidates:
             continue
-        match = row_re.search(line)
-        if not match:
+        # Pick the closest explicit queue label to this time range.
+        distance, label = min(candidates, key=lambda item: item[0])
+        if distance > 65:
             continue
-        labels = line[:match.start()] + ' ' + line[match.end():]
         numbers = list(dict.fromkeys(int(x) for x in
-                       re.findall(r'(?<![\d.])([1-6])(?![\d.])', labels)))
-        if not numbers:
-            continue
-        start, end = match.group('start'), match.group('end')
-        a, b = [int(x) for x in re.split('[:.]', start)]
-        c, d = [int(x) for x in re.split('[:.]', end)]
-        begin, finish = a * 60 + b, c * 60 + d
+                       re.findall(r'[1-6]', label.group('nums'))))
+        start_hour, start_minute, end_hour, end_minute = map(int, interval.groups())
+        begin = start_hour * 60 + start_minute
+        finish = end_hour * 60 + end_minute
         if not 0 <= begin < finish <= 1440:
             return None
         for major in numbers:
