@@ -15,7 +15,7 @@
   for(const value of pieces){
    if(!value)continue;
    let node=null;
-   if(value.startsWith('**')&&value.endsWith('**')){node=document.createElement('strong');node.textContent=value.slice(2,-2)}
+   if(value.startsWith('**')&&value.endsWith('**')){node=document.createElement('strong');inline(node,value.slice(2,-2))}
    else if(value.startsWith('*')&&value.endsWith('*')){node=document.createElement('em');node.textContent=value.slice(1,-1)}
    else if(value.startsWith('\x60')&&value.endsWith('\x60')){node=document.createElement('code');node.textContent=value.slice(1,-1)}
    else if(linkPattern.test(value)){
