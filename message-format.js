@@ -6,15 +6,18 @@
   catch{return ''}
  }
  function inline(host,source){
-  const pieces=String(source).split(/(\*\*[^*\n]{1,250}\*\*|\*[^*\n]{1,250}\*|\x60[^\x60\n]{1,160}\x60|\[[^\]\n]{1,120}\]\(https:\/\/[^\s)]+\))/g);
+  // Accept both standard Markdown [label](https://...) and the escaped
+  // delimiter variant [label]\(https://...) found in published messages.
+  const linkPattern=/\[[^\]\n]{1,120}\]\\?\(https:\/\/[^\s)]+\\?\)/;
+  const pieces=String(source).split(/(\*\*[^*\n]{1,250}\*\*|\*[^*\n]{1,250}\*|\x60[^\x60\n]{1,160}\x60|\[[^\]\n]{1,120}\]\\?\(https:\/\/[^\s)]+\\?\))/g);
   for(const value of pieces){
    if(!value)continue;
    let node=null;
    if(value.startsWith('**')&&value.endsWith('**')){node=document.createElement('strong');node.textContent=value.slice(2,-2)}
    else if(value.startsWith('*')&&value.endsWith('*')){node=document.createElement('em');node.textContent=value.slice(1,-1)}
    else if(value.startsWith('\x60')&&value.endsWith('\x60')){node=document.createElement('code');node.textContent=value.slice(1,-1)}
-   else if(value.startsWith('[')){
-    const match=/^\[([^\]]+)\]\((https:\/\/[^\s)]+)\)$/.exec(value);
+   else if(linkPattern.test(value)){
+    const match=/^\[([^\]]+)\]\\?\((https:\/\/[^\s)]+)\\?\)$/.exec(value);
     const url=match&&secureUrl(match[2]);
     if(url){node=document.createElement('a');node.href=url;node.textContent=match[1];node.target='_blank';node.rel='noopener noreferrer'}
    }
