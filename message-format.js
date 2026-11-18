@@ -6,8 +6,10 @@
   catch{return ''}
  }
  function inline(host,source){
+  // Unwrap redundant nested links sometimes stored as [label]\\([url](url)).
+  source=String(source).replace(/\[([^\]\n]{1,120})\]\\?\(\[(https:\/\/[^\s)\]]+)\]\((https:\/\/[^\s)]+)\)\\?\)/g,'[$1]($3)');
   // Accept both standard Markdown [label](https://...) and the escaped
-  // delimiter variant [label]\(https://...) found in published messages.
+  // delimiter variant [label]\\(https://...) found in published messages.
   const linkPattern=/\[[^\]\n]{1,120}\]\\?\(https:\/\/[^\s)]+\\?\)/;
   const pieces=String(source).split(/(\*\*[^*\n]{1,250}\*\*|\*[^*\n]{1,250}\*|\x60[^\x60\n]{1,160}\x60|\[[^\]\n]{1,120}\]\\?\(https:\/\/[^\s)]+\\?\))/g);
   for(const value of pieces){
