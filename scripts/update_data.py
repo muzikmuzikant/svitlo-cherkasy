@@ -167,9 +167,17 @@ def check_schedule_date(day, pub, url):
 
 
 def normalize_article_clocks(text):
-    """Repair common CMS clock fragmentation without touching queue IDs."""
+    """Repair common CMS clock fragmentation without touching queue IDs.
+
+    Some edited operator articles split a two-digit hour into separate text
+    nodes, so BeautifulSoup yields e.g. "1 6:00" instead of "16:00".
+    Do not join the final digit of a queue label (e.g. "1.1 06:00").
+    """
     text=str(text).replace('\xa0',' ').replace('−','-')
     text=re.sub(r'(?<=\d)\s*:\s*(?=\d{2}\b)', ':', text)
+    # Repair split tens/units of an hour: "1 6:00" -> "16:00".
+    # The left boundary excludes word characters and dots to protect queue IDs.
+    text=re.sub(r'(?<![\w.])([01])\s+([0-9]):([0-5]\d)\b', r'\1\2:\3', text)
     text=re.sub(r'(?<!\d)0\s+([0-9]):([0-5]\d)\b', r'0\1:\2', text)
     text=re.sub(r'(?<!\d)(\d{1,2})\s*:\s*([0-5])\s+([0-9])(?!\d)', r'\1:\2\3', text)
     text=re.sub(r'(?<!\d)0\s+0:([0-5]\d)\b', r'00:\1', text)
