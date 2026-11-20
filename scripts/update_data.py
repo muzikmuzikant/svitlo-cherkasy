@@ -178,6 +178,7 @@ def normalize_article_clocks(text):
     # Repair split tens/units of an hour: "1 6:00" -> "16:00".
     # The left boundary excludes word characters and dots to protect queue IDs.
     text=re.sub(r'(?<![\w.])([01])\s+([0-9]):([0-5]\d)\b', r'\1\2:\3', text)
+    text=re.sub(r'(?<![\w.])2\s+([0-3]):([0-5]\d)\b', r'2\1:\2', text)
     text=re.sub(r'(?<!\d)0\s+([0-9]):([0-5]\d)\b', r'0\1:\2', text)
     text=re.sub(r'(?<!\d)(\d{1,2})\s*:\s*([0-5])\s+([0-9])(?!\d)', r'\1:\2\3', text)
     text=re.sub(r'(?<!\d)0\s+0:([0-5]\d)\b', r'00:\1', text)
