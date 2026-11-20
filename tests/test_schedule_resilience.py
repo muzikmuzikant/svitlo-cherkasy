@@ -88,3 +88,64 @@ def test_news_listing_deduplicates_same_media_path_with_language_query_variants(
     links = importer.parse_news_links(html)
     assert len(links) == 1
     assert '/media/hrafik-na-21-lystopada' in links[0]
+
+UPDATED_AND_BASE_NEWS = '''<html><head><title>Новини — Черкасиобленерго</title></head><body>
+<a href="/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-12-zhovtnya">Оновлено графік погодинних відключень (ГПВ) на 12 жовтня</a>
+<a href="/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-12-zhovtnya?lang=uk">Графік погодинних відключень (ГПВ) на 12 жовтня</a>
+</body></html>'''
+
+
+def test_older_unreadable_article_does_not_block_newer_verified_revision(monkeypatch, tmp_path):
+    monkeypatch.setattr(importer, 'DATA', tmp_path)
+    updated = OFFICIAL_12.replace(
+        '<h1>Графік погодинних відключень',
+        '<h1>Оновлено графік погодинних відключень',
+    ).replace('11.10.2026 19:42', '11.10.2026 19:42')
+    older_broken = '''<html><body><div>11.10.2026 19:30</div>
+    <h1>Графік погодинних відключень (ГПВ) на 12 жовтня</h1>
+    <p>Текст публікації тимчасово недоступний</p></body></html>'''
+
+    def fake_fetch(session, url):
+        if '/news?' in url:
+            return UPDATED_AND_BASE_NEWS
+        if 'onovleno-hrafik' in url:
+            return updated
+        if 'hrafik-pohodynnykh' in url:
+            return older_broken
+        raise AssertionError(url)
+
+    monkeypatch.setattr(importer, 'fetch', fake_fetch)
+    result = importer.update_schedules(None, now=datetime(2026, 10, 11, 20, 17, tzinfo=TZ))
+    assert result['reviewPending'] is False
+    day = next(d for d in result['days'] if d['date'] == '2026-10-12')
+    assert day['verified'] is True
+    review = json.loads((tmp_path/'source_review.json').read_text('utf8'))
+    assert review['warningCount'] == 0
+    assert review['items'] == []
+
+
+def test_two_unreadable_articles_for_same_date_create_one_attention_item(monkeypatch, tmp_path):
+    monkeypatch.setattr(importer, 'DATA', tmp_path)
+    updated_broken = '''<html><body><div>11.10.2026 19:42</div>
+    <h1>Оновлено графік погодинних відключень (ГПВ) на 12 жовтня</h1>
+    <p>Текст публікації тимчасово недоступний</p></body></html>'''
+    older_broken = '''<html><body><div>11.10.2026 19:30</div>
+    <h1>Графік погодинних відключень (ГПВ) на 12 жовтня</h1>
+    <p>Текст публікації тимчасово недоступний</p></body></html>'''
+
+    def fake_fetch(session, url):
+        if '/news?' in url:
+            return UPDATED_AND_BASE_NEWS
+        if 'onovleno-hrafik' in url:
+            return updated_broken
+        if 'hrafik-pohodynnykh' in url:
+            return older_broken
+        raise AssertionError(url)
+
+    monkeypatch.setattr(importer, 'fetch', fake_fetch)
+    result = importer.update_schedules(None, now=datetime(2026, 10, 11, 20, 17, tzinfo=TZ))
+    assert result['reviewPending'] is True
+    review = json.loads((tmp_path/'source_review.json').read_text('utf8'))
+    assert review['warningCount'] == 1
+    assert len(review['items']) == 1
+    assert 'onovleno-hrafik' in review['items'][0]['source']
