@@ -149,3 +149,18 @@ def test_two_unreadable_articles_for_same_date_create_one_attention_item(monkeyp
     assert review['warningCount'] == 1
     assert len(review['items']) == 1
     assert 'onovleno-hrafik' in review['items'][0]['source']
+
+def test_21_november_official_article_with_split_16_hour_is_parsed():
+    article = '''<html><body><div>20.11.2026 21:33</div>
+    <h1>Графік погодинних відключень (ГПВ) на 21 листопада</h1>
+    <p>Години відсутності електропостачання по області:</p>
+    <p>1.1 06:00 - 08:00, 11:00 - 14:00, 1 6:00 - 19:00, 22:00 - 24:00</p>
+    <p>1.2 00:00 - 02:00, 06:00 - 08:00, 11:00 - 13:00, 18:00 - 21:00</p>
+    <p>2.1 04:00 - 06:00, 11:00 - 14:00, 16:00 - 19:00, 23:00 - 24:00</p>
+    <p>2.2 00:00 - 02:00, 06:00 - 08:00, 11:00 - 13:00, 17:00 - 20:00</p>
+    <p>3.1 00:00 - 02:00, 06:00 - 08:00, 13:00 - 15:00, 18:00 - 21:00</p>
+    <p>3.2 08:00 - 11:00, 13:00 - 16:00, 19:00 - 22:00</p>
+    <p>Свою чергу/підчергу можна дізнатися у чат-ботах</p></body></html>'''
+    parsed = importer.parse_article(article, 'https://www.cherkasyoblenergo.com/media/hrafik-pohodynnykh-vidklyuchen-hpv-na-21-lystopada')
+    assert parsed['date'] == '2026-11-21'
+    assert parsed['queues']['1.1'] == [(360, 480), (660, 840), (960, 1140), (1320, 1440)]
