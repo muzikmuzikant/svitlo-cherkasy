@@ -71,3 +71,10 @@ def test_unreadable_index_preserves_previous_data(monkeypatch,tmp_path):
     with pytest.raises(RuntimeError,match='Unrecognized'):
         importer.update_schedules(None,now=datetime(2026,10,11,20,17,tzinfo=TZ))
     assert json.loads((tmp_path/'schedules.json').read_text())==previous
+
+
+def test_split_hour_from_edited_cms_article_is_repaired_without_corrupting_queue_ids():
+    normalize = importer.normalize_article_clocks
+    assert normalize('Черга 1 6:00 - 18:00') == 'Черга 16:00 - 18:00'
+    assert normalize('1.1 06:00 - 08:00') == '1.1 06:00 - 08:00'
+    assert normalize('Черга 2 3:00 - 24:00') == 'Черга 23:00 - 24:00'
