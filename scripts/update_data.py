@@ -400,11 +400,19 @@ def publication_fingerprint(html):
 
 
 def parse_news_links(html):
-    soup=BeautifulSoup(html,'html.parser');urls=[]
+    soup=BeautifulSoup(html,'html.parser');urls=[];seen_paths=set()
     for a in soup.select('a[href]'):
         txt=a.get_text(' ',strip=True).lower()
         u=urljoin(BASE,a['href'])
-        if re.search(r'графік\s+погодинних\s+відключень', txt) and '/media/' in urlparse(u).path and urlparse(u).netloc.endswith('cherkasyoblenergo.com') and u not in urls:urls.append(u)
+        parsed=urlparse(u)
+        # The CMS may repeat one article with different host/query variants
+        # (e.g. www and ?lang=uk). One media path is one publication.
+        identity=parsed.path.rstrip('/')
+        if (re.search(r'графік\s+погодинних\s+відключень', txt)
+                and '/media/' in parsed.path
+                and parsed.netloc.endswith('cherkasyoblenergo.com')
+                and identity not in seen_paths):
+            urls.append(u);seen_paths.add(identity)
     return urls
 
 
@@ -521,7 +529,7 @@ def update_schedules(session, now=None):
     advertised_dates = {}
     for link in soup.select('a[href]'):
         url = urljoin(BASE, link['href'])
-        if url not in urls:
+        if urlparse(url).path.rstrip('/') not in {urlparse(item).path.rstrip('/') for item in urls}:
             continue
         match = HEADLINE_DATE.search(link.get_text(' ', strip=True))
         if not match:
@@ -529,7 +537,7 @@ def update_schedules(session, now=None):
         month = UA_MONTHS[match.group(2).lower()]
         year = now.year + (1 if now.month == 12 and month == 1 else -1 if now.month == 1 and month == 12 else 0)
         try:
-            advertised_dates[url] = datetime(year, month, int(match.group(1))).date().isoformat()
+            advertised_dates[urlparse(url).path.rstrip('/')] = datetime(year, month, int(match.group(1))).date().isoformat()
         except ValueError:
             pass
     grouped = defaultdict(list)
@@ -544,7 +552,7 @@ def update_schedules(session, now=None):
                 grouped[rev['date']].append(rev)
             elif rev is None:
                 warnings.append({'code': 'UNREADABLE_ARTICLE', 'source': u,
-                                 'targetDate': advertised_dates.get(u),
+                                 'targetDate': advertised_dates.get(urlparse(u).path.rstrip('/')),
                                  'sourceHash': fingerprint,
                                  'reason': 'Редаговану офіційну новину не вдалося розпізнати. Перевірте її години вручну; попередній підтверджений графік збережено.'})
                 LOG.warning('Could not parse schedule article %s', u)
