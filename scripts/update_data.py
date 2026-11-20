@@ -563,7 +563,7 @@ def update_schedules(session, now=None):
             LOG.warning('QUARANTINED source date mismatch %s (%s / %s)', e.url, e.headline_date, e.published_at)
         except (requests.RequestException, ValueError, RuntimeError) as e:
             warnings.append({'code': 'ARTICLE_FETCH_FAILED', 'source': u,
-                             'targetDate': advertised_dates.get(u),
+                             'targetDate': advertised_dates.get(urlparse(u).path.rstrip('/')),
                              'reason': 'Не вдалося отримати або прочитати публікацію.'})
             LOG.warning('Article error %s: %s', u, e)
 
