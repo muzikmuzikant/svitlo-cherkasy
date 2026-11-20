@@ -551,8 +551,17 @@ def update_schedules(session, now=None):
             if rev and rev['date'] in wanted:
                 grouped[rev['date']].append(rev)
             elif rev is None:
+                visible_text=BeautifulSoup(html,'html.parser').get_text(' ',strip=True)
+                published_hit=PUB_TS.search(visible_text)
+                published_at=None
+                if published_hit:
+                    try:
+                        published_at=datetime.strptime(' '.join(published_hit.groups()),'%d.%m.%Y %H:%M').replace(tzinfo=TZ).isoformat(timespec='minutes')
+                    except ValueError:
+                        pass
                 warnings.append({'code': 'UNREADABLE_ARTICLE', 'source': u,
                                  'targetDate': advertised_dates.get(urlparse(u).path.rstrip('/')),
+                                 'publishedAt': published_at,
                                  'sourceHash': fingerprint,
                                  'reason': 'Редаговану офіційну новину не вдалося розпізнати. Перевірте її години вручну; попередній підтверджений графік збережено.'})
                 LOG.warning('Could not parse schedule article %s', u)
@@ -564,6 +573,7 @@ def update_schedules(session, now=None):
         except (requests.RequestException, ValueError, RuntimeError) as e:
             warnings.append({'code': 'ARTICLE_FETCH_FAILED', 'source': u,
                              'targetDate': advertised_dates.get(urlparse(u).path.rstrip('/')),
+                             'publishedAt': None,
                              'reason': 'Не вдалося отримати або прочитати публікацію.'})
             LOG.warning('Article error %s: %s', u, e)
 
@@ -595,6 +605,32 @@ def update_schedules(session, now=None):
     # Never claim that an absent graph means power is planned all day while
     # an official publication is unresolved. Publishing a *verified* other
     # day's graph is nevertheless safe and useful.
+    # One date may have both its original article and a later correction.
+    # A successfully parsed newer edition supersedes older unreadable copies.
+    latest_parsed = {
+        day: max(revs, key=lambda item: item.get('publishedAt', ''))['publishedAt']
+        for day, revs in grouped.items() if revs
+    }
+    warnings = [
+        issue for issue in warnings
+        if not (issue.get('targetDate') in latest_parsed
+                and issue.get('publishedAt')
+                and issue['publishedAt'] <= latest_parsed[issue['targetDate']])
+    ]
+    # Keep one attention card per target date, preferring the newest known
+    # publication. Distinct articles for one date must not create duplicate cards.
+    by_target = {}
+    for issue in warnings:
+        key = issue.get('targetDate') or issue.get('source')
+        current = by_target.get(key)
+        rank = (bool(issue.get('publishedAt')), issue.get('publishedAt') or '',
+                issue.get('code') == 'UNREADABLE_ARTICLE')
+        current_rank = ((bool(current.get('publishedAt')), current.get('publishedAt') or '',
+                         current.get('code') == 'UNREADABLE_ARTICLE') if current else None)
+        if current is None or rank > current_rank:
+            by_target[key] = issue
+    warnings = list(by_target.values())
+
     risk_dates = {now.date().isoformat(), (now.date()+timedelta(days=1)).isoformat()}
     # An impossible headline/publication date is a deeper integrity issue:
     # keep conservative behavior for both dates until staff resolve it.
