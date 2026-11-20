@@ -1,6 +1,6 @@
 {
   "schemaVersion": 3,
-  "lastChecked": "2026-11-20T12:23:47+02:00",
+  "lastChecked": "2026-11-20T20:39:58+02:00",
   "reviewPending": false,
   "unresolvedDates": [],
   "confirmedNoScheduleDates": [
@@ -1031,8 +1031,8 @@
     },
     {
       "date": "2026-11-20",
-      "publishedAt": "2026-11-20T10:15+02:00",
-      "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-17-lystopada?lang=uk",
+      "publishedAt": "2026-11-20T13:59+02:00",
+      "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-20-lystopada?lang=uk",
       "verified": true,
       "queues": {
         "1.1": {
@@ -1044,10 +1044,10 @@
           "off": [
             [
               "12:00",
-              "14:00"
+              "15:00"
             ],
             [
-              "18:00",
+              "17:00",
               "20:00"
             ]
           ]
@@ -1056,12 +1056,8 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "10:00",
-              "12:00"
-            ],
-            [
               "16:00",
-              "18:00"
+              "19:00"
             ]
           ]
         },
@@ -1070,10 +1066,10 @@
           "off": [
             [
               "12:00",
-              "14:00"
+              "15:00"
             ],
             [
-              "18:00",
+              "17:00",
               "20:00"
             ]
           ]
@@ -1087,7 +1083,7 @@
             ],
             [
               "18:00",
-              "20:00"
+              "21:00"
             ]
           ]
         },
@@ -1099,7 +1095,7 @@
               "15:00"
             ],
             [
-              "20:00",
+              "19:00",
               "22:00"
             ]
           ]
@@ -1113,7 +1109,7 @@
             ],
             [
               "18:00",
-              "20:00"
+              "21:00"
             ]
           ]
         },
@@ -1121,11 +1117,11 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "14:00",
+              "14:30",
               "16:00"
             ],
             [
-              "20:00",
+              "19:00",
               "22:00"
             ]
           ]
@@ -1134,8 +1130,8 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "14:00",
-              "16:00"
+              "14:30",
+              "17:00"
             ],
             [
               "20:00",
@@ -1147,11 +1143,11 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "16:00",
+              "15:00",
               "18:00"
             ],
             [
-              "22:00",
+              "21:00",
               "24:00"
             ]
           ]
@@ -1160,8 +1156,8 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "10:00",
-              "12:00"
+              "15:00",
+              "17:00"
             ],
             [
               "20:00",
@@ -1173,22 +1169,18 @@
           "knownFrom": "00:00",
           "off": [
             [
-              "10:00",
-              "13:00"
-            ],
-            [
               "15:00",
               "18:00"
             ],
             [
-              "22:00",
+              "21:00",
               "24:00"
             ]
           ]
         }
       },
-      "revisions": 2,
-      "planFingerprint": "9f8303e3ce36f56af6f3",
+      "revisions": 3,
+      "planFingerprint": "431f77b2df3b299aa4c8",
       "noScheduledOutages": [
         "1.1"
       ],
@@ -1213,6 +1205,23 @@
         {
           "publishedAt": "2026-11-20T10:15+02:00",
           "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-17-lystopada?lang=uk",
+          "queues": [
+            "1.2",
+            "2.1",
+            "2.2",
+            "3.1",
+            "3.2",
+            "4.1",
+            "4.2",
+            "5.1",
+            "5.2",
+            "6.1",
+            "6.2"
+          ]
+        },
+        {
+          "publishedAt": "2026-11-20T13:59+02:00",
+          "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-20-lystopada?lang=uk",
           "queues": [
             "1.2",
             "2.1",
@@ -1265,6 +1274,26 @@
         "4.1",
         "4.2",
         "5.1",
+        "6.2"
+      ]
+    },
+    {
+      "date": "2026-11-20",
+      "publishedAt": "2026-11-20T13:59+02:00",
+      "detectedAt": "2026-11-20T20:39:58+02:00",
+      "revisionId": "431f77b2df3b299aa4c8",
+      "source": "https://www.cherkasyoblenergo.com/media/onovleno-hrafik-pohodynnykh-vidklyuchen-hpv-na-20-lystopada?lang=uk",
+      "queues": [
+        "1.2",
+        "2.1",
+        "2.2",
+        "3.1",
+        "3.2",
+        "4.1",
+        "4.2",
+        "5.1",
+        "5.2",
+        "6.1",
         "6.2"
       ]
     }
