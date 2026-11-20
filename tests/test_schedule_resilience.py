@@ -78,3 +78,13 @@ def test_split_hour_from_edited_cms_article_is_repaired_without_corrupting_queue
     assert normalize('Черга 1 6:00 - 18:00') == 'Черга 16:00 - 18:00'
     assert normalize('1.1 06:00 - 08:00') == '1.1 06:00 - 08:00'
     assert normalize('Черга 2 3:00 - 24:00') == 'Черга 23:00 - 24:00'
+
+def test_news_listing_deduplicates_same_media_path_with_language_query_variants():
+    html = '''<html><body>
+    <a href="/media/hrafik-na-21-lystopada">Графік погодинних відключень на 21 листопада</a>
+    <a href="/media/hrafik-na-21-lystopada?lang=uk">Графік погодинних відключень на 21 листопада</a>
+    <a href="https://cherkasyoblenergo.com/media/hrafik-na-21-lystopada">Графік погодинних відключень на 21 листопада</a>
+    </body></html>'''
+    links = importer.parse_news_links(html)
+    assert len(links) == 1
+    assert '/media/hrafik-na-21-lystopada' in links[0]
