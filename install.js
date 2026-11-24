@@ -81,12 +81,6 @@
           app.onerror = reportLaunchFailure;
           app.onload = () => {
             if (typeof clearTimeout === 'function') clearTimeout(bootTimeout);
-            if (document.body.dataset.deploymentChannel === 'beta') {
-              const smartTools = document.createElement('script');
-              smartTools.src = './smart-tools-7914.js';
-              smartTools.onerror = () => console.warn('BETA smart tools are temporarily unavailable.');
-              document.body.append(smartTools);
-            }
             // Inbox must never depend on the optional rich-copy file loading.
             // Cached iPhone PWAs can temporarily have a mismatched script bundle.
             let inboxStarted = false;
