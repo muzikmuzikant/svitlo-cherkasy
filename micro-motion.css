@@ -269,3 +269,8 @@ html.svitlo-pointer-input #allQueuesDialog :is(.all-queues-lane,.all-queues-clos
 }
 html:is(.feature-off-animations,.feature-off-motionInputs) :is(input[type="checkbox"],input[type="radio"],[role="switch"]).micro-changed{animation:none!important}
 html:is(.feature-off-animations,.feature-off-motionFeedback) .micro-status-ack{animation:none!important}
+
+/* Long ad descriptions must expand the home card instead of being clamped. */
+#home .beta-ad-content{height:auto!important;min-height:79px;max-height:none!important;overflow:visible!important;align-items:center}
+#home .beta-ad-content>div{min-height:0;overflow:visible!important}
+#home .beta-ad-content small{display:block!important;white-space:normal;overflow:visible!important;text-overflow:clip;-webkit-line-clamp:unset!important;line-clamp:unset;-webkit-box-orient:initial;max-height:none!important;overflow-wrap:anywhere}
