@@ -134,6 +134,10 @@
   clearTimeout(maintenanceExitTimer);maintenanceExitTimer=null;
   overlay.hidden=true;overlay.classList.remove('maintenance-leaving');
   document.body.classList.remove('svitlo-maintenance-active');
+  document.documentElement.classList.remove('svitlo-maintenance-active');
+  const themeMeta=document.querySelector('meta[name="theme-color"]');
+  if(themeMeta)themeMeta.content=document.documentElement.dataset.theme==='dark'?'#090b0f':'#f6f8fc';
+  // iOS status-bar style is static in index.html; iOS does not reliably apply runtime changes.
   if(maintenanceFocus?.isConnected){
    try{maintenanceFocus.focus({preventScroll:true})}catch{}
   }
@@ -147,6 +151,10 @@
     maintenanceFocus=document.activeElement;
     overlay.hidden=false;
     document.body.classList.add('svitlo-maintenance-active');
+    document.documentElement.classList.add('svitlo-maintenance-active');
+    const themeMeta=document.querySelector('meta[name="theme-color"]');
+    if(themeMeta)themeMeta.content='#090b0f';
+    // iOS status-bar style is static in index.html; keep it consistent across app states.
     // Announce the screen without scrolling the page behind it.
     $('maintenanceRefresh')?.focus({preventScroll:true});
    }
@@ -193,6 +201,8 @@
   if(modeLabel)modeLabel.textContent=m.mode==='incident'?'Термінове повідомлення':'Тимчасово недоступно';
   const activity=$('maintenanceActivityText');
   if(activity)activity.textContent=m.mode==='incident'?'Працюємо над вирішенням ситуації':'Працюємо над відновленням доступу';
+  renderMaintenanceSocial(data?.site);
+  if(!offline)void renderLatestOfficialSchedule();
   const official=overlay.querySelector('.maintenance-official');
   if(official)official.href=safePublicLink(data?.site?.links?.official,'https://www.cherkasyoblenergo.com/off');
   $('maintenanceTitle').textContent=m.title||'Технічні роботи';
@@ -260,6 +270,97 @@
     maintenance:active,site:data.site||null,updatedAt:data.updatedAt||null,serverVerified:true};
    window.dispatchEvent(new CustomEvent('svitlo:public-config',{detail:window.SvitloPublicConfig}));
   }
+ }
+ function renderMaintenanceSocial(site){
+  const host=$('maintenanceSocialLinks');if(!host)return;
+  host.replaceChildren();
+  const social=site?.social;
+  if(!social||social.enabled===false||social.showInApp===false||!Array.isArray(social.links))return;
+  for(const item of social.links.slice(0,12)){
+   if(!item||item.enabled===false||typeof item.label!=='string'||!item.label.trim())continue;
+   let url;try{url=new URL(item.url)}catch{continue}
+   if(url.protocol!=='https:'||url.username||url.password)continue;
+   const isTelegram=item.platform==='telegram'||url.hostname==='t.me'||url.hostname==='telegram.me';
+   const link=document.createElement('a');
+   link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';
+   link.className='maintenance-simple-social-link'+(isTelegram?' is-telegram':'');
+   if(isTelegram){
+    const icon=document.createElement('span');icon.className='maintenance-simple-social-icon';
+    icon.textContent='✈';icon.setAttribute('aria-hidden','true');
+    const copy=document.createElement('span');copy.className='maintenance-simple-social-copy';
+    const title=document.createElement('strong');title.textContent='Telegram-канал «Світло Черкаси»';
+    const handle=document.createElement('small');
+    const slug=url.pathname.split('/').filter(Boolean)[0]||'';
+    handle.textContent=slug?'@'+slug:'Офіційний канал';
+    copy.append(title,handle);link.append(icon,copy);
+   }else{
+    link.textContent=item.label.trim().slice(0,48);
+   }
+   host.append(link);
+  }
+  host.hidden=host.children.length===0;
+  const details=$('maintenanceDetails');
+  if(details)details.hidden=host.hidden;
+ }
+ let latestScheduleRequest=null,latestScheduleCheckedAt=0;
+ async function renderLatestOfficialSchedule(){
+  const link=$('maintenanceLatestSchedule');if(!link)return;
+  if(latestScheduleRequest)return latestScheduleRequest;
+  if(Date.now()-latestScheduleCheckedAt<300000)return;
+  latestScheduleCheckedAt=Date.now();
+  latestScheduleRequest=(async()=>{
+   const candidates=[];
+   const readSnapshot=async url=>{
+    try{
+     const response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(7500)});
+     if(!response.ok)return;
+     const data=await response.json();
+     if(Array.isArray(data.days))candidates.push(...data.days);
+    }catch{}
+   };
+   try{
+    if(!apiBase){
+     const config=await fetch('./push-config.json',{cache:'no-store',signal:AbortSignal.timeout(7000)});
+     if(config.ok){
+      const cfg=await config.json();
+      if(/^https:\/\//.test(cfg.apiBase||''))apiBase=cfg.apiBase.replace(/\/$/,'');
+     }
+    }
+    if(apiBase)await readSnapshot(apiBase+'/api/data/schedules.json?t='+Date.now());
+   }catch{}
+   // Match the same public fallback order as the main schedule loader.
+   if(!candidates.length)await readSnapshot('https://svitlo-cherkasy.pp.ua/data/schedules.json?maintenance='+Date.now());
+   if(!candidates.length)await readSnapshot('./data/schedules.json?maintenance='+Date.now());
+   const valid=candidates.filter(day=>day&&day.verified===true&&typeof day.date==='string')
+    .sort((a,b)=>String(b.publishedAt||b.date).localeCompare(String(a.publishedAt||a.date)));
+   let selected=null,source='';
+   for(const day of valid){
+    const values=[
+     day.source,
+     ...Object.values(day.queueSources||{}),
+     ...(Array.isArray(day.publications)?day.publications.map(item=>item?.source):[])
+    ];
+    source=values.find(value=>{
+     if(typeof value!=='string')return false;
+     try{
+      const u=new URL(value);
+      return u.protocol==='https:'&&/^(?:www\.)?cherkasyoblenergo\.com$/.test(u.hostname)&&!u.username&&!u.password;
+     }catch{return false}
+    })||'';
+    if(source){selected=day;break}
+   }
+   if(!source){link.hidden=true;link.removeAttribute('href');return}
+   const date=String(selected.date||'');
+   let dateLabel='';
+   if(/^20\d{2}-\d{2}-\d{2}$/.test(date)){
+    const [year,month,day]=date.split('-').map(Number);
+    dateLabel=new Intl.DateTimeFormat('uk-UA',{day:'numeric',month:'long'}).format(new Date(year,month-1,day));
+   }
+   link.href=source;
+   link.textContent='Офіційний графік'+(dateLabel?' · '+dateLabel:'')+' ↗';
+   link.hidden=false;
+  })().catch(()=>{link.hidden=true}).finally(()=>{latestScheduleRequest=null});
+  return latestScheduleRequest;
  }
  function connectLive(){
   if(live||!apiBase||!('EventSource' in window))return;
