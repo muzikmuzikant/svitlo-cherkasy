@@ -292,3 +292,187 @@ body.svitlo-maintenance-active{overscroll-behavior:none}
 .maintenance-backup-day:focus-visible,.maintenance-view-tab:focus-visible,.maintenance-backup-refresh:focus-visible,.maintenance-backup-content select:focus-visible{outline:3px solid #83b6fb;outline-offset:2px}
 @media(max-width:600px){.maintenance-backup-hours{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.maintenance-backup-v2{margin-top:20px}.maintenance-backup-title{align-items:flex-start}.maintenance-backup-title h2{font-size:23px}.maintenance-backup-refresh{padding:10px}}
 @media(max-width:360px){.maintenance-backup-days{gap:3px}.maintenance-backup-day{min-height:48px;font-size:10px}.maintenance-backup-day b{font-size:13px}.maintenance-backup-content{padding:13px}.maintenance-backup-hour{padding:9px 5px}}
+
+
+/* Maintenance screen: compact graphite design, no gradients, safe text wrapping. */
+.maintenance-screen{
+ position:fixed;inset:0;z-index:99999;display:grid;place-items:center;
+ box-sizing:border-box;min-width:0;min-height:100%;overflow-x:hidden;overflow-y:auto;
+ padding:calc(24px + env(safe-area-inset-top,0px)) 20px calc(24px + env(safe-area-inset-bottom,0px));
+ color:#f4f6fa!important;background:#090b0f!important;
+ -webkit-font-smoothing:antialiased;isolation:isolate;
+}
+.maintenance-screen[hidden]{display:none!important}
+.maintenance-screen::before,.maintenance-screen::after{display:none!important}
+.maintenance-simple{
+ width:min(100%,620px);min-width:0;min-height:calc(100svh - 48px);
+ margin:auto;display:grid;place-items:center;text-align:center;
+}
+.maintenance-simple-content{
+ width:100%;min-width:0;max-width:100%;box-sizing:border-box;
+ display:flex;flex-direction:column;align-items:center;gap:clamp(15px,3vh,22px);
+}
+.maintenance-simple-brand{
+ color:#7daeff;font-size:11px;font-weight:800;letter-spacing:.19em;
+ line-height:1.4;text-align:center;
+}
+.maintenance-simple h1{
+ width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin:0;
+ color:#f7f8fb;font-size:clamp(29px,7vw,48px);font-weight:800;
+ line-height:1.12;letter-spacing:-1.1px;text-wrap:balance;
+ overflow-wrap:anywhere;word-break:normal;
+}
+.maintenance-simple p{
+ width:100%;max-width:540px;min-width:0;box-sizing:border-box;margin:0;
+ color:#aab2c0;font-size:clamp(14px,2.5vw,17px);line-height:1.65;
+ white-space:normal;overflow-wrap:anywhere;word-break:normal;
+}
+.maintenance-simple-social{
+ width:100%;min-width:0;display:flex;flex-wrap:wrap;justify-content:center;
+ gap:10px;margin-top:4px;box-sizing:border-box;
+}
+.maintenance-simple-social[hidden],.maintenance-simple-schedule[hidden]{display:none!important}
+.maintenance-simple-social-link,.maintenance-simple-schedule{
+ box-sizing:border-box;max-width:100%;min-width:0;min-height:52px;
+ display:inline-flex;align-items:center;justify-content:center;gap:12px;
+ padding:11px 17px;border:1px solid #2b3442;border-radius:15px;
+ background:#141922;color:#f4f6fa!important;text-decoration:none;
+ font-size:14px;font-weight:650;line-height:1.35;text-align:left;
+ white-space:normal;overflow-wrap:anywhere;word-break:normal;
+ transition:border-color .18s ease,background .18s ease,transform .18s ease;
+}
+.maintenance-simple-social-link:hover,.maintenance-simple-schedule:hover{
+ background:#1a2230;border-color:#477bc8;transform:translateY(-1px);
+}
+.maintenance-simple-social-link.is-telegram{justify-content:flex-start}
+.maintenance-simple-social-icon{
+ width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;
+ border-radius:11px;background:#1d4d88;color:#d9eaff;font-size:18px;
+}
+.maintenance-simple-social-copy{
+ min-width:0;display:flex;flex-direction:column;gap:3px;
+}
+.maintenance-simple-social-copy strong{
+ display:block;min-width:0;color:#f4f6fa;font-size:13px;font-weight:750;
+ overflow-wrap:anywhere;
+}
+.maintenance-simple-social-copy small{
+ display:block;min-width:0;color:#929eaf;font-size:11px;font-weight:550;
+ overflow-wrap:anywhere;
+}
+.maintenance-simple-schedule{
+ margin-top:0;border-color:#315d96;background:#14243a;color:#cfe2ff!important;
+}
+.maintenance-simple-social-link:focus-visible,.maintenance-simple-schedule:focus-visible{
+ outline:3px solid #75aaff;outline-offset:4px;
+}
+@media(max-width:380px){
+ .maintenance-screen{padding-left:16px;padding-right:16px}
+ .maintenance-simple-content{gap:16px}
+ .maintenance-simple-social-link,.maintenance-simple-schedule{width:100%}
+}
+@media(prefers-reduced-motion:reduce){
+ .maintenance-simple-social-link,.maintenance-simple-schedule{transition:none}
+}
+
+
+/* Maintenance screen v4: contained copy, social details table, actions at the bottom. */
+.maintenance-screen{
+ display:block!important;
+ padding:clamp(24px,5vh,52px) clamp(22px,6vw,56px) calc(22px + env(safe-area-inset-bottom,0px))!important;
+}
+.maintenance-simple{
+ width:min(100%,560px);min-height:calc(100svh - clamp(48px,10vh,104px) - env(safe-area-inset-bottom,0px));
+ margin:0 auto;display:flex;flex-direction:column;align-items:stretch;
+ justify-content:space-between;gap:36px;text-align:left;
+}
+.maintenance-simple-content{
+ width:100%;max-width:480px;margin:auto;flex:1 0 auto;
+ display:flex;flex-direction:column;align-items:stretch;justify-content:center;
+ gap:clamp(18px,3vh,26px);padding:34px 0;box-sizing:border-box;
+}
+.maintenance-simple-brand{text-align:left;font-size:10px;letter-spacing:.17em}
+.maintenance-simple-message{width:100%;max-width:440px;margin:0 auto}
+.maintenance-simple h1{
+ max-width:440px;margin:0 0 18px;text-align:left;
+ font-size:clamp(28px,5.4vw,42px);line-height:1.16;letter-spacing:-.8px;
+}
+.maintenance-simple p{
+ max-width:420px;margin:0;text-align:left;
+ font-size:clamp(14px,2vw,16px);line-height:1.65;
+}
+.maintenance-simple-details{
+ width:100%;max-width:440px;margin:0 auto;
+ border:1px solid #252c37;border-radius:14px;overflow:hidden;
+ background:#10141b;
+}
+.maintenance-simple-details[hidden]{display:none!important}
+.maintenance-simple-details h2{
+ margin:0;padding:12px 15px;border-bottom:1px solid #252c37;
+ color:#aab5c5;font-size:11px;font-weight:750;letter-spacing:.04em;
+}
+.maintenance-simple-social{
+ display:grid;grid-template-columns:1fr;gap:0;margin:0;
+}
+.maintenance-simple-social-link{
+ width:100%;min-height:48px;justify-content:flex-start;
+ padding:10px 15px;border:0;border-radius:0;background:transparent;
+ font-size:13px;
+}
+.maintenance-simple-social-link+.maintenance-simple-social-link{border-top:1px solid #252c37}
+.maintenance-simple-social-link:hover{background:#171e29;transform:none}
+.maintenance-simple-social-link.is-telegram{justify-content:flex-start}
+.maintenance-simple-social-icon{width:29px;height:29px;flex-basis:29px;border-radius:9px}
+.maintenance-simple-social-copy strong{font-size:12px}
+.maintenance-simple-footer{
+ width:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column;
+ align-items:stretch;gap:10px;padding-top:18px;border-top:1px solid #252c37;
+}
+.maintenance-simple-schedule,.maintenance-simple-refresh{
+ width:100%;min-height:48px;box-sizing:border-box;display:flex;
+ align-items:center;justify-content:center;gap:9px;padding:12px 16px;
+ border-radius:12px;font-size:13px;font-weight:730;text-align:center;
+}
+.maintenance-simple-schedule{margin:0;border:1px solid #315d96;background:#14243a}
+.maintenance-simple-refresh{
+ border:1px solid #303947;background:#171c25;color:#f4f6fa;
+ cursor:pointer;touch-action:manipulation;
+}
+.maintenance-simple-refresh:disabled{opacity:.65;cursor:progress}
+.maintenance-simple-refresh span{font-size:18px;line-height:1}
+.maintenance-simple-status{
+ min-height:0!important;margin:0!important;max-width:none!important;
+ text-align:center!important;font-size:11px!important;line-height:1.4!important;
+ color:#8f9bad!important;
+}
+.maintenance-simple-status:empty{display:none}
+.maintenance-simple-refresh:focus-visible{outline:3px solid #75aaff;outline-offset:3px}
+@media(max-width:480px){
+ .maintenance-screen{padding-left:22px!important;padding-right:22px!important}
+ .maintenance-simple{min-height:calc(100svh - 46px - env(safe-area-inset-bottom,0px));gap:24px}
+ .maintenance-simple-content{padding:32px 0 22px;gap:20px}
+ .maintenance-simple-message{max-width:100%}
+ .maintenance-simple h1{font-size:clamp(27px,8vw,36px);margin-bottom:14px}
+ .maintenance-simple p{font-size:14px;line-height:1.6}
+ .maintenance-simple-footer{padding-top:15px}
+}
+@media(max-height:620px){
+ .maintenance-simple{gap:18px}
+ .maintenance-simple-content{padding:12px 0;gap:14px}
+ .maintenance-simple h1{font-size:clamp(25px,5vh,34px);margin-bottom:10px}
+}
+
+
+/* iOS installed PWA: paint the status-bar safe area with the maintenance surface. */
+html.svitlo-maintenance-active,html.svitlo-maintenance-active body{
+ background:#090b0f!important;
+}
+.maintenance-screen{
+ padding-top:calc(env(safe-area-inset-top,0px) + clamp(18px,4vh,38px))!important;
+}
+.maintenance-simple{
+ min-height:calc(100svh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - clamp(36px,8vh,76px));
+}
+@supports not (height:100svh){
+ .maintenance-simple{min-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 76px)}
+}
