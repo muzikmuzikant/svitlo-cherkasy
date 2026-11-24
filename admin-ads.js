@@ -1,4 +1,4 @@
-/* Advertising control center. Writes go only to the authenticated API of this app origin. */
+/* Beta advertising control center: all edits stay in the isolated staging API. */
 (()=>{'use strict';
  const root=document.getElementById('betaAdsAdmin');
  if(!root)return;
@@ -45,17 +45,21 @@
   const wrapper=el('div',undefined,'ad-field');
   wrapper.append(el('span',label));
   const input=field(wrapper,'HTTPS-посилання',obj,key,'url');
+  const preview=el('img');preview.className='ad-upload-preview';preview.alt='Попередній перегляд: '+label;preview.hidden=!obj[key];
+  if(obj[key])preview.src=obj[key];
+  preview.addEventListener('error',()=>{preview.hidden=true});
+  input.addEventListener('input',()=>{const value=input.value.trim();if(/^https:\/\//i.test(value)){preview.src=value;preview.hidden=false}else preview.hidden=true});
   const upload=el('input');upload.type='file';upload.accept='image/png,image/jpeg,image/webp';
   upload.setAttribute('aria-label','Завантажити '+label.toLowerCase());
   upload.onchange=async()=>{
    const f=upload.files?.[0];if(!f)return;
    if(f.size>1900000){alert('Зображення має бути не більше 1,9 МБ');return}
    upload.disabled=true;
-   try{const link=await window.betaAdminUploadAdPhoto(f);obj[key]=link;input.value=link;mark();wrapper.dispatchEvent(new Event('input',{bubbles:true}))}
+   try{const link=await window.betaAdminUploadAdPhoto(f);obj[key]=link;input.value=link;preview.src=link;preview.hidden=false;mark();wrapper.dispatchEvent(new Event('input',{bubbles:true}))}
    catch(error){alert(error.message)}
    finally{upload.disabled=false}
   };
-  wrapper.append(upload);box.append(wrapper);
+  wrapper.append(upload,preview);box.append(wrapper);
  }
  function mini(label,value,help){const box=el('div',undefined,'ad-kpi');box.append(el('span',label),el('strong',value),el('small',help||''));return box}
  const toLocal=iso=>{if(!iso)return '';const d=new Date(iso);return Number.isFinite(d.getTime())?new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16):''};
@@ -67,8 +71,11 @@
   sum.append(desc,el('span','Налаштувати ▾'));details.append(sum);
   const body=el('div',undefined,'ad-campaign-body');
   const preview=el('div',undefined,'ad-card-preview');
-  const display=()=>{preview.replaceChildren();preview.style.backgroundColor=c.background||'#fff';preview.style.color=c.foreground||'#142338';
-  preview.style.backgroundImage=c.cardBackgroundImage?((c.cardStyle==='dark'?'linear-gradient(90deg,#0b1e35e8,#0b1e3533),':'linear-gradient(90deg,#fffffff2,#ffffff44),')+'url("'+c.cardBackgroundImage.replace(/"/g,'')+'")'):'none';preview.style.backgroundSize='cover';preview.style.backgroundPosition='center';if(c.image){const img=el('img');img.src=c.image;img.alt='';preview.append(img)}const col=el('div');col.append(el('strong',c.title||'Заголовок'),el('small',c.description||'Опис рекламного оголошення'),el('em',c.button||'Дізнатися більше'));preview.append(col)};
+  const display=()=>{preview.replaceChildren();preview.style.backgroundColor=c.background||'#fff';preview.style.color=c.foreground||'#142338';preview.style.borderColor=c.borderColor||'#dfe8f5';
+  preview.style.backgroundImage=c.cardBackgroundImage?((c.cardStyle==='dark'?'linear-gradient(90deg,#0b1e35e8,#0b1e3533),':'linear-gradient(90deg,#fffffff2,#ffffff44),')+'url("'+c.cardBackgroundImage.replace(/"/g,'')+'")'):'none';preview.style.backgroundSize='cover';preview.style.backgroundPosition='center';
+  const tag=el('span','РЕКЛАМА','ad-preview-label');tag.style.background=c.labelBackground||'#f3f7ff';tag.style.color=c.labelForeground||'#54708f';tag.style.borderColor=c.labelBorderColor||'#dce7f6';preview.append(tag);
+  if(c.image){const img=el('img');img.src=c.image;img.alt='';preview.append(img)}
+  const col=el('div');const title=el('strong',c.title||'Заголовок');title.style.color=c.titleColor||c.foreground||'#142338';const description=el('small',c.description||'Опис рекламного оголошення');description.style.color=c.descriptionColor||c.foreground||'#142338';const action=el('em',c.button||'Дізнати більше');action.style.background=c.buttonBackground||'#377dff';action.style.color=c.buttonForeground||'#ffffff';col.append(title,description,action);preview.append(col)};
   display();body.append(preview);
   const compact=section('Картка на головній','Оформлення, яке бачить користувач перед натисканням. Повноекранний перегляд налаштовується окремо.');
   const fields=grid(compact);body.append(compact);
@@ -84,7 +91,18 @@
   imageRow.append(uploader);fields.append(imageRow);
   uploadField(fields,'Фонове зображення картки',c,'cardBackgroundImage');
   colorField(fields,'Колір фону картки',c,'background');
-  colorField(fields,'Колір тексту картки',c,'foreground','#142338');
+  colorField(fields,'Колір основного тексту (резервний)',c,'foreground','#142338');
+  const palette=section('Індивідуальні кольори елементів','Кожен колір застосовується окремо та має пріоритет над загальним кольором тексту.');
+  const paletteFields=grid(palette);
+  colorField(paletteFields,'Рамка картки',c,'borderColor','#dfe8f5');
+  colorField(paletteFields,'Фон позначки «РЕКЛАМА»',c,'labelBackground','#f3f7ff');
+  colorField(paletteFields,'Текст позначки «РЕКЛАМА»',c,'labelForeground','#54708f');
+  colorField(paletteFields,'Рамка позначки «РЕКЛАМА»',c,'labelBorderColor','#dce7f6');
+  colorField(paletteFields,'Заголовок картки',c,'titleColor','#142338');
+  colorField(paletteFields,'Опис картки',c,'descriptionColor','#52647d');
+  colorField(paletteFields,'Фон кнопки',c,'buttonBackground','#377dff');
+  colorField(paletteFields,'Текст кнопки',c,'buttonForeground','#ffffff');
+  body.append(palette);
   choice(fields,'Оформлення',c,'cardStyle',[['soft','М’яка картка'],['outline','Чітка рамка'],['dark','Темний банер']]);
   field(fields,'Пріоритет відносно інших (1-10)',c,'weight','number','Впливає на частку показів',{min:1,max:10});
   field(fields,'Час одного показу, с',c,'seconds','number',null,{min:3,max:60});
@@ -128,7 +146,10 @@
   field(fields,'Сума договору, грн',c,'price','number');
   field(fields,'Примітки адміністратора',c,'note','long');
   const stats=report.stats?.[c.id]||{},impr=stats.impressions||0,clicks=stats.clicks||0;
-  body.append(el('p','Покази: '+fmt(impr)+' · Кліки: '+fmt(clicks)+' · CTR: '+(impr?(100*clicks/impr).toFixed(2):'0')+'%','ad-muted'));
+  const detailOpens=stats.detailOpens||0,outboundClicks=stats.outboundClicks||0;
+  const metricStrip=el('div',undefined,'ad-campaign-metrics');
+  metricStrip.append(mini('Покази',fmt(impr),'Картка на екрані'),mini('Кліки',fmt(clicks),'Натискання на картку'),mini('Відкриття',fmt(detailOpens),'Повноекранний опис'),mini('Переходи',fmt(outboundClicks),'На сайт рекламодавця'));
+  body.append(metricStrip,el('p','CTR: '+(impr?(100*clicks/impr).toFixed(2):'0')+'% · Конверсія у перехід: '+(impr?(100*outboundClicks/impr).toFixed(2):'0')+'%','ad-muted'));
   const adDays=Object.entries(report.statsByCampaignDay||{}).filter(([key])=>key.startsWith(c.id+'|')).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,21);
   if(adDays.length){const recent=el('details',undefined,'ad-daily');recent.append(el('summary','Детальна статистика за днями ('+adDays.length+')'));
    const table=el('div',undefined,'ad-daily-table');
@@ -174,17 +195,20 @@
   if(!report||!draft)return;
   root.replaceChildren();root.className='beta-ads-admin';
   const heading=el('div',undefined,'ad-titlebar');
-  const title=el('div');title.append(el('h3','Центр рекламного керування'),el('p',report.commercialLocked?'Реклама недоступна у цьому середовищі':(location.hostname==='svitlo-cherkasy.pp.ua'?'Основний додаток':'Бета')+' · Реклама тільки на головній сторінці','ad-muted'));
+  const title=el('div');title.append(el('h3','Центр рекламного керування'),el('p','Лише головна сторінка · Зміни зберігаються на Beta Railway','ad-muted'));
   const tools=el('div',undefined,'ad-toolbar');
   button(tools,'Оновити дані',()=>refresh(true));
   // Saving lives in a sticky footer, not in the distant heading.
   const status=el('small',dirty?'Є незбережені зміни':'Налаштування завантажено','ad-muted');status.id='betaAdsSaveStatus';
   heading.append(title,tools);root.append(heading);
-  if(report.commercialLocked){const warning=el('p','Показ реклами заблокований для цього середовища. Перевірте налаштування сервера.','ad-muted');warning.setAttribute('role','status');warning.style.padding='14px';warning.style.border='1px solid #dae4f2';warning.style.borderRadius='12px';root.append(warning)}
   analytics();
+  const gate=section('Показ реклами в застосунку','Головний перемикач. За замовчуванням вимкнено. Поки галочка не встановлена й зміни не збережені, користувачі не бачать ані рекламних карток, ані блоку «Ваша реклама». Підтримка проєкту керується окремо.');
+  const gateFields=grid(gate);
+  field(gateFields,'Увімкнути рекламу в застосунку',draft,'enabled','toggle');
+  gate.append(el('p',draft.enabled?'Реклама буде увімкнена після збереження, якщо є активні кампанії або дозволено блок «Ваша реклама».':'Зараз реклама вимкнена. Налаштовуйте кампанії заздалегідь, вони не будуть показуватися.','ad-muted'));
+  root.append(gate);
   const main=section('Загальні параметри каруселі','Реклама відображається лише на головній сторінці. Індивідуальні параметри мають пріоритет над загальними.');
   const g=grid(main);
-  field(g,'Показувати рекламний блок',draft,'enabled','toggle');
   field(g,'Показувати «Ваша реклама»',draft,'showPromo','toggle');
   field(g,'Дозволити ручне гортання',draft,'manualSwipe','toggle');
   field(g,'Стандартний інтервал, с',draft,'rotationSeconds','number',null,{min:3,max:60});
@@ -283,13 +307,13 @@
   ads.append(templates);
   button(ads,'+ Створити оголошення',()=>{draft.campaigns.unshift({id:uuid(),title:'',description:'',image:'',link:'',button:'Дізнатися більше',enabled:false,background:'#ffffff',foreground:'#142338',start:'',end:'',days:[],weight:1,seconds:8,maxImpressions:0,dailyCap:0,price:0,paid:false,note:''});mark();render()});root.append(ads);
   const bottom=el('div',undefined,'ad-sticky-savebar');
-  const caption=el('span',report.commercialLocked?'Чернетки збережуться, але показ реклами тут заблокований.':'Реклама показується лише після увімкнення загального перемикача та збереження.');
+  const caption=el('span','Зміни застосовуються після збереження.');
   const controls=el('div',undefined,'ad-toolbar');
   button(controls,'Скасувати зміни',()=>refresh(true),'secondary');
   const save=button(controls,'Зберегти всі зміни',saveDraft,'primary');save.id='betaAdsSaveButton';
   bottom.append(caption,status,controls);root.append(bottom);
   async function saveDraft(){if(loading)return;loading=true;save.disabled=true;status.textContent='Зберігаємо...';
-    try{const r=await api('PUT',draft);report=r;draft=structuredClone(r.settings);dirty=false;render();const n=document.getElementById('betaAdsSaveStatus');if(n)n.textContent=report.commercialLocked?'Чернетки збережено, показ заблокований':'Налаштування реклами збережено'}
+    try{const r=await api('PUT',draft);report=r;draft=structuredClone(r.settings);dirty=false;render();const n=document.getElementById('betaAdsSaveStatus');if(n)n.textContent='Зміни збережено'}
     catch(e){status.textContent='Помилка: '+e.message;alert('Не вдалося зберегти: '+e.message)}
     finally{loading=false;save.disabled=false}}
  }
