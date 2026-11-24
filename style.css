@@ -935,3 +935,8 @@ body{overflow-wrap:break-word}
 :root[data-theme="dark"] .inbox-rich code{background:#26344a;color:#e3eeff}
 
 .topbar-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}.topbar-actions .icon-btn{flex:0 0 43px;text-decoration:none}.topbar-actions .icon-btn svg{width:20px;height:20px}
+
+/* Ad cards grow with the full description instead of clipping long copy. */
+.beta-ad-content{height:auto;min-height:79px;align-items:center;overflow:visible;box-sizing:border-box}
+.beta-ad-content>div{min-width:0;flex:1 1 auto;align-content:center}
+.beta-ad-content small{display:block;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;max-height:none;-webkit-line-clamp:unset}
