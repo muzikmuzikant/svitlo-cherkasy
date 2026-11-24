@@ -65,12 +65,23 @@
   if(!config?.enabled){host.hidden=true;return}
   const ads=config.campaigns||[],promo={id:'promo',title:config.promoTitle,description:config.promoText,seconds:config.rotationSeconds,link:'./advertising.html',button:config.contactLabel};
   const every=Math.max(1,Number(config.promoEvery)||4);
-  for(let i=0;i<ads.length;i++){
-   const ad=ads[i];const repeat=Math.max(1,Math.min(5,Number(ad.weight)||1));
-   for(let j=0;j<repeat;j++)items.push(ad);
+  const weighted=[];
+  for(const ad of ads){
+   const repeat=ads.length>1?Math.max(1,Math.min(5,Number(ad.weight)||1)):1;
+   for(let j=0;j<repeat;j++)weighted.push(ad);
+  }
+  const rotation=[];
+  while(weighted.length){
+   const previous=rotation.at(-1)?.id;
+   let next=weighted.findIndex(item=>item.id!==previous);
+   if(next<0)next=0;
+   rotation.push(weighted.splice(next,1)[0]);
+  }
+  for(let i=0;i<rotation.length;i++){
+   items.push(rotation[i]);
    if(config.pageVisible!==false&&config.showPromo&&(i+1)%every===0)items.push(promo);
   }
-  if(config.pageVisible!==false&&config.showPromo&&(!ads.length||ads.length%every!==0))items.push(promo);
+  if(config.pageVisible!==false&&config.showPromo&&(!rotation.length||rotation.length%every!==0))items.push(promo);
   if(items.length){render();schedule()}else host.hidden=true;
  }
  function schedule(){
@@ -84,15 +95,27 @@
   if(!items.length)return;
   const item=items[index];
   host.replaceChildren();host.hidden=false;
-  const label=make('span',item.id==='promo'?'ВАША РЕКЛАМА':'РЕКЛАМА','beta-ad-label');host.append(label);
+  const label=make('span',item.id==='promo'?'ВАША РЕКЛАМА':'РЕКЛАМА','beta-ad-label');
+  label.style.backgroundColor=item.labelBackground||'#f3f7ff';
+  label.style.color=item.labelForeground||'#54708f';
+  label.style.borderColor=item.labelBorderColor||'#dce7f6';
+  host.append(label);
   const a=make('a',undefined,'beta-ad-content');
   const link=item.id==='promo'?'./advertising.html':item.detailEnabled?'./ad-detail.html?id='+encodeURIComponent(item.id):item.link;
   if(link){a.href=link;a.target=(item.id==='promo'||item.detailEnabled)?'_self':'_blank';a.rel='noopener noreferrer'}else{a.tabIndex=-1;a.setAttribute('aria-disabled','true')}
+  a.dataset.hasImage=item.image?'true':'false';
   if(item.image){const img=make('img');img.src=item.image;img.alt='';img.loading='lazy';img.referrerPolicy='no-referrer';a.append(img)}
-  const body=make('div');body.append(make('strong',item.title||'Реклама'),make('small',item.description||''));
+  const body=make('div');
+  const heading=make('strong',item.title||'Реклама');heading.style.color=item.titleColor||item.foreground||'#142338';
+  const description=make('small',item.description||'');description.style.color=item.descriptionColor||item.foreground||'#142338';
+  body.append(heading,description);
   const action=make('em',item.id==='promo'?(config.contactLabel||'Дізнатися більше'):(item.detailEnabled?'Детальніше':item.button||'Дізнатися більше'),'beta-ad-action');
-  body.append(action);a.append(body);a.append(make('span','🔗','beta-ad-arrow'));
-  a.style.backgroundColor=item.background||'#ffffff';a.style.color=item.foreground||'#142338';
+  action.style.backgroundColor=item.buttonBackground||'#377dff';
+  action.style.color=item.buttonForeground||'#ffffff';
+  body.append(action);a.append(body);
+  a.style.backgroundColor=item.background||'#ffffff';
+  a.style.color=item.foreground||'#142338';
+  a.style.borderColor=item.borderColor||'#dfe8f5';
   a.dataset.style=item.cardStyle||'soft';
   if(item.cardBackgroundImage){const dark=item.cardStyle==='dark';a.style.backgroundImage=(dark?'linear-gradient(90deg,#0b1e35e8,#0b1e3533),':'linear-gradient(90deg,#fffffff2,#ffffff44),')+'url("'+item.cardBackgroundImage.replace(/"/g,'')+'")';a.style.backgroundSize='cover';a.style.backgroundPosition='center'}
   a.addEventListener('click',()=>{if(link)send(item.id,'click')});
