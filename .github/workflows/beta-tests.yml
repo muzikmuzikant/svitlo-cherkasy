@@ -1,0 +1,63 @@
+name: Beta Checks
+on:
+  push:
+    branches: [staging]
+    paths:
+      - 'app.js'
+      - 'index.html'
+      - 'admin.html'
+      - 'admin-ads.js'
+      - 'admin-features.js'
+      - 'advertising.html'
+      - 'ad-detail.html'
+      - 'community-status.js'
+      - 'commercial-ui.js'
+      - 'community-status.css'
+      - 'push-server/**'
+      - 'scripts/update_data.py'
+      - 'scripts/build_pages.py'
+      - 'tests/**'
+      - 'sw.js'
+      - 'privacy.html'
+  pull_request:
+    branches: [staging]
+    paths:
+      - 'app.js'
+      - 'index.html'
+      - 'admin.html'
+      - 'admin-ads.js'
+      - 'admin-features.js'
+      - 'advertising.html'
+      - 'ad-detail.html'
+      - 'community-status.js'
+      - 'commercial-ui.js'
+      - 'community-status.css'
+      - 'push-server/**'
+      - 'scripts/update_data.py'
+      - 'scripts/build_pages.py'
+      - 'tests/**'
+      - 'sw.js'
+      - 'privacy.html'
+permissions:
+  contents: read
+jobs:
+  beta-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt pytest
+      - name: Python tests
+        run: python -m pytest -q tests
+      - name: Build BETA Pages
+        run: python scripts/build_pages.py
+      - name: BETA Node tests
+        run: node --test tests/test_community_status.mjs tests/test_commercial_extensions.mjs tests/test_community_commercial_flags.mjs tests/test_v770_feature_persistence.mjs tests/test_ads_redesign_beta.mjs
+      - name: Syntax checks
+        run: node --check app.js && node --check community-status.js && node --check commercial-ui.js && node --check admin-ads.js && node --check admin-features.js && node --check push-server/community-status.js && node --check push-server/ads.js && node --check admin.js && node --check sw.js && node --check push-server/server.js && node --check push-server/admin.js
