@@ -2,44 +2,9 @@ name: Beta Checks
 on:
   push:
     branches: [staging]
-    paths:
-      - 'app.js'
-      - 'index.html'
-      - 'admin.html'
-      - 'admin-ads.js'
-      - 'admin-features.js'
-      - 'admin-control.js'
-      - 'advertising.html'
-      - 'ad-detail.html'
-      - 'community-status.js'
-      - 'commercial-ui.js'
-      - 'community-status.css'
-      - 'push-server/**'
-      - 'scripts/update_data.py'
-      - 'scripts/build_pages.py'
-      - 'tests/**'
-      - 'sw.js'
-      - 'privacy.html'
   pull_request:
     branches: [staging]
-    paths:
-      - 'app.js'
-      - 'index.html'
-      - 'admin.html'
-      - 'admin-ads.js'
-      - 'admin-features.js'
-      - 'admin-control.js'
-      - 'advertising.html'
-      - 'ad-detail.html'
-      - 'community-status.js'
-      - 'commercial-ui.js'
-      - 'community-status.css'
-      - 'push-server/**'
-      - 'scripts/update_data.py'
-      - 'scripts/build_pages.py'
-      - 'tests/**'
-      - 'sw.js'
-      - 'privacy.html'
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
@@ -60,6 +25,6 @@ jobs:
       - name: Build BETA Pages
         run: python scripts/build_pages.py
       - name: BETA Node tests
-        run: node --test tests/test_community_status.mjs tests/test_commercial_extensions.mjs tests/test_community_commercial_flags.mjs tests/test_v770_feature_persistence.mjs tests/test_ads_redesign_beta.mjs tests/test_beta_ui_regressions.mjs tests/test_local_announcements.mjs
+        run: node --test tests/test_community_status.mjs tests/test_commercial_extensions.mjs tests/test_community_commercial_flags.mjs tests/test_v770_feature_persistence.mjs tests/test_ads_redesign_beta.mjs
       - name: Syntax checks
-        run: node --check app.js && node --check community-status.js && node --check commercial-ui.js && node --check admin-ads.js && node --check admin-features.js && node --check admin-control.js && node --check push-server/community-status.js && node --check push-server/ads.js && node --check admin.js && node --check sw.js && node --check push-server/server.js && node --check push-server/admin.js
+        run: node --check app.js && node --check community-status.js && node --check commercial-ui.js && node --check admin-ads.js && node --check admin-features.js && node --check push-server/community-status.js && node --check push-server/ads.js && node --check admin.js && node --check sw.js && node --check push-server/server.js && node --check push-server/admin.js

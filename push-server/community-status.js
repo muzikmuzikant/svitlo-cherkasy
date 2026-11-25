@@ -20,14 +20,12 @@ const eventTime=(event,keys)=>{for(const key of keys){const value=event?.[key];i
 
 export function calculatePlannedStats(schedule,emergency,queue,period='day',now=Date.now()){
  if(!QUEUES.has(queue))throw Error('Неправильна підчерга');
- const range=periodRange(period,now),days=[];
- const publishedDays=new Map((Array.isArray(schedule?.days)?schedule.days:[]).filter(d=>typeof d?.date==='string').map(d=>[d.date,d]));
- const byDate=new Map([...publishedDays].filter(([,d])=>d?.verified===true));
+ const range=periodRange(period,now),days=[],confirmed=new Set(Array.isArray(schedule?.confirmedNoScheduleDates)?schedule.confirmedNoScheduleDates:[]);
+ const byDate=new Map((Array.isArray(schedule?.days)?schedule.days:[]).filter(d=>d?.verified===true).map(d=>[d.date,d]));
  let onMinutes=0,offMinutes=0,unknownMinutes=0,verifiedDays=0;
  for(let date=range.startDate;midnight(date)<range.endAt;date=shiftDate(date,1)){
   const start=Math.max(range.startAt,midnight(date)),end=Math.min(range.endAt,midnight(shiftDate(date,1)));
   if(end<=start)continue;
-  days.push(date);
   const duration=Math.floor((end-start)/60000),day=byDate.get(date),item=day?.queues?.[queue];
   if(day&&item){
    const knownFrom=minute(item.knownFrom??'00:00');
@@ -41,15 +39,15 @@ export function calculatePlannedStats(schedule,emergency,queue,period='day',now=
     if(b>a)outage+=Math.floor((b-a)/60000);
    }
    offMinutes+=Math.min(known,outage);onMinutes+=Math.max(0,known-outage);unknownMinutes+=duration-known;verifiedDays++;
-  }else if(!publishedDays.has(date)){onMinutes+=duration}
+  }else if(confirmed.has(date)){onMinutes+=duration;verifiedDays++}
   else unknownMinutes+=duration;
+  days.push(date);
  }
  const events=Array.isArray(emergency?.events)?emergency.events:[];
- const applies=event=>event?.scope==='region'||(Array.isArray(event?.queues)&&(event.queues.includes(queue)||event.queues.includes('all')));
- const emergencyEvents=events.filter(event=>['active','ended'].includes(event?.status)&&applies(event)&&eventTime(event,['publishedAt'])!==null&&eventTime(event,['publishedAt'])<=range.endAt&&(eventTime(event,['publishedAt'])>=range.startAt||event.status==='active')).length;
+ const emergencyEvents=events.filter(event=>['active','ended'].includes(event?.status)&&Array.isArray(event.queues)&&(event.queues.includes(queue)||event.queues.includes('all'))&&eventTime(event,['publishedAt'])!==null&&eventTime(event,['publishedAt'])<=range.endAt&&eventTime(event,['publishedAt'])>=range.startAt).length;
  const intervals=[];
  for(const event of events){
-  if(!['active','ended'].includes(event?.status)||!applies(event))continue;
+  if(!['active','ended'].includes(event?.status)||!Array.isArray(event.queues)||!(event.queues.includes(queue)||event.queues.includes('all')))continue;
   const from=eventTime(event,['startedAt','startAt']),to=eventTime(event,['endedAt','endAt'])??(event.status==='active'?now:null);
   if(from===null||to===null||to<=from)continue;
   const a=Math.max(from,range.startAt),b=Math.min(to,range.endAt);if(b>a)intervals.push([a,b]);
@@ -62,7 +60,7 @@ export function calculatePlannedStats(schedule,emergency,queue,period='day',now=
 
 export function createCommunityStatusStore({directory,clock=()=>Date.now(),regionId='cherkasy-district'}){
  if(typeof regionId!=='string'||!/^[a-z0-9-]{2,40}$/.test(regionId))throw Error('Invalid community region id');
- const file=path.join(directory,'community-status-'+regionId+'.json'),secretFile=path.join(directory,'community-status-secret-'+regionId);
+ const file=path.join(directory,'community-status.json'),secretFile=path.join(directory,'community-status-secret');
  let secret,records=[];
  try{secret=fs.readFileSync(secretFile)}catch(error){if(error.code!=='ENOENT')throw error;secret=crypto.randomBytes(32);fs.mkdirSync(directory,{recursive:true});fs.writeFileSync(secretFile,secret,{mode:0o600,flag:'wx'})}
  try{const saved=JSON.parse(fs.readFileSync(file,'utf8'));if(saved?.schemaVersion===1&&Array.isArray(saved.reports))records=saved.reports.filter(r=>QUEUES.has(r.queue)&&['on','off'].includes(r.status)&&Number.isFinite(r.at)&&/^[a-f0-9]{64}$/.test(r.actor)&&(r.region===undefined||r.region===regionId)).map(r=>({...r,region:regionId}))}
