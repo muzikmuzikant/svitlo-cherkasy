@@ -72,17 +72,17 @@ html.feature-off-partnerOffers #partnerOffers{display:none!important}
 @media(prefers-reduced-motion:reduce){.community-meter span{transition:none!important}}
 
 /* Collapsible community status */
-.community-card-shell{display:flex;align-items:flex-start;gap:8px}
+.community-card-shell{display:flex;align-items:center;gap:8px}
 .community-disclosure{flex:1;min-width:0}
 .community-card-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;list-style:none;min-width:0}
 .community-card-summary::-webkit-details-marker{display:none}
 .community-summary-copy{display:grid;gap:4px;min-width:0}
 .community-summary-copy strong{font-size:13px;line-height:1.35}
-.community-summary-meta{display:flex;align-items:center;gap:8px;flex:0 0 auto}
-.community-collapse-icon{display:grid;place-items:center;width:25px;height:25px;border-radius:8px;background:var(--bg);color:var(--muted);transition:transform .2s ease}
+.community-summary-meta{display:flex;align-items:center;gap:7px;flex:0 0 auto;padding:3px 5px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.community-collapse-icon{display:grid;place-items:center;flex:0 0 27px;width:27px;height:27px;line-height:1;border-radius:8px;background:transparent;color:var(--muted);text-align:center;transition:transform .2s ease}
 .community-disclosure[open] .community-collapse-icon{transform:rotate(180deg)}
 .community-disclosure-content{padding-top:13px;animation:communityReveal .2s ease both}
-.community-refresh{flex:0 0 32px}
+.community-refresh{display:grid;place-items:center;align-self:center;flex:0 0 32px;width:32px;height:32px;margin:0;padding:0;line-height:1}
 @keyframes communityReveal{from{opacity:.55;transform:translateY(-3px)}to{opacity:1;transform:none}}
 /* Partner button: one quiet, consistent footer link per app screen */
 .partner-page-footer{display:flex;justify-content:center;padding:22px 0 max(14px,env(safe-area-inset-bottom));margin-top:24px;border-top:1px solid var(--line)}
