@@ -12,6 +12,7 @@ import {createAdminPushStore} from './admin-push-store.js';
 import {createAdminExtras} from './admin-extras.js';
 import {createAnalyticsStore} from './analytics.js';
 import {createAdsStore} from './ads.js';
+import {createCommunityStatusStore,calculatePlannedStats} from './community-status.js';
 import {createAdminUserStore} from './admin-users.js';
 import {createWorkRegistry} from './work-registry.js';
 import {createAddressCorrectionStore} from './address-corrections.js';
@@ -61,6 +62,7 @@ const workRegistry=createWorkRegistry({directory:path.dirname(DATA_FILE),record:
 const addressCorrections=createAddressCorrectionStore({directory:path.dirname(DATA_FILE),record:extras.record});
 const analytics=createAnalyticsStore({filePath:path.join(path.dirname(DATA_FILE),'analytics.json')});
 const ads=createAdsStore({directory:path.dirname(DATA_FILE)});
+const communityStatus=createCommunityStatusStore({directory:path.dirname(DATA_FILE),regionId:process.env.COMMUNITY_REGION_ID||'cherkasy-district'});
 const adminUsers=createAdminUserStore({directory:path.dirname(DATA_FILE)});
 const legal=createLegalStore({directory:path.dirname(DATA_FILE)});
 const errorCounts=createDiagnosticsStore({directory:path.dirname(DATA_FILE)});
@@ -375,6 +377,30 @@ const server=http.createServer(async(req,res)=>{
   catch{response(res,400,{error:'Invalid diagnostics event'})}
   return
  }
+  if(requestPath==='/api/community/status'&&req.method==='GET'){
+   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+   const query=new URL(req.url,'http://localhost').searchParams;
+   try{response(res,200,communityStatus.status(query.get('queue'),query.get('clientId')||''))}
+   catch(error){response(res,400,{error:error.message||'Invalid queue'})}
+   return;
+  }
+  if(requestPath==='/api/community/report'&&req.method==='POST'){
+   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+   try{const body=await readPayload(req,1200);response(res,202,communityStatus.report(body))}
+   catch(error){response(res,error.statusCode||400,{error:error.message||'Invalid report',retryAfter:error.retryAfter||null})}
+   return;
+  }
+  if(requestPath==='/api/community/stats'&&req.method==='GET'){
+   if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}
+   const query=new URL(req.url,'http://localhost').searchParams,queue=query.get('queue'),period=query.get('period')||'day';
+   try{
+    const schedule=(typeof liveSchedule==='function'?liveSchedule():officialSchedules.schedule())||lastLoadedSchedule;
+    const emergency=officialEmergency.snapshot()||{events:lastLoadedBulletins};
+    response(res,200,{queue,period,actual:communityStatus.stats(queue,period),
+     planned:calculatePlannedStats(schedule,emergency,queue,period)});
+   }catch(error){response(res,400,{error:error.message||'Invalid statistics request'})}
+   return;
+  }
   if(requestPath==='/api/legal'&&req.method==='GET'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}response(res,200,legal.publicState());return}
  if(requestPath==='/api/ads'&&req.method==='GET'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}response(res,200,ads.publicState());return}
  if(requestPath==='/api/ads/event'&&req.method==='POST'){if(!originPolicy.isAllowed(origin)){response(res,403,{error:'Origin not allowed'});return}try{const body=await readPayload(req,500);response(res,ads.event(String(body.id||'').slice(0,55),body.type,crypto.createHash('sha256').update(String(req.socket.remoteAddress||'')+new Date().toISOString().slice(0,10)).digest('hex').slice(0,20))?202:400,{ok:true})}catch{response(res,400,{error:'Bad event'})}return}

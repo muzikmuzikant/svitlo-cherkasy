@@ -91,3 +91,30 @@ def test_emergency_schedule_headline_with_graphiky_is_detected():
         NOW
     )
     assert obj['status']=='active'
+
+
+
+def test_update_emergency_deduplicates_same_bulletin_but_keeps_distinct_queues(monkeypatch, tmp_path):
+    monkeypatch.setattr(importer, 'DATA', tmp_path)
+    monkeypatch.setattr(importer, 'fetch', lambda session, url, binary=False: '<html></html>')
+    url_one = 'https://www.cherkasyoblenergo.com/media/queue-one'
+    url_two = 'https://www.cherkasyoblenergo.com/media/queue-two'
+    monkeypatch.setattr(importer, 'emergency_link_candidates', lambda html: [url_one, url_two])
+
+    def fake_parse(html, url, now):
+        queue = '2.1' if url == url_two else '1.1'
+        return {
+            'id': url,
+            'title': 'Аварійні відключення',
+            'publishedAt': NOW.isoformat(timespec='minutes'),
+            'source': url,
+            'status': 'active',
+            'scope': 'queue',
+            'queues': [queue],
+        }
+
+    monkeypatch.setattr(importer, 'parse_emergency_article', fake_parse)
+    result = update_emergency(object(), NOW)
+
+    assert len(result['events']) == 2
+    assert {event['queues'][0] for event in result['events']} == {'1.1', '2.1'}

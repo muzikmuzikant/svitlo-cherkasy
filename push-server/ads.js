@@ -23,7 +23,7 @@ const defaults={
  pageBenefits:['Локальна аудиторія Черкас і району','Ненав’язлива реклама на головній','Зрозуміла статистика показів і переходів'],
 
  pageTerms:'Умови та тривалість розміщення погоджуються індивідуально.',
- contacts:[],packages:[],campaigns:[],support:{
+ contacts:[],packages:[],campaigns:[],discounts:[],permanentPartner:{enabled:false,name:'',description:'',logo:'',url:''},partnerOffers:[],support:{
  enabled:false,title:'Підтримати Світло Черкаси',description:'Добровільна підтримка розвитку проєкту.',
  provider:'',paymentUrl:'',button:'Підтримати',details:'',
   heroImage:'',background:'#f5f8ff',accent:'#377cff',methods:[],expenses:[],
@@ -39,6 +39,11 @@ function normalize(raw){
  const contacts=Array.isArray(s.contacts)?s.contacts.slice(0,20):[];
  const packages=Array.isArray(s.packages)?s.packages.slice(0,40):[];
  const campaigns=Array.isArray(s.campaigns)?s.campaigns.slice(0,80):[];
+ const discounts=Array.isArray(s.discounts)?s.discounts.slice(0,80).filter(isObj):[];
+ const offers=Array.isArray(s.partnerOffers)?s.partnerOffers.slice(0,40).filter(isObj):[];
+ const partner=isObj(s.permanentPartner)?s.permanentPartner:{};
+ const partnerLink=text(partner.url,500),partnerLogo=text(partner.logo,500);
+ if((partnerLink&&!url(partnerLink))||(partnerLogo&&!url(partnerLogo)))throw Error('Посилання або логотип партнера мають бути HTTPS');
  const normalized={
  enabled:s.enabled===true,pageVisible:s.pageVisible!==false,rotationSeconds:clamp(s.rotationSeconds,3,60,8),promoEvery:clamp(s.promoEvery,1,20,4),
  showPromo:s.showPromo!==false,manualSwipe:s.manualSwipe!==false,
@@ -58,6 +63,25 @@ function normalize(raw){
    badge:text(p.badge,32),badgeBackground:color(p.badgeBackground,'#e5f1ff'),badgeForeground:color(p.badgeForeground,'#1456b5'),
    featured:p.featured===true,features:(Array.isArray(p.features)?p.features:[]).slice(0,12).map(x=>text(x,130)).filter(Boolean)
  })).filter(p=>p.title),
+ discounts:discounts.map(d=>{
+  const start=when(d.start),end=when(d.end);
+  if((d.start&&!start)||(d.end&&!end))throw Error('Некоректна дата дії знижки');
+  if(start&&end&&start>=end)throw Error('Дата завершення знижки має бути пізнішою за початок');
+  const scope=d.scope==='specific'?'specific':'all',kind=d.kind==='fixed'?'fixed':'percent';
+  return {id:/^[a-zA-Z0-9_-]{1,50}$/.test(d.id||'')?d.id:crypto.randomUUID(),title:text(d.title,100),
+   scope,packageId:scope==='specific'?text(d.packageId,50):'',kind,
+   amount:clamp(d.amount,0,kind==='percent'?100:100000000,0),enabled:d.enabled===true,start,end};
+ }),
+ permanentPartner:{enabled:partner.enabled===true,name:text(partner.name,100),description:text(partner.description,500),logo:url(partnerLogo),url:url(partnerLink)},
+ partnerOffers:offers.map(o=>{
+  const link=text(o.link,500),image=text(o.image,500),start=when(o.start),end=when(o.end);
+  if((link&&!url(link))||(image&&!url(image)))throw Error('Посилання партнерської пропозиції має бути HTTPS');
+  if((o.start&&!start)||(o.end&&!end))throw Error('Некоректна дата партнерської пропозиції');
+  if(start&&end&&start>=end)throw Error('Дата завершення пропозиції має бути пізнішою за початок');
+  return {id:/^[a-zA-Z0-9_-]{1,50}$/.test(o.id||'')?o.id:crypto.randomUUID(),partner:text(o.partner,100),
+   title:text(o.title,100),description:text(o.description,500),discountLabel:text(o.discountLabel,60),code:text(o.code,60),
+   link:url(link),image:url(image),start,end,enabled:o.enabled===true};
+ }).filter(o=>o.title),
  campaigns:campaigns.map(c=>{
   const start=when(c.start),end=when(c.end),days=Array.isArray(c.days)?c.days.map(Number).filter(n=>Number.isInteger(n)&&n>=0&&n<=6):[];
   if(start&&end&&start>=end)throw Error('Дата завершення реклами має бути пізнішою за початок');
@@ -75,7 +99,7 @@ function normalize(raw){
    detailBackground:color(c.detailBackground,'#f5f8ff'),detailForeground:color(c.detailForeground,'#172c49'),
    detailAccent:color(c.detailAccent,'#377cff'),detailButton:text(c.detailButton||'Перейти на сайт',80),
 
-   foreground:color(c.foreground,'#142338'),enabled:c.enabled===true,
+   foreground:color(c.foreground,'#142338'),enabled:c.enabled===true,placement:c.placement==='special'?'special':'banner',
    start,end,days:[...new Set(days)],weight:clamp(c.weight,1,10,1),
    seconds:clamp(c.seconds,3,60,8),maxImpressions:clamp(c.maxImpressions,0,100000000,0),
    dailyCap:clamp(c.dailyCap,0,1000000,0),
@@ -108,8 +132,10 @@ function normalize(raw){
 
  }
  };
- const ids=normalized.campaigns.map(c=>c.id);
- if(new Set(ids).size!==ids.length)throw Error('ID рекламних оголошень повинні бути унікальними');
+ const ids=[...normalized.campaigns.map(c=>c.id),...normalized.partnerOffers.map(o=>o.id),...normalized.discounts.map(d=>d.id)];
+ if(new Set(ids).size!==ids.length)throw Error('ID кампаній, пропозицій і знижок повинні бути унікальними');
+ for(const discount of normalized.discounts)if(discount.scope==='specific'&&!normalized.packages.some(p=>p.id===discount.packageId))
+  throw Error('Оберіть тариф, на який поширюється знижка');
  return normalized;
 }
 
@@ -144,33 +170,54 @@ export function createAdsStore({directory,clock=()=>Date.now()}){
    if(key.endsWith('|'+day))today=Number(v.impressions)||0;
   }return {all,today,clicks}}
  function publicState(){
-  const now=new Date(clock()).toISOString(),day=now.slice(0,10),weekday=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Kyiv',weekday:'short'}).format(new Date(clock())));
+  const nowMs=clock(),now=new Date(nowMs).toISOString(),day=now.slice(0,10),
+   weekday=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Kyiv',weekday:'short'}).format(new Date(nowMs)));
+  const eligible=state.enabled?state.campaigns.filter(c=>{
+   if(!c.enabled||!c.title||c.start&&c.start>now||c.end&&c.end<=now)return false;
+   if(c.days.length&&!c.days.includes(weekday))return false;
+   const t=totals(c.id,day);return (!c.maxImpressions||t.all<c.maxImpressions)&&(!c.dailyCap||t.today<c.dailyCap);
+  }):[];
+  const campaignView=c=>({id:c.id,title:c.title,description:c.description,image:c.image,link:c.link,button:c.button,
+   background:c.background,foreground:c.foreground,borderColor:c.borderColor,labelBackground:c.labelBackground,
+   labelForeground:c.labelForeground,labelBorderColor:c.labelBorderColor,titleColor:c.titleColor,
+   descriptionColor:c.descriptionColor,buttonBackground:c.buttonBackground,buttonForeground:c.buttonForeground,
+   weight:c.weight,seconds:c.seconds,cardBackgroundImage:c.cardBackgroundImage,cardStyle:c.cardStyle,
+   detailEnabled:c.detailEnabled,detailTitle:c.detailTitle,detailSubtitle:c.detailSubtitle,detailDescription:c.detailDescription,
+   detailBanner:c.detailBanner,detailImage:c.detailImage,detailBackground:c.detailBackground,detailForeground:c.detailForeground,
+   detailAccent:c.detailAccent,detailButton:c.detailButton});
+  const packages=state.packages.filter(p=>p.visible).map(p=>{
+   const active=state.discounts.filter(d=>d.enabled&&(!d.start||d.start<=now)&&(!d.end||d.end>now)&&
+    (d.scope==='all'||d.packageId===p.id)&&d.amount>0&&p.price>0)
+    .map(d=>({discount:d,saving:d.kind==='percent'?p.price*d.amount/100:Math.min(p.price,d.amount)}))
+    .sort((a,b)=>b.saving-a.saving);
+   const chosen=active[0],saving=chosen?Math.min(p.price,Math.max(0,chosen.saving)):0;
+   const discount=chosen?{title:chosen.discount.title,label:chosen.discount.kind==='percent'?'-'+chosen.discount.amount+'%':'−'+chosen.discount.amount+' грн',
+    kind:chosen.discount.kind,amount:chosen.discount.amount,endsAt:chosen.discount.end||null}:null;
+   return {title:p.title,description:p.description,price:Math.max(0,p.price-saving),originalPrice:chosen?p.price:null,
+    durationDays:p.durationDays,badge:p.badge,badgeBackground:p.badgeBackground,badgeForeground:p.badgeForeground,
+    featured:p.featured,features:p.features,discount};
+  });
   return {enabled:state.enabled,pageVisible:state.pageVisible,rotationSeconds:state.rotationSeconds,promoEvery:state.promoEvery,
    showPromo:state.showPromo,manualSwipe:state.manualSwipe,animation:state.animation,
    promoTitle:state.promoTitle,promoText:state.promoText,contactLabel:state.contactLabel,
    pageTitle:state.pageTitle,pageIntro:state.pageIntro,pageTerms:state.pageTerms,
    pageBackground:state.pageBackground,pageAccent:state.pageAccent,pageHeroImage:state.pageHeroImage,
    pageAbout:state.pageAbout,pageContactText:state.pageContactText,pageBenefits:state.pageBenefits,
-   contacts:state.contacts.filter(c=>c.enabled&&c.url).map(({label,url})=>({label,url})),
-   packages:state.packages.filter(p=>p.visible).map(({title,description,price,durationDays,badge,badgeBackground,badgeForeground,featured,features})=>({title,description,price,durationDays,badge,badgeBackground,badgeForeground,featured,features})),
-   support:{...state.support,
-    methods:state.support.methods.filter(m=>m.enabled&&!!(m.url||m.details)),
+   contacts:state.contacts.filter(c=>c.enabled&&c.url).map(({label,url})=>({label,url})),packages,
+   permanentPartner:state.enabled&&state.permanentPartner.enabled?state.permanentPartner:{enabled:false},
+   partnerOffers:state.enabled?state.partnerOffers.filter(o=>o.enabled&&o.title&&(!o.start||o.start<=now)&&(!o.end||o.end>now)).map(o=>({...o})):[],
+   support:{...state.support,methods:state.support.methods.filter(m=>m.enabled&&!!(m.url||m.details)),
     expenses:state.support.expenses.filter(e=>e.public),
-    enabled:state.support.enabled&&!!(state.support.paymentUrl||state.support.methods.some(m=>m.enabled&&(m.url||m.details)))
-   },
-   campaigns:state.enabled?state.campaigns.filter(c=>{
-    if(!c.enabled||!c.title||c.start&&c.start>now||c.end&&c.end<=now)return false;
-    if(c.days.length&&!c.days.includes(weekday))return false;
-    const t=totals(c.id,day);return (!c.maxImpressions||t.all<c.maxImpressions)&&(!c.dailyCap||t.today<c.dailyCap);
-   }).map(({id,title,description,image,link,button,background,foreground,borderColor,labelBackground,labelForeground,labelBorderColor,titleColor,descriptionColor,buttonBackground,buttonForeground,weight,seconds,cardBackgroundImage,cardStyle,detailEnabled,detailTitle,detailSubtitle,detailDescription,detailBanner,detailImage,detailBackground,detailForeground,detailAccent,detailButton})=>
-    ({id,title,description,image,link,button,background,foreground,borderColor,labelBackground,labelForeground,labelBorderColor,titleColor,descriptionColor,buttonBackground,buttonForeground,weight,seconds,cardBackgroundImage,cardStyle,
-     detailEnabled,detailTitle,detailSubtitle,detailDescription,detailBanner,detailImage,detailBackground,detailForeground,detailAccent,detailButton})):[]};
+    enabled:state.support.enabled&&!!(state.support.paymentUrl||state.support.methods.some(m=>m.enabled&&(m.url||m.details)))},
+   campaigns:eligible.filter(c=>c.placement!=='special').map(campaignView),
+   specialPlacements:eligible.filter(c=>c.placement==='special').map(campaignView)};
  }
  function update(value){if(!isObj(value))throw Error('Некоректні налаштування');state=normalize(value);lastModified=new Date(clock()).toISOString();flush();return dashboard()}
  function rateLimit(bucket,limit,windowMs){const now=clock(),r=rate.get(bucket);if(!r||now-r.last>=windowMs){rate.set(bucket,{last:now,count:1});return true}r.count++;return r.count<=limit}
  function event(id,type,clientKey=''){
   if(!['impression','click','detailOpen','outbound'].includes(type)||!state.enabled)return false;
-  if(id!=='promo'&&!publicState().campaigns.some(c=>c.id===id))return false;
+  const pub=publicState();
+  if(id!=='promo'&&!pub.campaigns.some(c=>c.id===id)&&!pub.specialPlacements.some(c=>c.id===id)&&!pub.partnerOffers.some(c=>c.id===id)&&!(id==='permanent-partner'&&pub.permanentPartner?.enabled))return false;
   if(clientKey&&!rateLimit('ad:'+clientKey,150,60000))return false;
   const now=clock(),day=new Date(now).toISOString().slice(0,10),k=id+'|'+day;
   if(clientKey&&type==='impression'){const dedupe=id+'|'+clientKey;if(now-(recentAdViews.get(dedupe)||0)<2000)return true;recentAdViews.set(dedupe,now)}
