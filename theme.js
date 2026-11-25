@@ -14,6 +14,7 @@
   root.style.colorScheme=dark?'dark':'light';
   const meta=document.querySelector('meta[name="theme-color"]');
   if(meta)meta.setAttribute('content',dark?'#090b0f':'#f6f8fc');
+  const select=document.getElementById('appearanceThemeSelect');if(select)select.value=choice;
   document.querySelectorAll('input[name="appearanceTheme"]').forEach(input=>{input.checked=input.value===choice});
   const text=document.getElementById('appearanceSummary');
   if(text)text.textContent=choice==='system'?'Тема автоматично підлаштовується під ваш телефон.':choice==='dark'?'Темне оформлення ввімкнено.':'Світле оформлення ввімкнено.';
@@ -30,9 +31,39 @@
  else media.addListener?.(syncSystem);
  window.addEventListener?.('pageshow',syncSystem);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncSystem()});
+ const DND_KEY='svitlo-do-not-disturb-v1';
+ const dndEnabled=()=>{try{return localStorage.getItem(DND_KEY)!=='0'}catch{return true}};
+ const quietNow=()=>{
+  try{
+   const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date());
+   const hour=Number(parts.find(p=>p.type==='hour')?.value),minute=Number(parts.find(p=>p.type==='minute')?.value);
+   const total=hour*60+minute;return total>=1320||total<420;
+  }catch{return false}
+ };
+ async function syncQuietHoursCache(){
+  try{
+   if(!('caches' in window))return;
+   const cache=await caches.open('svitlo-push-preferences-v1');
+   const key=new URL('./push-preferences.json',location.href);
+   await cache.put(key,new Response(JSON.stringify({doNotDisturb:dndEnabled()}),{headers:{'content-type':'application/json'}}));
+  }catch(error){console.warn('Quiet-hours preference sync:',error?.message||error)}
+ }
+ function renderQuietHours(){
+  const toggle=document.getElementById('doNotDisturbToggle');
+  if(toggle)toggle.checked=dndEnabled();
+  const banner=document.getElementById('homeDndNotice');
+  if(banner)banner.hidden=!(dndEnabled()&&quietNow());
+ }
  document.addEventListener('DOMContentLoaded',()=>{
+  const select=document.getElementById('appearanceThemeSelect');
+  select?.addEventListener('change',()=>set(select.value));
   document.querySelectorAll('input[name="appearanceTheme"]').forEach(input=>input.addEventListener('change',()=>{if(input.checked)set(input.value)}));
-  apply();
+  const dnd=document.getElementById('doNotDisturbToggle');
+  dnd?.addEventListener('change',()=>{
+   try{localStorage.setItem(DND_KEY,dnd.checked?'1':'0')}catch{}
+   void syncQuietHoursCache();renderQuietHours();
+  });
+  apply();void syncQuietHoursCache();renderQuietHours();setInterval(renderQuietHours,60_000);
  });
  // Installed iOS PWA: prevent page scaling while preserving normal
  // single-finger scrolling, text inputs and rapid taps on controls.
@@ -47,5 +78,6 @@
   if(event?.touches?.length>1)blockScale(event);
  },{passive:false});
  window.SvitloTheme={get:()=>choice,set,apply};
+ window.SvitloQuietHours={enabled:dndEnabled,isQuiet:quietNow,renderHome:renderQuietHours,sync:syncQuietHoursCache};
  apply();
 })();
