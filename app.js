@@ -1201,7 +1201,10 @@ function checkNotifications(){
  }
  if(nativeAllowed&&prefs.tomorrow){
   const nextDate=shiftDay(date,1),published=currentDay(nextDate);
-  if(safelyVerified(nextDate)&&published?.queues?.[a.queue]&&m>=19*60)
+  const publishedAt=published?.publications?.[0]?.publishedAt||published?.publishedAt;
+  const publicationDate=publishedAt&&Number.isFinite(Date.parse(publishedAt))
+   ?new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Kyiv',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(publishedAt)):'';
+  if(safelyVerified(nextDate)&&published?.queues?.[a.queue]&&publicationDate===date)
    notify('🗓️ Графік на завтра',`Підчерга ${a.queue} · На ${formatDate(nextDate)}. Перегляньте години відключень.`,`tomorrow:${nextDate}`);
  }
 }
