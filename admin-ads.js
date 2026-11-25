@@ -229,7 +229,7 @@
   const list=el('div',undefined,'ad-benefits-editor');list.append(el('h4','Переваги розміщення'));
   draft.pageBenefits.forEach((v,idx)=>{const line=el('div',undefined,'ad-benefit-row');const input=el('input');input.value=v;input.maxLength=180;
    input.oninput=()=>{draft.pageBenefits[idx]=input.value;mark()};line.append(input);button(line,'❌',()=>{draft.pageBenefits.splice(idx,1);mark();render()},'secondary');list.append(line)});
-  button(list,'+ Додати перевагу',()=>{draft.pageBenefits.push('Нова перевага');mark();render()});landing.append(list);
+  const addBenefit=button(list,'+ Додати перевагу',()=>{draft.pageBenefits.push('Нова перевага');mark();render()});addBenefit.disabled=draft.pageBenefits.length>=8;if(addBenefit.disabled)list.append(el('small','Максимум 8 переваг.','ad-muted'));landing.append(list);
   draft.pageVisibility||={hero:true,benefits:true,services:true,tariffs:true,faq:true,terms:true,contacts:true};
   const visibility=section('Видимість розділів сторінки','Вимикайте окремі частини сторінки, не видаляючи їхній вміст. Налаштування зберігаються.');
   const visibilityGrid=grid(visibility);
@@ -266,7 +266,7 @@
    button(cards,'+ Додати картку',()=>{item.items.push({icon:'✦',title:'Нова можливість',description:''});mark();render()});
    row.append(cards);services.append(row);
   });
-  button(services,'+ Створити розділ послуг',()=>{draft.pageSections.push({id:uuid(),eyebrow:'НОВИЙ РОЗДІЛ',title:'Назва послуги',description:'',visible:true,items:[{icon:'✦',title:'Перевага',description:''}]});mark();render()});
+  const addSection=button(services,'+ Створити розділ послуг',()=>{draft.pageSections.push({id:uuid(),eyebrow:'НОВИЙ РОЗДІЛ',title:'Назва послуги',description:'',visible:true,items:[{icon:'✦',title:'Перевага',description:''}]});mark();render()});addSection.disabled=draft.pageSections.length>=12;if(addSection.disabled)services.append(el('small','Максимум 12 розділів.','ad-muted'));
   const faq=section('Поширені запитання','Редагуйте запитання й відповіді або приховуйте окремі пункти.');
   draft.pageFaq||=[];
   draft.pageFaq.forEach((item,index)=>{
@@ -277,7 +277,7 @@
    button(row,'Видалити запитання',()=>{draft.pageFaq.splice(index,1);mark();render()},'danger');
    faq.append(row);
   });
-  button(faq,'+ Додати запитання',()=>{draft.pageFaq.push({id:uuid(),question:'Нове запитання',answer:'',visible:true});mark();render()});
+  const addFaq=button(faq,'+ Додати запитання',()=>{draft.pageFaq.push({id:uuid(),question:'Нове запитання',answer:'',visible:true});mark();render()});addFaq.disabled=draft.pageFaq.length>=12;if(addFaq.disabled)faq.append(el('small','Максимум 12 запитань.','ad-muted'));
   root.append(main,landing,visibility,services,faq);
   const contact=section('Зв’язатися з нами','Ці контакти автоматично відображаються на сторінці замовлення реклами.');
   draft.contacts.forEach((c,i)=>{const row=el('div',undefined,'ad-subcard');const f=grid(row);field(f,'Назва контакту',c,'label');field(f,'Посилання HTTPS (Telegram, сайт, email через форму)',c,'url','url');field(f,'Показувати',c,'enabled','toggle');button(row,'Видалити',()=>{draft.contacts.splice(i,1);mark();render()},'danger');contact.append(row)});
