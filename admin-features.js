@@ -136,6 +136,8 @@
    // A feature change must never revert edits made in another CMS tab.
    const cfg=await api('app-config');
    const flags={...(cfg.site?.flags||{})};
+   // Remove retired controls from old persisted configurations as well.
+   delete flags.electricityStats;delete flags.partnerOffers;
    for(const [key,{checkbox}] of controls)flags[key]=checkbox.checked;
    cfg.site={...cfg.site,flags,links:{...cfg.site?.links,help:val('opsLinkHelp'),feedback:val('opsLinkFeedback'),official:val('opsLinkOfficial')},
     banner:{...cfg.site?.banner,enabled:$('opsBannerActive').checked,title:val('opsBannerTitle'),
