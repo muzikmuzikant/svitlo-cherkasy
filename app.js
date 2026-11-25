@@ -289,7 +289,7 @@ function renderHome(){
  const intro=$('homeIntro');if(intro)intro.hidden=Boolean(primary());
 
  try{window.SvitloTelemetry?.sampleSelected(primary())}catch{}
- renderEmergency();renderFreshness();const a=primary(),date=today(),m=nowMinutes();
+ renderEmergency();renderFreshness();window.SvitloQuietHours?.renderHome?.();const a=primary(),date=today(),m=nowMinutes();
  setText('primaryName',label(a));setText('primarySub',a?`${a.settlement||'Черкаси'} · ${a.queue?'підчерга '+a.queue:'підчергу не визначено'}`:'Черкаси або села району');
 
  const schedule=a?.queue?currentDay(date):null;
