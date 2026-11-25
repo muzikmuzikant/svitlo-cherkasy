@@ -19,6 +19,7 @@ test('community reports and remaining commercial placements stay available', () 
   assert.match(community,/sendReport/);
   assert.match(commercial,/adSpecialPlacements/);
   assert.match(commercial,/permanentPartner/);
+  assert.doesNotMatch(html,/Статистика електропостачання|Пропозиції партнерів/);
 });
 
 test('removed options are no longer exposed as admin or server feature flags', () => {
