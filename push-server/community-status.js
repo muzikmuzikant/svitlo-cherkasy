@@ -84,17 +84,31 @@ export function createCommunityStatusStore({directory,clock=()=>Date.now(),regio
   for(const r of records)if(r.region===regionId&&r.queue===queue&&r.at>=cutoff&&r.at<=now){const old=latest.get(r.actor);if(!old||r.at>old.at)latest.set(r.actor,r)}
   let on=0,off=0,updatedAt=null;
   for(const r of latest.values()){if(r.status==='on')on++;else off++;if(!updatedAt||r.at>Date.parse(updatedAt))updatedAt=new Date(r.at).toISOString()}
-  const total=on+off,majority=Math.max(on,off),confirmed=total>=3&&majority/total>=0.6;
+  const total=on+off,majority=Math.max(on,off),agreementPercent=total?Math.round(majority/total*100):0,confirmed=total>=3&&agreementPercent>=60;
   const actor=typeof clientId==='string'&&/^[a-zA-Z0-9-]{16,64}$/.test(clientId)?actorFor(clientId):'';
   const own=actor?latest.get(actor):null;
-  return {region:regionId,queue,state:confirmed?(on>off?'on':'off'):'unknown',confirmed,counts:{on,off,total},updatedAt,windowMinutes:30,myReport:own?.status||null,minimumReports:3};
+  const ageMinutes=updatedAt?Math.max(0,Math.floor((now-Date.parse(updatedAt))/60000)):null;
+  const freshness=ageMinutes===null?'none':ageMinutes<=10?'fresh':ageMinutes<=20?'recent':'aging';
+  return {region:regionId,queue,state:confirmed?(on>off?'on':'off'):'unknown',confirmed,agreementPercent,
+   counts:{on,off,total},updatedAt,ageMinutes,freshness,windowMinutes:30,myReport:own?.status||null,minimumReports:3};
  }
  function stats(queue,period='day'){
   if(!QUEUES.has(queue))throw Error('Неправильна підчерга');
   const now=clock(),range=periodRange(period,now),groups=new Map();prune();
-  for(const r of records){if(r.region!==regionId||r.queue!==queue||r.at<range.startAt||r.at>range.endAt)continue;const bucket=Math.floor(r.at/BUCKET_MS)*BUCKET_MS;let group=groups.get(bucket);if(!group){group={on:new Set(),off:new Set()};groups.set(bucket,group)}group[r.status].add(r.actor)}
+  // Keep only each actor's latest observation inside a bucket. If someone
+  // corrects their report, they must never count on both sides of the same interval.
+  for(const r of records){
+   if(r.region!==regionId||r.queue!==queue||r.at<range.startAt||r.at>range.endAt)continue;
+   const bucket=Math.floor(r.at/BUCKET_MS)*BUCKET_MS;
+   let group=groups.get(bucket);if(!group){group=new Map();groups.set(bucket,group)}
+   const previous=group.get(r.actor);if(!previous||r.at>previous.at)group.set(r.actor,r);
+  }
   let onMinutes=0,offMinutes=0,confirmedBuckets=0;
-  for(const [bucket,group] of groups){const on=group.on.size,off=group.off.size,total=on+off;if(total<3||Math.max(on,off)/total<0.6||bucket+BUCKET_MS>range.endAt)continue;const minutes=10;if(on>off)onMinutes+=minutes;else offMinutes+=minutes;confirmedBuckets++}
+  for(const [bucket,group] of groups){
+   let on=0,off=0;for(const report of group.values()){if(report.status==='on')on++;else off++}
+   const total=on+off;if(total<3||Math.max(on,off)/total<0.6||bucket+BUCKET_MS>range.endAt)continue;
+   const minutes=10;if(on>off)onMinutes+=minutes;else offMinutes+=minutes;confirmedBuckets++;
+  }
   const coverageMinutes=onMinutes+offMinutes;
   return {region:regionId,period,startDate:range.startDate,asOf:new Date(now).toISOString(),onMinutes,offMinutes,coverageMinutes,unknownMinutes:Math.max(0,range.totalMinutes-coverageMinutes),totalMinutes:range.totalMinutes,confirmedBuckets,minimumReportsPerInterval:3,intervalMinutes:10,source:'community-observations',note:'Фактичні години рахуються лише за 10-хвилинними інтервалами з щонайменше трьома різними підтвердженнями. Пропуски не домальовуються.'};
  }
