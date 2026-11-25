@@ -12,10 +12,15 @@
  async function getApi(){if(api)return api;const r=await fetch('./push-config.json',{cache:'no-store'});if(!r.ok)throw Error('config');const c=await r.json(),raw=String(c.apiBase||'').trim(),v=raw.endsWith('/')?raw.slice(0,-1):raw;if(!v.startsWith('https://'))throw Error('api');api=v;return api}
  const featureEnabled=k=>!document.documentElement.classList.contains('feature-off-'+k);
  function visibility(){statusHost.hidden=!featureEnabled('communityStatus')}
+ function ageMinutes(data){
+  if(!data?.updatedAt)return null;
+  const stamp=Date.parse(data.updatedAt);
+  return Number.isFinite(stamp)?Math.max(0,Math.floor((Date.now()-stamp)/60000)):null;
+ }
  function freshnessText(data){
-  if(!data?.updatedAt)return 'Ще немає повідомлень';
-  const age=Number.isFinite(data.ageMinutes)?data.ageMinutes:Math.max(0,Math.floor((Date.now()-Date.parse(data.updatedAt))/60000));
-  return age<1?'Останнє повідомлення щойно': 'Останнє повідомлення '+age+' хв тому';
+  const age=ageMinutes(data);
+  if(age===null)return 'Ще немає повідомлень';
+  return age<1?'Останнє повідомлення щойно':'Останнє повідомлення '+age+' хв тому';
  }
  function paintStatus(data){
   statusHost.replaceChildren();
@@ -26,18 +31,22 @@
   const refresh=make('button','↻','community-refresh');refresh.type='button';refresh.setAttribute('aria-label','Оновити повідомлення');refresh.title='Оновити';refresh.disabled=busy;refresh.addEventListener('click',()=>loadStatus(true));headActions.append(refresh);
   head.append(title,headActions);statusHost.append(head);
   if(!queue){statusHost.append(make('p','Додайте адресу з визначеною підчергою, щоб бачити повідомлення мешканців.','community-hint'));return}
-  const result=make('div',undefined,'community-result'),state=data?.state||'unknown',counts=data?.counts||{on:0,off:0,total:0};
-  const label=state==='on'?'За повідомленнями, світло є':state==='off'?'За повідомленнями, світла немає':'Поки недостатньо підтверджень';
+  const result=make('div',undefined,'community-result'),age=ageMinutes(data),expired=age!==null&&age>30,state=expired?'unknown':(data?.state||'unknown'),counts=data?.counts||{on:0,off:0,total:0};
+  const label=expired?'Немає актуальних підтверджень':state==='on'?'За повідомленнями, світло є':state==='off'?'За повідомленнями, світла немає':'Поки недостатньо підтверджень';
   result.append(make('strong',label,'community-state community-'+state));
   result.append(make('span',freshnessText(data),'community-updated'));
-  const total=Math.max(0,Number(counts.total)||0),on=Math.max(0,Number(counts.on)||0),off=Math.max(0,Number(counts.off)||0);
-  const meter=make('div',undefined,'community-meter');meter.setAttribute('role','img');meter.setAttribute('aria-label','Є світло: '+on+', немає світла: '+off);
-  const onBar=make('span',undefined,'community-meter-on'),offBar=make('span',undefined,'community-meter-off');
-  onBar.style.width=(total?on/total*100:0)+'%';offBar.style.width=(total?off/total*100:0)+'%';meter.append(onBar,offBar);result.append(meter);
-  result.append(make('span','Є світло: '+on+' · Немає світла: '+off+' · Відповідей: '+total,'community-counts'));
-  if(data?.confirmed)result.append(make('span','Узгодженість повідомлень: '+data.agreementPercent+'%','community-agreement'));
-  else if(total>0)result.append(make('span',total<3?'Потрібно щонайменше три різні підтвердження.':'Повідомлення різняться, тому підсумок поки не визначено.','community-hint'));
-  if(data?.freshness==='aging')result.append(make('span','Дані можуть застарівати. Нове повідомлення допоможе оновити картину.','community-stale'));
+  if(expired){
+   result.append(make('span','Попередні повідомлення старші за 30 хвилин. Поточний стан може бути іншим.','community-stale'));
+  }else{
+   const total=Math.max(0,Number(counts.total)||0),on=Math.max(0,Number(counts.on)||0),off=Math.max(0,Number(counts.off)||0);
+   const meter=make('div',undefined,'community-meter');meter.setAttribute('role','img');meter.setAttribute('aria-label','Є світло: '+on+', немає світла: '+off);
+   const onBar=make('span',undefined,'community-meter-on'),offBar=make('span',undefined,'community-meter-off');
+   onBar.style.width=(total?on/total*100:0)+'%';offBar.style.width=(total?off/total*100:0)+'%';meter.append(onBar,offBar);result.append(meter);
+   result.append(make('span','Є світло: '+on+' · Немає світла: '+off+' · Відповідей: '+total,'community-counts'));
+   if(data?.confirmed)result.append(make('span','Узгодженість повідомлень: '+data.agreementPercent+'%','community-agreement'));
+   else if(total>0)result.append(make('span',total<3?'Потрібно щонайменше три різні підтвердження.':'Повідомлення різняться, тому підсумок поки не визначено.','community-hint'));
+   if(age!==null&&age>20)result.append(make('span','Дані можуть застарівати. Нове повідомлення допоможе оновити картину.','community-stale'));
+  }
   statusHost.append(result);
   const controls=make('div',undefined,'community-actions');
   for(const [value,labelText] of [['on','Світло є'],['off','Світла немає']]){
