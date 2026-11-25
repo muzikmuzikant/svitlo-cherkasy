@@ -65,7 +65,7 @@
    }
    const copy=make('div');copy.append(make('strong',p.name),make('p',p.description||''));row.append(copy);
    const href=safeLink(p.url);
-   if(href){const a=make('a','Сайт партнера ↗','commercial-partner-link');a.href=href;a.target='_blank';a.rel='noopener noreferrer';a.addEventListener('click',()=>track('permanent-partner','click'));row.append(a)}
+   if(href){const a=make('a','Сайт партнера','commercial-partner-link');a.href=href;a.target='_blank';a.rel='noopener noreferrer';a.addEventListener('click',()=>track('permanent-partner','click'));row.append(a)}
    partner.append(row);
   }
   const list=(Array.isArray(config.partnerOffers)?config.partnerOffers:[]).filter(x=>x.enabled);
@@ -91,7 +91,7 @@
      code.append(button);copy.append(code);
     }
     const href=safeLink(item.link);
-    if(href){const a=make('a','Переглянути пропозицію ↗','commercial-action');a.href=href;a.target='_blank';a.rel='noopener noreferrer';a.addEventListener('click',()=>track(item.id,'click'));copy.append(a)}
+    if(href){const a=make('a','Переглянути пропозицію','commercial-action');a.href=href;a.target='_blank';a.rel='noopener noreferrer';a.addEventListener('click',()=>track(item.id,'click'));copy.append(a)}
     card.append(copy);offers.append(card);
    }
   }

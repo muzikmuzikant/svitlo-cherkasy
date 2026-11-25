@@ -61,3 +61,12 @@ test('region identifiers isolate equal queue numbers and old reports expire afte
   assert.equal(saved.reports.length,0);
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });
+
+test('Kyiv local-day boundaries handle spring and autumn daylight-saving changes',()=>{
+ const spring=calculatePlannedStats({days:[]},{events:[]},queue,'day',Date.parse('2026-03-29T12:00:00+03:00'));
+ const autumn=calculatePlannedStats({days:[]},{events:[]},queue,'day',Date.parse('2026-10-25T12:00:00+02:00'));
+ assert.equal(spring.totalMinutes,11*60);
+ assert.equal(spring.onMinutes,11*60);
+ assert.equal(autumn.totalMinutes,13*60);
+ assert.equal(autumn.onMinutes,13*60);
+});
