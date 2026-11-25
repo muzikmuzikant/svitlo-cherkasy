@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {timeline,dueTransition,latestOfficialEvent,freshEvent,freshSchedule,dueTransitionAcrossDays} from '../push-server/schedule-engine.js';
+import {timeline,dueTransition,latestOfficialEvent,freshEvent,freshSchedule,dueTransitionAcrossDays,schedulePublishedToday} from '../push-server/schedule-engine.js';
 const source='https://www.cherkasyoblenergo.com/media/a';
 const mk=(knownFrom,off)=>({date:'2026-10-10',verified:true,queues:{'2.1':{knownFrom,off}}});
 test('known schedule is ON outside outage intervals; before publication is UNKNOWN',()=>{
@@ -62,4 +62,12 @@ test('late Railway dispatch recovers a published OFF reminder without sending af
  assert.equal(dueTransitionAcrossDays(day,null,9*60+40,30,1,12),10*60);
  assert.equal(dueTransitionAcrossDays(day,null,9*60+43,30,1,12),null);
  assert.equal(dueTransitionAcrossDays(day,null,10*60,30,1,12),null);
+});
+
+test('tomorrow announcement is eligible immediately on its Kyiv publication date, not at a fixed evening hour',()=>{
+ const day={verified:true,publishedAt:'2026-11-25T18:10:00+02:00'};
+ assert.equal(schedulePublishedToday(day,'2026-11-25'),true);
+ assert.equal(schedulePublishedToday({publications:[{publishedAt:'2026-11-24T23:55:00+02:00'}]},'2026-11-25'),false);
+ assert.equal(schedulePublishedToday({publishedAt:'not-a-date'},'2026-11-25'),false);
+ assert.equal(schedulePublishedToday(day,'invalid'),false);
 });
