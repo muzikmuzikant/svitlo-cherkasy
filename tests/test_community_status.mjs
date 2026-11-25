@@ -14,7 +14,7 @@ test('community reports validate input, aggregate only three distinct reports an
   assert.equal(store.status(queue).state,'unknown');
   store.report({queue,status:'off',clientId:client(3)});
   const status=store.status(queue,client(1));assert.equal(status.state,'on');assert.equal(status.counts.total,3);assert.equal(status.myReport,'on');
-  const raw=fs.readFileSync(path.join(dir,'community-status.json'),'utf8');assert.equal(raw.includes(client(1)),false);assert.equal(raw.includes('127.0.0.1'),false);
+  const raw=fs.readFileSync(path.join(dir,'community-status-cherkasy-district.json'),'utf8');assert.equal(raw.includes(client(1)),false);assert.equal(raw.includes('127.0.0.1'),false);
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });
 test('one browser cannot repeatedly change its report inside the cooldown',()=>{
@@ -57,7 +57,7 @@ test('region identifiers isolate equal queue numbers and old reports expire afte
   assert.equal(other.status(queue).counts.total,0);
   assert.throws(()=>createCommunityStatusStore({directory:dir,clock:()=>now,regionId:'Bad Region'}));
   now+=36*86400000;assert.equal(first.snapshot().reports,0);
-  const saved=JSON.parse(fs.readFileSync(path.join(dir,'community-status.json'),'utf8'));
+  const saved=JSON.parse(fs.readFileSync(path.join(dir,'community-status-cherkasy-district.json'),'utf8'));
   assert.equal(saved.reports.length,0);
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });
