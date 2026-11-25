@@ -18,13 +18,14 @@ test('community reports and remaining commercial placements stay available', () 
   assert.match(community,/ЩО ЗІ СВІТЛОМ\?/);
   assert.match(community,/sendReport/);
   assert.match(commercial,/adSpecialPlacements/);
-  assert.match(commercial,/partner-page-footer/);\n  assert.match(commercial,/partner-mini-button/);\n  assert.match(commercial,/permanentPartner/);
+  assert.match(commercial,/partner-page-footer/);
+  assert.match(commercial,/partner-mini-button/);
+  assert.match(commercial,/permanentPartner/);
   assert.doesNotMatch(html,/Статистика електропостачання|Пропозиції партнерів/);
 });
 
 test('removed options are no longer exposed as admin or server feature flags', () => {
   const admin=read('admin-features.js');
-  // Legacy names may appear only in cleanup code, not as visible feature entries.
   assert.equal(admin.includes("['electricityStats',"),false);
   assert.equal(admin.includes("['partnerOffers',"),false);
   for (const file of ['site-mode.js','push-server/app-config.js']) {
