@@ -28,20 +28,35 @@
  const target=()=>state?.announcements?.find(n=>n.id===selectedId);
  function status(message,error=false){$('opsMessageStatus').textContent=message;$('opsMessageStatus').className='push-state'+(error?' error':' good')}
  function blank(){
-  return {id:id(),title:'',body:'',content:'',source:'',kind:'info',priority:'normal',queue:'all',delivery:'inbox',settlement:'',
+  return {id:id(),title:'',body:'',content:'',source:'',scope:'general',verified:false,kind:'info',priority:'normal',queue:'all',delivery:'inbox',settlement:'',
    icon:'',images:[],active:false,pinned:false,publishedAt:now(),updatedAt:null,scheduledAt:null,expiresAt:null,pushSentAt:null};
+ }
+ function syncNoticeScope(){
+  const scope=read('opsNoticeScope')||'general',local=scope==='district'||scope==='settlement'||(scope==='legacy'&&!!read('opsNoticeSettlement'));
+  const settlementField=$('opsNoticeSettlementField'),verifiedField=$('opsNoticeVerifiedField'),source=$('opsNoticeSource');
+  if(settlementField)settlementField.hidden=!(scope==='settlement'||scope==='legacy');
+  if(verifiedField)verifiedField.hidden=!local;
+  if(source)source.required=local;
+  const hint=$('opsNoticeSourceHint');if(hint)hint.textContent=local?'Для локального оголошення потрібні позначка перевірки та HTTPS-першоджерело. Воно відображатиметься у повідомленні.':'Додайте першоджерело, якщо воно є. Посилання відображається у повідомленні лише для HTTPS-адреси.';
+ }
+ function localNoticeReady(){
+  const scope=read('opsNoticeScope')||'general',settlement=read('opsNoticeSettlement');
+  const local=scope==='district'||scope==='settlement'||(scope==='legacy'&&!!settlement);
+  return !local||($('opsNoticeVerified')?.checked===true&&/^https:\/\//i.test(read('opsNoticeSource'))&&(scope!=='settlement'||!!settlement));
  }
  function capture(){
   const n=target();if(!n)return;
-  const before=JSON.stringify({title:n.title,body:n.body,content:n.content,source:n.source,kind:n.kind,priority:n.priority,
+  const scope=read('opsNoticeScope')||'general';
+  const settlement=scope==='district'||scope==='general'?'':read('opsNoticeSettlement');
+  const before=JSON.stringify({title:n.title,body:n.body,content:n.content,source:n.source,scope:n.scope,verified:n.verified,kind:n.kind,priority:n.priority,
    queue:n.queue,delivery:n.delivery,settlement:n.settlement,icon:n.icon,pinned:n.pinned,active:n.active,scheduledAt:n.scheduledAt,
    expiresAt:n.expiresAt,images:n.images});
-  Object.assign(n,{title:read('opsNoticeTitle'),body:read('opsNoticeBody'),content:read('opsNoticeContent'),source:read('opsNoticeSource'),
+  Object.assign(n,{title:read('opsNoticeTitle'),body:read('opsNoticeBody'),content:read('opsNoticeContent'),source:read('opsNoticeSource'),scope,verified:$('opsNoticeVerified').checked,
    kind:read('opsNoticeKind'),priority:read('opsNoticePriority'),queue:read('opsNoticeQueue'),
-   delivery:read('opsNoticeDelivery'),settlement:read('opsNoticeSettlement'),icon:read('opsNoticeIcon'),pinned:$('opsNoticePinned').checked,
+   delivery:read('opsNoticeDelivery'),settlement,icon:read('opsNoticeIcon'),pinned:$('opsNoticePinned').checked,
    active:$('opsNoticeActive').checked,scheduledAt:fromLocal($('opsNoticeSchedule').value),
    expiresAt:fromLocal($('opsNoticeExpires').value),images:[...photos]});
-  const after=JSON.stringify({title:n.title,body:n.body,content:n.content,kind:n.kind,priority:n.priority,
+  const after=JSON.stringify({title:n.title,body:n.body,content:n.content,source:n.source,scope:n.scope,verified:n.verified,kind:n.kind,priority:n.priority,
    queue:n.queue,delivery:n.delivery,settlement:n.settlement,icon:n.icon,pinned:n.pinned,active:n.active,scheduledAt:n.scheduledAt,
    expiresAt:n.expiresAt,images:n.images});
   if(before!==after)n.updatedAt=now();
@@ -89,9 +104,10 @@
   $('opsEditorStatus').textContent=n?(n.active?'Опубліковане повідомлення':'Чернетка'):'Створіть або виберіть повідомлення';
   for(const field of ['opsNoticeTitle','opsNoticeBody','opsNoticeContent','opsNoticeIcon'])options(field,n?.[field.replace('opsNotice','').toLowerCase()]||'');
   options('opsNoticeKind',n?.kind||'info');options('opsNoticePriority',n?.priority||'normal');
-  options('opsNoticeQueue',n?.queue||'all');options('opsNoticeDelivery',n?.delivery||'inbox');options('opsNoticeSettlement',n?.settlement||'');
+  options('opsNoticeQueue',n?.queue||'all');options('opsNoticeDelivery',n?.delivery||'inbox');
+  options('opsNoticeScope',n?.scope||(n?.settlement?'legacy':'general'));options('opsNoticeSettlement',n?.settlement||'');
   options('opsNoticeSource',n?.source||'');options('opsNoticeSchedule',local(n?.scheduledAt));options('opsNoticeExpires',local(n?.expiresAt));
-  check('opsNoticeActive',n?.active);check('opsNoticePinned',n?.pinned);
+  check('opsNoticeVerified',n?.verified);check('opsNoticeActive',n?.active);check('opsNoticePinned',n?.pinned);syncNoticeScope();
   options('opsNoticePublishedAt',kyivLocal(n?.publishedAt));$('opsNoticePublishedAt').disabled=!n?.active;
   photos=[...(n?.images||[])];drawPhotos();previewMessage();renderNoticeMetrics();
   document.dispatchEvent(new CustomEvent('svitlo:cms-loaded'));
@@ -114,7 +130,8 @@
   for(const n of shown){
    const button=document.createElement('button');button.type='button';button.className='ops-notice-choice'+(selectedId===n.id?' selected':'');
    const h=document.createElement('strong');h.textContent=(kinds[n.kind]||'💬')+' '+(n.title||'Нова чернетка');
-   const sub=document.createElement('small');sub.textContent=(n.active?'Опубліковано':'Чернетка')+' · '+(n.delivery==='both'?'Push + Вхідні':'Вхідні')+(n.pinned?' · 📌':'');
+   const audience=n.scope==='district'?'Черкаський район':n.scope==='settlement'?'НП: '+n.settlement:n.scope==='legacy'&&n.settlement?'Сумісне: '+n.settlement:'Усі користувачі';
+   const sub=document.createElement('small');sub.textContent=(n.active?'Опубліковано':'Чернетка')+' · '+audience+' · '+(n.delivery==='both'?'Push + Вхідні':n.delivery==='push'?'Push':'Вхідні')+(n.pinned?' · 📌':'');
    button.append(h,sub);button.onclick=()=>{capture();selectedId=n.id;fill();drawList()};
    list.append(button);
   }
@@ -408,9 +425,12 @@
   try{await saveConfig({scope:'content'});status('Знято з публікації '+exp.length+' прострочених повідомлень.')}
   catch(e){state=backup;fill();drawList();status('Не вдалося зняти повідомлення: '+e.message,true)}
  };
- for(const id of ['opsNoticeTitle','opsNoticeBody','opsNoticeContent','opsNoticeKind','opsNoticePriority','opsNoticeIcon','opsNoticeQueue','opsNoticeDelivery','opsNoticeSettlement','opsNoticeSource','opsNoticeActive','opsNoticePinned','opsNoticeSchedule','opsNoticeExpires']){
+ $('opsNoticeScope').addEventListener('change',()=>{const scope=read('opsNoticeScope');if(scope==='general'||scope==='district')options('opsNoticeSettlement','');syncNoticeScope();if($('opsNoticeActive').checked&&!localNoticeReady()){$('opsNoticeActive').checked=false;status('Для локального оголошення додайте HTTPS-джерело та підтвердьте перевірку. Публікацію призупинено.',true)}capture();drawList()});
+ for(const id of ['opsNoticeTitle','opsNoticeBody','opsNoticeContent','opsNoticeKind','opsNoticePriority','opsNoticeIcon','opsNoticeQueue','opsNoticeDelivery','opsNoticeScope','opsNoticeVerified','opsNoticeSettlement','opsNoticeSource','opsNoticeActive','opsNoticePinned','opsNoticeSchedule','opsNoticeExpires']){
   $(id).addEventListener('input',()=>{
+   if(id==='opsNoticeSettlement')syncNoticeScope();
    capture();previewMessage();drawList();
+   if(id==='opsNoticeActive'&&$('opsNoticeActive').checked&&!localNoticeReady()){$('opsNoticeActive').checked=false;capture();drawList();status('Локальне оголошення не можна опублікувати без позначки перевірки та HTTPS-першоджерела.',true);return}
    if(['opsNoticeActive','opsNoticePinned'].includes(id)){
     clearTimeout(autoSaveTimer);
     // A new Push must not go live before explicit owner confirmation.

@@ -388,11 +388,16 @@ main{max-width:1000px;margin:0 auto;padding:22px 18px 80px}header{display:flex;a
     <div class="field"><label for="opsNoticeQueue">Одержувачі</label><select id="opsNoticeQueue"><option value="all">Усі підчерги</option></select></div>
     <div class="field"><label for="opsNoticeDelivery">Спосіб доставки</label><select id="opsNoticeDelivery"><option value="inbox">Тільки у «Вхідні»</option><option value="both">«Вхідні» та Push</option><option value="push">Тільки Push (без «Вхідних»)</option></select></div>
    </div>
-   <div class="field"><label for="opsNoticeSettlement">Населений пункт (необов'язково)</label>
-    <input id="opsNoticeSettlement" type="text" maxlength="70" placeholder="Наприклад, Черкаси">
-    <small class="hint">Порожнє поле: всі населені пункти. Вказана назва обмежує Push і «Вхідні» користувачами цього населеного пункту без адреси чи номера будинку.</small>
+   <div class="field"><label for="opsNoticeScope">Охоплення повідомлення</label>
+    <select id="opsNoticeScope"><option value="general">Загальне повідомлення</option><option value="district">Увесь Черкаський район</option><option value="settlement">Окремий населений пункт</option><option value="legacy">Сумісне старе повідомлення</option></select>
+    <small class="hint">Локальне оголошення побачать лише користувачі вибраної території та підчерги.</small>
    </div>
-   <div class="field"><label for="opsNoticeSource">Офіційне джерело (необов’язково)</label><input id="opsNoticeSource" type="url" maxlength="500" placeholder="https://www.cherkasyoblenergo.com/..."><small class="hint">Додайте першоджерело. Посилання буде показано в повідомленні лише для зовнішньої HTTPS-адреси.</small></div>
+   <div class="field" id="opsNoticeSettlementField" hidden><label for="opsNoticeSettlement">Населений пункт</label>
+    <input id="opsNoticeSettlement" type="text" maxlength="70" placeholder="Наприклад, Черкаси">
+    <small class="hint">Вкажіть точну назву населеного пункту. Повна адреса користувача не передається.</small>
+   </div>
+   <label class="checkline" id="opsNoticeVerifiedField" hidden><input type="checkbox" id="opsNoticeVerified"> Перевірено за офіційним джерелом</label>
+   <div class="field"><label for="opsNoticeSource">Офіційне джерело</label><input id="opsNoticeSource" type="url" maxlength="500" placeholder="https://..."><small class="hint" id="opsNoticeSourceHint">Для локального оголошення потрібне перевірене HTTPS-першоджерело. Воно відображатиметься у повідомленні.</small></div>
    <div class="two">
     <div class="field"><label for="opsNoticeSchedule">Запланований час появи</label><input id="opsNoticeSchedule" type="datetime-local"></div>
     <div class="field"><label for="opsNoticeExpires">Показувати до</label><input id="opsNoticeExpires" type="datetime-local"></div>
