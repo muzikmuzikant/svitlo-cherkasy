@@ -61,3 +61,31 @@ test('region identifiers isolate equal queue numbers and old reports expire afte
   assert.equal(saved.reports.length,0);
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });
+
+test('a corrected report is counted only once per ten-minute statistics bucket',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'svitlo-community-correction-'));let now=Date.parse('2026-11-25T10:00:00+02:00');
+ try{
+  const store=createCommunityStatusStore({directory:dir,clock:()=>now});
+  store.report({queue,status:'on',clientId:client(1)});
+  now+=120001;store.report({queue,status:'off',clientId:client(1)});
+  store.report({queue,status:'off',clientId:client(2)});
+  store.report({queue,status:'off',clientId:client(3)});
+  now=Date.parse('2026-11-25T10:10:01+02:00');
+  const result=store.stats(queue,'day');
+  assert.equal(result.onMinutes,0);
+  assert.equal(result.offMinutes,10);
+  assert.equal(result.confirmedBuckets,1);
+ }finally{fs.rmSync(dir,{recursive:true,force:true})}
+});
+test('status exposes agreement and freshness without upgrading weak signals to confirmed',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'svitlo-community-freshness-'));let now=Date.parse('2026-11-25T10:00:00+02:00');
+ try{
+  const store=createCommunityStatusStore({directory:dir,clock:()=>now});
+  store.report({queue,status:'on',clientId:client(1)});
+  store.report({queue,status:'off',clientId:client(2)});
+  const weak=store.status(queue);assert.equal(weak.state,'unknown');assert.equal(weak.agreementPercent,50);
+  store.report({queue,status:'on',clientId:client(3)});
+  const confirmed=store.status(queue);assert.equal(confirmed.state,'on');assert.equal(confirmed.agreementPercent,67);assert.equal(confirmed.freshness,'fresh');
+  now+=11*60000;assert.equal(store.status(queue).freshness,'recent');
+ }finally{fs.rmSync(dir,{recursive:true,force:true})}
+});

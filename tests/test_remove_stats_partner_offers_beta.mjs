@@ -23,9 +23,16 @@ test('community reports and remaining commercial placements stay available', () 
 });
 
 test('removed options are no longer exposed as admin or server feature flags', () => {
-  for (const file of ['admin-features.js','site-mode.js','push-server/app-config.js']) {
+  const admin=read('admin-features.js');
+  // Legacy names may appear only in cleanup code, not as visible feature entries.
+  assert.equal(admin.includes("['electricityStats',"),false);
+  assert.equal(admin.includes("['partnerOffers',"),false);
+  for (const file of ['site-mode.js','push-server/app-config.js']) {
     const source=read(file);
-    assert.doesNotMatch(source,/electricityStats|partnerOffers/);
+    assert.equal(source.includes('electricityStats'),false);
+    assert.equal(source.includes('partnerOffers'),false);
   }
-  assert.match(read('sw.js'),/beta-remove-stats-offers/);
+  assert.equal(admin.includes('delete flags.electricityStats'),true);
+  assert.equal(admin.includes('delete flags.partnerOffers'),true);
+  assert.equal(read('sw.js').includes('beta-remove-stats-offers'),true);
 });
