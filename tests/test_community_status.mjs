@@ -87,3 +87,11 @@ test('a partial published schedule counts only the known portion of the day',()=
  assert.equal(result.unknownMinutes,480);
  assert.equal(result.totalDays,1);
 });
+
+test('a published day missing this queue or not yet verified remains unknown',()=>{
+ const now=Date.parse('2026-11-25T10:00:00+02:00');
+ const missingQueue=calculatePlannedStats({days:[{date:'2026-11-25',verified:true,queues:{'2.1':{knownFrom:'00:00',off:[]}}}]},{events:[]},queue,'day',now);
+ assert.equal(missingQueue.onMinutes,0);assert.equal(missingQueue.offMinutes,0);assert.equal(missingQueue.unknownMinutes,600);
+ const pending=calculatePlannedStats({days:[{date:'2026-11-25',verified:false,queues:{[queue]:{knownFrom:'00:00',off:[['08:00','10:00']]}}}]},{events:[]},queue,'day',now);
+ assert.equal(pending.onMinutes,0);assert.equal(pending.offMinutes,0);assert.equal(pending.unknownMinutes,600);
+});

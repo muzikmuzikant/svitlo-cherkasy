@@ -21,7 +21,8 @@ const eventTime=(event,keys)=>{for(const key of keys){const value=event?.[key];i
 export function calculatePlannedStats(schedule,emergency,queue,period='day',now=Date.now()){
  if(!QUEUES.has(queue))throw Error('Неправильна підчерга');
  const range=periodRange(period,now),days=[];
- const byDate=new Map((Array.isArray(schedule?.days)?schedule.days:[]).filter(d=>d?.verified===true).map(d=>[d.date,d]));
+ const publishedDays=new Map((Array.isArray(schedule?.days)?schedule.days:[]).filter(d=>typeof d?.date==='string').map(d=>[d.date,d]));
+ const byDate=new Map([...publishedDays].filter(([,d])=>d?.verified===true));
  let onMinutes=0,offMinutes=0,unknownMinutes=0,verifiedDays=0;
  for(let date=range.startDate;midnight(date)<range.endAt;date=shiftDate(date,1)){
   const start=Math.max(range.startAt,midnight(date)),end=Math.min(range.endAt,midnight(shiftDate(date,1)));
@@ -40,7 +41,8 @@ export function calculatePlannedStats(schedule,emergency,queue,period='day',now=
     if(b>a)outage+=Math.floor((b-a)/60000);
    }
    offMinutes+=Math.min(known,outage);onMinutes+=Math.max(0,known-outage);unknownMinutes+=duration-known;verifiedDays++;
-  }else {onMinutes+=duration;verifiedDays++;}
+  }else if(!publishedDays.has(date)){onMinutes+=duration}
+  else unknownMinutes+=duration;
  }
  const events=Array.isArray(emergency?.events)?emergency.events:[];
  const applies=event=>event?.scope==='region'||(Array.isArray(event?.queues)&&(event.queues.includes(queue)||event.queues.includes('all')));
