@@ -21,7 +21,19 @@ const defaults={
  pageBackground:'#f5f8ff',pageAccent:'#377cff',pageHeroImage:'',pageAbout:'Реклама залишається компактною, не закриває графіки та не потрапляє у push-сповіщення.',
  pageContactText:'Напишіть нам, щоб обговорити формат, термін і вартість розміщення.',
  pageBenefits:['Локальна аудиторія Черкас і району','Ненав’язлива реклама на головній','Зрозуміла статистика показів і переходів'],
-
+ pageVisibility:{hero:true,benefits:true,services:true,tariffs:true,faq:true,terms:true,contacts:true},
+ pageSections:[
+  {id:'homepage-card',eyebrow:'У КАРУСЕЛІ ГОЛОВНОЇ',title:'Рекламна картка',description:'Компактна картка з вашим зображенням, заголовком, описом і переходом на сайт або сторінку пропозиції.',visible:true,items:[{icon:'▤',title:'Помітно, але ненав’язливо',description:'Картка органічно розміщена серед інформаційних блоків і не перекриває графік.'}]},
+  {id:'special-placement',eyebrow:'ОКРЕМЕ РОЗМІЩЕННЯ',title:'Рекламне спецрозміщення',description:'Більший промоблок на головній сторінці для важливих кампаній, запусків і спеціальних пропозицій.',visible:true,items:[{icon:'✦',title:'Більше уваги до кампанії',description:'Окремий формат із власним зображенням, текстом і кнопкою.'}]},
+  {id:'full-screen-story',eyebrow:'РОЗГОРНУТИЙ ФОРМАТ',title:'Повноекранна рекламна історія',description:'Окрема сторінка оголошення з широким банером, додатковим фото, докладним описом і кнопкою дії.',visible:true,items:[{icon:'▣',title:'Простір для деталей',description:'Поясніть переваги, покажіть продукт і ведіть зацікавлених користувачів на потрібну сторінку.'}]},
+  {id:'partner-offers',eyebrow:'ПРОПОЗИЦІЇ ДЛЯ МЕШКАНЦІВ',title:'Партнерські пропозиції',description:'Спеціальні умови, знижки та промокоди від місцевого бізнесу з посиланням на пропозицію.',visible:true,items:[{icon:'％',title:'Вигода для аудиторії',description:'Публікуйте пропозиції з терміном дії, промокодом і власним зображенням.'}]}
+ ],
+ pageFaq:[
+  {id:'start',question:'Як розпочати співпрацю?',answer:'Оберіть формат або тариф і напишіть нам через один із контактів. Узгодимо матеріали, терміни та умови.'},
+  {id:'custom',question:'Чи можна оформити рекламу у власному стилі?',answer:'Так. Для кампаній можна налаштувати зображення, кольори, текст, кнопку та окрему сторінку оголошення.'},
+  {id:'schedule',question:'Чи заважатиме реклама перегляду графіка?',answer:'Ні. Рекламні формати відокремлені від інформації про електропостачання та мають чітке позначення.'},
+  {id:'contact',question:'Як дізнатися точну вартість?',answer:'Напишіть нам. Підберемо формат і погодимо вартість та тривалість до запуску.'}
+ ],
  pageTerms:'Умови та тривалість розміщення погоджуються індивідуально.',
  contacts:[],packages:[],campaigns:[],discounts:[],permanentPartner:{enabled:false,name:'',description:'',logo:'',url:''},partnerOffers:[],support:{
  enabled:false,title:'Підтримати Світло Черкаси',description:'Добровільна підтримка розвитку проєкту.',
@@ -55,6 +67,19 @@ function normalize(raw){
  pageHeroImage:url(s.pageHeroImage),pageAbout:text(s.pageAbout||defaults.pageAbout,1800),
  pageContactText:text(s.pageContactText||defaults.pageContactText,700),
  pageBenefits:(Array.isArray(s.pageBenefits)?s.pageBenefits:defaults.pageBenefits).slice(0,8).map(v=>text(v,180)).filter(Boolean),
+ pageVisibility:Object.fromEntries(['hero','benefits','services','tariffs','faq','terms','contacts'].map(k=>[k,s.pageVisibility?.[k]!==false])),
+ pageSections:(Array.isArray(s.pageSections)?s.pageSections:defaults.pageSections).slice(0,12).filter(isObj).map((section,index)=>({
+  id:/^[a-zA-Z0-9_-]{1,50}$/.test(section.id||'')?section.id:'section-'+index,
+  eyebrow:text(section.eyebrow,70),title:text(section.title,120),description:text(section.description,900),
+  visible:section.visible!==false,
+  items:(Array.isArray(section.items)?section.items:[]).slice(0,8).filter(isObj).map(item=>({
+   icon:text(item.icon,8),title:text(item.title,120),description:text(item.description,500)
+  })).filter(item=>item.title)
+ })).filter(section=>section.title),
+ pageFaq:(Array.isArray(s.pageFaq)?s.pageFaq:defaults.pageFaq).slice(0,12).filter(isObj).map((item,index)=>({
+  id:/^[a-zA-Z0-9_-]{1,50}$/.test(item.id||'')?item.id:'faq-'+index,
+  question:text(item.question,180),answer:text(item.answer,1200),visible:item.visible!==false
+ })).filter(item=>item.question&&item.answer),
 
  contacts:contacts.map(c=>({id:text(c.id,50)||crypto.randomUUID(),label:text(c.label,70),url:contactUrl(c.url),enabled:c.enabled!==false})).filter(c=>c.label),
  packages:packages.map(p=>({
@@ -203,6 +228,7 @@ export function createAdsStore({directory,clock=()=>Date.now()}){
    pageTitle:state.pageTitle,pageIntro:state.pageIntro,pageTerms:state.pageTerms,
    pageBackground:state.pageBackground,pageAccent:state.pageAccent,pageHeroImage:state.pageHeroImage,
    pageAbout:state.pageAbout,pageContactText:state.pageContactText,pageBenefits:state.pageBenefits,
+   pageVisibility:state.pageVisibility,pageSections:state.pageSections,pageFaq:state.pageFaq,
    contacts:state.contacts.filter(c=>c.enabled&&c.url).map(({label,url})=>({label,url})),packages,
    permanentPartner:state.enabled&&state.permanentPartner.enabled?state.permanentPartner:{enabled:false},
    partnerOffers:state.enabled?state.partnerOffers.filter(o=>o.enabled&&o.title&&(!o.start||o.start<=now)&&(!o.end||o.end>now)).map(o=>({...o})):[],
