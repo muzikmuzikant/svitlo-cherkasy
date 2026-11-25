@@ -162,7 +162,6 @@ body.svitlo-advertising-page{background:radial-gradient(ellipse at 50% -12%,#dce
   setSection('hero','hero');setSection('advantages','benefits');setSection('formats','services');
   setSection('tariffs','tariffs');setSection('faq','faq');setSection('contacts-section','contacts');
   $('terms').hidden=visible.terms===false;
-  $('hero').style.backgroundColor=data.pageBackground||'#f6f8fc';
   document.documentElement.style.setProperty('--bg',data.pageBackground||'#f6f8fc');document.documentElement.style.setProperty('--accent',data.pageAccent||'#397bff');
   if(data.pageHeroImage&&safeUrl(data.pageHeroImage)){const pic=$('heroImage');pic.src=safeUrl(data.pageHeroImage);pic.hidden=false}
   if(data.pageBenefits?.length){const cards=$('benefits');cards.replaceChildren();for(const [i,label] of data.pageBenefits.entries()){
