@@ -319,7 +319,7 @@
   });
   button(discounts,'+ Створити знижку',()=>{draft.discounts.push({id:uuid(),title:'Нова знижка',scope:'all',packageId:'',kind:'percent',amount:10,enabled:false,start:'',end:''});mark();render()});
   root.append(discounts);
-  const permanent=section('Постійний партнер','Окремий блок із назвою, логотипом і посиланням партнера. Він не маскується під офіційні повідомлення.');
+  const permanent=section('Постійний партнер','Компактна кнопка внизу кожної вкладки застосунку. Відображає лише логотип, назву та посилання на сайт партнера.');
   const pf=grid(permanent);field(pf,'Показувати постійного партнера',draft.permanentPartner,'enabled','toggle');
   field(pf,'Назва компанії',draft.permanentPartner,'name');
   uploadField(pf,'Логотип партнера',draft.permanentPartner,'logo');field(pf,'Сайт партнера (HTTPS)',draft.permanentPartner,'url','url');
