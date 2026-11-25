@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 const QUEUES=new Set(['all',...Array.from({length:6},(_,i)=>[String(i+1)+'.1',String(i+1)+'.2']).flat()]);
 const defaultSite=()=>({links:{help:'./help.html',feedback:'./feedback.html',official:'https://www.cherkasyoblenergo.com/news'},
- flags:{communityStatus:true,electricityStats:true,adSpecialPlacements:true,permanentPartner:true,partnerOffers:true,inbox:true,inboxFilters:true,inboxHistory:true,sharing:true,sharePreview:true,copySchedule:true,help:true,feedback:true,addressSearch:true,pushPrompt:true,pushSettings:true,tomorrowPreview:true,quickAddresses:true,homePlaces:true,dailyStats:true,overviewTimeline:true,statusCountdown:true,weekNavigation:true,dayStats:true,scheduleLegend:true,offlineStatus:true,scheduleSource:true,manualRefresh:true,homeQuickActions:true,animations:true,quickQueueLookup:true,nextChangeCard:true,dayShortcuts:true,detailSourceLink:true,hourlyLabels:true,inboxMarkAll:true,inboxClearRead:true,appUpdateCheck:true,editAddressFromGraph:true,syncStatus:true,settingsFooter:true,tomorrowOpenShortcut:true,scheduleOpenShortcut:true,allQueues:true,allQueuesGroups:true,allQueuesCompare:true,allQueuesDetails:true,allQueuesRowIntervals:false,allQueuesNowMarker:true,allQueuesExport:true,allQueuesSheetMotion:true,allQueuesCompact:true,allQueuesTotals:true,allQueuesGroupLabels:true,allQueuesAxis:true,microMotion:true,panelMotion:true,selectionMotion:true,motionIcons:true,motionInputs:true,motionFeedback:true,motionLists:true},
+ flags:{communityStatus:true,electricityStats:true,adSpecialPlacements:true,permanentPartner:true,partnerOffers:true,localAnnouncements:true,inbox:true,inboxFilters:true,inboxHistory:true,sharing:true,sharePreview:true,copySchedule:true,help:true,feedback:true,addressSearch:true,pushPrompt:true,pushSettings:true,tomorrowPreview:true,quickAddresses:true,homePlaces:true,dailyStats:true,overviewTimeline:true,statusCountdown:true,weekNavigation:true,dayStats:true,scheduleLegend:true,offlineStatus:true,scheduleSource:true,manualRefresh:true,homeQuickActions:true,animations:true,quickQueueLookup:true,nextChangeCard:true,dayShortcuts:true,detailSourceLink:true,hourlyLabels:true,inboxMarkAll:true,inboxClearRead:true,appUpdateCheck:true,editAddressFromGraph:true,syncStatus:true,settingsFooter:true,tomorrowOpenShortcut:true,scheduleOpenShortcut:true,allQueues:true,allQueuesGroups:true,allQueuesCompare:true,allQueuesDetails:true,allQueuesRowIntervals:false,allQueuesNowMarker:true,allQueuesExport:true,allQueuesSheetMotion:true,allQueuesCompact:true,allQueuesTotals:true,allQueuesGroupLabels:true,allQueuesAxis:true,microMotion:true,panelMotion:true,selectionMotion:true,motionIcons:true,motionInputs:true,motionFeedback:true,motionLists:true},
  social:{enabled:true,showInApp:true,showInFooter:true,
   links:[{id:'telegram_official',platform:'telegram',label:'Telegram',url:'https://t.me/svitlo_cherkasy_of',enabled:true}]},
  banner:{enabled:false,title:'Нові можливості',body:'Оновлення застосунку доступне.',url:'',button:'Детальніше'},
@@ -100,13 +100,19 @@ export function validateAppConfig(input){
   if(textLength(title)>90||textLength(body)>500||textLength(content)>20000||(a.active===true&&(textLength(title)<1||textLength(body)<1)))
    throw Error('Додайте заголовок і короткий текст перед публікацією');
   const kind=a.kind||'info',priority=a.priority||'normal',queue=a.queue||'all',delivery=a.delivery||'inbox';
-  const settlement=str(a.settlement,70);
-  if(settlement.length>70)throw Error('Назва населеного пункту надто довга');
+  const rawSettlement=str(a.settlement,70);
+  if(rawSettlement.length>70)throw Error('Назва населеного пункту надто довга');
+  const scope=['general','district','settlement','legacy'].includes(a.scope)?a.scope:(rawSettlement?'legacy':'general');
+  const settlement=scope==='district'||scope==='general'?'':rawSettlement;
+  const verified=a.verified===true,source=safeLink(a.source??'', '');
+  const local=scope==='district'||scope==='settlement';
+  if(a.active===true&&local&&(!verified||!/^https:\/\//i.test(source)))throw Error('Локальне оголошення можна опублікувати лише після перевірки та з HTTPS-першоджерелом');
+  if(a.active===true&&scope==='settlement'&&!settlement)throw Error('Вкажіть населений пункт для локального оголошення');
   if(!['info','important','update','schedule','emergency'].includes(kind)||!['normal','important','urgent'].includes(priority)||!QUEUES.has(queue)||!['inbox','both','push'].includes(delivery))throw Error('Невірні налаштування доставки');
   const images=a.images??[];if(!Array.isArray(images)||images.length>6)throw Error('Максимум шість зображень');
   const scheduledAt=date(a.scheduledAt),expiresAt=date(a.expiresAt);
   if(scheduledAt&&expiresAt&&scheduledAt>=expiresAt)throw Error('Термін дії раніше публікації');
-  return {id,title,body,content,source:safeLink(a.source??'', ''),kind,priority,queue,delivery,settlement,images:images.map(image).filter(Boolean),
+  return {id,title,body,content,source,scope,verified,kind,priority,queue,delivery,settlement,images:images.map(image).filter(Boolean),
    pinned:a.pinned===true,icon:str(a.icon,18),active:a.active===true,
    publishedAt:date(a.publishedAt)||new Date().toISOString(),updatedAt:date(a.updatedAt),
    scheduledAt,expiresAt,pushSentAt:date(a.pushSentAt)};
@@ -142,7 +148,10 @@ export function createAppConfig({directory,record=()=>{}}){
  const persist=value=>{fs.mkdirSync(path.dirname(file),{recursive:true});const tmp=file+'.tmp';fs.writeFileSync(tmp,JSON.stringify(value,null,2)+'\n',{mode:0o600});fs.renameSync(tmp,file);state=value};
  const publicState=()=>{
    const t=Date.now(),m=state.maintenance||{};
-   const announcements=state.announcements.filter(x=>x.active&&x.delivery!=='push'&&(!x.scheduledAt||Date.parse(x.scheduledAt)<=t)&&(!x.expiresAt||Date.parse(x.expiresAt)>t)).map(({pushSentAt,...visible})=>visible);
+   const localEnabled=state.site?.flags?.localAnnouncements!==false;
+   const isLocalNotice=x=>x.scope==='district'||x.scope==='settlement'||(x.scope==='legacy'&&!!x.settlement);
+   const allowedNotice=x=>!isLocalNotice(x)||(localEnabled&&x.verified===true&&/^https:\/\//i.test(x.source||''));
+   const announcements=state.announcements.filter(x=>x.active&&allowedNotice(x)&&x.delivery!=='push'&&(!x.scheduledAt||Date.parse(x.scheduledAt)<=t)&&(!x.expiresAt||Date.parse(x.expiresAt)>t)).map(({pushSentAt,...visible})=>visible);
    const start=Date.parse(m.startsAt||''),end=Date.parse(m.until||'');
    // Keep the automatic announcement during the scheduled window, then retain
    // its completed state for one day so users do not lose it mid-reading.
@@ -209,7 +218,7 @@ export function createAppConfig({directory,record=()=>{}}){
   record('app.restore',id+' · '+restored.announcements.length+' messages · push suppressed');
   return restored;
  };
- const duePush=()=>{const t=Date.now();return state.announcements.filter(x=>x.active&&['both','push'].includes(x.delivery)&&!x.pushSentAt&&(!x.scheduledAt||Date.parse(x.scheduledAt)<=t)&&(!x.expiresAt||Date.parse(x.expiresAt)>t)).map(x=>({...x}))};
+ const duePush=()=>{const t=Date.now(),localEnabled=state.site?.flags?.localAnnouncements!==false;return state.announcements.filter(x=>x.active&&(!(x.scope==='district'||x.scope==='settlement'||(x.scope==='legacy'&&!!x.settlement))||(localEnabled&&x.verified===true&&/^https:\/\//i.test(x.source||'')))&&['both','push'].includes(x.delivery)&&!x.pushSentAt&&(!x.scheduledAt||Date.parse(x.scheduledAt)<=t)&&(!x.expiresAt||Date.parse(x.expiresAt)>t)).map(x=>({...x}))};
  const markPushed=id=>{if(!state.announcements.some(x=>x.id===id&&!x.pushSentAt))return false;const next=copy();next.announcements.find(x=>x.id===id).pushSentAt=new Date().toISOString();persist(next);record('push.announcement',id);return true};
  return {get:copy,publicState,update,duePush,markPushed,historyView,restoreHistory};
 }
