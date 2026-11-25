@@ -193,9 +193,9 @@ body.svitlo-advertising-page{background:radial-gradient(ellipse at 50% -12%,#dce
    detail.append(summary,answer);faqItems.append(detail);
   }
   if(!faqItems.children.length)$('faq').hidden=true;
-  const packs=$('packages');packs.replaceChildren();const visible=Array.isArray(data.packages)?data.packages:[];
+  const packs=$('packages');packs.replaceChildren();const visiblePackages=Array.isArray(data.packages)?data.packages:[];
   if(!visible.length){packs.append(make('p','Пакети розміщення уточнюються. Напишіть нам, щоб узгодити формат, термін і вартість.','empty'))}
-  for(const pack of visible){
+  for(const pack of visiblePackages){
    const card=make('article',undefined,'plan');if(pack.featured)card.classList.add('featured');
    if(pack.badge){const badge=make('span',pack.badge,'plan-badge');badge.style.backgroundColor=pack.badgeBackground||'#eaf2ff';badge.style.color=pack.badgeForeground||'#2465bd';card.append(badge)}
    card.append(make('h3',pack.title),make('p',pack.description||'','plan-desc'));

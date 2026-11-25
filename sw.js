@@ -1,5 +1,5 @@
 importScripts('./notification-center.js');
-const VERSION='svitlo-cherkasy-shell-v7.9.14-beta-partner-footer-premium-20261125';
+const VERSION='svitlo-cherkasy-shell-v7.9.14-beta-dnd-advertising-layout-20261125';
 const SHELL=["./","./index.html","./app.js","./address-lookup.js","./data/street_catalog.json","./notification-center.js","./notification-text.js","./message-format.js","./inbox-ui.js","./inbox-refresh.css","./support-inbox.js","./site-mode.js","./admin-control.js","./admin-richtext.js","./admin-help-richtext.js","./admin-control.css","./admin-feedback.css","./admin-ticket-workflow.js","./admin-office-plus.js","./admin-office-plus.css","./admin-mobile.js","./admin-mobile.css","./admin-workstation-v3.js","./admin-workstation-v3.css","./admin-dashboard.js","./admin-analytics.js","./admin-ads.js","./admin-ads.css","./client-errors.js","./admin-errors.js","./admin-reports.js","./motion.js","./motion.css","./bottom-sheet.js","./social-links.js","./social-links.css","./admin-social.js","./admin-social.css","./ticket-media-ui.js","./ticket-media.css","./admin-ticket-alerts.js","./admin-ticket-alerts.css","./internal-pages.js","./internal-pages.css","./legal-consent.js","./legal-consent.css","./admin-legal.js","./beta-ads.js","./ad-detail.html","./advertising.html","./support-project.html","./admin-security-ui.js","./admin-users.js","./admin-users.css","./admin-workspace.js","./admin-workspace.css","./admin-quality.js","./admin-schedule-diff.js","./admin-source-review.js","./admin-categories.js","./admin-features.js","./admin-form-safety-v2.js","./admin-command.js","./data-merge.js","./hour-paint.js","./all-queues-core.js","./all-queues.js","./all-queues.css","./maintenance-backup.js","./micro-motion.css","./micro-motion.js","./admin-motion.css","./admin-access.js","./admin-access.css","./redesign-7913.css","./admin.html","./admin.js","./style.css","./theme.js","./theme.css","./maintenance-ui.css","./install.css","./install.js","./version-check.js","./release.json","./manifest.webmanifest","./privacy.html","./terms.html","./about.html","./feedback.html","./feedback.js","./feedback.css","./help.html","./help.css","./help.js","./admin-extra.js","./admin-planner.js","./schedule-planner.js","./favicon.ico","./favicon-16.png","./favicon-32.png","./favicon-48.png","./assets/icon.svg","./assets/icon-192-v692.png","./assets/icon-512-v692.png","./assets/icon-512-maskable-v692.png","./apple-touch-icon-v692.png","./apple-touch-icon.png","./ads-admin-enhance.js","./ads-redesign.css","./community-status.js","./commercial-ui.js","./community-status.css"];
 const CACHE_DATA='svitlo-cherkasy-data-v6.7';
 const CACHE_IMAGES='svitlo-cherkasy-media-v74';
@@ -177,14 +177,28 @@ self.addEventListener('push',event=>{
  const title=String(msg.title||'Світло Черкаси').slice(0,85);
  const body=String(msg.body||'Нове повідомлення').slice(0,220);
  const data={url:msg.url||self.registration.scope,inboxId:inboxAllowed?id:null,noticeId:canonical,inbox:inboxAllowed};
- const display=Promise.resolve().then(()=>self.registration.showNotification(title,{
-  body,icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',
-  tag:stablePushTag(canonical||msg.tag||msg.title),data
- })).catch(async error=>{
-  console.warn('Rich Push display failed:',error?.message||error);
-  // Retry without optional assets/tag for platform-specific option failures.
-  await self.registration.showNotification(title,{body,lang:'uk',data});
- }).then(()=>reportPushDisplay(msg.receiptId));
+ const display=(async()=>{
+  let quiet=true;
+  try{
+   const cache=await caches.open('svitlo-push-preferences-v1');
+   const pref=await cache.match(new URL('./push-preferences.json',self.registration.scope));
+   if(pref){const value=await pref.json();quiet=value?.doNotDisturb!==false}
+  }catch(error){console.warn('Quiet-hours preference read:',error?.message||error)}
+  if(quiet){
+   try{
+    const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Kyiv',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date());
+    const hour=Number(parts.find(p=>p.type==='hour')?.value),minute=Number(parts.find(p=>p.type==='minute')?.value),total=hour*60+minute;
+    if(total>=1320||total<420)return;
+   }catch(error){console.warn('Quiet-hours clock:',error?.message||error)}
+  }
+  try{
+   await self.registration.showNotification(title,{body,icon:'./assets/icon-192-v692.png',badge:'./assets/icon-192-v692.png',lang:'uk',tag:stablePushTag(canonical||msg.tag||msg.title),data});
+  }catch(error){
+   console.warn('Rich Push display failed:',error?.message||error);
+   await self.registration.showNotification(title,{body,lang:'uk',data});
+  }
+  await reportPushDisplay(msg.receiptId);
+ })();
  const inbox=(inboxAllowed?self.SvitloInbox.add({
   id,title:msg.title,body:msg.body,content:msg.content||'',kind,
   at:msg.at||new Date().toISOString(),url:msg.url||self.registration.scope
