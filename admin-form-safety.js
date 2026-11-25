@@ -30,10 +30,11 @@
   for(const button of buttons){
    button.type='button';
    button.setAttribute('data-admin-save-action','');
-   button.addEventListener('click',()=>submit(group));
+   button.addEventListener('click',()=>{if(button.onclick||button.closest('[data-admin-editor-group]')!==group)return;submit(group)});
   }
   group.addEventListener('keydown',event=>{
    if(event.key!=='Enter'||event.isComposing||event.ctrlKey||event.metaKey||event.altKey)return;
+   if(event.target instanceof HTMLElement&&event.target.closest('[data-admin-editor-group]')!==group)return;
    if(!(event.target instanceof HTMLInputElement)||event.target.matches('[type="button"],[type="checkbox"],[type="radio"],[type="file"]'))return;
    if(!buttons.some(btn=>!btn.disabled))return;
    event.preventDefault();submit(group);
