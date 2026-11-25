@@ -321,7 +321,7 @@
   root.append(discounts);
   const permanent=section('Постійний партнер','Окремий блок із назвою, логотипом і посиланням партнера. Він не маскується під офіційні повідомлення.');
   const pf=grid(permanent);field(pf,'Показувати постійного партнера',draft.permanentPartner,'enabled','toggle');
-  field(pf,'Назва компанії',draft.permanentPartner,'name');field(pf,'Опис',draft.permanentPartner,'description','long');
+  field(pf,'Назва компанії',draft.permanentPartner,'name');
   uploadField(pf,'Логотип партнера',draft.permanentPartner,'logo');field(pf,'Сайт партнера (HTTPS)',draft.permanentPartner,'url','url');
   root.append(permanent);
   const offers=section('Партнерські пропозиції','Знижки та промокоди місцевого бізнесу. Прострочені пропозиції автоматично приховуються.');
