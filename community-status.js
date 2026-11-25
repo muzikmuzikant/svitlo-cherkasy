@@ -2,14 +2,14 @@
 (()=>{'use strict';
  const statusHost=document.getElementById('communityStatusCard');
  if(!statusHost)return;
- const QUEUE_RE=/^[1-6]\\.[12]$/,STORE='svitlo-addresses-v6',PREF='svitlo-prefs-v6',CLIENT='svitlo-community-client-v1';
+ const QUEUE_RE=/^[1-6]\.[12]$/,STORE='svitlo-addresses-v6',PREF='svitlo-prefs-v6',CLIENT='svitlo-community-client-v1';
  let api='',queue='',busy=false,refreshTimer=0,lastData=null,notice='',loadError='';
  const $=id=>document.getElementById(id),make=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(cls)n.className=cls;return n};
  const safe=fn=>{try{return fn()}catch{return null}};
  async function timedFetch(url,options={},timeout=9000){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeout);try{return await fetch(url,{...options,signal:controller.signal})}finally{clearTimeout(timer)}}
  function selectedQueue(){const a=safe(()=>JSON.parse(localStorage.getItem(STORE)||'[]'))||[],p=safe(()=>JSON.parse(localStorage.getItem(PREF)||'{}'))||{},selected=a.find(x=>x?.id===p.primaryId)||a[0];return QUEUE_RE.test(selected?.queue||'')?selected.queue:''}
  function clientId(){try{let id=localStorage.getItem(CLIENT);if(!id){id=crypto.randomUUID?.()||('sc-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));localStorage.setItem(CLIENT,id)}return id}catch{return ''}}
- async function getApi(){if(api)return api;const r=await fetch('./push-config.json',{cache:'no-store'});if(!r.ok)throw Error('config');const c=await r.json(),v=String(c.apiBase||'').replace(/\\/$/,'');if(!/^https:\\/\\//.test(v))throw Error('api');api=v;return api}
+ async function getApi(){if(api)return api;const r=await fetch('./push-config.json',{cache:'no-store'});if(!r.ok)throw Error('config');const c=await r.json(),raw=String(c.apiBase||'').trim(),v=raw.endsWith('/')?raw.slice(0,-1):raw;if(!v.startsWith('https://'))throw Error('api');api=v;return api}
  const featureEnabled=k=>!document.documentElement.classList.contains('feature-off-'+k);
  function visibility(){statusHost.hidden=!featureEnabled('communityStatus')}
  function freshnessText(data){
