@@ -1,7 +1,7 @@
-/* Additional sponsored placements, permanent partner and partner offers. */
+/* Additional sponsored placements and permanent partner. */
 (()=>{'use strict';
- const special=document.getElementById('betaSpecialPlacement'),partner=document.getElementById('permanentPartnerCard'),offers=document.getElementById('partnerOffers');
- if(!special||!partner||!offers)return;
+ const special=document.getElementById('betaSpecialPlacement'),partner=document.getElementById('permanentPartnerCard');
+ if(!special||!partner)return;
  let api='',last=0,config=null,observer=null;
  const seen=new Set();
  const make=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(cls)n.className=cls;return n};
@@ -48,7 +48,7 @@
  }
  function render(){
   if(!config)return;
-  special.replaceChildren();partner.replaceChildren();offers.replaceChildren();
+  special.replaceChildren();partner.replaceChildren();
   const promos=Array.isArray(config.specialPlacements)?config.specialPlacements:[];
   special.hidden=!flag('adSpecialPlacements')||!promos.length;
   if(!special.hidden){
@@ -68,38 +68,12 @@
    if(href){const a=make('a','Сайт партнера ↗','commercial-partner-link');a.href=href;a.target='_blank';a.rel='noopener noreferrer';a.addEventListener('click',()=>track('permanent-partner','click'));row.append(a)}
    partner.append(row);
   }
-  const list=(Array.isArray(config.partnerOffers)?config.partnerOffers:[]).filter(x=>x.enabled);
-  offers.hidden=!flag('partnerOffers')||!list.length;
-  if(!offers.hidden){
-   offers.append(make('h2','Пропозиції партнерів','commercial-section-title'));
-   for(const item of list.slice(0,6)){
-    const card=make('article',undefined,'partner-offer-card');observe(card,item.id);
-    card.append(make('span','ПАРТНЕРСЬКА ПРОПОЗИЦІЯ','commercial-eyebrow'));
-    if(item.image&&safeLink(item.image)){
-     const img=make('img');img.src=safeLink(item.image);img.alt='';img.loading='lazy';card.classList.add('has-image');card.append(img);
-    }
-    const copy=make('div',undefined,'partner-offer-copy');
-    copy.append(make('strong',item.title),make('p',item.description||''));
-    if(item.discountLabel)copy.append(make('b',item.discountLabel,'partner-offer-discount'));
-    if(item.code){
-     const code=make('div',undefined,'partner-offer-code');code.append(make('code',item.code));
-     const button=make('button','Копіювати код');button.type='button';
-     button.addEventListener('click',async()=>{
-      try{await navigator.clipboard.writeText(item.code);button.textContent='Скопійовано'}
-      catch{button.textContent='Код: '+item.code}
-     });
-     code.append(button);copy.append(code);
-    }
-    const href=safeLink(item.link);
-    if(href){const a=make('a','Переглянути пропозицію ↗','commercial-action');a.href=href;a.target='_blank';a.rel='noopener noreferrer';a.addEventListener('click',()=>track(item.id,'click'));copy.append(a)}
-    card.append(copy);offers.append(card);
-   }
-  }
+
  }
  async function load(force=false){
   if(!force&&Date.now()-last<120000)return;
   try{const root=await base(),response=await fetch(root+'/api/ads',{cache:'no-store'});if(!response.ok)throw Error('ads');config=await response.json();last=Date.now();render()}
-  catch{special.hidden=partner.hidden=offers.hidden=true}
+  catch{special.hidden=partner.hidden=true}
  }
  load(true);
  document.addEventListener('svitlo:public-config',render);
