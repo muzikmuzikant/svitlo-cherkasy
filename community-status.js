@@ -3,13 +3,13 @@
  const statusHost=document.getElementById('communityStatusCard'),statsHost=document.getElementById('electricityStatsCard');
  if(!statusHost||!statsHost)return;
  const QUEUE_RE=/^[1-6]\.[12]$/,STORE='svitlo-addresses-v6',PREF='svitlo-prefs-v6',CLIENT='svitlo-community-client-v1';
- let api='',queue='',period='day',busy=false,volatileClientId='';
+ let api='',queue='',period='day',busy=false,refreshTimer=0;
  const $=id=>document.getElementById(id),make=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(cls)n.className=cls;return n};
  const safe=fn=>{try{return fn()}catch{return null}};
  async function timedFetch(url,options={},timeout=9000){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeout);try{return await fetch(url,{...options,signal:controller.signal})}finally{clearTimeout(timer)}}
  function selectedQueue(){const a=safe(()=>JSON.parse(localStorage.getItem(STORE)||'[]'))||[],p=safe(()=>JSON.parse(localStorage.getItem(PREF)||'{}'))||{},selected=a.find(x=>x?.id===p.primaryId)||a[0];return QUEUE_RE.test(selected?.queue||'')?selected.queue:''}
- function clientId(){try{let id=localStorage.getItem(CLIENT);if(!id){id=crypto.randomUUID?.()||('sc-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));localStorage.setItem(CLIENT,id)}return id}catch{if(!volatileClientId)volatileClientId=crypto.randomUUID?.()||('sc-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));return volatileClientId}}
- async function getApi(){if(api)return api;const r=await timedFetch('./push-config.json',{cache:'no-store'},8000);if(!r.ok)throw Error('config');const c=await r.json(),v=String(c.apiBase||'').replace(/\/$/,'');if(!/^https:\/\//.test(v))throw Error('api');api=v;return api}
+ function clientId(){try{let id=localStorage.getItem(CLIENT);if(!id){id=crypto.randomUUID?.()||('sc-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));localStorage.setItem(CLIENT,id)}return id}catch{return ''}}
+ async function getApi(){if(api)return api;const r=await fetch('./push-config.json',{cache:'no-store'});if(!r.ok)throw Error('config');const c=await r.json(),v=String(c.apiBase||'').replace(/\/$/,'');if(!/^https:\/\//.test(v))throw Error('api');api=v;return api}
  const featureEnabled=k=>!document.documentElement.classList.contains('feature-off-'+k);
  function visibility(){statusHost.hidden=!featureEnabled('communityStatus');statsHost.hidden=!featureEnabled('electricityStats')}
  function paintStatus(data){
@@ -21,7 +21,7 @@
   const label=state==='on'?'За повідомленнями, світло є':state==='off'?'За повідомленнями, світла немає':'Поки недостатньо підтверджень';
   result.append(make('strong',label,'community-state community-'+state));
   const counts=data?.counts||{on:0,off:0,total:0};
-  result.append(make('span',data?.confirmed?'Є світло: '+(counts.on||0)+' · Немає світла: '+(counts.off||0)+' · Відповідей: '+(counts.total||0):'Потрібно щонайменше три незалежні повідомлення за останні 30 хвилин.','community-counts'));
+  result.append(make('span','Є світло: '+(counts.on||0)+' · Немає світла: '+(counts.off||0)+' · Відповідей: '+(counts.total||0),'community-counts'));
   if(data?.updatedAt)result.append(make('small','Оновлено о '+new Intl.DateTimeFormat('uk-UA',{timeZone:'Europe/Kyiv',hour:'2-digit',minute:'2-digit'}).format(new Date(data.updatedAt)),'community-updated'));
   statusHost.append(result);const controls=make('div',undefined,'community-actions');
   for(const [value,labelText] of [['on','Світло є'],['off','Світла немає']]){
