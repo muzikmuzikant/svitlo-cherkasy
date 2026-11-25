@@ -78,28 +78,65 @@
 @media(prefers-reduced-motion:reduce){.hero[data-content-loading="true"] .hero-copy h1,.hero[data-content-loading="true"] .hero-copy p{animation:none!important;background:#ffffff24!important}.hero[data-content-loading="false"] .hero-copy h1,.hero[data-content-loading="false"] .hero-copy p{animation:none!important}}
 .logo-mark img,.brand-symbol img{display:block;width:100%;height:100%;border-radius:12px;object-fit:contain}
 
+ 
+/* Premium, fully admin-managed advertising landing page */
+:root{--ink:#152b48;--muted:#687d99;--line:#e2eaf4;--accent:#397bff;--bg:#f4f7fc}
+body.svitlo-advertising-page{background:radial-gradient(ellipse at 50% -12%,#dce9ff 0,transparent 48%),var(--bg);color:var(--ink)}
+.shell{max-width:1180px;padding-bottom:76px}
+.nav{min-height:78px}.logo{font-size:15px}.logo-mark{width:40px;height:40px}
+.hero{min-height:460px;border:1px solid #294a78;background:radial-gradient(circle at 77% 22%,#397bff65,transparent 35%),radial-gradient(circle at 35% 110%,#1b6ce344,transparent 45%),linear-gradient(125deg,#09172c 0%,#102846 53%,#173e70 100%);box-shadow:0 30px 80px #122e5526}
+.hero::after{background:linear-gradient(110deg,#07132680,transparent 65%)}
+.hero-copy{padding:clamp(34px,6vw,76px)}
+.hero .kicker{color:#9fc5ff;letter-spacing:.17em}
+.hero h1{font-size:clamp(39px,5.2vw,66px);max-width:620px;line-height:1.01}
+.hero p{font-size:16px;max-width:520px;color:#c5d7f0;line-height:1.8}
+.action-primary{background:linear-gradient(135deg,#fff,#e7f0ff);box-shadow:0 12px 32px #0003;border-radius:14px}
+.hero-visual{min-height:420px}
+.phone{border:7px solid #09182e;box-shadow:0 32px 70px #0009;width:min(275px,80%);background:#f7f9fd}
+.section{padding-top:82px}
+.section-heading{max-width:760px}
+.section-heading .kicker{color:var(--accent)}
+.section-heading h2{font-size:clamp(29px,3.6vw,44px);letter-spacing:-.05em}
+.section-heading p{font-size:15px;color:var(--muted);max-width:680px}
+.benefits{gap:16px}.benefit{border-radius:22px;padding:25px;min-height:174px;box-shadow:0 10px 30px #183a6708;transition:transform .2s,border-color .2s,box-shadow .2s}
+.benefit:hover{transform:translateY(-3px);border-color:#c3d7f5;box-shadow:0 16px 38px #183a6712}
+.format-strip{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:27px}
+.format{border-radius:22px;padding:27px;min-height:210px;box-shadow:0 10px 30px #183a6708}
+.format:nth-child(2){background:linear-gradient(135deg,#142e50,#1a477b);border-color:#1a477b}
+.service-section{padding:72px 0 0;scroll-margin-top:20px}
+.service-section-head{max-width:760px;margin-bottom:25px}
+.service-section-head .kicker{color:var(--accent);font-size:10px;letter-spacing:.16em;font-weight:850}
+.service-section-head h2{font-size:clamp(26px,3.2vw,38px);line-height:1.12;letter-spacing:-.045em;margin:12px 0}
+.service-section-head p{font-size:14px;line-height:1.8;color:var(--muted);white-space:pre-line;margin:0}
+.service-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,245px),1fr));gap:15px}
+.service-card{min-width:0;min-height:190px;padding:24px;border-radius:21px;border:1px solid var(--line);background:linear-gradient(150deg,#fff,#f9fbff);box-shadow:0 12px 32px #183a6709;display:flex;flex-direction:column;align-items:flex-start;gap:16px;transition:transform .2s,border-color .2s,box-shadow .2s}
+.service-card:hover{transform:translateY(-3px);border-color:#c5d9f5;box-shadow:0 18px 42px #183a6715}
+.service-icon{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,#e8f1ff,#dce9ff);color:#2866d7;font-size:21px;font-weight:850}
+.service-card strong{font-size:16px;letter-spacing:-.02em;line-height:1.4}
+.service-card p{font-size:13px;color:var(--muted);line-height:1.75;margin:0}
+.plans{gap:17px}.plan{border-radius:23px;padding:28px;box-shadow:0 12px 34px #183a670b}
+.plan.featured{border:1px solid var(--accent);background:linear-gradient(160deg,#fff,#f2f7ff);box-shadow:0 20px 48px #397bff20}
+.plan-cta{background:linear-gradient(135deg,#367cff,#2459d3);box-shadow:0 8px 18px #367cff2e}
+.faq details{border-radius:17px;padding:20px 22px;box-shadow:0 7px 22px #183a6707}
+.conditions{border-radius:20px;background:#edf3fc;border-color:#dce7f6}
+.contact-banner{border:1px solid #284c78;background:radial-gradient(circle at 95% 0,#377dff55,transparent 42%),linear-gradient(125deg,#0c1d35,#173e6d);box-shadow:0 24px 58px #142e501f}
+.contact{border-radius:14px;transition:background .18s,border-color .18s}
+.foot{margin-top:40px}
+@media(max-width:840px){.hero{min-height:0}.hero-visual{min-height:280px}.service-section{padding-top:55px}}
+@media(max-width:620px){.shell{padding:0 15px 48px}.hero{border-radius:23px}.hero-copy{padding:32px 23px 18px}.hero h1{font-size:38px}.hero p{font-size:14px}.hero-visual{min-height:230px}.section{padding-top:54px}.service-section{padding-top:50px}.service-grid{grid-template-columns:1fr}.service-card{min-height:0;padding:21px}.format-strip{grid-template-columns:1fr}.benefit{min-height:0}}
+@media(prefers-reduced-motion:reduce){.benefit,.service-card{transition:none!important}}
 </style><link rel="stylesheet" href="./motion.css"><script defer src="./motion.js"></script><link rel="stylesheet" href="./ads-redesign.css?v=beta-ads-v1"><link rel="stylesheet" href="./theme.css"><link rel="stylesheet" href="./social-links.css"><link rel="stylesheet" href="./micro-motion.css"></head>
 <body class="svitlo-advertising-page"><main class="shell">
 <nav class="nav" aria-label="Навігація"><div class="logo"><span class="logo-mark"><img src="./assets/icon.svg" alt="" width="37" height="37"></span><span>світло<span style="color:var(--accent)">.</span> Черкаси</span></div><div class="nav-tools"><a href="#formats">Формати</a><a href="#tariffs">Тарифи</a><a class="back" href="./index.html">🔙 До застосунку</a></div></nav>
-<header class="hero" data-content-loading="true"><div class="hero-copy"><div class="kicker">РЕКЛАМА ТА СПІВПРАЦЯ</div><h1 id="title">Ваш бізнес ближче до місцевих.</h1><p id="intro">Знайомте користувачів «Світло Черкаси» зі своєю пропозицією через акуратні рекламні формати в застосунку.</p><a class="action-primary" href="#tariffs">Переглянути тарифи <span aria-hidden="true">🔗</span></a></div>
+<header class="hero" id="hero" data-content-loading="true"><div class="hero-copy"><div class="kicker">РЕКЛАМА ТА СПІВПРАЦЯ</div><h1 id="title">Ваш бізнес ближче до місцевих.</h1><p id="intro">Знайомте користувачів «Світло Черкаси» зі своєю пропозицією через акуратні рекламні формати в застосунку.</p><a class="action-primary" href="#tariffs">Переглянути тарифи <span aria-hidden="true">🔗</span></a></div>
 <div class="hero-visual"><img id="heroImage" class="hero-art" alt="" hidden><div class="phone" aria-label="Приклад вигляду рекламного блоку в застосунку">
 <div class="phone-logo">світло<span style="color:#327aff">.</span></div><div class="phone-status">⚡ Є світло весь день</div><div class="phone-schedule"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="phone-ad"><small>РЕКЛАМА</small><b>Ваше оголошення</b><p>Короткий опис для тих, кому це цікаво.</p></div></div>
 </div></header>
-<section class="section" id="advantages"><div class="section-heading"><div class="kicker">ВАШЕ РОЗМІЩЕННЯ</div><h2>Місце для пропозицій, які справді цікаві.</h2><p id="about">Рекламні повідомлення органічно доповнюють інформаційний застосунок. Користувач сам вирішує, чи відкривати пропозицію.</p></div><div class="benefits" id="benefits">
-<article class="benefit"><span class="benefit-icon">📍</span><strong>Аудиторія Черкас і району</strong></article>
-<article class="benefit"><span class="benefit-icon">💡</span><strong>Помітна картка без перешкод графіку</strong></article>
-<article class="benefit"><span class="benefit-icon">🔗</span><strong>Зручний перехід до вашої пропозиції</strong></article>
-</div></section>
-<section class="section" id="formats"><div class="section-heading"><div class="kicker">МОЖЛИВОСТІ</div><h2>Реклама, що не заважає користуванню.</h2><p>Підбираємо формат відповідно до вашої пропозиції та погоджених умов розміщення.</p></div>
-<div class="format-strip"><article class="format"><div class="format-icon">📰</div><h3>Рекламна картка</h3><p>Компактний блок із заголовком, описом, зображенням і переходом у каруселі на головній.</p></article><article class="format"><div class="format-icon">✦</div><h3>Рекламне спецрозміщення</h3><p>Тимчасова велика картка або промоблок на головному екрані з чіткою позначкою «Реклама».</p></article><article class="format"><div class="format-icon">🤝</div><h3>Постійний партнер</h3><p>Окремий блок із логотипом і назвою компанії, яка підтримує розвиток сервісу.</p></article><article class="format"><div class="format-icon">🎁</div><h3>Партнерські пропозиції</h3><p>Спеціальні умови, знижки та промокоди від місцевого бізнесу.</p></article><article class="format"><div class="format-icon">📱</div><h3>Повноекранна історія</h3><p>Окрема сторінка з великим банером, фотографіями, розгорнутим описом і кнопкою переходу.</p></article></div></section>
+<section class="section" id="advantages"><div class="section-heading"><div class="kicker">ПЕРЕВАГИ РОЗМІЩЕННЯ</div><h2>Комунікація з локальною аудиторією.</h2><p id="about">Рекламні повідомлення органічно доповнюють інформаційний застосунок. Користувач сам вирішує, чи відкривати пропозицію.</p></div><div class="benefits" id="benefits"></div></section>
+<section class="section" id="formats"><div id="managedSections"></div></section>
 <section class="section" id="tariffs"><div class="section-heading"><div class="kicker">ТАРИФИ</div><h2>Прозорі варіанти співпраці.</h2><p>Перегляньте актуальні пакети. Склад розміщення та деталі погоджуємо перед запуском кампанії.</p></div>
 <div class="plans" id="packages"><p class="empty">Завантажуємо доступні тарифи…</p></div></section>
-<section class="section" id="faq"><div class="section-heading"><div class="kicker">ПОШИРЕНІ ЗАПИТАННЯ</div><h2>Як це працює?</h2></div><div class="faq">
-<details><summary>Як розпочати співпрацю?</summary><p>Оберіть відповідний пакет і напишіть нам через один із контактів нижче. Ми узгодимо матеріали, терміни та формат.</p></details>
-<details><summary>Чи можливо оформити рекламну картку у власному стилі?</summary><p>Залежно від умов кампанії можна налаштувати банер, кольори, фото, текст та окрему сторінку оголошення.</p></details>
-<details><summary>Чи заважатиме реклама перегляду графіка?</summary><p>Ні. Рекламні формати відокремлені від інформації про електропостачання та повинні мати зрозуміле позначення.</p></details>
-<details><summary>Де можна дізнатися про конкретні умови?</summary><p>Напишіть нам. Доступність і вартість уточнюються перед погодженням публікації.</p></details>
-</div><div class="conditions" id="terms">Умови розміщення, терміни та вартість погоджуються індивідуально.</div></section>
+<section class="section" id="faq"><div class="section-heading"><div class="kicker">ПОШИРЕНІ ЗАПИТАННЯ</div><h2>Як це працює?</h2></div><div class="faq" id="faqItems"></div><div class="conditions" id="terms">Умови розміщення, терміни та вартість погоджуються індивідуально.</div></section>
 <section class="contact-banner" id="contacts-section"><div><div class="kicker" style="color:#b1cfff">ЗВ'ЯЗОК</div><h2>Розкажіть про ваш проєкт.</h2><p id="contactText">Напишіть нам, щоб обговорити розміщення й підібрати формат.</p></div><div class="contacts" id="contacts"><a class="contact" href="./feedback.html"><span>Зв'язатися з нами</span><span>🔗</span></a></div></section>
 <p class="foot">Рекламні матеріали позначаються відповідним маркуванням. Ця сторінка має інформаційний характер, оплату тут не проводимо.</p>
 </main><script>
@@ -120,11 +157,43 @@
   if(data.pageVisible===false){const shell=document.querySelector('.shell');if(shell){const p=document.createElement('p');p.textContent='Сторінка реклами тимчасово прихована адміністрацією.';const link=document.createElement('a');link.href='./';link.textContent='На головну';shell.replaceChildren(p,link)}return}
   put('title',data.pageTitle);put('intro',data.pageIntro);put('about',data.pageAbout);put('terms',data.pageTerms);put('contactText',data.pageContactText);
   document.title=(data.pageTitle||'Реклама')+' · Світло Черкаси';
+  const visible=data.pageVisibility||{};
+  const setSection=(id,key)=>{const node=$(id);if(node)node.hidden=visible[key]===false};
+  setSection('hero','hero');setSection('advantages','benefits');setSection('formats','services');
+  setSection('tariffs','tariffs');setSection('faq','faq');setSection('contacts-section','contacts');
+  $('terms').hidden=visible.terms===false;
+  $('hero').style.backgroundColor=data.pageBackground||'#f6f8fc';
   document.documentElement.style.setProperty('--bg',data.pageBackground||'#f6f8fc');document.documentElement.style.setProperty('--accent',data.pageAccent||'#397bff');
   if(data.pageHeroImage&&safeUrl(data.pageHeroImage)){const pic=$('heroImage');pic.src=safeUrl(data.pageHeroImage);pic.hidden=false}
   if(data.pageBenefits?.length){const cards=$('benefits');cards.replaceChildren();for(const [i,label] of data.pageBenefits.entries()){
    const card=make('article',undefined,'benefit');card.append(make('span',['📍','💡','🔗','🛠️','✅','✨'][i%6],'benefit-icon'),make('strong',label));cards.append(card)
-  }}
+  }}else $('advantages').hidden=true;
+  const serviceRoot=$('managedSections');serviceRoot.replaceChildren();
+  for(const section of (Array.isArray(data.pageSections)?data.pageSections:[]).filter(x=>x.visible!==false&&x.title)){
+   const block=make('section',undefined,'service-section');
+   const heading=make('div',undefined,'service-section-head');
+   if(section.eyebrow)heading.append(make('div',section.eyebrow,'kicker'));
+   heading.append(make('h2',section.title));
+   if(section.description)heading.append(make('p',section.description));
+   block.append(heading);
+   const cards=make('div',undefined,'service-grid');
+   for(const item of section.items||[]){
+    const card=make('article',undefined,'service-card');
+    if(item.icon)card.append(make('span',item.icon,'service-icon'));
+    card.append(make('strong',item.title));
+    if(item.description)card.append(make('p',item.description));
+    cards.append(card);
+   }
+   if(cards.children.length)block.append(cards);
+   serviceRoot.append(block);
+  }
+  if(!serviceRoot.children.length)$('formats').hidden=true;
+  const faqItems=$('faqItems');faqItems.replaceChildren();
+  for(const item of (Array.isArray(data.pageFaq)?data.pageFaq:[]).filter(x=>x.visible!==false&&x.question&&x.answer)){
+   const detail=make('details'),summary=make('summary',item.question),answer=make('p',item.answer);
+   detail.append(summary,answer);faqItems.append(detail);
+  }
+  if(!faqItems.children.length)$('faq').hidden=true;
   const packs=$('packages');packs.replaceChildren();const visible=Array.isArray(data.packages)?data.packages:[];
   if(!visible.length){packs.append(make('p','Пакети розміщення уточнюються. Напишіть нам, щоб узгодити формат, термін і вартість.','empty'))}
   for(const pack of visible){
