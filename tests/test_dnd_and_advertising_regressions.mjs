@@ -36,7 +36,7 @@ test('appearance selector is compact and follows notification settings',()=>{
 
 test('community controls align and partner footer labels the partner',()=>{
  const css=read('community-status.css'),commercial=read('commercial-ui.js');
- const community=read('community-status.js');
+ const community=read('community-status.js'),index=read('index.html');
  assert.ok(css.includes('.community-card-shell{display:grid;grid-template-columns:minmax(0,1fr) 38px;align-items:center'));
  assert.ok(css.includes('.community-refresh{align-self:start;justify-self:center;margin-top:2px}'));
  assert.ok(css.includes('.community-collapse-icon{box-sizing:border-box;flex:0 0 32px;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;background:var(--bg)'));
