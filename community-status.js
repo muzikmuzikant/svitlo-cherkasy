@@ -5,7 +5,8 @@
  const QUEUE_RE=/^[1-6]\.[12]$/,STORE='svitlo-addresses-v6',PREF='svitlo-prefs-v6',CLIENT='svitlo-community-client-v1';
  let api='',queue='',period='day',busy=false,refreshTimer=0;
  const $=id=>document.getElementById(id),make=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(cls)n.className=cls;return n};
- const safe=fn=>{try{return fn()}catch{return null}};\n async function timedFetch(url,options={},timeout=9000){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeout);try{return await fetch(url,{...options,signal:controller.signal})}finally{clearTimeout(timer)}}
+ const safe=fn=>{try{return fn()}catch{return null}};
+ async function timedFetch(url,options={},timeout=9000){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeout);try{return await fetch(url,{...options,signal:controller.signal})}finally{clearTimeout(timer)}}
  function selectedQueue(){const a=safe(()=>JSON.parse(localStorage.getItem(STORE)||'[]'))||[],p=safe(()=>JSON.parse(localStorage.getItem(PREF)||'{}'))||{},selected=a.find(x=>x?.id===p.primaryId)||a[0];return QUEUE_RE.test(selected?.queue||'')?selected.queue:''}
  function clientId(){try{let id=localStorage.getItem(CLIENT);if(!id){id=crypto.randomUUID?.()||('sc-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));localStorage.setItem(CLIENT,id)}return id}catch{return ''}}
  async function getApi(){if(api)return api;const r=await fetch('./push-config.json',{cache:'no-store'});if(!r.ok)throw Error('config');const c=await r.json(),v=String(c.apiBase||'').replace(/\/$/,'');if(!/^https:\/\//.test(v))throw Error('api');api=v;return api}
