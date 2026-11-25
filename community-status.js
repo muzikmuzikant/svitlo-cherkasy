@@ -30,9 +30,9 @@
   disclosure.addEventListener('toggle',()=>{try{localStorage.setItem('svitlo-community-collapsed',disclosure.open?'0':'1')}catch{}});
   const summary=make('summary',undefined,'community-card-summary'),title=make('span',undefined,'community-summary-copy');
   title.append(make('span','ЩО ЗІ СВІТЛОМ?','community-eyebrow'),make('strong','Фактичний стан за повідомленнями мешканців'));
-  const meta=make('span',undefined,'community-summary-meta');
-  meta.append(make('span',queue?'Черга '+queue:'Чергу не визначено','community-queue'),make('span','⌄','community-collapse-icon'));
-  summary.append(title,meta);disclosure.append(summary);
+  const queueBadge=make('span',queue?'Черга '+queue:'Черга не визначена','community-queue');
+  const collapse=make('span','⌄','community-collapse-icon');collapse.setAttribute('aria-hidden','true');
+  summary.append(title,queueBadge,collapse);disclosure.append(summary);
   const refresh=make('button','↻','community-refresh');refresh.type='button';refresh.setAttribute('aria-label','Оновити повідомлення');refresh.title='Оновити';refresh.disabled=busy;refresh.addEventListener('click',()=>loadStatus(true));
   const content=make('div',undefined,'community-disclosure-content');
   if(!queue){content.append(make('p','Додайте адресу з визначеною підчергою, щоб бачити повідомлення мешканців.','community-hint'))}
