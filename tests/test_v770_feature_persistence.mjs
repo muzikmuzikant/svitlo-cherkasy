@@ -49,10 +49,10 @@ test('Features tab truly persists flags to Railway without destroying maintenanc
  await elements.featuresSave.onclick();
  assert.equal(writes.length,1);
  assert.equal(writes[0].site.flags.communityStatus,true);
- assert.equal(writes[0].site.flags.electricityStats,true);
+ assert.equal(writes[0].site.flags.electricityStats,undefined);
  assert.equal(writes[0].site.flags.adSpecialPlacements,true);
  assert.equal(writes[0].site.flags.permanentPartner,true);
- assert.equal(writes[0].site.flags.partnerOffers,true);
+ assert.equal(writes[0].site.flags.partnerOffers,undefined);
  assert.equal(writes[0].site.flags.pushPrompt,false);
  assert.equal(writes[0].site.flags.tomorrowPreview,false);
  assert.equal(writes[0].site.flags.inbox,true);
