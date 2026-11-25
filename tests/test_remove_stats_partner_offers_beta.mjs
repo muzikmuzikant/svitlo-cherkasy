@@ -35,5 +35,5 @@ test('removed options are no longer exposed as admin or server feature flags', (
   }
   assert.equal(admin.includes('delete flags.electricityStats'),true);
   assert.equal(admin.includes('delete flags.partnerOffers'),true);
-  assert.equal(read('sw.js').includes('beta-partner-footer-premium'),true);
+  assert.equal(read('sw.js').includes('beta-dnd-advertising-layout'),true);
 });
