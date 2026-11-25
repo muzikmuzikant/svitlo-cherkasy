@@ -44,7 +44,7 @@ export function freshEvent(event,now=Date.now(),maxAge=65*60_000){
 
 /** True only when tomorrow's verified plan was first published on the current Kyiv calendar day. */
 export function schedulePublishedToday(day, date) {
- if (typeof date !== 'string' || !/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) return false;
+ if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
  const publishedAt = day?.publications?.[0]?.publishedAt || day?.publishedAt;
  const stamp = Date.parse(publishedAt || '');
  return Number.isFinite(stamp) && kyivWallParts(stamp).date === date;
