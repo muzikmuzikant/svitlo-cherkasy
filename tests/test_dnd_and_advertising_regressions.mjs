@@ -27,14 +27,21 @@ test('Do Not Disturb defaults on and suppresses push alerts during Kyiv quiet ho
 test('appearance selector is compact and follows notification settings',()=>{
  const html=read('index.html');
  assert.ok(html.includes('id="appearanceThemeSelect"'));
- assert.ok(html.indexOf('id="pushCategorySettings"')<html.indexOf('id="appearanceThemeSelect"'));
+ const push=html.indexOf('id="pushCategorySettings"'),dnd=html.indexOf('id="doNotDisturbSettings"'),appearance=html.indexOf('settings-appearance-section'),analytics=html.indexOf('id="analyticsSettings"');
+ assert.ok(push<dnd&&dnd<appearance&&appearance<analytics);
+ assert.ok(html.includes('<h2 class="subsection-title">Оформлення</h2>'));
  assert.equal(html.includes('class="appearance-options"'),false);
+ assert.ok(html.includes('class="appearance-select"'));
 });
 
 test('community controls align and partner footer labels the partner',()=>{
  const css=read('community-status.css'),commercial=read('commercial-ui.js');
- assert.ok(css.includes('.community-card-shell{display:flex;align-items:flex-start'));
- assert.ok(css.includes('.community-refresh{display:grid;place-items:center;align-self:flex-start'));
- assert.ok(css.includes('.community-collapse-icon{display:grid;place-items:center'));
+ const community=read('community-status.js');
+ assert.ok(css.includes('.community-card-shell{display:grid;grid-template-columns:minmax(0,1fr) 38px;align-items:center'));
+ assert.ok(css.includes('.community-refresh{display:grid;place-items:center;align-self:center;justify-self:center'));
+ assert.ok(css.includes('.community-collapse-icon{display:grid;place-items:center;flex:0 0 30px'));
+ assert.ok(css.includes('.community-queue{flex:0 0 auto;padding:5px 8px'));
+ assert.ok(community.includes('summary.append(title,queueBadge,collapse)'));
+ assert.equal(community.includes('community-summary-meta'),false);
  assert.ok(commercial.includes("make('span','ПАРТНЕР','partner-mini-label')"));
 });
