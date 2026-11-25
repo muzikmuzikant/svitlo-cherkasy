@@ -126,3 +126,12 @@ html.feature-off-partnerOffers #partnerOffers{display:none!important}
 .appearance-select{display:block;box-sizing:border-box;width:100%;min-width:0;max-width:100%;min-height:48px;margin:0;padding:0 38px 0 13px;border:1px solid var(--line);border-radius:13px;background:var(--bg);color:var(--ink);font:inherit;font-size:14px;line-height:1.4;text-align:left;text-indent:0}
 .appearance-card .appearance-summary{margin:0;padding:0;color:var(--muted);font-size:11px;line-height:1.5;text-align:left}
 :root[data-theme="dark"] .appearance-select{color-scheme:dark}
+
+
+/* Community header: queue, collapse and refresh share one 30px control axis. */
+.community-card-shell{display:grid;grid-template-columns:minmax(0,1fr) 30px;align-items:start;gap:8px}
+.community-card-summary{min-height:42px;align-items:center}
+.community-queue{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;height:30px;min-height:30px;padding:0 9px;line-height:1;white-space:nowrap}
+.community-collapse-icon{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;flex:0 0 30px;width:30px;height:30px;min-height:30px;margin:0;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--muted);font-size:17px;line-height:1;text-align:center}
+.community-refresh{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;align-self:start;justify-self:center;flex:0 0 30px;width:30px;height:30px;min-height:30px;margin:6px 0 0;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--muted);font-size:17px;line-height:1}
+@media(max-width:420px){.community-queue{height:30px;min-height:30px;padding:0 6px}.community-collapse-icon{flex-basis:30px;width:30px;height:30px}}
