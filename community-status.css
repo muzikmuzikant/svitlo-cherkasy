@@ -56,3 +56,17 @@ html.feature-off-partnerOffers #partnerOffers{display:none!important}
 :root[data-theme="dark"] .partner-offer-discount{color:#91dfad}
 :root[data-theme="dark"] .partner-offer-code button{background:#202733;color:var(--blue)}
 @media(prefers-reduced-motion:reduce){.community-vote{transition:none!important}}
+
+.community-head-actions{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.community-refresh{width:30px;height:30px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--muted);font-size:17px;line-height:1}
+.community-refresh:disabled{opacity:.5}
+.community-meter{display:flex;overflow:hidden;width:100%;height:7px;border-radius:99px;background:var(--line);gap:2px}
+.community-meter span{display:block;height:100%;min-width:0;transition:width .25s ease}
+.community-meter-on{background:#15965b}
+.community-meter-off{background:#cf5260}
+.community-agreement{font-size:11px;font-weight:750;color:var(--ink)}
+.community-stale{font-size:10px;line-height:1.45;color:#c18432}
+.community-feedback{margin:9px 0 0;padding:9px 11px;border-radius:11px;background:var(--bluewash);color:var(--blue);font-size:11px;font-weight:700;line-height:1.45}
+.community-refresh:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+:root[data-theme="dark"] .community-stale{color:#e7bb73}
+@media(prefers-reduced-motion:reduce){.community-meter span{transition:none!important}}
