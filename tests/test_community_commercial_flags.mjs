@@ -12,7 +12,7 @@ test('each new public feature has a persistent admin switch, a safe server defau
   assert.ok(mode.includes('"'+key+'"')||mode.includes("'"+key+"'"),key+' missing site-mode binding');
   assert.ok(css.includes('feature-off-'+key),key+' missing disable behavior');
  }
- for(const id of ['communityStatusCard','betaSpecialPlacement','permanentPartnerCard'])assert.ok(index.includes('id="'+id+'"'),id+' missing from public PWA');
+ for(const id of ['communityStatusCard','betaSpecialPlacement'])assert.ok(index.includes('id="'+id+'"'),id+' missing from public PWA');\n assert.ok(commercial.includes('partner-page-footer')&&commercial.includes('partner-mini-button'),'permanent partner footer missing from public PWA');
  assert.ok(community.includes("featureEnabled('communityStatus')"));
  assert.doesNotMatch(community,/electricityStats|loadStats/);
  assert.ok(commercial.includes("flag('adSpecialPlacements')")&&commercial.includes("flag('permanentPartner')"));
