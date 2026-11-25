@@ -26,7 +26,7 @@ test('Features tab truly persists flags to Railway without destroying maintenanc
  let state={
   maintenance:{enabled:false,title:'Технічні роботи',message:'Виконуємо оновлення системи'},
   announcements:[{id:'msg_12345',active:true,title:'Текст',body:'Зміст'}],
-  site:{flags:{communityStatus:true,electricityStats:true,adSpecialPlacements:true,permanentPartner:true,partnerOffers:true,inbox:true,sharing:true,help:true,pushPrompt:true,tomorrowPreview:true},
+  site:{flags:{communityStatus:true,adSpecialPlacements:true,permanentPartner:true,inbox:true,sharing:true,help:true,pushPrompt:true,tomorrowPreview:true},
    links:{help:'./help.html',feedback:'./feedback.html',official:'https://www.cherkasyoblenergo.com/news'},
    banner:{enabled:false,title:'Важливе',body:'Деталі',button:'Переглянути',url:''}}
  };
