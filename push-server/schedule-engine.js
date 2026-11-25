@@ -42,6 +42,14 @@ export function freshEvent(event,now=Date.now(),maxAge=65*60_000){
  if(!event)return false;const age=now-Date.parse(event.publishedAt);return age>=0&&age<maxAge;
 }
 
+/** True only when tomorrow's verified plan was first published on the current Kyiv calendar day. */
+export function schedulePublishedToday(day, date) {
+ if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+ const publishedAt = day?.publications?.[0]?.publishedAt || day?.publishedAt;
+ const stamp = Date.parse(publishedAt || '');
+ return Number.isFinite(stamp) && kyivWallParts(stamp).date === date;
+}
+
 /** Suppress scheduled Push if GitHub import stopped or source needs review. */
 export function freshSchedule(doc,now=Date.now(),maxAge=55*60_000){
  if(!doc||!Array.isArray(doc.days)||doc.reviewPending===true)return false;
