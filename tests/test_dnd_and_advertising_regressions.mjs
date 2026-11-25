@@ -38,6 +38,11 @@ test('community controls align and partner footer labels the partner',()=>{
  const css=read('community-status.css'),commercial=read('commercial-ui.js');
  const community=read('community-status.js'),index=read('index.html');
  assert.ok(css.includes('.community-card-shell{display:grid;grid-template-columns:minmax(0,1fr) 38px;align-items:center'));
+ assert.ok(css.includes('.community-card-shell{display:grid;grid-template-columns:minmax(0,1fr) 30px;align-items:start;gap:8px}'));
+ assert.ok(css.includes('.community-queue{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;height:30px;min-height:30px'));
+ assert.ok(css.includes('.community-collapse-icon{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;flex:0 0 30px;width:30px;height:30px;min-height:30px;margin:0;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--bg)'));
+ assert.ok(css.includes('.community-refresh{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;align-self:start;justify-self:center;flex:0 0 30px;width:30px;height:30px;min-height:30px;margin:6px 0 0;padding:0'));
+ assert.ok(css.includes('@media(max-width:420px){.community-queue{height:30px;min-height:30px;padding:0 6px}.community-collapse-icon{flex-basis:30px;width:30px;height:30px}}'));
  assert.ok(css.includes('.community-refresh{align-self:start;justify-self:center;margin-top:2px}'));
  assert.ok(css.includes('.community-collapse-icon{box-sizing:border-box;flex:0 0 32px;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;background:var(--bg)'));
  assert.ok(css.includes('.appearance-select-label{display:block;width:100%;margin:0;padding:0'));
