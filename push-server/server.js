@@ -35,7 +35,7 @@ import webpush from 'web-push';
 import {adminRouter} from './admin.js';
 import {createManualPush} from './manual-push.js';
 import {transitionCopy,tomorrowCopy,changeCopy,emergencyCopy,firstPublishedAt,dayId,changeId,isLatestRevision,emergencyId,noticeDisplayTitle} from './notification-copy.js';
-import {QUEUES,timeline,dueTransition,latestOfficialEvent,freshEvent,freshSchedule,dueTransitionAcrossDays,usableSchedule,verifiedScheduleDay,preferFreshSchedule,kyivWallInstants} from './schedule-engine.js';
+import {QUEUES,timeline,dueTransition,latestOfficialEvent,freshEvent,freshSchedule,dueTransitionAcrossDays,usableSchedule,verifiedScheduleDay,preferFreshSchedule,kyivWallInstants,schedulePublishedToday} from './schedule-engine.js';
 
 const {VAPID_PUBLIC_KEY,PUSH_PRIVATE_KEY,PUSH_CONTACT,APP_ORIGIN,SCHEDULE_URL,DATA_FILE='./subscribers.json',PORT='8080'}=process.env;
 if(!VAPID_PUBLIC_KEY||!PUSH_PRIVATE_KEY||!PUSH_CONTACT||!APP_ORIGIN||!SCHEDULE_URL){
@@ -264,7 +264,7 @@ async function job(){
      Number.isFinite(when)&&age>=0&&age<65*60000;
    });
    const tomorrowRevised=freshChanges.some(change=>isLatestRevision(change,tomorrow,q));
-   if(schedulesSafe&&pref.tomorrow&&tomorrow?.verified===true&&minutes>=19*60&&!(pref.changes&&tomorrowRevised)){
+   if(schedulesSafe&&pref.tomorrow&&tomorrow?.verified===true&&schedulePublishedToday(tomorrow,now.date)&&!(pref.changes&&tomorrowRevised)){
     const revision=firstPublishedAt(tomorrow),msg=tomorrowCopy(q,nextDate,tomorrow);
     // One daily preview per subscriber and calendar date. Revisions are handled
     // separately by 'change' notifications, not repeated 'tomorrow' pushes.
@@ -290,8 +290,10 @@ async function job(){
     const changedDay=verifiedScheduleDay(source,change.date,timestamp);
     if(!changedDay)continue;
     const msg=changeCopy(q,change.date,changedDay);
-    await send(record,msg,`${prefix}:change:${change.date}:${change.revisionId||change.publishedAt}`,{
+    const outcome=await send(record,msg,`${prefix}:change:${change.date}:${change.revisionId||change.publishedAt}`,{
      notificationId:changeId(q,change),at:change.detectedAt||change.publishedAt,source:change.source});
+    if(outcome==='accepted')console.info('[auto-push] change accepted queue='+q+' date='+change.date);
+    else if(outcome==='failed')console.warn('[auto-push] change rejected queue='+q+' date='+change.date);
    }
   });
   if(event&&freshEvent(event,timestamp))console.info('[emergency-push] status='+event.status+' eligible='+emergencyEligible+' accepted='+emergencyAccepted+' failed='+emergencyFailed);
