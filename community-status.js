@@ -26,7 +26,7 @@
   statusHost.replaceChildren();
   const shell=make('div',undefined,'community-card-shell');
   const disclosure=make('details',undefined,'community-disclosure');
-  disclosure.open=safe(()=>localStorage.getItem('svitlo-community-collapsed')!=='1')!==true?true:localStorage.getItem('svitlo-community-collapsed')!=='1';
+  disclosure.open=safe(()=>localStorage.getItem('svitlo-community-collapsed')!=='1')??true;
   disclosure.addEventListener('toggle',()=>{try{localStorage.setItem('svitlo-community-collapsed',disclosure.open?'0':'1')}catch{}});
   const summary=make('summary',undefined,'community-card-summary'),title=make('span',undefined,'community-summary-copy');
   title.append(make('span','ЩО ЗІ СВІТЛОМ?','community-eyebrow'),make('strong','Фактичний стан за повідомленнями мешканців'));
