@@ -25,3 +25,23 @@ test('discounts can target a single tariff and invalid partner links are rejecte
   assert.throws(()=>store.update({partnerOffers:[{id:'bad',title:'X',link:'javascript:alert(1)'}]}));
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });
+
+test('advertising landing sections and page visibility are editable and safely published',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'svitlo-ad-page-sections-'));
+ try{
+  const store=createAdsStore({directory:dir});
+  store.update({pageVisibility:{hero:true,benefits:false,services:false,tariffs:true,faq:false,terms:true,contacts:true},
+   pageSections:[
+    {id:'homepage-card',eyebrow:'ФОРМАТ',title:'Картка',description:'Опис',visible:true,items:[{icon:'▤',title:'Перевага',description:'Деталі'}]},
+    {id:'custom-section',eyebrow:'НОВЕ',title:'Індивідуальна послуга',description:'Власний блок',visible:false,items:[{icon:'✦',title:'Власна картка',description:'Текст'}]}
+   ],
+   pageFaq:[{id:'faq-one',question:'Питання?',answer:'Відповідь',visible:false}]});
+  const data=store.publicState();
+  assert.equal(data.pageVisibility.benefits,false);
+  assert.equal(data.pageVisibility.services,false);
+  assert.equal(data.pageSections.length,2);
+  assert.equal(data.pageSections[0].items[0].title,'Перевага');
+  assert.equal(data.pageSections[1].visible,false);
+  assert.equal(data.pageFaq[0].visible,false);
+ }finally{fs.rmSync(dir,{recursive:true,force:true})}
+});
