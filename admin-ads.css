@@ -26,3 +26,14 @@
 @media(max-width:720px){.beta-ads-admin .ad-sticky-savebar{bottom:5px;justify-content:center;padding:11px}.beta-ads-admin .ad-sticky-savebar>span:first-child{display:none}.beta-ads-admin .ad-sticky-savebar .ad-toolbar{width:100%;justify-content:space-between}.beta-ads-admin .ad-sticky-savebar button.primary{min-width:0;flex:1}}
 
 .ad-campaign-calendar{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:11px}.ad-calendar-item{border:1px solid #e1eaf6;border-radius:12px;padding:15px;background:#f9fbff;display:flex;flex-direction:column;gap:6px}.ad-calendar-item strong{font-size:13px}.ad-calendar-item small{color:#3865a9;font-weight:700}.ad-calendar-item p{font-size:11px;margin:0}.ad-templates-panel{padding:13px;border:1px dashed #d3e2f4;border-radius:14px;margin-top:12px}.ad-templates-panel summary{cursor:pointer;font-size:13px;font-weight:700}.ad-templates-panel button{margin:12px 7px 0 0}
+
+/* Flexible page-section editor */
+.beta-ads-admin .ad-managed-section{padding:16px;margin:14px 0;background:linear-gradient(150deg,#f9fbff,#f3f7fd);border-color:#dce7f5}
+.beta-ads-admin .ad-managed-section-head{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+.beta-ads-admin .ad-managed-section-head>strong{font-size:14px;color:#1d3858;margin-right:auto}
+.beta-ads-admin .ad-managed-section-head button{padding:7px 10px;font-size:11px}
+.beta-ads-admin .ad-managed-item{background:#fff;padding:12px;margin:9px 0}
+.beta-ads-admin .ad-managed-section>.ad-fields-grid{margin-bottom:10px}
+.beta-ads-admin .ad-managed-section .ad-benefits-editor{background:#edf3fb;border:1px solid #e0e9f5}
+.beta-ads-admin .ad-managed-section .ad-subcard button.danger{margin-top:4px}
+@media(max-width:700px){.beta-ads-admin .ad-managed-section-head{align-items:stretch}.beta-ads-admin .ad-managed-section-head>strong{width:100%}.beta-ads-admin .ad-managed-section-head button{flex:1}}

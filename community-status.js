@@ -24,20 +24,23 @@
  }
  function paintStatus(data){
   statusHost.replaceChildren();
-  const head=make('div',undefined,'community-card-head'),title=make('div');
-  title.append(make('span','ЩО ЗІ СВІТЛОМ?','community-eyebrow'),make('h2','Фактичний стан за повідомленнями мешканців'));
-  const headActions=make('div',undefined,'community-head-actions');
-  headActions.append(make('span',queue?'Черга '+queue:'Чергу не визначено','community-queue'));
-  const refresh=make('button','↻','community-refresh');refresh.type='button';refresh.setAttribute('aria-label','Оновити повідомлення');refresh.title='Оновити';refresh.disabled=busy;refresh.addEventListener('click',()=>loadStatus(true));headActions.append(refresh);
-  head.append(title,headActions);statusHost.append(head);
-  if(!queue){statusHost.append(make('p','Додайте адресу з визначеною підчергою, щоб бачити повідомлення мешканців.','community-hint'));return}
-  const result=make('div',undefined,'community-result'),age=ageMinutes(data),expired=age!==null&&age>30,state=expired?'unknown':(data?.state||'unknown'),counts=data?.counts||{on:0,off:0,total:0};
-  const label=expired?'Немає актуальних підтверджень':state==='on'?'За повідомленнями, світло є':state==='off'?'За повідомленнями, світла немає':'Поки недостатньо підтверджень';
-  result.append(make('strong',label,'community-state community-'+state));
-  result.append(make('span',freshnessText(data),'community-updated'));
-  if(expired){
-   result.append(make('span','Попередні повідомлення старші за 30 хвилин. Поточний стан може бути іншим.','community-stale'));
-  }else{
+  const shell=make('div',undefined,'community-card-shell');
+  const disclosure=make('details',undefined,'community-disclosure');
+  disclosure.open=safe(()=>localStorage.getItem('svitlo-community-collapsed')!=='1')??true;
+  disclosure.addEventListener('toggle',()=>{try{localStorage.setItem('svitlo-community-collapsed',disclosure.open?'0':'1')}catch{}});
+  const summary=make('summary',undefined,'community-card-summary'),title=make('span',undefined,'community-summary-copy');
+  title.append(make('span','ЩО ЗІ СВІТЛОМ?','community-eyebrow'),make('strong','Фактичний стан за повідомленнями мешканців'));
+  const meta=make('span',undefined,'community-summary-meta');
+  meta.append(make('span',queue?'Черга '+queue:'Чергу не визначено','community-queue'),make('span','⌄','community-collapse-icon'));
+  summary.append(title,meta);disclosure.append(summary);
+  const refresh=make('button','↻','community-refresh');refresh.type='button';refresh.setAttribute('aria-label','Оновити повідомлення');refresh.title='Оновити';refresh.disabled=busy;refresh.addEventListener('click',()=>loadStatus(true));
+  const content=make('div',undefined,'community-disclosure-content');
+  if(!queue){content.append(make('p','Додайте адресу з визначеною підчергою, щоб бачити повідомлення мешканців.','community-hint'))}
+  else{
+   const result=make('div',undefined,'community-result'),state=data?.state||'unknown',counts=data?.counts||{on:0,off:0,total:0};
+   const label=state==='on'?'За повідомленнями, світло є':state==='off'?'За повідомленнями, світла немає':'Поки недостатньо підтверджень';
+   result.append(make('strong',label,'community-state community-'+state));
+   result.append(make('span',freshnessText(data),'community-updated'));
    const total=Math.max(0,Number(counts.total)||0),on=Math.max(0,Number(counts.on)||0),off=Math.max(0,Number(counts.off)||0);
    const meter=make('div',undefined,'community-meter');meter.setAttribute('role','img');meter.setAttribute('aria-label','Є світло: '+on+', немає світла: '+off);
    const onBar=make('span',undefined,'community-meter-on'),offBar=make('span',undefined,'community-meter-off');
@@ -45,19 +48,20 @@
    result.append(make('span','Є світло: '+on+' · Немає світла: '+off+' · Відповідей: '+total,'community-counts'));
    if(data?.confirmed)result.append(make('span','Узгодженість повідомлень: '+data.agreementPercent+'%','community-agreement'));
    else if(total>0)result.append(make('span',total<3?'Потрібно щонайменше три різні підтвердження.':'Повідомлення різняться, тому підсумок поки не визначено.','community-hint'));
-   if(age!==null&&age>20)result.append(make('span','Дані можуть застарівати. Нове повідомлення допоможе оновити картину.','community-stale'));
+   if(data?.freshness==='aging')result.append(make('span','Дані можуть застарівати. Нове повідомлення допоможе оновити картину.','community-stale'));
+   content.append(result);
+   const controls=make('div',undefined,'community-actions');
+   for(const [value,labelText] of [['on','Світло є'],['off','Світла немає']]){
+    const b=make('button',labelText,'community-vote community-vote-'+value);b.type='button';b.disabled=busy;
+    if(data?.myReport===value)b.setAttribute('aria-pressed','true');
+    b.addEventListener('click',()=>sendReport(value));controls.append(b);
+   }
+   content.append(controls);
+   if(notice)content.append(make('p',notice,'community-feedback'));
+   if(loadError)content.append(make('p',loadError,'community-footnote community-error'));
+   content.append(make('p','Повідомлення стосуються всієї підчерги, а не кожного окремого будинку. Це не офіційні дані оператора. Підсумок формується за останні 30 хвилин і лише за трьома або більше різними підтвердженнями.','community-footnote'));
   }
-  statusHost.append(result);
-  const controls=make('div',undefined,'community-actions');
-  for(const [value,labelText] of [['on','Світло є'],['off','Світла немає']]){
-   const b=make('button',labelText,'community-vote community-vote-'+value);b.type='button';b.disabled=busy;
-   if(data?.myReport===value)b.setAttribute('aria-pressed','true');
-   b.addEventListener('click',()=>sendReport(value));controls.append(b);
-  }
-  statusHost.append(controls);
-  if(notice)statusHost.append(make('p',notice,'community-feedback'));
-  if(loadError)statusHost.append(make('p',loadError,'community-footnote community-error'));
-  statusHost.append(make('p','Повідомлення стосуються всієї підчерги, а не кожного окремого будинку. Це не офіційні дані оператора. Підсумок формується за останні 30 хвилин і лише за трьома або більше різними підтвердженнями.','community-footnote'));
+  disclosure.append(content);shell.append(disclosure,refresh);statusHost.append(shell);
  }
  async function loadStatus(force=false){
   if(statusHost.hidden)return;
