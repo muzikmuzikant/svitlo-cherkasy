@@ -62,6 +62,6 @@ jobs:
       - name: Build BETA Pages
         run: python scripts/build_pages.py
       - name: BETA Node tests
-        run: node --test tests/test_community_status.mjs tests/test_commercial_extensions.mjs tests/test_community_commercial_flags.mjs tests/test_v770_feature_persistence.mjs tests/test_ads_redesign_beta.mjs tests/test_beta_ui_regressions.mjs tests/test_local_announcements.mjs
+        run: node --test tests/test_community_status.mjs tests/test_commercial_extensions.mjs tests/test_community_commercial_flags.mjs tests/test_remove_stats_partner_offers_beta.mjs tests/test_v770_feature_persistence.mjs tests/test_ads_redesign_beta.mjs tests/test_beta_ui_regressions.mjs tests/test_local_announcements.mjs
       - name: Syntax checks
         run: node --check app.js && node --check community-status.js && node --check commercial-ui.js && node --check admin-ads.js && node --check admin-features.js && node --check admin-control.js && node --check admin-form-safety-v2.js && node --check push-server/community-status.js && node --check push-server/ads.js && node --check admin.js && node --check sw.js && node --check push-server/server.js && node --check push-server/admin.js
