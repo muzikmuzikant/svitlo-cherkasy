@@ -30,7 +30,7 @@
   for(const button of buttons){
    button.type='button';
    button.setAttribute('data-admin-save-action','');
-   button.addEventListener('click',()=>{if(button.closest('[data-admin-editor-group]')!==group)return;submit(group)});
+   button.addEventListener('click',()=>{if(button.onclick||button.closest('[data-admin-editor-group]')!==group)return;submit(group)});
   }
   group.addEventListener('keydown',event=>{
    if(event.key!=='Enter'||event.isComposing||event.ctrlKey||event.metaKey||event.altKey)return;
