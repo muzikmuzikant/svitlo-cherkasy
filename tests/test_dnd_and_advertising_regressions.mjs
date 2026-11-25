@@ -38,7 +38,11 @@ test('community controls align and partner footer labels the partner',()=>{
  const css=read('community-status.css'),commercial=read('commercial-ui.js');
  const community=read('community-status.js');
  assert.ok(css.includes('.community-card-shell{display:grid;grid-template-columns:minmax(0,1fr) 38px;align-items:center'));
- assert.ok(css.includes('.community-refresh{display:grid;place-items:center;align-self:center;justify-self:center'));
+ assert.ok(css.includes('.community-refresh{align-self:start;justify-self:center;margin-top:2px}'));
+ assert.ok(css.includes('.community-collapse-icon{box-sizing:border-box;flex:0 0 32px;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;background:var(--bg)'));
+ assert.ok(css.includes('.appearance-select-label{display:block;width:100%;margin:0;padding:0'));
+ assert.ok(css.includes('.appearance-select{display:block;box-sizing:border-box;width:100%;min-width:0;max-width:100%'));
+ assert.ok(index.includes('community-status.css?v=community-6'));
  assert.ok(css.includes('.community-collapse-icon{display:grid;place-items:center;flex:0 0 30px'));
  assert.ok(css.includes('.community-queue{flex:0 0 auto;padding:5px 8px'));
  assert.ok(community.includes('summary.append(title,queueBadge,collapse)'));
