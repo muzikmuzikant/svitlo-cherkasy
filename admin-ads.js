@@ -256,7 +256,12 @@
    const cards=el('div',undefined,'ad-benefits-editor');cards.append(el('h4','Картки та переваги цього розділу'));
    item.items||=[];
    item.items.forEach((card,cardIndex)=>{
-    const cardRow=el('div',undefined,'ad-subcard ad-managed-item'),cf=grid(cardRow);
+    const cardRow=el('div',undefined,'ad-subcard ad-managed-item');
+    const cardHead=el('div',undefined,'ad-managed-section-head');cardHead.append(el('strong','Картка '+(cardIndex+1)));
+    button(cardHead,'↑',()=>{if(cardIndex>0){[item.items[cardIndex-1],item.items[cardIndex]]=[item.items[cardIndex],item.items[cardIndex-1]];mark();render()}});
+    button(cardHead,'↓',()=>{if(cardIndex<item.items.length-1){[item.items[cardIndex+1],item.items[cardIndex]]=[item.items[cardIndex],item.items[cardIndex+1]];mark();render()}});
+    cardRow.append(cardHead);
+    const cf=grid(cardRow);
     field(cf,'Піктограма',card,'icon','text','Емодзі або короткий символ',{maxLength:8});
     field(cf,'Заголовок картки',card,'title','text','',{maxLength:120});
     field(cf,'Опис картки',card,'description','long','',{maxLength:500,rows:2});
