@@ -1,0 +1,58 @@
+/* Community reports and commercial placements. Theme-safe, compact and mobile-first. */
+.community-status-card,.electricity-stats-card,.commercial-slot{min-width:0;margin:16px 0 0;padding:17px;border:1px solid var(--line);border-radius:21px;background:var(--surface,#fff);color:var(--ink);box-shadow:var(--shadow)}
+.community-card-head,.electricity-stats-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.community-eyebrow,.commercial-eyebrow{display:block;color:var(--muted);font-size:9px;font-weight:850;letter-spacing:.12em}
+.community-card-head h2,.electricity-stats-head h2{font-size:16px;line-height:1.3;letter-spacing:-.35px;margin:5px 0 0}
+.community-queue{flex:0 0 auto;padding:6px 9px;border-radius:10px;background:var(--bluewash);color:var(--blue);font-size:10px;font-weight:800}
+.community-result{display:grid;gap:6px;margin:15px 0 12px;padding:13px;border-radius:15px;background:var(--bg);border:1px solid var(--line)}
+.community-state{font-size:14px}.community-on{color:#15965b}.community-off{color:#cf5260}.community-unknown{color:var(--muted)}
+.community-counts,.community-updated,.community-hint,.community-footnote{font-size:11px;line-height:1.55;color:var(--muted)}
+.community-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.community-vote{min-width:0;min-height:44px;border:1px solid var(--line);border-radius:13px;padding:10px 8px;background:var(--bg);color:var(--ink);font-size:12px;font-weight:800;transition:transform .18s ease,border-color .18s ease,background-color .18s ease}
+.community-vote-on[aria-pressed="true"]{background:#e6f7ed;border-color:#9dd8b5;color:#137a49}
+.community-vote-off[aria-pressed="true"]{background:#fff0f1;border-color:#edb6bd;color:#a53c4b}
+.community-vote:disabled{opacity:.58}.community-footnote{margin:10px 0 0}.community-error{color:#c74b56}
+.electricity-periods{display:flex;gap:6px;margin:14px 0 12px;padding:4px;border-radius:12px;background:var(--bg)}
+.electricity-periods button{flex:1;min-width:0;border:0;border-radius:9px;background:transparent;color:var(--muted);padding:8px 4px;font-size:11px;font-weight:750}
+.electricity-periods button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 5px #10243a14}
+.electricity-stats-columns{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.electricity-stats-group{min-width:0;padding:12px;border:1px solid var(--line);border-radius:15px;background:var(--bg)}
+.electricity-stats-group h3{font-size:12px;margin:0 0 10px}
+.electricity-stat-line{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line)}
+.electricity-stat-line:first-of-type{border-top:0}.electricity-stat-line>div{min-width:0;display:grid;gap:3px}
+.electricity-stat-line strong{font-size:10px;line-height:1.35}.electricity-stat-line small{font-size:9px;line-height:1.35;color:var(--muted)}
+.electricity-stat-line>b{flex:0 0 auto;font-size:13px;font-variant-numeric:tabular-nums}
+.electricity-stat-line .is-on{color:#15965b}.electricity-stat-line .is-off{color:#c84f5c}.electricity-stat-line .is-emergency{color:#d28b32}
+.commercial-slot[hidden],.community-status-card[hidden],.electricity-stats-card[hidden]{display:none!important}
+.commercial-section-title{font-size:16px;margin:0 0 11px}
+.commercial-card,.partner-offer-card{display:grid;grid-template-columns:minmax(0,112px) minmax(0,1fr);gap:13px;align-items:center;padding:13px;border:1px solid var(--line);border-radius:18px;background:var(--surface);color:var(--ink);margin:10px 0;min-width:0;overflow:hidden}
+.commercial-card:not(.has-image),.partner-offer-card:not(.has-image){grid-template-columns:1fr}
+.commercial-card>img,.partner-offer-card>img{width:100%;height:112px;object-fit:cover;border-radius:12px}
+.commercial-card-special{padding:16px;border-radius:20px}
+.commercial-card-special>img{height:150px}
+.commercial-card-special .commercial-copy strong{font-size:17px}
+.commercial-card-special .commercial-copy p{font-size:12px}
+.commercial-label{grid-column:1/-1;font-size:9px;letter-spacing:.12em;font-weight:850;color:var(--muted)}
+.commercial-copy,.partner-offer-copy{min-width:0;display:grid;gap:7px}
+.commercial-copy strong,.partner-offer-copy strong{font-size:14px;line-height:1.35}
+.commercial-copy p,.partner-offer-copy p{font-size:11px;line-height:1.55;color:var(--muted);margin:0;overflow-wrap:anywhere}
+.commercial-action,.commercial-partner-link{display:inline-flex;align-items:center;justify-content:center;justify-self:start;min-height:35px;padding:8px 12px;border-radius:10px;background:var(--bluewash);color:var(--blue);font-size:11px;font-weight:800;text-decoration:none}
+.permanent-partner-content{display:flex;align-items:center;gap:12px;margin-top:10px;min-width:0}
+.permanent-partner-content img{width:54px;height:54px;object-fit:contain;border-radius:12px;background:var(--bg);padding:5px;flex:0 0 54px}
+.permanent-partner-content>div{min-width:0;flex:1}.permanent-partner-content strong{font-size:13px}
+.permanent-partner-content p{font-size:11px;line-height:1.5;color:var(--muted);margin:4px 0 0}
+.partner-offer-discount{font-size:12px;color:#15965b}
+.partner-offer-code{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.partner-offer-code code{padding:6px 9px;border:1px dashed var(--line);border-radius:8px;font-size:11px;font-weight:800}
+.partner-offer-code button{border:0;background:var(--bg);color:var(--blue);padding:7px 9px;border-radius:8px;font-size:10px;font-weight:800}
+.community-vote:focus-visible,.electricity-periods button:focus-visible,.partner-offer-code button:focus-visible,.commercial-action:focus-visible,.commercial-partner-link:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+html.feature-off-communityStatus .community-status-card,html.feature-off-electricityStats .electricity-stats-card,
+html.feature-off-adSpecialPlacements #betaSpecialPlacement,html.feature-off-permanentPartner #permanentPartnerCard,
+html.feature-off-partnerOffers #partnerOffers{display:none!important}
+@media(hover:hover){.community-vote:hover{transform:translateY(-1px);border-color:var(--blue)}.commercial-action:hover,.commercial-partner-link:hover{filter:brightness(.96)}}
+@media(max-width:520px){.electricity-stats-columns{grid-template-columns:1fr}.commercial-card,.partner-offer-card{grid-template-columns:84px minmax(0,1fr);gap:10px;padding:11px}.commercial-card>img,.partner-offer-card>img{height:84px}.commercial-card-special{grid-template-columns:1fr;padding:14px}.commercial-card-special>img{height:150px}.commercial-card-special:not(.has-image){grid-template-columns:1fr}}
+:root[data-theme="dark"] .community-vote-on[aria-pressed="true"]{background:#173d2b;border-color:#276b48;color:#a8e8bf}
+:root[data-theme="dark"] .community-vote-off[aria-pressed="true"]{background:#40232a;border-color:#7a3c48;color:#ffb2bb}
+:root[data-theme="dark"] .partner-offer-discount{color:#91dfad}
+:root[data-theme="dark"] .partner-offer-code button{background:#202733;color:var(--blue)}
+@media(prefers-reduced-motion:reduce){.community-vote{transition:none!important}}

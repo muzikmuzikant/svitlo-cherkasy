@@ -79,6 +79,7 @@
   display();body.append(preview);
   const compact=section('Картка на головній','Оформлення, яке бачить користувач перед натисканням. Повноекранний перегляд налаштовується окремо.');
   const fields=grid(compact);body.append(compact);
+  choice(fields,'Формат розміщення',c,'placement',[['banner','Рекламна картка в каруселі'],['special','Велике рекламне спецрозміщення']]);
   field(fields,'Назва / заголовок',c,'title','text','До 100 символів',{maxLength:100});
   field(fields,'Опис реклами',c,'description','long','До 250 символів',{maxLength:250,rows:3});
   field(fields,'Текст кнопки',c,'button');
@@ -243,9 +244,52 @@
    const input=el('textarea');input.rows=5;input.value=(pkg.features||[]).join('\n');
    input.oninput=()=>{pkg.features=input.value.split('\n').map(v=>v.trim()).filter(Boolean).slice(0,12);mark()};
    features.append(input);row.append(features);
-   button(row,'Видалити тариф',()=>{draft.packages.splice(i,1);mark();render()},'danger');packs.append(row);
+   button(row,'Видалити тариф',()=>{const linked=(draft.discounts||[]).filter(d=>d.scope==='specific'&&d.packageId===pkg.id);if(linked.length&&!confirm('Для цього тарифу створено знижку. Разом із тарифом буде видалено '+linked.length+' пов’язану знижку. Продовжити?'))return;draft.discounts=(draft.discounts||[]).filter(d=>d.scope!=='specific'||d.packageId!==pkg.id);draft.packages.splice(i,1);mark();render()},'danger');packs.append(row);
   });
   button(packs,'+ Новий тариф',()=>{draft.packages.push({id:uuid(),title:'Новий тариф',description:'',price:0,durationDays:30,visible:true,featured:false,badge:'',badgeBackground:'#e5f1ff',badgeForeground:'#1456b5',features:[]});mark();render()});root.append(packs);
+  const discounts=section('Знижки на рекламні тарифи','Знижка діє на всі тарифи або на один обраний. Якщо одночасно підходить кілька знижок, застосовується найвигідніша; знижки не додаються одна до одної.');
+  draft.discounts||=[];
+  draft.discounts.forEach((d,i)=>{
+   const row=el('article',undefined,'ad-subcard'),f=grid(row);
+   field(f,'Назва акції',d,'title');
+   const scopeRow=el('label',undefined,'ad-field');scopeRow.append(el('span','Застосувати до'));
+   const scope=el('select');for(const [v,label] of [['all','Усі тарифи'],['specific','Конкретний тариф']]){const op=el('option',label);op.value=v;if(v==='specific'&&!draft.packages.length)op.disabled=true;scope.append(op)}
+   scope.value=d.scope||'all';scope.onchange=()=>{d.scope=scope.value;mark();render()};scopeRow.append(scope);f.append(scopeRow);
+   if(d.scope==='specific'){
+    const tariffRow=el('label',undefined,'ad-field');tariffRow.append(el('span','Тариф'));
+    const tariff=el('select');for(const pkg of draft.packages){const op=el('option',pkg.title||'Без назви');op.value=pkg.id;tariff.append(op)}
+    if(!d.packageId&&draft.packages[0])d.packageId=draft.packages[0].id;tariff.value=d.packageId||'';tariff.onchange=()=>{d.packageId=tariff.value;mark()};tariffRow.append(tariff);f.append(tariffRow);
+   }
+   choice(f,'Тип знижки',d,'kind',[['percent','Відсоток (%)'],['fixed','Фіксована сума (грн)']]);
+   field(f,'Розмір знижки',d,'amount','number',d.kind==='fixed'?'Сума у гривнях':'Відсоток від ціни',{min:0,max:d.kind==='fixed'?100000000:100,step:'any'});
+   field(f,'Увімкнено',d,'enabled','toggle');
+   const startRow=el('label',undefined,'ad-field');startRow.append(el('span','Початок дії'));
+   const start=el('input');start.type='datetime-local';start.value=toLocal(d.start);start.onchange=()=>{d.start=fromLocal(start.value);mark()};startRow.append(start);f.append(startRow);
+   const endRow=el('label',undefined,'ad-field');endRow.append(el('span','Завершення дії'));
+   const end=el('input');end.type='datetime-local';end.value=toLocal(d.end);end.onchange=()=>{d.end=fromLocal(end.value);mark()};endRow.append(end);f.append(endRow);
+   button(row,'Видалити знижку',()=>{draft.discounts.splice(i,1);mark();render()},'danger');discounts.append(row);
+  });
+  button(discounts,'+ Створити знижку',()=>{draft.discounts.push({id:uuid(),title:'Нова знижка',scope:'all',packageId:'',kind:'percent',amount:10,enabled:false,start:'',end:''});mark();render()});
+  root.append(discounts);
+  const permanent=section('Постійний партнер','Окремий блок із назвою, логотипом і посиланням партнера. Він не маскується під офіційні повідомлення.');
+  const pf=grid(permanent);field(pf,'Показувати постійного партнера',draft.permanentPartner,'enabled','toggle');
+  field(pf,'Назва компанії',draft.permanentPartner,'name');field(pf,'Опис',draft.permanentPartner,'description','long');
+  uploadField(pf,'Логотип партнера',draft.permanentPartner,'logo');field(pf,'Сайт партнера (HTTPS)',draft.permanentPartner,'url','url');
+  root.append(permanent);
+  const offers=section('Партнерські пропозиції','Знижки та промокоди місцевого бізнесу. Прострочені пропозиції автоматично приховуються.');
+  draft.partnerOffers||=[];
+  draft.partnerOffers.forEach((o,i)=>{
+   const row=el('article',undefined,'ad-subcard'),f=grid(row);
+   field(f,'Назва партнера',o,'partner');field(f,'Заголовок пропозиції',o,'title');
+   field(f,'Опис',o,'description','long');field(f,'Розмір вигоди / знижки',o,'discountLabel');
+   field(f,'Промокод',o,'code');field(f,'Посилання на пропозицію (HTTPS)',o,'link','url');
+   uploadField(f,'Зображення пропозиції',o,'image');field(f,'Показувати',o,'enabled','toggle');
+   const startRow=el('label',undefined,'ad-field');startRow.append(el('span','Початок дії'));const start=el('input');start.type='datetime-local';start.value=toLocal(o.start);start.onchange=()=>{o.start=fromLocal(start.value);mark()};startRow.append(start);f.append(startRow);
+   const endRow=el('label',undefined,'ad-field');endRow.append(el('span','Завершення дії'));const end=el('input');end.type='datetime-local';end.value=toLocal(o.end);end.onchange=()=>{o.end=fromLocal(end.value);mark()};endRow.append(end);f.append(endRow);
+   button(row,'Видалити пропозицію',()=>{draft.partnerOffers.splice(i,1);mark();render()},'danger');offers.append(row);
+  });
+  button(offers,'+ Додати партнерську пропозицію',()=>{draft.partnerOffers.push({id:uuid(),partner:'',title:'',description:'',discountLabel:'',code:'',link:'',image:'',enabled:false,start:'',end:''});mark();render()});
+  root.append(offers);
   const support=section('Добровільна підтримка проєкту','Без комісій та автоматичного приймання коштів у нашому застосунку. Посилання на зовнішній платіжний сервіс задається вручну.');
   const su=grid(support);for(const [k,l,t] of [['enabled','Увімкнути підтримку','toggle'],['title','Заголовок сторінки','text'],['description','Опис','long'],['details','На що підуть внески','long'],['provider','Назва платіжного сервісу','text'],['paymentUrl','Зовнішнє HTTPS посилання для внесків','url'],['button','Текст кнопки','text']])field(su,l,draft.support,k,t);
   uploadField(su,'Фото обкладинки сторінки підтримки',draft.support,'heroImage');

@@ -1269,6 +1269,15 @@ def parse_emergency_article(html,url,now=None):
     return {'id':url,'title':title[:170],'publishedAt':published.isoformat(timespec='minutes'),
             'source':url,'status':state,'scope':'region','queues':[]}
 
+def emergency_fingerprint(event):
+    title=' '.join(str(event.get('title','')).split()).casefold()
+    published=str(event.get('publishedAt',''))
+    if not title or not published:
+        return ('id',event.get('id'))
+    queues=tuple(sorted(str(q) for q in event.get('queues',[]) if q))
+    return (title,published,str(event.get('status','')),str(event.get('scope','')),queues)
+
+
 def update_emergency(session,now=None):
     now=now or datetime.now(TZ)
     out=DATA/'emergency.json'
@@ -1289,8 +1298,14 @@ def update_emergency(session,now=None):
     events={item['id']:item for item in old.get('events',[]) if item.get('id') and
             item.get('publishedAt','') >= (now-timedelta(hours=48)).isoformat(timespec='minutes')}
     events.update({e['id']:e for e in entries})
+    ordered=sorted(events.values(),key=lambda x:x['publishedAt'],reverse=True)
+    unique=[];seen=set()
+    for event in ordered:
+        fingerprint=emergency_fingerprint(event)
+        if fingerprint in seen:continue
+        seen.add(fingerprint);unique.append(event)
     result={'schemaVersion':1,'lastChecked':now.isoformat(timespec='seconds'),
-            'source':BASE+'/media','events':sorted(events.values(),key=lambda x:x['publishedAt'],reverse=True)[:30]}
+            'source':BASE+'/media','events':unique[:30]}
     atomic_write(out,result)
     return result
 
