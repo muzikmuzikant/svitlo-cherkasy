@@ -37,7 +37,7 @@ test('planned stats separate verified schedules, confirmed no-schedule days and 
  const schedule={confirmedNoScheduleDates:['2026-11-25'],days:[{date:'2026-11-24',verified:true,queues:{[queue]:{knownFrom:'00:00',off:[['02:00','04:00']]}}}]};
  const today=calculatePlannedStats(schedule,{events:[]},queue,'day',now);
  assert.equal(today.onMinutes,600);assert.equal(today.offMinutes,0);assert.equal(today.unknownMinutes,0);
- const week=calculatePlannedStats(schedule,{events:[]},queue,'week',now);assert.equal(week.offMinutes,120);assert.ok(week.unknownMinutes>0);
+ const week=calculatePlannedStats(schedule,{events:[]},queue,'week',now);assert.equal(week.offMinutes,120);assert.equal(week.unknownMinutes,0);assert.equal(week.onMinutes,week.totalMinutes-120);
 });
 test('emergency outage duration is separate and counted only with explicit timestamps',()=>{
  const now=Date.parse('2026-11-25T10:00:00+02:00');
@@ -69,4 +69,21 @@ test('Kyiv local-day boundaries handle spring and autumn daylight-saving changes
  assert.equal(spring.onMinutes,11*60);
  assert.equal(autumn.totalMinutes,13*60);
  assert.equal(autumn.onMinutes,13*60);
+});
+
+test('region-wide emergency bulletins apply to every queue and no-publication dates follow the all-day-light rule',()=>{
+ const now=Date.parse('2026-11-25T10:00:00+02:00');
+ const result=calculatePlannedStats({days:[]},{events:[{status:'active',scope:'region',queues:[],publishedAt:'2026-11-24T22:00:00+02:00'}]},queue,'day',now);
+ assert.equal(result.onMinutes,600);
+ assert.equal(result.offMinutes,0);
+ assert.equal(result.unknownMinutes,0);
+ assert.equal(result.emergencyEvents,1);
+ assert.equal(result.totalDays,1);
+});
+test('a partial published schedule counts only the known portion of the day',()=>{
+ const now=Date.parse('2026-11-25T10:00:00+02:00');
+ const result=calculatePlannedStats({days:[{date:'2026-11-25',verified:true,queues:{[queue]:{knownFrom:'08:00',off:[]}}}]},{events:[]},queue,'day',now);
+ assert.equal(result.onMinutes,120);
+ assert.equal(result.unknownMinutes,480);
+ assert.equal(result.totalDays,1);
 });
