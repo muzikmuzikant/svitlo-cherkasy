@@ -65,7 +65,9 @@
    if(partner.logo&&safeLink(partner.logo)){
     const img=make('img');img.src=safeLink(partner.logo);img.alt='';img.loading='lazy';link.append(img);
    }
-   link.append(make('span',partner.name,'partner-mini-name'),make('span','↗','partner-mini-arrow'));
+   const copy=make('span',undefined,'partner-mini-copy');
+   copy.append(make('span','ПАРТНЕР','partner-mini-label'),make('span',partner.name,'partner-mini-name'));
+   link.append(copy,make('span','↗','partner-mini-arrow'));
    link.addEventListener('click',()=>track('permanent-partner','click'));
    footer.append(link);observe(link,'permanent-partner');
   });
