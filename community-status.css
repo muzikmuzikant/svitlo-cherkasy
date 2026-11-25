@@ -95,3 +95,13 @@ html.feature-off-partnerOffers #partnerOffers{display:none!important}
 :root[data-theme="dark"] .partner-mini-button{background:var(--surface);box-shadow:none}
 @media(prefers-reduced-motion:reduce){.community-collapse-icon,.partner-mini-button{transition:none!important}.community-disclosure-content{animation:none!important}}
 @media(max-width:420px){.community-summary-copy strong{font-size:12px}.community-summary-meta{gap:5px}.community-queue{font-size:10px}}
+
+/* Quiet partner identification and compact settings controls */
+.partner-mini-copy{display:grid;gap:1px;min-width:0;text-align:left}
+.partner-mini-label{font-size:8px;line-height:1.1;letter-spacing:.09em;font-weight:650;color:var(--muted);opacity:.78}
+.partner-mini-name{font-size:11px;line-height:1.25}
+.appearance-card{display:grid;gap:9px}
+.appearance-select-label{font-size:13px;font-weight:750;color:var(--ink)}
+.appearance-select{width:100%;min-height:44px;padding:10px 13px;border:1px solid var(--line);border-radius:13px;background:var(--bg);color:var(--ink);font:inherit;font-size:13px;font-weight:700}
+.appearance-select:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.dnd-home-notice{margin-top:8px}
